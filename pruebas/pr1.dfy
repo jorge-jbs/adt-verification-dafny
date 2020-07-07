@@ -37,7 +37,8 @@ method Fibonacci(n : nat) returns (m : nat)
     }
 }
 
-method Main() {
+method Main()
+{
     var m := Fibonacci(10);
     print m;
 }
