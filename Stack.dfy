@@ -3,7 +3,7 @@ class NonEmpty<A> {
   var data: A;
   var next: NonEmpty?<A>;
 
-  function Valid(): bool
+  predicate Valid()
     reads this, repr
   {
     this in repr
@@ -28,19 +28,25 @@ class NonEmpty<A> {
 
 type List<A> = NonEmpty?<A>
 
-/*
-function Model<A>(node: NonEmpty<A>): seq<A>
-  reads node, node.repr
-  requires node.Valid()
+function Repr<A>(xs: List<A>): set<object>
+  reads xs
 {
-  [node.data] + (if node.next == null then [] else Model(node.next))
+  if xs == null then
+    {}
+  else
+    xs.repr
 }
-*/
+
+predicate Valid<A>(xs: List<A>)
+  reads xs, Repr(xs)
+{
+  xs != null ==> xs.Valid()
+}
 
 function Model<A>(node: List<A>): seq<A>
-  reads node, (if node == null then {} else node.repr)
-  decreases (if node == null then {} else node.repr)
-  requires node != null ==> node.Valid()
+  reads node, Repr(node)
+  decreases Repr(node)
+  requires Valid(node)
 {
   if node == null then
     []
@@ -58,11 +64,12 @@ function method Head<A>(xs: NonEmpty<A>): A
   xs.data
 }
 
-function method Tail<A>(xs: NonEmpty<A>): (t: List<A>)
+function method Tail<A>(xs: NonEmpty<A>): List<A>
   reads xs, xs.repr
   requires xs.Valid()
-  ensures Tail(xs) != null ==> Tail(xs).Valid()
+  ensures Valid(Tail(xs))
   ensures Model(Tail(xs)) == Model(xs)[1..]
+  ensures Repr(Tail(xs)) <= Repr(xs) - {xs}
 {
   xs.next
 }
@@ -71,6 +78,8 @@ method Cons<A>(x: A, xs: List<A>) returns (res: NonEmpty<A>)
   requires xs != null ==> xs.Valid()
   ensures res.Valid()
   ensures Model(res) == [x] + Model(xs)
+  ensures fresh(Repr(res) - Repr(xs))
+  ensures Repr(res) >= Repr(xs)
 {
   res := new NonEmpty.Init(x);
   res.next := xs;
@@ -79,7 +88,7 @@ method Cons<A>(x: A, xs: List<A>) returns (res: NonEmpty<A>)
   }
 }
 
-method Append<A>(xs: List<A>, ys: List<A>) returns (res : List<A>)
+method Append<A>(xs: List<A>, ys: List<A>) returns (res: List<A>)
   decreases (if xs == null then {} else xs.repr)
   requires xs != null ==> xs.Valid()
   requires ys != null ==> ys.Valid()
@@ -91,5 +100,53 @@ method Append<A>(xs: List<A>, ys: List<A>) returns (res : List<A>)
   } else {
     res := Append(Tail(xs), ys);
     res := Cons(Head(xs), res);
+  }
+}
+
+function rev<A>(xs: seq<A>): seq<A>
+{
+  if |xs| == 0 then
+    []
+  else
+    rev(xs[1..]) + [xs[0]]
+}
+
+method reverseAux<A>(xs: NonEmpty<A>, ys: List<A>) returns (xs_: List<A>, ys_: NonEmpty<A>)
+  modifies xs, xs.repr
+
+  requires Valid(xs) && Valid(ys)
+  ensures Valid(xs_) && Valid(ys_)
+
+  requires Repr(xs) !! Repr(ys)
+  ensures Repr(xs_) !! Repr(ys_)
+
+  ensures old(Repr(xs)) + old(Repr(ys)) >= Repr(xs_) + Repr(ys_)
+  ensures old(Repr(xs)) > Repr(xs_)
+  ensures rev(old(Model(xs))) + old(Model(ys)) == rev(Model(xs_)) + Model(ys_)
+{
+  xs_ := Tail(xs);
+  ys_ := xs;
+  ys_.next := ys;
+  ys_.repr := Repr(ys) + {ys_};
+}
+
+method reverse<A>(xs: List<A>) returns (res: List<A>)
+  modifies xs, Repr(xs)
+  requires Valid(xs)
+  ensures Valid(res)
+  ensures old(Repr(xs)) >= Repr(res)
+  ensures rev(old(Model(xs))) == Model(res)
+{
+  var aux := xs;
+  res := null;
+  while aux != null
+    decreases Repr(aux)
+    invariant Repr(aux) !! Repr(res)
+    invariant Valid(aux)
+    invariant Valid(res)
+    invariant old(Repr(xs)) >= Repr(aux) + Repr(res)
+    invariant rev(old(Model(xs))) == rev(Model(aux)) + Model(res)
+  {
+    aux, res := reverseAux(aux, res);
   }
 }
