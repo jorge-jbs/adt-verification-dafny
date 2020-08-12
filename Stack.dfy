@@ -89,10 +89,10 @@ method Cons<A>(x: A, xs: List<A>) returns (res: NonEmpty<A>)
 }
 
 method Append<A>(xs: List<A>, ys: List<A>) returns (res: List<A>)
-  decreases (if xs == null then {} else xs.repr)
-  requires xs != null ==> xs.Valid()
-  requires ys != null ==> ys.Valid()
-  ensures res != null ==> res.Valid()
+  decreases Repr(xs)
+  requires Valid(xs)
+  requires Valid(ys)
+  ensures Valid(res)
   ensures Model(res) == Model(xs) + Model(ys)
 {
   if xs == null {
