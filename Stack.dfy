@@ -9,9 +9,29 @@ class NonEmpty<A> {
     this in repr
     && ( next != null ==>
           next in repr
-          && next.repr <= repr
+          && repr == {this} + next.repr
           && this !in next.repr
           && next.Valid()
+      )
+    && ( next == null ==>
+          repr == {this}
+      )
+  }
+
+  predicate ValidUntil(n: NonEmpty<A>)
+    reads this, repr
+  {
+    this in repr
+    && n in repr
+    && ( if this == n || next == n then
+          true
+        else if next != null then
+          next in repr
+          && repr == {this} + next.repr
+          && this !in next.repr
+          && next.ValidUntil(n)
+        else
+          repr == {this}
       )
   }
 
@@ -150,3 +170,74 @@ method reverse<A>(xs: List<A>) returns (res: List<A>)
     aux, res := reverseAux(aux, res);
   }
 }
+
+function method PrevNode<A>(head: NonEmpty<A>, mid: NonEmpty<A>):
+    (prev: NonEmpty<A>)
+  decreases Repr(head)
+  reads head, head.repr, mid, mid.repr
+  requires mid in head.repr
+  requires head.ValidUntil(mid)
+  requires head != mid
+  ensures prev.next == mid
+  ensures head.ValidUntil(prev)
+{
+  if head.next == mid then
+    head
+  else
+    PrevNode(head.next, mid)
+}
+
+lemma ValidUntilFromValid<A>(head: NonEmpty<A>, mid: NonEmpty<A>)
+  decreases Repr(head)
+  requires mid in head.repr
+  requires head.Valid()
+  ensures head.ValidUntil(mid) && mid.Valid()
+{
+  if head == mid {
+    assert mid.Valid();
+  } else if head.next != null {
+    ValidUntilFromValid(head.next, mid);
+    assert mid.Valid();
+  } else {
+    assert mid.Valid();
+  }
+}
+
+/*
+method InPlaceInsert<A>(head: NonEmpty<A>, mid: NonEmpty<A>, x: A)
+  modifies head, head.repr, mid, mid.repr
+  requires head != mid
+  requires head.Valid() && mid.Valid()
+  requires mid in head.repr
+  ensures head.Valid() && mid.Valid()
+{
+  ValidUntilFromValid(head, mid);
+  var prev := PrevNode(head, mid);
+  assert head.ValidUntil(prev);
+  assert head.ValidUntil(mid);
+  var n := new NonEmpty.Init(x);
+  n.next := mid.next;
+  n.repr := Repr(mid.next) + {n};
+  assert head.ValidUntil(prev);
+  assert head.ValidUntil(mid);
+  assert n.Valid();
+  mid.next := n;
+  assert head.ValidUntil(prev);
+  assert head.ValidUntil(mid);
+  mid.repr := mid.repr + {n};
+  assert head.ValidUntil(prev);
+  assert head.ValidUntil(mid);
+  assert mid.Valid();
+  var current := mid;
+  assert head.ValidUntil(prev);
+  assert head.ValidUntil(mid);
+  /*
+  while current != head
+    invariant current.Valid()
+    //invariant head.ValidUntil(current)
+  {
+    current := PrevNode(head, current);
+  }
+     */
+}
+*/
