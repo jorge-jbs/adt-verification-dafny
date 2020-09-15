@@ -27,6 +27,86 @@ class EquivClass {
     parent := null;
     repr := {this};
   }
+
+  predicate IsChildOf(p: EquivClass)
+    reads this, repr
+    requires Valid()
+  {
+    p in repr
+  }
+
+  static lemma IsChildOfRefl(a: EquivClass)
+    requires a.Valid()
+    ensures a.IsChildOf(a)
+  {}
+
+  static lemma IsChildOfWeakenRight(a: EquivClass, b: EquivClass)
+    requires a.Valid() && b.Valid()
+    requires b.parent != null
+    requires a.IsChildOf(b)
+    ensures a.IsChildOf(b.parent)
+
+  static lemma IsChildOfWeakenLeft(a: EquivClass, b: EquivClass)
+    requires a.Valid() && b.Valid()
+    requires a.parent != null
+    requires a.IsChildOf(b)
+    ensures a.parent.IsChildOf(b)
+
+  static lemma IsChildOfWeakenLeftPrime(a: EquivClass, b: EquivClass)
+    requires a.Valid() && b.Valid()
+    requires a.parent != null
+    requires !a.parent.IsChildOf(b)
+    ensures !a.IsChildOf(b)
+  {
+    if a.IsChildOf(b) {
+      IsChildOfWeakenLeft(a, b);
+    }
+  }
+
+  static lemma IsChildOfTrans(a: EquivClass, b: EquivClass, c: EquivClass)
+    decreases a.repr
+    requires a.Valid() && b.Valid() && c.Valid()
+    requires a.IsChildOf(b) && b.IsChildOf(c)
+    ensures a.IsChildOf(c)
+  {
+    if a.parent != null && a != b {
+      IsChildOfTrans(a.parent, b, c);
+    }
+  }
+
+  static lemma IsChildOfAntisym(a: EquivClass, b: EquivClass)
+    decreases b.repr
+    requires a.Valid() && b.Valid()
+    requires a != b
+    requires a.IsChildOf(b)
+    ensures !b.IsChildOf(a)
+  {
+    if b.parent != a && b.parent != null {
+      IsChildOfWeakenRight(a, b);
+      IsChildOfAntisym(a, b.parent);
+    }
+  }
+
+  // static lemma IsChildOfTransPrime(a: EquivClass, b: EquivClass, c: EquivClass)
+  //   decreases a.repr
+  //   requires a.Valid() && b.Valid() && c.Valid()
+  //   requires !a.IsChildOf(b) && b.IsChildOf(c)
+  //   ensures !a.IsChildOf(c)
+  // {
+  //   if a.parent != null && a != b {
+  //     if a != c {
+  //       IsChildOfTransPrime(a.parent, b, c);
+  //     } else {
+  //       assert !a.IsChildOf(b);
+  //       assert b.IsChildOf(a);
+  //       IsChildOfAntisym(b, a);
+  //       // assert a.IsChildOf(b);
+  //       assert !a.IsChildOf(a);
+  //       assert !a.IsChildOf(c);
+  //     }
+  //   }
+  // }
+
 }
 
 function method BigUnion<A>(S: set<set<A>>): set<A>
@@ -34,18 +114,28 @@ function method BigUnion<A>(S: set<set<A>>): set<A>
   set X, x | X in S && x in X :: x
 }
 
+function method elems<A>(l: array<A>): set<A>
+  reads l
+{
+  set x | x in l[..]
+}
+
 class Partition {
-  var elems: array<EquivClass>;
+  var classes: array<EquivClass>;
+
+  function ValidReads(): set<object>
+    reads this, classes, elems(classes)
+  {
+    BigUnion(set e: EquivClass | e in classes[..] :: e.repr)
+  }
 
   predicate Valid()
-    reads this, elems
-    reads set x | x in elems[..]
-    reads BigUnion(set e: EquivClass | e in elems[..] :: e.repr)
+    reads this, classes, elems(classes), ValidReads()
   {
-    (forall e: EquivClass | e in elems[..] ::
-      e.Valid() && (forall p: EquivClass | p in e.repr :: p in elems[..])
+    (forall e: EquivClass | e in classes[..] ::
+      e.Valid() && (forall p: EquivClass | p in e.repr :: p in classes[..])
     )
-    && (forall j, k | 0 <= j < k < elems.Length :: elems[j] != elems[k])
+    && (forall j, k | 0 <= j < k < classes.Length :: classes[j] != classes[k])
   }
 
   constructor(size: nat)
@@ -64,9 +154,101 @@ class Partition {
       temp[i] := new EquivClass();
       i := i + 1;
     }
-    elems := new EquivClass[size](
+    classes := new EquivClass[size](
       i requires 0 <= i < size reads temp => temp[i]
     );
+  }
+
+  lemma IsChildOfTransPrimeForall(a: EquivClass, c: EquivClass)
+    requires a.Valid() && c.Valid()
+    requires !a.IsChildOf(c)
+    ensures forall b | b in classes[..] :: a.IsChildOf(b) ==> !a.IsChildOf(c)
+
+  lemma IsChildOfTransPrimeForall2(a: EquivClass)
+    requires a.Valid()
+    requires Valid()
+    ensures forall b | b in classes[..] :: a.IsChildOf(b) ==> !b.IsChildOf(a)
+
+  function method ChildrenAuxAux(c: EquivClass, p: EquivClass):
+      (set<EquivClass>, bool)
+    decreases c.repr
+    reads this, classes, elems(classes), ValidReads()
+    requires Valid()
+    requires p in classes[..]
+    requires c in classes[..]
+    ensures forall e: EquivClass | e in classes[..]
+      :: e in ChildrenAuxAux(c, p).0 <==> c.IsChildOf(e) && e.IsChildOf(p)
+    ensures ChildrenAuxAux(c, p).1 <==> c.IsChildOf(p)
+  {
+    if c == p then
+      IsChildOfTransPrimeForall2(c);
+      ({c}, true)
+    else if c.parent == null then
+      ({}, false)
+    else
+      var rec := ChildrenAuxAux(c.parent, p);
+      if rec.1 then
+        (rec.0 + {c}, true)
+      else
+        EquivClass.IsChildOfWeakenLeftPrime(c, p);
+        IsChildOfTransPrimeForall(c, p);
+        rec
+  }
+
+  // function method ChildrenAux(i: nat, p: EquivClass): set<EquivClass>
+  //   reads this, classes, elems(classes), ValidReads()
+  //   decreases classes.Length - i
+  //   requires Valid()
+  //   requires i <= classes.Length
+  //   requires p in classes[..]
+  //   ensures forall e, d
+  //     | e in classes[i..] && d in classes[i..] && e.IsChildOf(d)
+  //     :: e in ChildrenAux(i, p) <==> e.IsChildOf(p)
+  // {
+  //   if i == classes.Length then
+  //     assert forall e: EquivClass
+  //       | e in classes[i..]
+  //       :: e in {} <==> e.IsChildOf(p);
+  //     {}
+  //   else
+  //     var c := classes[i];
+  //     var rec := ChildrenAux(i+1, p);
+  //     // if classes[i] in rec then
+  //     //   assert forall e: EquivClass
+  //     //     | e in classes[i..]
+  //     //     :: e in rec <==> e.IsChildOf(p);
+  //     //   rec
+  //     // else
+  //       assert forall e, d: EquivClass
+  //         | e in classes[i+1..] && d in classes[i+1..] && e.IsChildOf(d)
+  //         :: e in rec <==> e.IsChildOf(p);
+  //       assert forall e: EquivClass | e in classes[..]
+  //         :: e in ChildrenAuxAux(c, p).0 <==> c.IsChildOf(e) && e.IsChildOf(p);
+  //       assert forall e, d
+  //         | e in classes[i..] && d in classes[i..] && e.IsChildOf(d)
+  //         :: e in rec + ChildrenAuxAux(c, p).0 <==> e.IsChildOf(p);
+  //       // assert forall e: EquivClass
+  //       //   | e in classes[i..]
+  //       //   :: e in rec + ChildrenAuxAux(classes[i], p).0 <==> e.IsChildOf(p);
+  //       rec + ChildrenAuxAux(c, p).0
+  // }
+
+  // function method ChildrenAux(i: nat, p: EquivClass): set<EquivClass>
+  //   reads this, classes, elems(classes), ValidReads()
+  //   decreases classes.Length - i
+  //   requires Valid()
+  //   requires i <= classes.Length
+  //   requires p in classes[..]
+  //   ensures forall e: EquivClass
+  //   | e in classes[i..]
+  //   :: e in ChildrenAux(i, p) <==> e.IsChildOf(p)
+
+  function Children(p: EquivClass): set<EquivClass>
+    reads this, classes, elems(classes), ValidReads()
+    requires Valid()
+    requires p in classes[..]
+  {
+    set c | c in classes[..] && c.IsChildOf(p) :: c
   }
 
   /*
