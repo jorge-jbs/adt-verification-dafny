@@ -203,7 +203,53 @@ lemma ValidUntilFromValid<A>(head: NonEmpty<A>, mid: NonEmpty<A>)
   }
 }
 
-/*
+ghost method Repair<A>(prevs: seq<NonEmpty<A>>, mid: List<A>)
+  modifies set n | n in multiset(prevs) :: n`repr
+  requires mid !in multiset(prevs)
+  requires forall n | n in multiset(prevs) :: n !in Repr(mid)
+  requires forall i, j | 0 <= i < j < |prevs| :: prevs[i] != prevs[j]
+  requires forall i | 0 <= i < |prevs|-1 :: prevs[i].next == prevs[i+1]
+  requires prevs != [] ==> prevs[|prevs|-1].next == mid
+  requires Valid(mid)
+  ensures Valid(mid)
+  // ensures prevs != [] ==> prevs[0].Valid()
+  ensures forall n | n in multiset(prevs) :: n.Valid()
+{
+  if prevs != [] {
+    var prev := prevs[|prevs|-1];
+    assert prev in multiset(prevs);
+    assert Valid(mid);
+    prev.repr := {prev} + Repr(mid);
+    assert prev.Valid();
+    assert prevs == prevs[..|prevs|-1] + prevs[|prevs|-1..|prevs|];
+    assert multiset(prevs[..|prevs|-1]) <= multiset(prevs);
+    Repair(prevs[..|prevs|-1], prev);
+  }
+}
+
+function TakeSeq<A>(head: List<A>, mid: List<A>): (res: seq<NonEmpty<A>>)
+  decreases Repr(head)
+  reads Repr(head)
+  reads Repr(mid)
+  requires Valid(head)
+  requires Valid(mid)
+  requires mid in Repr(head)
+  ensures res != [] ==> res[0] == head && res[|res|-1].next == mid
+  ensures forall n | n in res :: n in Repr(head)
+  ensures forall i | 0 <= i < |res|-1 :: res[i].next == res[i+1]
+  ensures mid !in multiset(res)
+  ensures forall n | n in multiset(res) :: n !in Repr(mid)
+  ensures forall i, j | 0 <= i < j < |res| :: res[i] != res[j]
+  ensures forall i | 0 <= i < |res|-1 :: res[i].next == res[i+1]
+  ensures res != [] ==> res[|res|-1].next == mid
+{
+  if head == mid then
+    []
+  else
+    assert head !in Repr(mid);
+    [head] + TakeSeq(head.next, mid)
+}
+
 method InPlaceInsert<A>(head: NonEmpty<A>, mid: NonEmpty<A>, x: A)
   modifies head, head.repr, mid, mid.repr
   requires head != mid
@@ -211,33 +257,13 @@ method InPlaceInsert<A>(head: NonEmpty<A>, mid: NonEmpty<A>, x: A)
   requires mid in head.repr
   ensures head.Valid() && mid.Valid()
 {
-  ValidUntilFromValid(head, mid);
-  var prev := PrevNode(head, mid);
-  assert head.ValidUntil(prev);
-  assert head.ValidUntil(mid);
+  ghost var prevs := TakeSeq(head, mid);
   var n := new NonEmpty.Init(x);
   n.next := mid.next;
   n.repr := Repr(mid.next) + {n};
-  assert head.ValidUntil(prev);
-  assert head.ValidUntil(mid);
-  assert n.Valid();
   mid.next := n;
-  assert head.ValidUntil(prev);
-  assert head.ValidUntil(mid);
-  mid.repr := mid.repr + {n};
-  assert head.ValidUntil(prev);
-  assert head.ValidUntil(mid);
-  assert mid.Valid();
-  var current := mid;
-  assert head.ValidUntil(prev);
-  assert head.ValidUntil(mid);
-  /*
-  while current != head
-    invariant current.Valid()
-    //invariant head.ValidUntil(current)
-  {
-    current := PrevNode(head, current);
-  }
-     */
+  mid.repr := {n} + mid.repr;
+  // Repair(prevs, mid);
+  assert Valid(head);
+  assert Valid(mid);
 }
-*/
