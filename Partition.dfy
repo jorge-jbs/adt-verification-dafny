@@ -168,6 +168,15 @@ predicate ValidTree(t: Tree<EquivClass>)
     && ValidTree(c)
 }
 
+predicate ValidTreeRepr(t: Tree<EquivClass>)
+  decreases t
+  reads set c | c in elemsTree(t) :: c`parent
+  requires ValidTree(t)
+{
+  forall r, s | r in t.children && s in t.children ::
+    elemsTree(r) !! elemsTree(s)
+}
+
 class Partition {
   var classes: array<EquivClass>;
 
@@ -312,6 +321,22 @@ class Partition {
     }
   }
 
+  lemma DisjointDescendants(p: EquivClass, c: EquivClass, d: EquivClass)
+    requires Valid()
+    requires p in classes[..]
+    requires c in classes[..]
+    requires c.IsChildOf(p)
+    requires d in classes[..]
+    requires d.IsChildOf(p)
+    ensures Descendants(c) !! Descendants(d)
+
+  lemma ForallDisjointDescendants(p: EquivClass)
+    requires Valid()
+    requires p in classes[..]
+    ensures forall c, d
+      | c in classes[..] && d in classes[..] && c.IsChildOf(p) && d.IsChildOf(p)
+      :: Descendants(c) !! Descendants(d)
+
   function DescendantsTree(p: EquivClass): Tree<EquivClass>
     decreases elems(classes) - p.repr
     reads this, classes, elems(classes), ValidReads()
@@ -319,6 +344,7 @@ class Partition {
     requires p in classes[..]
     ensures elemsTree(DescendantsTree(p)) == Descendants(p)
     ensures ValidTree(DescendantsTree(p))
+    ensures ValidTreeRepr(DescendantsTree(p))
     // ensures forall c, d
     //   | c in elemsTree(DescendantsTree(p))
     //   && d in elemsTree(DescendantsTree(p))
@@ -326,6 +352,7 @@ class Partition {
     //   :: c !in d.repr
   {
     ChildrenDescendants(p);
+    ForallDisjointDescendants(p);
     Node(
       p,
       set c: EquivClass | c in classes[..] && c.IsChildOf(p) ::
@@ -370,6 +397,7 @@ class Partition {
     requires forall c | c in elemsTree(dt) :: c in classes[..]
     requires dt.root.Valid()
     requires ValidTree(dt)
+    requires ValidTreeRepr(dt)
     // requires forall c | c != dt.root && c in elemsTree(dt) :: c !in dt.root.repr
     // requires forall c, d | c in elemsTree(dt) && d in elemsTree(dt) && c.IsDescOf(d) ::
     //   c !in d.repr
@@ -390,11 +418,13 @@ class Partition {
           invariant Node(p, cs) == dt
           invariant p.Valid()
           invariant ValidTree(dt)
+          invariant ValidTreeRepr(dt)
           invariant forall c, d
             | c in elemsTree(dt) && d in elemsTree(dt) && c.IsChildOf(d)
             :: c !in d.repr
           invariant forall c, d | c in children && d in elemsTree(c) :: d.Valid()
         {
+          assert forall c, d | c in children && d in elemsTree(c) :: d.Valid();
           assert forall c, d
             | c in elemsTree(dt) && d in elemsTree(dt) && c.IsChildOf(d)
             :: c !in d.repr;
@@ -403,7 +433,11 @@ class Partition {
           assert ct.root in elemsTree(ct);
           assert ct.root.IsChildOf(p);
           assert ct.root !in p.repr;
+          assert forall c, d | c in children && d in elemsTree(c) :: d.Valid();
+          assert ct !in children;
+          assert forall c, d | c in children && d in elemsTree(c) :: ct.root !in d.repr;
           ct.root.repr := {ct.root} + p.repr;
+          assert forall c, d | c in children && d in elemsTree(c) :: d.Valid();
           // assert (set c | c in elemsTree(dt) :: c.repr)
           //   <= (set a, b | a in cs && b in elemsTree(a) :: b.repr);
           // assert forall d | d in elemsTree(c) :: d in elemsTree(dt);
@@ -419,6 +453,7 @@ class Partition {
             | c in elemsTree(ct) && d in elemsTree(ct) && c.IsChildOf(d)
             :: c !in d.repr;
           RepairDescendants(ct);
+          assert elemsTree(ct) <= elemsTree(dt);
           assert forall c, d
             | c in elemsTree(ct) && d in elemsTree(ct) && c.IsChildOf(d)
             :: c !in d.repr;
@@ -426,6 +461,7 @@ class Partition {
             | c in elemsTree(dt) && d in elemsTree(dt) && c.IsChildOf(d)
             :: c !in d.repr;
           assert ct.root.Valid();
+          assert forall c, d | c in children && d in elemsTree(c) :: d.Valid();
           assert forall d | d in elemsTree(ct) :: d.Valid();
           children := children + {ct};
         }
@@ -444,7 +480,6 @@ class Partition {
   //   e.repr := e.repr + {c, top};
   // }
 
-  /*
   method findAux(c: EquivClass) returns (res: EquivClass)
     decreases c.repr
     modifies multiset(classes[..])
@@ -498,7 +533,6 @@ class Partition {
       assert Valid();
     }
   }
-     */
 
   /*
   method find(i: nat) returns (res: EquivClass)
