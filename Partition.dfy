@@ -165,17 +165,29 @@ predicate ValidTree(t: Tree<EquivClass>)
   forall c | c in t.children ::
     assert elemsTree(c) <= elemsTree(t);
     c.root.parent == t.root
+    && t.root !in elemsTree(c)
     && ValidTree(c)
 }
 
 predicate ValidTreeRepr(t: Tree<EquivClass>)
   decreases t
-  reads set c | c in elemsTree(t) :: c`parent
-  requires ValidTree(t)
 {
-  forall r, s | r in t.children && s in t.children ::
-    elemsTree(r) !! elemsTree(s)
+  (forall c | c in t.children ::
+    ValidTreeRepr(c))
+  && (forall r, s | r != s && r in t.children && s in t.children ::
+    elemsTree(r) !! elemsTree(s))
 }
+
+// predicate ValidTreeRepr(t: Tree<EquivClass>)
+//   decreases t
+//   reads t.root, t.root.repr
+//   requires t.root.Valid()
+// {
+//   (forall c | c != t.root && c in elemsTree(t) ::
+//     c !in t.root.repr)
+//   && (forall r, s | r != s && r in t.children && s in t.children ::
+//     elemsTree(r) !! elemsTree(s))
+// }
 
 class Partition {
   var classes: array<EquivClass>;
@@ -321,6 +333,26 @@ class Partition {
     }
   }
 
+  lemma DisjointDescendantsAux(
+      p: EquivClass, c: EquivClass, d: EquivClass, x: EquivClass
+    )
+    decreases x.repr
+    requires Valid()
+    requires p in classes[..]
+    requires c in classes[..]
+    requires c.IsChildOf(p)
+    requires d in classes[..]
+    requires d.IsChildOf(p)
+    requires c != d
+    requires x in Descendants(c)
+    ensures x !in Descendants(d)
+  {
+    if x == c {
+    } else {
+      DisjointDescendantsAux(p, c, d, x.parent);
+    }
+  }
+
   lemma DisjointDescendants(p: EquivClass, c: EquivClass, d: EquivClass)
     requires Valid()
     requires p in classes[..]
@@ -328,14 +360,30 @@ class Partition {
     requires c.IsChildOf(p)
     requires d in classes[..]
     requires d.IsChildOf(p)
+    requires c != d
     ensures Descendants(c) !! Descendants(d)
+  {
+    forall x | x in Descendants(c)
+      ensures x !in Descendants(d)
+    {
+      DisjointDescendantsAux(p, c, d, x);
+    }
+  }
 
   lemma ForallDisjointDescendants(p: EquivClass)
     requires Valid()
     requires p in classes[..]
     ensures forall c, d
-      | c in classes[..] && d in classes[..] && c.IsChildOf(p) && d.IsChildOf(p)
+      | c != d && c in classes[..] && d in classes[..] && c.IsChildOf(p) && d.IsChildOf(p)
       :: Descendants(c) !! Descendants(d)
+  {
+    forall c, d
+      | c != d && c in classes[..] && d in classes[..] && c.IsChildOf(p) && d.IsChildOf(p)
+      ensures Descendants(c) !! Descendants(d)
+    {
+      DisjointDescendants(p, c, d);
+    }
+  }
 
   function DescendantsTree(p: EquivClass): Tree<EquivClass>
     decreases elems(classes) - p.repr
@@ -344,6 +392,7 @@ class Partition {
     requires p in classes[..]
     ensures elemsTree(DescendantsTree(p)) == Descendants(p)
     ensures ValidTree(DescendantsTree(p))
+    // ensures forall c | c != p && c in elemsTree(DescendantsTree(p)) :: c !in p.repr
     ensures ValidTreeRepr(DescendantsTree(p))
     // ensures forall c, d
     //   | c in elemsTree(DescendantsTree(p))
@@ -358,6 +407,55 @@ class Partition {
       set c: EquivClass | c in classes[..] && c.IsChildOf(p) ::
         DescendantsTree(c)
     )
+  }
+
+  ghost method RepairDescendants(dt: Tree<EquivClass>)
+    modifies elemsTree(dt) - {dt.root}
+    requires forall c | c in elemsTree(dt) :: c in classes[..]
+    requires dt.root.Valid()
+    requires ValidTree(dt)
+    requires ValidTreeRepr(dt)
+    requires forall c | c != dt.root && c in elemsTree(dt) :: c !in dt.root.repr
+    ensures forall c | c in elemsTree(dt) :: c.Valid()
+    ensures ValidTree(dt)
+    ensures ValidTreeRepr(dt)
+    ensures forall c | c in elemsTree(dt) :: c.repr <= elemsTree(dt) + dt.root.repr
+    ensures forall e: EquivClass | e in classes[..] :: old(e.Valid()) ==> e.Valid()
+  {
+    var p := dt.root;
+    var cs := dt.children;
+    var children := {};
+    while cs - children != {}
+      decreases cs - children
+      invariant children <= cs
+      invariant dt.root.Valid()
+      invariant ValidTree(dt)
+      invariant ValidTreeRepr(dt)
+      invariant forall c, d: EquivClass | c in children && d in elemsTree(c) :: d.Valid()
+      invariant forall c, d | c != d && c in children && d in children ::
+        elemsTree(c) !! elemsTree(d)
+      invariant forall c, d: EquivClass | c in children && d in elemsTree(c) ::
+        d.repr <= elemsTree(c) + dt.root.repr
+    {
+      var ct: Tree<EquivClass>; ct :| ct in cs - children;
+      assert forall c, d: EquivClass | c in children && d in elemsTree(c) :: d.Valid();
+      assert ct.root !in dt.root.repr;
+      assert forall c | c in children :: elemsTree(c) !! elemsTree(ct);
+      assert forall c, d: EquivClass | c in children && d in elemsTree(c) :: ct.root !in d.repr;
+      ct.root.repr := {ct.root} + p.repr;
+      assert forall c, d: EquivClass | c in children && d in elemsTree(c) :: d.Valid();
+      assert forall c, d: EquivClass, e: EquivClass
+        | c in children && d in elemsTree(c) && e in elemsTree(ct) && e != ct.root
+        :: e !in d.repr;
+      RepairDescendants(ct);
+      assert forall c, d: EquivClass | c in children && d in elemsTree(c) :: d.Valid();
+      children := children + {ct};
+      assert forall c, d: EquivClass | c in children && d in elemsTree(c) :: d.Valid();
+    }
+    assert cs - children == {};
+    assert children <= cs;
+    assert cs - children + children == {} + children;
+    assert cs == children;
   }
 
   // ghost method RepairDescendants(p: EquivClass, dt: Tree<EquivClass>)
@@ -392,86 +490,62 @@ class Partition {
   //   requires dt.root.IsChildOf(p)
   //   ensures ValidTree(dt)
 
-  ghost method RepairDescendants(dt: Tree<EquivClass>)
-    modifies dt.root, elemsTree(dt)
-    requires forall c | c in elemsTree(dt) :: c in classes[..]
-    requires dt.root.Valid()
-    requires ValidTree(dt)
-    requires ValidTreeRepr(dt)
-    // requires forall c | c != dt.root && c in elemsTree(dt) :: c !in dt.root.repr
-    // requires forall c, d | c in elemsTree(dt) && d in elemsTree(dt) && c.IsDescOf(d) ::
-    //   c !in d.repr
-    requires forall c, d | c in elemsTree(dt) && d in elemsTree(dt) && c.IsChildOf(d) ::
-      c !in d.repr
-    ensures forall c, d | c in elemsTree(dt) && d in elemsTree(dt) && c.IsChildOf(d) ::
-      c !in d.repr
-    ensures forall c | c in elemsTree(dt) :: c.Valid()
-    ensures ValidTree(dt)
-  {
-    match dt {
-      case Node(p, cs) => {
-        var children := {};
-        while cs - children != {}
-          decreases cs - children
-          // modifies set c, d | c in cs && d in elemsTree(c) :: d`repr
-          invariant children <= cs
-          invariant Node(p, cs) == dt
-          invariant p.Valid()
-          invariant ValidTree(dt)
-          invariant ValidTreeRepr(dt)
-          invariant forall c, d
-            | c in elemsTree(dt) && d in elemsTree(dt) && c.IsChildOf(d)
-            :: c !in d.repr
-          invariant forall c, d | c in children && d in elemsTree(c) :: d.Valid()
-        {
-          assert forall c, d | c in children && d in elemsTree(c) :: d.Valid();
-          assert forall c, d
-            | c in elemsTree(dt) && d in elemsTree(dt) && c.IsChildOf(d)
-            :: c !in d.repr;
-          var ct; ct :| ct in cs - children;
-          // assert forall a | a in cs :: elemsTree(a) <= elemsTree(dt);
-          assert ct.root in elemsTree(ct);
-          assert ct.root.IsChildOf(p);
-          assert ct.root !in p.repr;
-          assert forall c, d | c in children && d in elemsTree(c) :: d.Valid();
-          assert ct !in children;
-          assert forall c, d | c in children && d in elemsTree(c) :: ct.root !in d.repr;
-          ct.root.repr := {ct.root} + p.repr;
-          assert forall c, d | c in children && d in elemsTree(c) :: d.Valid();
-          // assert (set c | c in elemsTree(dt) :: c.repr)
-          //   <= (set a, b | a in cs && b in elemsTree(a) :: b.repr);
-          // assert forall d | d in elemsTree(c) :: d in elemsTree(dt);
-          assert elemsTree(ct) <= elemsTree(dt);
-          assert ct.root.parent == p;
-          assert p.Valid();
-          assert ct.root.parent.Valid();
-          assert ct.root.Valid();
-          assert forall c, d
-            | c in elemsTree(dt) && d in elemsTree(dt) && c.IsChildOf(d)
-            :: c !in d.repr;
-          assert forall c, d
-            | c in elemsTree(ct) && d in elemsTree(ct) && c.IsChildOf(d)
-            :: c !in d.repr;
-          RepairDescendants(ct);
-          assert elemsTree(ct) <= elemsTree(dt);
-          assert forall c, d
-            | c in elemsTree(ct) && d in elemsTree(ct) && c.IsChildOf(d)
-            :: c !in d.repr;
-          assert forall c, d
-            | c in elemsTree(dt) && d in elemsTree(dt) && c.IsChildOf(d)
-            :: c !in d.repr;
-          assert ct.root.Valid();
-          assert forall c, d | c in children && d in elemsTree(c) :: d.Valid();
-          assert forall d | d in elemsTree(ct) :: d.Valid();
-          children := children + {ct};
-        }
-        assert cs - children == {};
-        assert children <= cs;
-        assert cs - children + children == {} + children;
-        assert cs == children;
-      }
-    }
-  }
+  // ghost method RepairDescendants(dt: Tree<EquivClass>)
+  //   modifies dt.root, elemsTree(dt)
+  //   requires forall c | c in elemsTree(dt) :: c in classes[..]
+  //   requires dt.root.Valid()
+  //   requires ValidTree(dt)
+  //   requires ValidTreeRepr(dt)
+  //   ensures forall c | c in elemsTree(dt) :: c.Valid()
+  //   ensures ValidTree(dt)
+  //   ensures ValidTreeRepr(dt)
+  // {
+  //   match dt {
+  //     case Node(p, cs) => {
+  //       var children := {};
+  //       while cs - children != {}
+  //         decreases cs - children
+  //         invariant children <= cs
+  //         invariant Node(p, cs) == dt
+  //         invariant p.Valid()
+  //         invariant ValidTree(dt)
+  //         invariant ValidTreeRepr(dt)
+  //         invariant forall c, d | c in children && d in elemsTree(c) :: d.Valid()
+  //         invariant forall ct, c, dt
+  //           | ct in children && c in elemsTree(ct) && dt in cs - children
+  //           :: dt.root !in c.repr
+  //       {
+  //         assert forall c, d | c in children && d in elemsTree(c) :: d.Valid();
+  //         var ct; ct :| ct in cs - children;
+  //         assert ct.root in elemsTree(ct);
+  //         assert ct.root.IsChildOf(p);
+  //         assert forall c, d | c in children && d in elemsTree(c) :: d.Valid();
+  //         assert ct in cs - children;
+  //         assert ct !in children;
+  //         assert forall c, d | c in children && d in elemsTree(c) :: d.Valid();
+  //         ct.root.repr := {ct.root} + p.repr;
+  //         assert forall c, d | c in children && d in elemsTree(c) :: d.Valid();
+  //         assert elemsTree(ct) <= elemsTree(dt);
+  //         assert ct.root.parent == p;
+  //         assert p.Valid();
+  //         assert ct.root.parent.Valid();
+  //         assert ct.root.Valid();
+  //         assert elemsTree(ct) !! BigUnion(set t | t in children :: elemsTree(t));
+  //         assert forall c, d, e | c in children && d in elemsTree(c) && e in d.repr :: e !in elemsTree(ct);
+  //         RepairDescendants(ct);
+  //         assert elemsTree(ct) <= elemsTree(dt);
+  //         assert ct.root.Valid();
+  //         assert forall c, d | c in children && d in elemsTree(c) :: d.Valid();
+  //         assert forall d | d in elemsTree(ct) :: d.Valid();
+  //         children := children + {ct};
+  //       }
+  //       assert cs - children == {};
+  //       assert children <= cs;
+  //       assert cs - children + children == {} + children;
+  //       assert cs == children;
+  //     }
+  //   }
+  // }
 
   // ghost method repair(e: EquivClass, c: EquivClass, top: EquivClass)
   //   modifies e
@@ -508,24 +582,6 @@ class Partition {
       assert c.Valid();
       ghost var cs: set<EquivClass> := Descendants(c);
       assert forall e | e in cs :: e in multiset(classes[..]);
-      // while cs != {}
-      //   decreases cs
-      //   invariant res.Valid()
-      //   invariant c.Valid()
-      //   invariant forall e | e in old(classes[..]) :: e in classes[..]
-      //   invariant forall e | e in classes[..] && e !in cs :: e.Valid()
-      //   invariant forall e: EquivClass, p: EquivClass | e in classes[..] && p in e.repr ::
-      //     p in classes[..]
-      //   invariant forall j, k | 0 <= j < k < classes.Length :: classes[j] != classes[k]
-      // {
-      //   var e: EquivClass;
-      //   e :| e in cs;
-      //   if c in e.repr {
-      //     e.repr := e.repr - c.repr;
-      //     e.repr := e.repr + {c, res};
-      //   }
-      //   cs := cs - {e};
-      // }
       assert forall e | e in classes[..] && e !in cs :: e.Valid();
       RepairDescendants(dt);
       assert forall e | e in cs :: e.Valid();
