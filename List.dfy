@@ -140,7 +140,7 @@ method reverseAux<A>(xs: NonEmpty<A>, ys: List<A>) returns (xs_: List<A>, ys_: N
   requires Repr(xs) !! Repr(ys)
   ensures Repr(xs_) !! Repr(ys_)
 
-  ensures old(Repr(xs)) + old(Repr(ys)) >= Repr(xs_) + Repr(ys_)
+  ensures old(Repr(xs)) + old(Repr(ys)) == Repr(xs_) + Repr(ys_)
   ensures old(Repr(xs)) > Repr(xs_)
   ensures rev(old(Model(xs))) + old(Model(ys)) == rev(Model(xs_)) + Model(ys_)
 {
@@ -154,7 +154,7 @@ method reverse<A>(xs: List<A>) returns (res: List<A>)
   modifies xs, Repr(xs)
   requires Valid(xs)
   ensures Valid(res)
-  ensures old(Repr(xs)) >= Repr(res)
+  ensures old(Repr(xs)) == Repr(res)
   ensures rev(old(Model(xs))) == Model(res)
 {
   var aux := xs;
@@ -164,7 +164,7 @@ method reverse<A>(xs: List<A>) returns (res: List<A>)
     invariant Repr(aux) !! Repr(res)
     invariant Valid(aux)
     invariant Valid(res)
-    invariant old(Repr(xs)) >= Repr(aux) + Repr(res)
+    invariant old(Repr(xs)) == Repr(aux) + Repr(res)
     invariant rev(old(Model(xs))) == rev(Model(aux)) + Model(res)
   {
     aux, res := reverseAux(aux, res);
