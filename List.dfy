@@ -36,13 +36,26 @@ class NonEmpty<A> {
   }
 
   constructor Init(d: A)
-    ensures Valid() && fresh(repr - {this})
+    ensures Valid()
+    ensures fresh(repr - {this})
     ensures data == d
     ensures next == null
   {
     repr := {this};
     data := d;
     next := null;
+  }
+
+  predicate IsPrevOf(n: NonEmpty<A>)
+    reads this
+  {
+    next == n
+  }
+
+  predicate IsBefore(n: NonEmpty<A>)
+    reads this
+  {
+    n in repr
   }
 }
 
@@ -203,10 +216,10 @@ lemma ValidUntilFromValid<A>(head: NonEmpty<A>, mid: NonEmpty<A>)
   }
 }
 
-ghost method Repair<A>(prevs: seq<NonEmpty<A>>, mid: List<A>)
+ghost method Repair(prevs: seq<NonEmpty<int>>, mid: List<int>)
   modifies set n | n in multiset(prevs) :: n`repr
   requires mid !in multiset(prevs)
-  requires forall n | n in multiset(prevs) :: n !in Repr(mid)
+  requires forall n | n in prevs :: n !in Repr(mid)
   requires forall i, j | 0 <= i < j < |prevs| :: prevs[i] != prevs[j]
   requires forall i | 0 <= i < |prevs|-1 :: prevs[i].next == prevs[i+1]
   requires prevs != [] ==> prevs[|prevs|-1].next == mid
@@ -227,6 +240,46 @@ ghost method Repair<A>(prevs: seq<NonEmpty<A>>, mid: List<A>)
   }
 }
 
+lemma IsBeforeStepRight<A>(a: NonEmpty<A>, b: NonEmpty<A>)
+  decreases a.repr
+  requires Valid(a)
+  requires Valid(b)
+  requires a != b
+  requires b.next != null
+  requires a.IsBefore(b)
+  ensures a.IsBefore(b.next)
+{
+  if a.next != b {
+    IsBeforeStepRight(a.next, b);
+  }
+}
+
+lemma IsBeforeSubset<A>(a: NonEmpty<A>, b: NonEmpty<A>)
+  decreases a.repr
+  requires Valid(a)
+  requires Valid(b)
+  requires a.IsBefore(b)
+  ensures a.repr >= b.repr
+{
+  if a != b {
+    IsBeforeSubset(a.next, b);
+  }
+}
+
+lemma IsBeforeAntisym<A>(a: NonEmpty<A>, b: NonEmpty<A>)
+  decreases Repr(a)
+  requires Valid(a)
+  requires Valid(b)
+  requires a.IsBefore(b)
+  requires b.IsBefore(a)
+  ensures a == b
+{
+  if a != b && a.next != null {
+    IsBeforeStepRight(b, a);
+    IsBeforeAntisym(a.next, b);
+  }
+}
+
 function TakeSeq<A>(head: List<A>, mid: List<A>): (res: seq<NonEmpty<A>>)
   decreases Repr(head)
   reads Repr(head)
@@ -242,15 +295,18 @@ function TakeSeq<A>(head: List<A>, mid: List<A>): (res: seq<NonEmpty<A>>)
   ensures forall i, j | 0 <= i < j < |res| :: res[i] != res[j]
   ensures forall i | 0 <= i < |res|-1 :: res[i].next == res[i+1]
   ensures res != [] ==> res[|res|-1].next == mid
+  ensures mid !in res
 {
   if head == mid then
     []
   else
+    assume head in Repr(mid);
+    IsBeforeAntisym(head, mid);
     assert head !in Repr(mid);
     [head] + TakeSeq(head.next, mid)
 }
 
-method InPlaceInsert<A>(head: NonEmpty<A>, mid: NonEmpty<A>, x: A)
+method InPlaceInsert(head: NonEmpty<int>, mid: NonEmpty<int>, x: int)
   modifies head, head.repr, mid, mid.repr
   requires head != mid
   requires head.Valid() && mid.Valid()
@@ -258,12 +314,16 @@ method InPlaceInsert<A>(head: NonEmpty<A>, mid: NonEmpty<A>, x: A)
   ensures head.Valid() && mid.Valid()
 {
   ghost var prevs := TakeSeq(head, mid);
+  assert forall i | 0 <= i < |prevs|-1 :: prevs[i].next == prevs[i+1];
+  assert prevs != [] ==> prevs[|prevs|-1].next == mid;
   var n := new NonEmpty.Init(x);
+  assert forall i | 0 <= i < |prevs|-1 :: prevs[i].next == prevs[i+1];
+  assert prevs != [] ==> prevs[|prevs|-1].next == mid;
   n.next := mid.next;
   n.repr := Repr(mid.next) + {n};
   mid.next := n;
   mid.repr := {n} + mid.repr;
-  // Repair(prevs, mid);
+  Repair(prevs, mid);
   assert Valid(head);
   assert Valid(mid);
 }
