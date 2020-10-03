@@ -1,3 +1,5 @@
+include "Utils.dfy"
+
 class NonEmpty<A> {
   ghost var repr: set<object>;
   var data: A;
@@ -89,7 +91,7 @@ function Model<A>(node: List<A>): seq<A>
     [node.data] + Model(node.next)
 }
 
-function method Head<A>(xs: NonEmpty<A>): A
+function Head<A>(xs: NonEmpty<A>): A
   reads xs, xs.repr
   requires xs.Valid()
   ensures Head(xs) == Model(xs)[0]
@@ -97,7 +99,7 @@ function method Head<A>(xs: NonEmpty<A>): A
   xs.data
 }
 
-function method Tail<A>(xs: NonEmpty<A>): List<A>
+function Tail<A>(xs: NonEmpty<A>): List<A>
   reads xs, xs.repr
   requires xs.Valid()
   ensures Valid(Tail(xs))
@@ -131,20 +133,13 @@ method Append<A>(xs: List<A>, ys: List<A>) returns (res: List<A>)
   if xs == null {
     res := ys;
   } else {
-    res := Append(Tail(xs), ys);
-    res := Cons(Head(xs), res);
+    res := Append(xs.next, ys);
+    res := Cons(xs.data, res);
   }
 }
 
-function rev<A>(xs: seq<A>): seq<A>
-{
-  if |xs| == 0 then
-    []
-  else
-    rev(xs[1..]) + [xs[0]]
-}
-
-method reverseAux<A>(xs: NonEmpty<A>, ys: List<A>) returns (xs_: List<A>, ys_: NonEmpty<A>)
+method ReverseAux<A>(xs: NonEmpty<A>, ys: List<A>)
+  returns (xs_: List<A>, ys_: NonEmpty<A>)
   modifies xs, xs.repr
 
   requires Valid(xs) && Valid(ys)
@@ -157,13 +152,13 @@ method reverseAux<A>(xs: NonEmpty<A>, ys: List<A>) returns (xs_: List<A>, ys_: N
   ensures old(Repr(xs)) > Repr(xs_)
   ensures rev(old(Model(xs))) + old(Model(ys)) == rev(Model(xs_)) + Model(ys_)
 {
-  xs_ := Tail(xs);
+  xs_ := xs.next;
   ys_ := xs;
   ys_.next := ys;
   ys_.repr := Repr(ys) + {ys_};
 }
 
-method reverse<A>(xs: List<A>) returns (res: List<A>)
+method Reverse<A>(xs: List<A>) returns (res: List<A>)
   modifies xs, Repr(xs)
   requires Valid(xs)
   ensures Valid(res)
@@ -180,11 +175,11 @@ method reverse<A>(xs: List<A>) returns (res: List<A>)
     invariant old(Repr(xs)) == Repr(aux) + Repr(res)
     invariant rev(old(Model(xs))) == rev(Model(aux)) + Model(res)
   {
-    aux, res := reverseAux(aux, res);
+    aux, res := ReverseAux(aux, res);
   }
 }
 
-function method PrevNode<A>(head: NonEmpty<A>, mid: NonEmpty<A>):
+function PrevNode<A>(head: NonEmpty<A>, mid: NonEmpty<A>):
     (prev: NonEmpty<A>)
   decreases Repr(head)
   reads head, head.repr, mid, mid.repr
@@ -206,13 +201,8 @@ lemma ValidUntilFromValid<A>(head: NonEmpty<A>, mid: NonEmpty<A>)
   requires head.Valid()
   ensures head.ValidUntil(mid) && mid.Valid()
 {
-  if head == mid {
-    assert mid.Valid();
-  } else if head.next != null {
+  if head != mid && head.next != null {
     ValidUntilFromValid(head.next, mid);
-    assert mid.Valid();
-  } else {
-    assert mid.Valid();
   }
 }
 
@@ -225,7 +215,6 @@ ghost method Repair(prevs: seq<NonEmpty<int>>, mid: List<int>)
   requires prevs != [] ==> prevs[|prevs|-1].next == mid
   requires Valid(mid)
   ensures Valid(mid)
-  // ensures prevs != [] ==> prevs[0].Valid()
   ensures forall n | n in multiset(prevs) :: n.Valid()
 {
   if prevs != [] {
@@ -286,15 +275,13 @@ function TakeSeq<A>(head: List<A>, mid: List<A>): (res: seq<NonEmpty<A>>)
   requires Valid(head)
   requires Valid(mid)
   requires mid in Repr(head)
-  ensures res != [] ==> res[0] == head && res[|res|-1].next == mid
+  ensures res != [] ==> res[0] == head && res[|res|-1].IsPrevOf(mid)
   ensures forall n | n in res :: n in Repr(head)
-  ensures forall i | 0 <= i < |res|-1 :: res[i].next == res[i+1]
-  ensures mid !in multiset(res)
+  ensures mid !in res
   ensures forall n | n in multiset(res) :: n !in Repr(mid)
   ensures forall i, j | 0 <= i < j < |res| :: res[i] != res[j]
-  ensures forall i | 0 <= i < |res|-1 :: res[i].next == res[i+1]
-  ensures res != [] ==> res[|res|-1].next == mid
-  ensures mid !in res
+  ensures forall i | 0 <= i < |res|-1 :: res[i].IsPrevOf(res[i+1])
+  ensures res != [] ==> res[|res|-1].IsPrevOf(mid)
 {
   if head == mid then
     []
@@ -313,11 +300,11 @@ method InPlaceInsert(head: NonEmpty<int>, mid: NonEmpty<int>, x: int)
   ensures head.Valid() && mid.Valid()
 {
   ghost var prevs := TakeSeq(head, mid);
-  assert forall i | 0 <= i < |prevs|-1 :: prevs[i].next == prevs[i+1];
-  assert prevs != [] ==> prevs[|prevs|-1].next == mid;
+  assert forall i | 0 <= i < |prevs|-1 :: prevs[i].IsPrevOf(prevs[i+1]);
+  assert prevs != [] ==> prevs[|prevs|-1].IsPrevOf(mid);
   var n := new NonEmpty(x);
-  assert forall i | 0 <= i < |prevs|-1 :: prevs[i].next == prevs[i+1];
-  assert prevs != [] ==> prevs[|prevs|-1].next == mid;
+  assert forall i | 0 <= i < |prevs|-1 :: prevs[i].IsPrevOf(prevs[i+1]);
+  assert prevs != [] ==> prevs[|prevs|-1].IsPrevOf(mid);
   n.next := mid.next;
   n.repr := Repr(mid.next) + {n};
   mid.next := n;

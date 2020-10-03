@@ -8,3 +8,11 @@ function method elems<A>(l: array<A>): set<A>
 {
   set x | x in l[..]
 }
+
+function rev<A>(xs: seq<A>): seq<A>
+{
+  if |xs| == 0 then
+    []
+  else
+    rev(xs[1..]) + [xs[0]]
+}
