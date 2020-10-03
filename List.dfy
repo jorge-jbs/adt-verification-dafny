@@ -244,12 +244,11 @@ lemma IsBeforeStepRight<A>(a: NonEmpty<A>, b: NonEmpty<A>)
   decreases a.repr
   requires Valid(a)
   requires Valid(b)
-  requires a != b
   requires b.next != null
   requires a.IsBefore(b)
   ensures a.IsBefore(b.next)
 {
-  if a.next != b {
+  if a != b && a.next != b {
     IsBeforeStepRight(a.next, b);
   }
 }
