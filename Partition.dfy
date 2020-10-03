@@ -75,7 +75,7 @@ class EquivClass {
 
   static lemma IsDescOfTrans(a: EquivClass, b: EquivClass, c: EquivClass)
     decreases a.repr
-    requires a.Valid() && b.Valid() && c.Valid()
+    requires a.Valid()
     requires a.IsDescOf(b) && b.IsDescOf(c)
     ensures a.IsDescOf(c)
   {
@@ -420,7 +420,6 @@ class Partition {
     ensures ValidTree(dt)
     ensures ValidTreeRepr(dt)
     ensures forall c | c in elemsTree(dt) :: c.repr <= elemsTree(dt) + dt.root.repr
-    ensures forall e: EquivClass | e in classes[..] :: old(e.Valid()) ==> e.Valid()
   {
     var p := dt.root;
     var cs := dt.children;
@@ -572,36 +571,35 @@ class Partition {
       return c;
     } else {
       res := findAux(c.parent);
-      assert res.Valid();
-      assert Valid();
       ghost var dt := DescendantsTree(c);
       c.parent := res;
       // c.height := 1;
       ghost var orepr := c.repr;
       c.repr := {c, res};
-      assert c.Valid();
       ghost var cs: set<EquivClass> := Descendants(c);
-      assert forall e | e in cs :: e in multiset(classes[..]);
-      assert forall e | e in classes[..] && e !in cs :: e.Valid();
+      forall e, d
+        | e in classes[..]
+        && e !in (elemsTree(dt) - {dt.root})
+        && d in e.repr
+        && d in elemsTree(dt)
+        ensures e in elemsTree(dt);
+      {
+        EquivClass.IsDescOfTrans(e, d, c);
+      }
       RepairDescendants(dt);
-      assert forall e | e in cs :: e.Valid();
-      assert forall e: EquivClass | e in classes[..] :: e.Valid();
-      assert Valid();
     }
   }
 
-  /*
   method find(i: nat) returns (res: EquivClass)
-    modifies this, elems
-    modifies set x | x in elems[..]
-    modifies BigUnion(set e: EquivClass | e in elems[..] :: e.repr)
+    modifies this, classes
+    modifies set x | x in classes[..]
+    modifies BigUnion(set e: EquivClass | e in classes[..] :: e.repr)
     requires Valid()
-    requires 0 <= i < elems.Length
+    requires 0 <= i < classes.Length
     ensures res.parent == null
     ensures res.Valid()
     ensures Valid()
   {
-    res := findAux(elems[i]);
+    res := findAux(classes[i]);
   }
-  */
 }
