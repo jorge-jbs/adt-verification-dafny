@@ -35,7 +35,7 @@ class NonEmpty<A> {
       )
   }
 
-  constructor Init(d: A)
+  constructor(d: A)
     ensures Valid()
     ensures fresh(repr - {this})
     ensures data == d
@@ -114,7 +114,7 @@ method Cons<A>(x: A, xs: List<A>) returns (res: NonEmpty<A>)
   ensures fresh(Repr(res) - Repr(xs))
   ensures Repr(res) >= Repr(xs)
 {
-  res := new NonEmpty.Init(x);
+  res := new NonEmpty(x);
   res.next := xs;
   if res.next != null {
     res.repr := {res} + res.next.repr;
@@ -315,7 +315,7 @@ method InPlaceInsert(head: NonEmpty<int>, mid: NonEmpty<int>, x: int)
   ghost var prevs := TakeSeq(head, mid);
   assert forall i | 0 <= i < |prevs|-1 :: prevs[i].next == prevs[i+1];
   assert prevs != [] ==> prevs[|prevs|-1].next == mid;
-  var n := new NonEmpty.Init(x);
+  var n := new NonEmpty(x);
   assert forall i | 0 <= i < |prevs|-1 :: prevs[i].next == prevs[i+1];
   assert prevs != [] ==> prevs[|prevs|-1].next == mid;
   n.next := mid.next;
