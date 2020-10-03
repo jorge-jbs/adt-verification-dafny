@@ -1,0 +1,15 @@
+image: nixos/unstable
+repositories:
+  nixpkgs: https://nixos.org/channels/nixos-19.09
+packages:
+  - nixpkgs.dafny
+  - nixpkgs.mono
+  - nixpkgs.z3
+secrets:
+  - b968ff3a-accf-41a3-ba80-dd896a29d569
+sources:
+  - git@git.sr.ht:~jorge-jbs/TFG
+tasks:
+  - build: |
+      cd TFG
+      for f in $(find . | grep .dfy$); do time dafny $f; done
