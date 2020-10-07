@@ -46,10 +46,41 @@ class List<A> {
   {
   }
 
+  lemma HeadNotInTailAux(n: nat)
+    decreases |spine| - n
+    requires Valid()
+    requires head != null
+    requires 0 <= n <= |spine|
+    ensures forall i, j | n <= i < j < |spine| :: spine[i] != spine[j]
+  {
+    if n == |spine| {
+      assert spine[n..] == [];
+    } else {
+      HeadNotInTailAux(n+1);
+      assert forall i, j | n+1 <= i < j < |spine| :: spine[i] != spine[j];
+      if exists x :: x in spine[n+1..] && spine[n] == x {
+        var x: Node<A>; x :| x in spine[n+1..] && spine[n] == x;
+        assert x.next == spine[n+1];
+        assert exists i | n+1 <= i < |spine| :: spine[i] == x;
+        var i: nat; i :| n+1 <= i < |spine| && spine[i] == x;
+        assert spine[i].next == spine[n+1];
+        assert spine[i].next == spine[i+1];
+        assert n <= i;
+        assert n < i+1;
+        assert false;
+      }
+      assert forall x | x in spine[n+1..] :: spine[n] != x;
+      assert forall i, j | n <= i < j < |spine| :: spine[i] != spine[j];
+    }
+  }
+
   lemma HeadNotInTail()
     requires Valid()
     requires head != null
     ensures head !in spine[1..]
+  {
+    HeadNotInTailAux(0);
+  }
 
   static function ModelAux(xs: seq<Node<A>>): seq<A>
     reads multiset(xs)
