@@ -23,6 +23,12 @@ class List<A> {
   var head: Node?<A>;
   var spine: seq<Node<A>>;
 
+  function Repr(): set<object>
+    reads this, spine
+  {
+    set x | x in spine
+  }
+
   predicate Valid()
     reads this, spine
   {
@@ -39,6 +45,11 @@ class List<A> {
     ensures head != null ==> head in spine
   {
   }
+
+  lemma HeadNotInTail()
+    requires Valid()
+    requires head != null
+    ensures head !in spine[1..]
 
   static function ModelAux(xs: seq<Node<A>>): seq<A>
     reads multiset(xs)
@@ -69,12 +80,14 @@ class List<A> {
     requires head != null
     requires Valid()
     ensures Valid()
-    ensures res == old(head.data)
+    // ensures res == old(head.data)
+    ensures res == old(Model())[0]
     ensures [res] + Model() == old(Model())
-    ensures [old(head)] + spine == old(spine)
+    // ensures [old(head)] + spine == old(spine)
+    ensures Repr() < old(Repr())
   {
     res := head.data;
-    if head.next == null {
+    if head.next == null {  // Ghost code to prove `Valid()`
       if |spine| != 1 {
         assert |spine| >= 2;
         assert spine[0].next == spine[1];
@@ -84,11 +97,15 @@ class List<A> {
       }
       assert spine == [head];
     }
+    HeadNotInTail();
     head := head.next;
     spine := spine[1..];
-    if head == null {
+    if head == null {  // Ghost code to prove `Valid()`
       assert spine == [];
     }
+    assert old(spine[0]) !in Repr();
+    assert old(spine[0]) in old(Repr());
+    assert Repr() < old(Repr());
   }
 
   method Push(x: A)
@@ -96,18 +113,18 @@ class List<A> {
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
-    ensures spine == [head] + old(spine)
-    ensures fresh(Seq.Elems(spine) - old(Seq.Elems(spine)))
-    ensures fresh(Seq.Elems(spine) - Seq.Elems(old(spine)))
-    // ensures fresh(multiset(spine) - old(multiset(spine)))
-    ensures fresh(head)
+    // ensures spine == [head] + old(spine)
+    ensures Repr() > old(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    // ensures fresh(head)
   {
     head := new Node(x, head);
     spine := [head] + spine;
+    assert head !in old(Repr());
   }
 
   method Append(other: List<A>)
-    decreases spine
+    decreases Repr()
     modifies this
     requires Valid()
     requires other.Valid()
@@ -135,47 +152,17 @@ class List<A> {
     requires head != null
     requires Valid()
     requires other.Valid()
-    requires multiset(spine) !! multiset(other.spine)
-    ensures multiset(spine) !! multiset(other.spine)
+    requires Repr() !! other.Repr()
+    ensures Repr() !! other.Repr()
     ensures Valid()
     ensures other.Valid()
-    // ensures Seq.Rev(old(spine)) + old(other.spine) == Seq.Rev(spine) + other.spine
-    ensures old(multiset(spine)) > multiset(spine)
+    ensures old(Repr()) > Repr()
+    ensures old(other.Repr()) < other.Repr()
     ensures Seq.Rev(old(Model())) + old(other.Model())
       == Seq.Rev(Model()) + other.Model()
   {
-    ghost var ospine := spine;
-    ghost var ootherspine := other.spine;
-    ghost var ohead := head;
-    assert multiset(spine) !! multiset(other.spine);
-    other.HeadInSpine();
-    assert head in spine;
-    if other.head == null {
-      assert this != other;
-    } else {
-      assert other.head in other.spine;
-      assert multiset(spine) !! multiset(other.spine);
-      // assert forall x :: x in multiset(spine) ==> x !in multiset(other.spine);
-      assert forall x :: x in multiset(spine) <== x !in multiset(other.spine);
-      assert forall x :: x in multiset(spine) <==> x !in multiset(other.spine);
-      assert forall xs: seq<A>, x: A :: x in xs <==> x in multiset(xs);
-      Seq.InEquivInMultiset(spine);
-      assert forall x :: x in spine <==> x in multiset(spine);
-      assert forall x :: x in other.spine <==> x in multiset(other.spine);
-      assert forall x :: x in spine <== x !in other.spine;
-      assert head != other.head;
-      assert this != other;
-    }
-    assert this != other;
-    assert multiset(spine) !! multiset(other.spine);
-    assert this != other;
     var x := Pop();
-    assert this != other;
-    assert multiset(spine) !! multiset(other.spine);
-    assert this != other;
     other.Push(x);
-    assert this != other;
-    assert multiset(spine) !! multiset(other.spine);
   }
 
   method Reverse()
@@ -184,18 +171,17 @@ class List<A> {
     ensures Valid()
     ensures Model() == Seq.Rev(old(Model()))
   {
-    ghost var omodel := Model();
     var aux := new List();
     aux.head := head;
     aux.spine := spine;
     head := null;
     spine := [];
     while aux.head != null
-      decreases multiset(aux.spine)
+      decreases aux.Repr()
       invariant Valid()
       invariant aux.Valid()
-      invariant Seq.Rev(omodel) == Seq.Rev(aux.Model()) + Model()
-      invariant multiset(spine) !! multiset(aux.spine);
+      invariant Seq.Rev(old(Model())) == Seq.Rev(aux.Model()) + Model()
+      invariant Repr() !! aux.Repr();
     {
       aux.PopPush(this);
     }
