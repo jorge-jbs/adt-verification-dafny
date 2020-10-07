@@ -19,13 +19,13 @@ class Partition {
   var classes: array<EquivClass>;
 
   function ValidReads(): set<object>
-    reads this, classes, elems(classes)
+    reads this, classes, Array.elems(classes)
   {
     BigUnion(set e: EquivClass | e in classes[..] :: e.repr)
   }
 
   predicate Valid()
-    reads this, classes, elems(classes), ValidReads()
+    reads this, classes, Array.elems(classes), ValidReads()
   {
     (forall e: EquivClass | e in classes[..] ::
       e.Valid()
@@ -58,14 +58,14 @@ class Partition {
   }
 
   function Descendants(p: EquivClass): set<EquivClass>
-    reads this, classes, elems(classes), ValidReads()
+    reads this, classes, Array.elems(classes), ValidReads()
     requires p in classes[..]
   {
     set c | c in classes[..] && c.IsDescOf(p)
   }
 
   function Children(p: EquivClass): set<EquivClass>
-    reads this, classes, elems(classes), ValidReads()
+    reads this, classes, Array.elems(classes), ValidReads()
     requires p in classes[..]
   {
     set c | c in classes[..] && c.IsChildOf(p)
@@ -203,8 +203,8 @@ class Partition {
   }
 
   function DescendantsTree(p: EquivClass): Tree<EquivClass>
-    decreases elems(classes) - p.repr
-    reads this, classes, elems(classes), ValidReads()
+    decreases Array.elems(classes) - p.repr
+    reads this, classes, Array.elems(classes), ValidReads()
     requires Valid()
     requires p in classes[..]
     ensures elemsTree(DescendantsTree(p)) == Descendants(p)
@@ -256,7 +256,7 @@ class Partition {
 
   method FindAux(c: EquivClass) returns (res: EquivClass)
     decreases c.repr
-    modifies elems(classes)
+    modifies Array.elems(classes)
     requires c in classes[..]
     requires Valid()
     requires c.Valid()
@@ -292,7 +292,7 @@ class Partition {
   }
 
   method Find(i: nat) returns (res: EquivClass)
-    modifies elems(classes)
+    modifies Array.elems(classes)
     requires Valid()
     requires 0 <= i < classes.Length
     ensures res.parent == null
