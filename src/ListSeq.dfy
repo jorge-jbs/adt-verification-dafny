@@ -46,7 +46,7 @@ class List<A> {
   {
   }
 
-  lemma HeadNotInTailAux(n: nat)
+  lemma DistinctSpineAux(n: nat)
     decreases |spine| - n
     requires Valid()
     requires head != null
@@ -56,7 +56,7 @@ class List<A> {
     if n == |spine| {
       assert spine[n..] == [];
     } else {
-      HeadNotInTailAux(n+1);
+      DistinctSpineAux(n+1);
       assert forall i, j | n+1 <= i < j < |spine| :: spine[i] != spine[j];
       if exists x :: x in spine[n+1..] && spine[n] == x {
         var x: Node<A>; x :| x in spine[n+1..] && spine[n] == x;
@@ -74,12 +74,21 @@ class List<A> {
     }
   }
 
+  lemma DistinctSpine()
+    requires Valid()
+    ensures forall i, j | 0 <= i < j < |spine| :: spine[i] != spine[j]
+  {
+    if head != null {
+      DistinctSpineAux(0);
+    }
+  }
+
   lemma HeadNotInTail()
     requires Valid()
     requires head != null
     ensures head !in spine[1..]
   {
-    HeadNotInTailAux(0);
+    DistinctSpine();
   }
 
   static function ModelAux(xs: seq<Node<A>>): seq<A>
@@ -216,5 +225,19 @@ class List<A> {
     {
       aux.PopPush(this);
     }
+  }
+
+  method Insert(mid: Node<A>, x: A)
+    modifies this, mid
+    requires head != mid
+    requires Valid()
+    requires mid in Repr()
+    ensures Valid()
+  {
+    DistinctSpine();
+    var n := new Node(x, mid.next);
+    mid.next := n;
+    var i: nat; i :| 0 <= i < |spine| && spine[i] == mid;
+    spine := spine[..i+1] + [n] + spine[i+1..];
   }
 }
