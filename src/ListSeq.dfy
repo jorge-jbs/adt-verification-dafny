@@ -236,7 +236,7 @@ class List<A> {
     DistinctSpine();
     var n := new Node(x, mid.next);
     mid.next := n;
-    var i: nat; i :| 0 <= i < |spine| && spine[i] == mid;
+    var i :| 0 <= i < |spine| && spine[i] == mid;
     spine := spine[..i+1] + [n] + spine[i+1..];
   }
 }
