@@ -229,7 +229,6 @@ class List<A> {
 
   method Insert(mid: Node<A>, x: A)
     modifies this, mid
-    requires head != mid
     requires Valid()
     requires mid in Repr()
     ensures Valid()
