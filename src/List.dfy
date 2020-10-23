@@ -299,10 +299,8 @@ method InPlaceInsert(head: NonEmpty<int>, mid: NonEmpty<int>, x: int)
   requires mid in head.repr
   ensures head.Valid() && mid.Valid()
 {
-  ghost var prevs := TakeSeq(head, mid);
-  assert forall i | 0 <= i < |prevs|-1 :: prevs[i].IsPrevOf(prevs[i+1]);
-  assert prevs != [] ==> prevs[|prevs|-1].IsPrevOf(mid);
   var n := new NonEmpty(x);
+  ghost var prevs := TakeSeq(head, mid);
   assert forall i | 0 <= i < |prevs|-1 :: prevs[i].IsPrevOf(prevs[i+1]);
   assert prevs != [] ==> prevs[|prevs|-1].IsPrevOf(mid);
   n.next := mid.next;
