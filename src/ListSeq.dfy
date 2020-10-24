@@ -49,7 +49,6 @@ class List<A> {
   lemma DistinctSpineAux(n: nat)
     decreases |spine| - n
     requires Valid()
-    requires head != null
     requires 0 <= n <= |spine|
     ensures forall i, j | n <= i < j < |spine| :: spine[i] != spine[j]
   {
@@ -78,9 +77,7 @@ class List<A> {
     requires Valid()
     ensures forall i, j | 0 <= i < j < |spine| :: spine[i] != spine[j]
   {
-    if head != null {
-      DistinctSpineAux(0);
-    }
+    DistinctSpineAux(0);
   }
 
   lemma HeadNotInTail()
@@ -101,7 +98,7 @@ class List<A> {
   }
 
   function Model(): seq<A>
-    reads this, spine, multiset(spine)
+    reads this, spine
     requires Valid()
   {
     ModelAux(spine)
@@ -117,13 +114,10 @@ class List<A> {
 
   method Pop() returns (res: A)
     modifies this
-    requires head != null
     requires Valid()
+    requires Model() != []
     ensures Valid()
-    // ensures res == old(head.data)
-    ensures res == old(Model())[0]
     ensures [res] + Model() == old(Model())
-    // ensures [old(head)] + spine == old(spine)
     ensures Repr() < old(Repr())
   {
     res := head.data;
@@ -153,10 +147,8 @@ class List<A> {
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
-    // ensures spine == [head] + old(spine)
     ensures Repr() > old(Repr())
     ensures fresh(Repr() - old(Repr()))
-    // ensures fresh(head)
   {
     head := new Node(x, head);
     spine := [head] + spine;
