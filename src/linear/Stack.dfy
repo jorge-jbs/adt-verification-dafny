@@ -1,13 +1,12 @@
 include "../../src/linear/ListSeq.dfy"
 
-class Queue<A> {
+class Stack<A> {
   var list: List<A>;
-  var last: Node?<A>;
 
   predicate Valid()
     reads this, list, list.spine
   {
-    list.Valid() && (last != null ==> (last in list.Repr() && last.next == null))
+    list.Valid()
   }
 
   function Repr(): set<object>
@@ -27,11 +26,19 @@ class Queue<A> {
     ensures Valid()
   {
     list := new List();
-    last := null;
   }
 
   // O(1)
-  method PushFront(x: A)
+  method Top() returns (x: A)
+    requires Valid()
+    requires Model() != []
+    ensures x == Model()[0]
+  {
+    x := list.head.data;
+  }
+
+  // O(1)
+  method Push(x: A)
     modifies list
     requires Valid()
     ensures Valid()
@@ -43,40 +50,14 @@ class Queue<A> {
   }
 
   // O(1)
-  method PopFront() returns (x: A)
+  method Pop() returns (x: A)
     modifies this, list
+    requires list.head != null
     requires Valid()
-    requires Model() != []
     ensures Valid()
     ensures [x] + Model() == old(Model())
     ensures Repr() < old(Repr())
-  /*
   {
-    if list.head == last {
-      last := null;
-    }
     x := list.Pop();
-    if list.head != last {
-      assert Valid();
-    }
   }
-  */
-
-  // O(1)
-  method PushBack(x: A)
-    modifies list
-    requires Valid()
-    ensures Valid()
-    ensures Model() == old(Model()) + [x]
-    ensures Repr() > old(Repr())
-    ensures fresh(Repr() - old(Repr()))
-
-  // O(n)
-  method PopBack(x: A)
-    modifies this, list
-    requires Valid()
-    requires Model() != []
-    ensures Valid()
-    ensures Model() + [x] == old(Model())
-    ensures Repr() < old(Repr())
 }
