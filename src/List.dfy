@@ -275,6 +275,7 @@ function TakeSeq<A>(head: List<A>, mid: List<A>): (res: seq<NonEmpty<A>>)
   requires Valid(head)
   requires Valid(mid)
   requires mid in Repr(head)
+  ensures head != mid ==> head in res
   ensures res != [] ==> res[0] == head && res[|res|-1].IsPrevOf(mid)
   ensures forall n | n in res :: n in Repr(head)
   ensures mid !in res
@@ -286,10 +287,16 @@ function TakeSeq<A>(head: List<A>, mid: List<A>): (res: seq<NonEmpty<A>>)
   if head == mid then
     []
   else
-    assume head in Repr(mid);
-    IsBeforeAntisym(head, mid);
-    assert head !in Repr(mid);
-    [head] + TakeSeq(head.next, mid)
+    if head in Repr(mid) then
+      IsBeforeAntisym(head, mid);
+      assert head !in Repr(mid);
+      assert false;
+      []
+    else
+      assert head !in Repr(mid);
+      var res := [head] + TakeSeq(head.next, mid);
+      assert res != [] ==> res[0] == head && res[|res|-1].IsPrevOf(mid);
+      res
 }
 
 method InPlaceInsert(head: NonEmpty<int>, mid: NonEmpty<int>, x: int)
