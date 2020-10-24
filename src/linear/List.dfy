@@ -1,4 +1,4 @@
-include "Utils.dfy"
+include "../../src/Utils.dfy"
 
 class NonEmpty<A> {
   ghost var repr: set<object>;

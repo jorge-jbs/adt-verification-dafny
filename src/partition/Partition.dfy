@@ -1,6 +1,6 @@
-include "Utils.dfy"
-include "EquivClass.dfy"
-include "Tree.dfy"
+include "../../src/Utils.dfy"
+include "../../src/partition/EquivClass.dfy"
+include "../../src/tree/Tree.dfy"
 
 predicate ValidTree(t: Tree<EquivClass>)
   decreases t

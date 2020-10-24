@@ -1,5 +1,5 @@
-include "BinTree.dfy"
-include "Order.dfy"
+include "../../src/tree/BinTree.dfy"
+include "../../src/Order.dfy"
 
 predicate isSearchTree<A>(t: BinTree<A>, le: (A, A) -> bool)
 {

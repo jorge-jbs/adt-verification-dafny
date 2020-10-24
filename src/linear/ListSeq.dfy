@@ -1,4 +1,4 @@
-include "Utils.dfy"
+include "../../src/Utils.dfy"
 
 class Node<A> {
   var data: A;
