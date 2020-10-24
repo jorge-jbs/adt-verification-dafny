@@ -168,15 +168,18 @@ class List<A> {
     spine := other.spine;
   }
 
-  method Pop() returns (res: A)
+  // Private method
+  method PopNode() returns (h: Node<A>)
     modifies this
     requires Valid()
     requires Model() != []
     ensures Valid()
-    ensures [res] + Model() == old(Model())
+    ensures [h] + spine == old(spine)
+    ensures Repr() + {h} == old(Repr())
+    ensures [h.data] + Model() == old(Model())
     ensures Repr() < old(Repr())
   {
-    res := head.data;
+    h := head;
     if head.next == null {  // Ghost code to prove `Valid()`
       if |spine| != 1 {
         assert |spine| >= 2;
@@ -198,6 +201,35 @@ class List<A> {
     assert Repr() < old(Repr());
   }
 
+  method Pop() returns (res: A)
+    modifies this
+    requires Valid()
+    requires Model() != []
+    ensures Valid()
+    ensures [res] + Model() == old(Model())
+    ensures Repr() < old(Repr())
+  {
+    var tmp := PopNode();
+    res := tmp.data;
+  }
+
+  // Private method
+  method PushNode(h: Node<A>)
+    modifies this, h`next
+    requires Valid()
+    requires h !in Repr()
+    ensures Valid()
+    ensures spine == [h] + old(spine)
+    ensures Model() == [h.data] + old(Model())
+    ensures Repr() > old(Repr())
+    ensures Repr() == old(Repr()) + {h}
+  {
+    h.next := head;
+    head := h;
+    spine := [head] + spine;
+    assert head !in old(Repr());
+  }
+
   method Push(x: A)
     modifies this
     requires Valid()
@@ -206,9 +238,8 @@ class List<A> {
     ensures Repr() > old(Repr())
     ensures fresh(Repr() - old(Repr()))
   {
-    head := new Node(x, head);
-    spine := [head] + spine;
-    assert head !in old(Repr());
+    var n := new Node(x, null);
+    PushNode(n);
   }
 
   method Append(other: List<A>)
@@ -244,7 +275,7 @@ class List<A> {
   }
 
   method PopPush(other: List<A>)
-    modifies this, other
+    modifies this, other, Repr(), other.Repr()
     requires head != null
     requires Valid()
     requires other.Valid()
@@ -253,19 +284,22 @@ class List<A> {
     ensures Valid()
     ensures other.Valid()
     ensures old(Repr()) > Repr()
+    ensures Repr() + {old(head)} == old(Repr())
     ensures old(other.Repr()) < other.Repr()
+    ensures other.Repr() == old(other.Repr()) + {old(head)}
     ensures Seq.Rev(old(Model())) + old(other.Model())
       == Seq.Rev(Model()) + other.Model()
   {
-    var x := Pop();
-    other.Push(x);
+    var n := PopNode();
+    other.PushNode(n);
   }
 
   method Reverse()
-    modifies this
+    modifies this, Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == Seq.Rev(old(Model()))
+    ensures Repr() == old(Repr())
   {
     var aux := new List();
     aux.head := head;
@@ -278,11 +312,13 @@ class List<A> {
       invariant aux.Valid()
       invariant Seq.Rev(old(Model())) == Seq.Rev(aux.Model()) + Model()
       invariant Repr() !! aux.Repr();
+      invariant old(Repr()) == Repr() + aux.Repr()
     {
       aux.PopPush(this);
     }
   }
 
+  // Private method
   method Insert(mid: Node<A>, x: A)
     modifies this, mid
     requires Valid()
