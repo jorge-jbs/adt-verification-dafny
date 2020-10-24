@@ -27,7 +27,7 @@ class Partition {
   predicate Valid()
     reads this, classes, Array.elems(classes), ValidReads()
   {
-    (forall e: EquivClass | e in classes[..] ::
+    && (forall e: EquivClass {:induction e} | e in classes[..] ::
       e.Valid()
     )
     && (forall e: EquivClass, p: EquivClass | e in classes[..] && p in e.repr ::
