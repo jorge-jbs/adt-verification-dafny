@@ -6,11 +6,11 @@ predicate ValidTree(t: Tree<EquivClass>)
   decreases t
   reads set c | c in elemsTree(t) :: c`parent
 {
-  (forall c | c in t.children ::
-    assert elemsTree(c) <= elemsTree(t);
-    c.root.parent == t.root
-    && t.root !in elemsTree(c)
-    && ValidTree(c))
+  && (forall c | c in t.children ::
+      assert elemsTree(c) <= elemsTree(t);
+      && c.root.parent == t.root
+      && t.root !in elemsTree(c)
+      && ValidTree(c))
   && (forall r, s | r != s && r in t.children && s in t.children ::
       elemsTree(r) !! elemsTree(s))
 }
@@ -28,11 +28,9 @@ class Partition {
     reads this, classes, Array.elems(classes), ValidReads()
   {
     && (forall e: EquivClass {:induction e} | e in classes[..] ::
-      e.Valid()
-    )
+        e.Valid())
     && (forall e: EquivClass, p: EquivClass | e in classes[..] && p in e.repr ::
-        p in classes[..]
-      )
+        p in classes[..])
     && (forall j, k | 0 <= j < k < classes.Length :: classes[j] != classes[k])
   }
 
@@ -277,17 +275,19 @@ class Partition {
       // c.height := 1;
       ghost var orepr := c.repr;
       c.repr := {c, res};
-      ghost var cs: set<EquivClass> := Descendants(c);
-      forall e, d
-        | e in classes[..]
-        && e !in (elemsTree(dt) - {dt.root})
-        && d in e.repr
-        && d in elemsTree(dt)
-        ensures e in elemsTree(dt);
-      {
-        EquivClass.IsDescOfTrans(e, d, c);
+      { // GHOST
+        ghost var cs: set<EquivClass> := Descendants(c);
+        forall e: EquivClass, d
+          | e in classes[..]
+          && e !in (elemsTree(dt) - {dt.root})
+          && d in e.repr // && e.IsDescOf(d)
+          && d in elemsTree(dt)
+          ensures e in elemsTree(dt);
+        {
+          EquivClass.IsDescOfTrans(e, d, dt.root);
+        }
+        RepairDescendants(dt);
       }
-      RepairDescendants(dt);
     }
   }
 

@@ -8,7 +8,7 @@ class NonEmpty<A> {
   predicate Valid()
     reads this, repr
   {
-    this in repr
+    && this in repr
     && ( next != null ==>
           next in repr
           && repr == {this} + next.repr
@@ -23,12 +23,12 @@ class NonEmpty<A> {
   predicate ValidUntil(n: NonEmpty<A>)
     reads this, repr
   {
-    this in repr
+    && this in repr
     && n in repr
     && ( if this == n || next == n then
           true
         else if next != null then
-          next in repr
+          && next in repr
           && repr == {this} + next.repr
           && this !in next.repr
           && next.ValidUntil(n)
@@ -220,9 +220,7 @@ ghost method Repair(prevs: seq<NonEmpty<int>>, mid: List<int>)
   if prevs != [] {
     var prev := prevs[|prevs|-1];
     assert prev in multiset(prevs);
-    assert Valid(mid);
     prev.repr := {prev} + Repr(mid);
-    assert prev.Valid();
     assert prevs == prevs[..|prevs|-1] + prevs[|prevs|-1..|prevs|];
     assert multiset(prevs[..|prevs|-1]) <= multiset(prevs);
     Repair(prevs[..|prevs|-1], prev);
@@ -314,7 +312,7 @@ method InPlaceInsert(head: NonEmpty<int>, mid: NonEmpty<int>, x: int)
   n.repr := Repr(mid.next) + {n};
   mid.next := n;
   mid.repr := {n} + mid.repr;
-  Repair(prevs, mid);
+  /*GHOST*/ Repair(prevs, mid);
   assert Valid(head);
   assert Valid(mid);
 }

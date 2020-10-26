@@ -57,19 +57,15 @@ class List<A> {
     } else {
       DistinctSpineAux(n+1);
       assert forall i, j | n+1 <= i < j < |spine| :: spine[i] != spine[j];
-      if exists x :: x in spine[n+1..] && spine[n] == x {
-        var x: Node<A>; x :| x in spine[n+1..] && spine[n] == x;
-        assert x.next == spine[n+1];
-        assert exists i | n+1 <= i < |spine| :: spine[i] == x;
-        var i: nat; i :| n+1 <= i < |spine| && spine[i] == x;
-        assert spine[i].next == spine[n+1];
-        assert i+1 < |spine|;
-        assert spine[i].next == spine[i+1];
-        assert n <= i;
-        assert n < i+1;
+      if spine[n] in spine[n+1..] {
+        assert spine[n].next == spine[n+1];
+        var i: nat :| n + 1 <= i < |spine| && spine[i] == spine[n];
+        assert spine[n].next == spine[i].next == spine[i+1];
+        assert n + 1 < i + 1;
+        assert spine[i+1] != spine[n+1] && spine[i+1] == spine[n+1];
         assert false;
       }
-      assert forall x | x in spine[n+1..] :: spine[n] != x;
+      assert spine[n] !in spine[n+1..];
       assert forall i, j | n <= i < j < |spine| :: spine[i] != spine[j];
     }
   }
@@ -102,6 +98,21 @@ class List<A> {
       assert spine[i+1] == null;
       assert spine[i+1] != null;
       assert false;
+    }
+  }
+
+  lemma HeadNextNullImpliesSingleton()
+    requires Valid()
+    requires head != null
+    requires head.next == null
+    ensures spine == [head]
+  {
+    if |spine| != 1 {
+      assert |spine| >= 2;
+      assert spine[0].next == spine[1];
+      assert false;
+    } else {
+      assert spine == [head];
     }
   }
 
@@ -180,22 +191,14 @@ class List<A> {
     ensures Repr() < old(Repr())
   {
     h := head;
-    if head.next == null {  // Ghost code to prove `Valid()`
-      if |spine| != 1 {
-        assert |spine| >= 2;
-        assert spine[0].next == spine[1];
-        assert false;
-      } else {
-        assert spine == [head];
+    { // GHOST
+      if head.next == null {
+        HeadNextNullImpliesSingleton();
       }
-      assert spine == [head];
+      HeadNotInTail();
     }
-    HeadNotInTail();
     head := head.next;
     spine := spine[1..];
-    if head == null {  // Ghost code to prove `Valid()`
-      assert spine == [];
-    }
     assert old(spine[0]) !in Repr();
     assert old(spine[0]) in old(Repr());
     assert Repr() < old(Repr());
@@ -267,10 +270,10 @@ class List<A> {
         last := last.next;
         i := i + 1;
       }
-      NextNullImpliesLast(last);
+      /*GHOST*/ NextNullImpliesLast(last);
       last.next := other.head;
       spine := spine + other.spine;
-      ModelAuxCommutesConcat(old(spine), other.spine);
+      /*GHOST*/ ModelAuxCommutesConcat(old(spine), other.spine);
     }
   }
 
@@ -325,10 +328,12 @@ class List<A> {
     requires mid in Repr()
     ensures Valid()
   {
-    DistinctSpine();
+    /*GHOST*/ DistinctSpine();
     var n := new Node(x, mid.next);
     mid.next := n;
-    var i :| 0 <= i < |spine| && spine[i] == mid;
-    spine := spine[..i+1] + [n] + spine[i+1..];
+    { // GHOST
+      var i :| 0 <= i < |spine| && spine[i] == mid;
+      spine := spine[..i+1] + [n] + spine[i+1..];
+    }
   }
 }
