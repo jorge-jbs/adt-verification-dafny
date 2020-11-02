@@ -24,6 +24,9 @@ class Stack<A> {
 
   constructor()
     ensures Valid()
+    ensures fresh(list)
+    ensures Model() == []
+    ensures Repr() == {}
   {
     list := new List();
   }
@@ -45,13 +48,14 @@ class Stack<A> {
     ensures Model() == [x] + old(Model())
     ensures Repr() > old(Repr())
     ensures fresh(Repr() - old(Repr()))
+    ensures list == old(list)
   {
     list.Push(x);
   }
 
   // O(1)
   method Pop() returns (x: A)
-    modifies this, list
+    modifies list
     requires list.head != null
     requires Valid()
     ensures Valid()
