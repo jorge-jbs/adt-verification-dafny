@@ -21,7 +21,7 @@ class Node<A> {
 
 class List<A> {
   var head: Node?<A>;
-  var spine: seq<Node<A>>;
+  ghost var spine: seq<Node<A>>;
 
   function Repr(): set<object>
     reads this, spine
@@ -165,7 +165,7 @@ class List<A> {
     ensures fresh(Repr())
   {
     head := null;
-    spine := [];
+    /*GHOST*/ spine := [];
   }
 
   method Copy(other: List<A>)
@@ -176,7 +176,7 @@ class List<A> {
     ensures Repr() == other.Repr()
   {
     head := other.head;
-    spine := other.spine;
+    /*GHOST*/ spine := other.spine;
   }
 
   // Private method
@@ -198,7 +198,7 @@ class List<A> {
       HeadNotInTail();
     }
     head := head.next;
-    spine := spine[1..];
+    /*GHOST*/ spine := spine[1..];
     assert old(spine[0]) !in Repr();
     assert old(spine[0]) in old(Repr());
     assert Repr() < old(Repr());
@@ -229,7 +229,7 @@ class List<A> {
   {
     h.next := head;
     head := h;
-    spine := [head] + spine;
+    /*GHOST*/ spine := [head] + spine;
     assert head !in old(Repr());
   }
 
@@ -257,7 +257,7 @@ class List<A> {
   {
     if head == null {
       head := other.head;
-      spine := other.spine;
+      /*GHOST*/ spine := other.spine;
     } else {
       var last := head;
       ghost var i := 0;
@@ -268,11 +268,11 @@ class List<A> {
         invariant spine[i] == last
       {
         last := last.next;
-        i := i + 1;
+        /*GHOST*/ i := i + 1;
       }
       /*GHOST*/ NextNullImpliesLast(last);
       last.next := other.head;
-      spine := spine + other.spine;
+      /*GHOST*/ spine := spine + other.spine;
       /*GHOST*/ ModelAuxCommutesConcat(old(spine), other.spine);
     }
   }
@@ -306,9 +306,9 @@ class List<A> {
   {
     var aux := new List();
     aux.head := head;
-    aux.spine := spine;
+    /*GHOST*/ aux.spine := spine;
     head := null;
-    spine := [];
+    /*GHOST*/ spine := [];
     while aux.head != null
       decreases aux.Repr()
       invariant Valid()
@@ -332,7 +332,7 @@ class List<A> {
     var n := new Node(x, mid.next);
     mid.next := n;
     { // GHOST
-      var i :| 0 <= i < |spine| && spine[i] == mid;
+      ghost var i :| 0 <= i < |spine| && spine[i] == mid;
       spine := spine[..i+1] + [n] + spine[i+1..];
     }
   }
