@@ -211,6 +211,7 @@ class List<A> {
     ensures Valid()
     ensures [res] + Model() == old(Model())
     ensures Repr() < old(Repr())
+    /*private*/ ensures spine == old(spine[1..])
   {
     var tmp := PopNode();
     res := tmp.data;
@@ -240,6 +241,7 @@ class List<A> {
     ensures Model() == [x] + old(Model())
     ensures Repr() > old(Repr())
     ensures fresh(Repr() - old(Repr()))
+    /*private*/ ensures spine[1..] == old(spine)
   {
     var n := new Node(x, null);
     PushNode(n);
@@ -327,6 +329,11 @@ class List<A> {
     requires Valid()
     requires mid in Repr()
     ensures Valid()
+    ensures mid.next != null
+    ensures fresh(mid.next)
+    ensures mid.next in spine
+    ensures mid.next.next == old(mid.next)
+    ensures forall n | n in old(spine) :: n in spine
   {
     /*GHOST*/ DistinctSpine();
     var n := new Node(x, mid.next);
@@ -334,6 +341,46 @@ class List<A> {
     { // GHOST
       ghost var i :| 0 <= i < |spine| && spine[i] == mid;
       spine := spine[..i+1] + [n] + spine[i+1..];
+    }
+  }
+
+  // Private method
+  method RemoveNext(mid: Node<A>)
+    modifies this, mid
+    requires Valid()
+    requires mid in Repr()
+    requires mid.next != null
+    ensures Valid()
+    ensures mid.next == old(mid.next.next)
+    ensures forall n | n in old(spine) && n != old(mid.next) :: n in spine
+  {
+    /*GHOST*/ DistinctSpine();
+    ghost var i :| 0 <= i < |spine| && spine[i] == mid;
+    assert spine[i+1] == mid.next;
+    assert i+2 < |spine| ==> spine[i+2] == mid.next.next;
+    mid.next := mid.next.next;
+    /*GHOST*/ spine := spine[..i+1] + spine[i+2..];
+  }
+
+  // Private method
+  method FindPrev(mid: Node<A>) returns (prev: Node<A>)
+    requires Valid()
+    requires head != mid
+    requires mid in Repr()
+    ensures prev in Repr()
+    ensures prev.next == mid
+  {
+    prev := head;
+    ghost var i := 0;
+    while prev.next != mid
+      decreases |spine| - i
+      invariant 0 <= i < |spine|
+      invariant mid in spine[i+1..]
+      invariant spine[i] == prev
+    {
+      assert spine[i+1] == prev.next;
+      prev := prev.next;
+      /*GHOST*/ i := i + 1;
     }
   }
 }

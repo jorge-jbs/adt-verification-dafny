@@ -7,7 +7,12 @@ class Queue<A> {
   predicate Valid()
     reads this, list, list.spine
   {
-    list.Valid() && (last != null ==> (last in list.Repr() && last.next == null))
+    && list.Valid()
+    && (if last == null then
+        list.head == null
+      else
+        last in list.Repr() && last.next == null
+      )
   }
 
   function Repr(): set<object>
@@ -32,14 +37,18 @@ class Queue<A> {
 
   // O(1)
   method PushFront(x: A)
-    modifies list
+    modifies this, list
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
     ensures Repr() > old(Repr())
     ensures fresh(Repr() - old(Repr()))
   {
+    var ohead := list.head;
     list.Push(x);
+    if ohead == null {
+      last := list.head;
+    }
   }
 
   // O(1)
@@ -50,33 +59,53 @@ class Queue<A> {
     ensures Valid()
     ensures [x] + Model() == old(Model())
     ensures Repr() < old(Repr())
-  /*
   {
     if list.head == last {
       last := null;
     }
     x := list.Pop();
-    if list.head != last {
-      assert Valid();
-    }
   }
-  */
 
   // O(1)
   method PushBack(x: A)
-    modifies list
+    modifies this, last, list
     requires Valid()
     ensures Valid()
-    ensures Model() == old(Model()) + [x]
-    ensures Repr() > old(Repr())
-    ensures fresh(Repr() - old(Repr()))
+    // ensures Model() == old(Model()) + [x]
+    // ensures Repr() > old(Repr())
+    // ensures fresh(Repr() - old(Repr()))
+  {
+    if last == null {
+      assert Model() == [];
+      list.Push(x);
+      last := list.head;
+    } else {
+      list.Insert(last, x);
+      last := last.next;
+      assert last != null;
+      assert Valid();
+    }
+  }
 
   // O(n)
-  method PopBack(x: A)
-    modifies this, list
+  method PopBack() returns (x: A)
+    modifies this, list, list.Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
-    ensures Model() + [x] == old(Model())
-    ensures Repr() < old(Repr())
+    // ensures Model() + [x] == old(Model())
+    // ensures Repr() < old(Repr())
+  {
+    if list.head == last {
+      x := list.head.data;
+      list.head := null;
+      /*GHOST*/ list.spine := [];
+      last := null;
+    } else {
+      var prev := list.FindPrev(last);
+      list.RemoveNext(prev);
+      last := prev;
+      x := prev.data;
+    }
+  }
 }
