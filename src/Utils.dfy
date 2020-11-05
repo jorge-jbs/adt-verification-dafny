@@ -21,6 +21,7 @@ module Seq {
   }
 
   function Map<A,B>(f: A -> B, xs: seq<A>): seq<B>
+    reads (set x: A, o: object | x in xs && o in f.reads(x) :: o)
   {
     if xs == [] then
       []
@@ -36,4 +37,20 @@ module Seq {
   lemma InEquivInMultiset<A>(xs: seq<A>)
     ensures forall x :: x in xs <==> x in multiset(xs)
   {}
+
+  function Insert<A>(x: A, xs: seq<A>, i: nat): seq<A>
+    requires 0 <= i <= |xs|
+    ensures i == 0 ==> Insert(x, xs, i) == [x] + xs
+    ensures i == |xs| ==> Insert(x, xs, i) == xs + [x]
+  {
+    xs[..i] + [x] + xs[i..]
+  }
+
+  function Remove<A>(xs: seq<A>, i: nat): seq<A>
+    requires 0 <= i < |xs|
+    ensures i == 0 ==> Remove(xs, i) == xs[1..]
+    ensures i == |xs| ==> Remove(xs, i) == xs[..|xs|-1]
+  {
+    xs[..i] + xs[i+1..]
+  }
 }

@@ -71,15 +71,19 @@ class Queue<A> {
     modifies this, last, list
     requires Valid()
     ensures Valid()
-    // ensures Model() == old(Model()) + [x]
-    // ensures Repr() > old(Repr())
-    // ensures fresh(Repr() - old(Repr()))
+    ensures Model() == old(Model()) + [x]
+    ensures Repr() > old(Repr())
+    ensures fresh(Repr() - old(Repr()))
   {
     if last == null {
       assert Model() == [];
       list.Push(x);
       last := list.head;
     } else {
+      { // GHOST
+        list.LastHasLastIndex(last);
+        list.ModelRelationWithSpine();
+      }
       list.Insert(last, x);
       last := last.next;
       assert last != null;
@@ -93,19 +97,34 @@ class Queue<A> {
     requires Valid()
     requires Model() != []
     ensures Valid()
-    // ensures Model() + [x] == old(Model())
-    // ensures Repr() < old(Repr())
+    ensures Model() + [x] == old(Model())
+    ensures Repr() < old(Repr())
   {
     if list.head == last {
+      assert list.head.next == null;
+      list.HeadNextNullImpliesSingleton();
+      assert list.spine == [list.head];
+      calc == {
+        list.Model();
+        list.ModelAux(list.spine);
+        [list.head.data];
+      }
       x := list.head.data;
       list.head := null;
       /*GHOST*/ list.spine := [];
       last := null;
+      assert old(list.Model()) == [x];
+      assert Model() + [x] == old(Model());
+      assert Repr() < old(Repr());
     } else {
+      /*GHOST*/ list.ModelRelationWithSpine();
       var prev := list.FindPrev(last);
+      assert prev in Repr();
+      assert last in Repr();
+      /*GHOST*/ list.PrevHasPrevIndex(prev, last);
       list.RemoveNext(prev);
+      x := last.data;
       last := prev;
-      x := prev.data;
     }
   }
 }
