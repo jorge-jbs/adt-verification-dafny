@@ -18,7 +18,6 @@ method BalancedTest(s: string) returns (b: bool)
     assert fresh(st.list);
     assert st.list in {st.list};
     // st.Push('(');
-    var x := st.Pop();
     i := i + 1;
   }
 }
