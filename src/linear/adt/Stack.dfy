@@ -1,4 +1,4 @@
-include "../../src/linear/ListSeq.dfy"
+include "../../../src/linear/implementation/SinglyLinkedListWithSpine.dfy"
 
 class Stack<A> {
   var list: List<A>;

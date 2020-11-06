@@ -1,4 +1,4 @@
-include "../../src/linear/ListSeq.dfy"
+include "../../../src/linear/implementation/SinglyLinkedListWithSpine.dfy"
 
 class Queue<A> {
   var list: List<A>;

@@ -1,4 +1,4 @@
-include "../../src/linear/Stack.dfy"
+include "../../../src/linear/adt/Stack.dfy"
 
 method BalancedTest(s: string) returns (b: bool)
 {

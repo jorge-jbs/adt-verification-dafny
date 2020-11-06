@@ -1,4 +1,4 @@
-include "../../src/linear/ListSeq.dfy"
+include "../../../src/linear/implementation/SinglyLinkedListWithSpine.dfy"
 
 // `Append` operation implemented externally.
 method Append<A>(self: List<A>, other: List<A>)
