@@ -1,21 +1,46 @@
 include "../../../src/linear/implementation/SinglyLinkedListWithSpine.dfy"
+include "../../../src/linear/interface/Stack.dfy"
 
-class Stack<A> {
-  var list: List<A>;
+class Stack1 extends Stack {
+  var list: List<int>;
+
+  function SizeOfRepr(): nat
+  {
+    1
+  }
+
+  function Repr0(): set<object>
+    reads this
+  {
+    {list}
+  }
+
+  function Repr1(): set<object>
+    reads this, Repr0()
+  {
+    {list} + list.Repr()
+  }
+
+  function ReprFamily(n: nat): set<object>
+    decreases n
+    ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
+    reads this, if n == 0 then {} else ReprFamily(n-1)
+  {
+    if n == 0 then
+      Repr0()
+    else if n == 1 then
+      Repr1()
+    else
+      ReprFamily(n-1)
+  }
 
   predicate Valid()
-    reads this, list, list.spine
+    reads this, Repr()
   {
     list.Valid()
   }
 
-  function Repr(): set<object>
-    reads this, list, list.spine
-  {
-    list.Repr()
-  }
-
-  function Model(): seq<A>
+  function Model(): seq<int>
     reads this, list, list.spine
     requires Valid()
   {
@@ -24,15 +49,14 @@ class Stack<A> {
 
   constructor()
     ensures Valid()
-    ensures fresh(list)
     ensures Model() == []
-    ensures Repr() == {}
+    ensures fresh(Repr())
   {
     list := new List();
   }
 
   // O(1)
-  method Top() returns (x: A)
+  method Top() returns (x: int)
     requires Valid()
     requires Model() != []
     ensures x == Model()[0]
@@ -41,7 +65,7 @@ class Stack<A> {
   }
 
   // O(1)
-  method Push(x: A)
+  method Push(x: int)
     modifies list
     requires Valid()
     ensures Valid()
@@ -54,7 +78,7 @@ class Stack<A> {
   }
 
   // O(1)
-  method Pop() returns (x: A)
+  method Pop() returns (x: int)
     modifies list
     requires list.head != null
     requires Valid()

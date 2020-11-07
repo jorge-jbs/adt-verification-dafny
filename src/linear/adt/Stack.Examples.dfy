@@ -1,23 +1,29 @@
 include "../../../src/linear/adt/Stack.dfy"
 
-method BalancedTest(s: string) returns (b: bool)
+method BalancedTest(s: string, st: Stack) returns (b: bool)
+  modifies st.Repr()
+  requires st.Valid()
+  requires st.Model() == []
 {
-  var st := new Stack<char>();
+  // var st1 := new Stack1();
+  // assert st1.Valid();
+  // var st: Stack := st1;
+  // assert st1.Valid();
+  // assert st.Valid();
   var i := 0;
+  // assert i !in st.Repr();
   while i < |s|
-    modifies st, st.list
-    invariant fresh(st)
-    invariant fresh(st.list)
-    // invariant fresh(st.list.head)
-    invariant st.list.head == null
-    invariant st.list.spine == []
-    invariant forall x | x in st.list.spine :: fresh(x)
+    modifies st.Repr()
+    invariant fresh(st.Repr() - old(st.Repr()))
     invariant st.Valid()
   {
-    assert fresh(st);
-    assert fresh(st.list);
-    assert st.list in {st.list};
-    // st.Push('(');
+    /*
+    ghost var orepr := st.Repr();
+    st.Push(1);
+    ghost var repr := st.Repr();
+    assert repr > orepr;
+    assert fresh(repr - orepr);
+    */
     i := i + 1;
   }
 }

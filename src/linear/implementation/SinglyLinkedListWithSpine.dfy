@@ -24,13 +24,13 @@ class List<A> {
   ghost var spine: seq<Node<A>>;
 
   function Repr(): set<object>
-    reads this, spine
+    reads this
   {
     set x | x in spine
   }
 
   predicate Valid()
-    reads this, spine
+    reads this, Repr()
   {
     && (forall i | 0 <= i < |spine|-1 :: spine[i].IsPrevOf(spine[i+1]))
     && (if head == null then
@@ -459,6 +459,7 @@ class List<A> {
     { // GHOST
       spine := spine[..i+1] + spine[i+2..];
       ModelRelationWithSpine();
+      assert GetIndex(mid) == old(GetIndex(mid));
       assert Model() == old(Seq.Remove(Model(), GetIndex(mid)+1));
     }
   }
