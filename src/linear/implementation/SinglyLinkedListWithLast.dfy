@@ -1,6 +1,6 @@
 include "../../../src/linear/implementation/SinglyLinkedListWithSpine.dfy"
 
-class Queue<A> {
+class SinglyLinkedListWithLast<A> {
   var list: List<A>;
   var last: Node?<A>;
 
@@ -125,6 +125,8 @@ class Queue<A> {
       list.RemoveNext(prev);
       x := last.data;
       last := prev;
+      assert Model() == Seq.Remove(old(Model()), old(list.GetIndex(prev)+1));
+      assert Model() + [x] == old(Model());
     }
   }
 }
