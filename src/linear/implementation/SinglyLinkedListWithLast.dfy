@@ -4,25 +4,25 @@ class SinglyLinkedListWithLast<A> {
   var list: List<A>;
   var last: Node?<A>;
 
-  predicate Valid()
-    reads this, list, list.spine
-  {
-    && list.Valid()
-    && (if last == null then
-        list.head == null
-      else
-        last in list.Repr() && last.next == null
-      )
-  }
-
   function Repr(): set<object>
-    reads this, list, list.spine
+    reads this, list
   {
     list.Repr()
   }
 
+  predicate Valid()
+    reads this, list, Repr()
+  {
+    && list.Valid()
+      && (if last == null then
+      list.head == null
+      else
+        last in list.Repr() && last.next == null
+        )
+  }
+
   function Model(): seq<A>
-    reads this, list, list.spine
+    reads this, list, Repr()
     requires Valid()
   {
     list.Model()
@@ -30,9 +30,23 @@ class SinglyLinkedListWithLast<A> {
 
   constructor()
     ensures Valid()
+    ensures Model() == []
+    ensures fresh(Repr())
+    ensures fresh(list)
+    ensures last == null
   {
     list := new List();
     last := null;
+  }
+
+  method Front() returns (x: A)
+    requires Valid()
+    requires Model() != []
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures x == Model()[0]
+  {
+    x := list.head.data;
   }
 
   // O(1)
@@ -43,6 +57,7 @@ class SinglyLinkedListWithLast<A> {
     ensures Model() == [x] + old(Model())
     ensures Repr() > old(Repr())
     ensures fresh(Repr() - old(Repr()))
+    ensures list == old(list)
   {
     var ohead := list.head;
     list.Push(x);
@@ -59,6 +74,7 @@ class SinglyLinkedListWithLast<A> {
     ensures Valid()
     ensures [x] + Model() == old(Model())
     ensures Repr() < old(Repr())
+    ensures list == old(list)
   {
     if list.head == last {
       last := null;
@@ -74,6 +90,7 @@ class SinglyLinkedListWithLast<A> {
     ensures Model() == old(Model()) + [x]
     ensures Repr() > old(Repr())
     ensures fresh(Repr() - old(Repr()))
+    ensures list == old(list)
   {
     if last == null {
       assert Model() == [];
@@ -99,6 +116,7 @@ class SinglyLinkedListWithLast<A> {
     ensures Valid()
     ensures Model() + [x] == old(Model())
     ensures Repr() < old(Repr())
+    ensures list == old(list)
   {
     if list.head == last {
       assert list.head.next == null;
@@ -126,6 +144,7 @@ class SinglyLinkedListWithLast<A> {
       x := last.data;
       last := prev;
       assert Model() == Seq.Remove(old(Model()), old(list.GetIndex(prev)+1));
+      assert list.GetIndex(prev) == old(list.GetIndex(prev));
       assert Model() + [x] == old(Model());
     }
   }

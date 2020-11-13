@@ -16,7 +16,7 @@ class DoublyLinkedListWithLast {
   }
 
   function Repr(): set<object>
-    reads this, list, list.spine
+    reads this, list
   {
     list.Repr()
   }
@@ -30,9 +30,35 @@ class DoublyLinkedListWithLast {
 
   constructor()
     ensures Valid()
+    ensures Model() == []
+    ensures fresh(list)
+    ensures last == null
+    ensures fresh(Repr())
   {
     list := new DoublyLinkedList();
     last := null;
+  }
+
+  method Front() returns (x: int)
+    requires Valid()
+    requires Model() != []
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures x == Model()[0]
+  {
+    x := list.head.data;
+  }
+
+  method Back() returns (x: int)
+    requires Valid()
+    requires Model() != []
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures x == Model()[|Model()|-1]
+  {
+    list.LastHasLastIndex(last);
+    list.ModelRelationWithSpine();
+    x := last.data;
   }
 
   // O(1)
@@ -43,6 +69,7 @@ class DoublyLinkedListWithLast {
     ensures Model() == [x] + old(Model())
     ensures Repr() > old(Repr())
     ensures fresh(Repr() - old(Repr()))
+    ensures list == old(list)
   {
     var ohead := list.head;
     { // GHOST
@@ -64,6 +91,7 @@ class DoublyLinkedListWithLast {
     ensures Valid()
     ensures [x] + Model() == old(Model())
     ensures Repr() < old(Repr())
+    ensures list == old(list)
   {
     { // GHOST
       if list.head != null {
@@ -91,6 +119,7 @@ class DoublyLinkedListWithLast {
     ensures Model() == old(Model()) + [x]
     ensures Repr() > old(Repr())
     ensures fresh(Repr() - old(Repr()))
+    ensures list == old(list)
   {
     if last == null {
       assert Model() == [];
@@ -116,6 +145,7 @@ class DoublyLinkedListWithLast {
     ensures Valid()
     ensures Model() + [x] == old(Model())
     ensures Repr() < old(Repr())
+    ensures list == old(list)
   {
     if list.head == last {
       assert list.head.next == null;
