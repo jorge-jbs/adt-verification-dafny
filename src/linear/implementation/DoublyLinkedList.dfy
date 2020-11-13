@@ -1,11 +1,13 @@
 include "../../../src/Utils.dfy"
 
-class Node<A> {
-  var prev: Node?<A>;
-  var data: A;
-  var next: Node?<A>;
+type A = int
 
-  constructor(prev: Node?<A>, data: A, next: Node?<A>)
+class Node {
+  var prev: Node?;
+  var data: A;
+  var next: Node?;
+
+  constructor(prev: Node?, data: A, next: Node?)
     ensures this.prev == prev
     ensures this.data == data
     ensures this.next == next
@@ -15,22 +17,22 @@ class Node<A> {
     this.next := next;
   }
 
-  predicate IsPrevOf(n: Node<A>)
+  predicate IsPrevOf(n: Node)
     reads this
   {
     next == n
   }
 
-  predicate IsNextOf(n: Node<A>)
+  predicate IsNextOf(n: Node)
     reads this
   {
     prev == n
   }
 }
 
-class List<A> {
-  var head: Node?<A>;
-  ghost var spine: seq<Node<A>>;
+class DoublyLinkedList {
+  var head: Node?;
+  ghost var spine: seq<Node>;
 
   function Repr(): set<object>
     reads this
@@ -86,7 +88,7 @@ class List<A> {
     DistinctSpineAux(0);
   }
 
-  static function ModelAux(xs: seq<Node<A>>): seq<A>
+  static function ModelAux(xs: seq<Node>): seq<A>
     reads set x | x in xs :: x`data
   {
     if xs == [] then
@@ -119,7 +121,16 @@ class List<A> {
     ModelAux(spine)
   }
 
-  static lemma ModelRelationWithSpineAux(spine: seq<Node<A>>, model: seq<A>)
+  constructor()
+    ensures Valid()
+    ensures Model() == []
+    ensures fresh(Repr())
+  {
+    head := null;
+    /*GHOST*/ spine := [];
+  }
+
+  static lemma ModelRelationWithSpineAux(spine: seq<Node>, model: seq<A>)
     requires ModelAux(spine) == model
     ensures |spine| == |model|
     ensures forall i | 0 <= i < |spine| :: spine[i].data == model[i]
@@ -138,7 +149,7 @@ class List<A> {
     ModelRelationWithSpineAux(spine, Model());
   }
 
-  function GetIndex(n: Node<A>): nat
+  function GetIndex(n: Node): nat
     reads this, spine
     requires Valid()
     requires n in Repr()
@@ -153,8 +164,37 @@ class List<A> {
     i
   }
 
+  lemma LastHasLastIndex(last: Node)
+    requires Valid()
+    requires last.next == null
+    requires last in Repr()
+    ensures GetIndex(last) == |spine|-1
+  {
+    var i := GetIndex(last);
+    if i != |spine|-1 {
+      assert spine[i].IsPrevOf(spine[i+1]);
+      assert spine[i].next == spine[i+1];
+      assert spine[i+1] != null;
+      assert spine[i+1] == null;
+      assert false;
+    }
+  }
+
+  lemma PrevHasPrevIndex(prev: Node, node: Node)
+    requires Valid()
+    requires prev in Repr()
+    requires node in Repr()
+    requires prev.IsPrevOf(node)
+    ensures GetIndex(prev) == GetIndex(node)-1
+  {
+    var i := GetIndex(prev);
+    assert prev.next == node;
+    assert spine[i].next == spine[i+1];
+    assert spine[i+1] == node;
+  }
+
   method PopFront() returns (x: A)
-    modifies this, Repr()
+    modifies this, head.next
     requires Valid()
     requires Model() != []
     ensures Valid()
@@ -181,13 +221,15 @@ class List<A> {
   }
 
   method PushFront(x: A)
-    modifies this, Repr()
+    modifies this, head
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
     ensures Repr() > old(Repr())
     ensures fresh(Repr() - old(Repr()))
-    /*private*/ ensures spine[1..] == old(spine)
+    // ensures old(head) != null ==> head != null
+    // ensures old(head) != null && old(head.next) == null ==> head.next == null
+    ensures spine[1..] == old(spine)
   {
     var n := new Node(null, x, head);
     if head != null {
@@ -199,7 +241,7 @@ class List<A> {
   }
 
   // Private method
-  method Insert(mid: Node<A>, x: A)
+  method Insert(mid: Node, x: A)
     modifies this, Repr()
     requires Valid()
     requires mid in Repr()
@@ -233,7 +275,7 @@ class List<A> {
   }
 
   // Private method
-  method RemoveNext(mid: Node<A>)
+  method RemoveNext(mid: Node)
     modifies this, Repr()
     requires Valid()
     requires mid in Repr()
@@ -259,6 +301,7 @@ class List<A> {
     }
     { // GHOST
       spine := spine[..i+1] + spine[i+2..];
+      assert Valid();
       ModelRelationWithSpine();
       assert Valid();
       assert GetIndex(mid) == old(GetIndex(mid));
@@ -267,7 +310,7 @@ class List<A> {
   }
 
   // Private method
-  method FindPrev(mid: Node<A>) returns (prev: Node<A>)
+  method FindPrev(mid: Node) returns (prev: Node)
     requires Valid()
     requires head != mid
     requires mid in Repr()
