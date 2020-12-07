@@ -10,9 +10,13 @@ trait Stack {
 
   function Repr(): set<object>
     reads this, ReprFamily(SizeOfRepr()-1)
+    // ensures Repr() == ReprFamily(SizeOfRepr())
   {
     ReprFamily(SizeOfRepr())
   }
+
+  lemma UselessLemma()
+    ensures Repr() == ReprFamily(SizeOfRepr());
 
   predicate Valid()
     reads this, Repr()
@@ -21,9 +25,14 @@ trait Stack {
     reads this, Repr()
     requires Valid()
 
+  function method Empty(): bool
+    reads this, Repr()
+    requires Valid()
+    ensures Empty() <==> Model() == []
+
   method Top() returns (x: int)
     requires Valid()
-    requires Model() != []
+    requires !Empty()
     ensures Valid()
     ensures Model() == old(Model())
     ensures x == Model()[0]
@@ -39,7 +48,7 @@ trait Stack {
   method Pop() returns (x: int)
     modifies Repr()
     requires Valid()
-    requires Model() != []
+    requires !Empty()
     ensures Valid()
     ensures [x] + Model() == old(Model())
     ensures Repr() < old(Repr())

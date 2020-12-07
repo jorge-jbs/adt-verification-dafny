@@ -1,29 +1,45 @@
 include "../../../src/linear/adt/Stack.dfy"
 
-method BalancedTest(s: string, st: Stack) returns (b: bool)
-  modifies st.Repr()
-  requires st.Valid()
-  requires st.Model() == []
+function method OpeningBrace(c: char): (d: char)
+  requires c == ')' || c == ']' || c == '}'
 {
-  // var st1 := new Stack1();
-  // assert st1.Valid();
-  // var st: Stack := st1;
-  // assert st1.Valid();
-  // assert st.Valid();
+  if c == ')' then
+    '('
+  else if c == ']' then
+    '['
+  else
+    '{'
+}
+
+method BalancedTest(s: string) returns (b: bool)
+{
+  var st := new Stack1();
   var i := 0;
-  // assert i !in st.Repr();
+  st.UselessLemma();
   while i < |s|
-    modifies st.Repr()
-    invariant fresh(st.Repr() - old(st.Repr()))
+    modifies st.list
+    // modifies st.Repr()
     invariant st.Valid()
   {
-    /*
-    ghost var orepr := st.Repr();
-    st.Push(1);
-    ghost var repr := st.Repr();
-    assert repr > orepr;
-    assert fresh(repr - orepr);
-    */
+    assert fresh(st);
+    if s[i] == '('  || s[i] == '[' || s[i] == '{' {
+        st.Push(s[i] as int);
+    } else if s[i] == ')' || s[i] == ']' || s[i] == '}' {
+      if st.Empty() {
+        return false;
+      } else {
+        var c := st.Pop();
+        if c != OpeningBrace(s[i]) as int {
+          return false;
+        }
+      }
+    }
     i := i + 1;
   }
+  return st.Empty();
+}
+
+method Main() {
+  var b := BalancedTest("({}()");
+  print(b);
 }

@@ -34,6 +34,10 @@ class Stack1 extends Stack {
       ReprFamily(n-1)
   }
 
+  lemma UselessLemma()
+    ensures Repr() == ReprFamily(1);
+  {}
+
   predicate Valid()
     reads this, Repr()
   {
@@ -53,6 +57,14 @@ class Stack1 extends Stack {
     ensures fresh(Repr())
   {
     list := new List();
+  }
+
+  function method Empty(): bool
+    reads this, Repr()
+    requires Valid()
+    ensures Empty() <==> Model() == []
+  {
+    list.head == null
   }
 
   // O(1)
