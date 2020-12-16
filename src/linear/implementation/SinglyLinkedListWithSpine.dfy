@@ -250,17 +250,6 @@ class List<A> {
     /*GHOST*/ spine := [];
   }
 
-  method Copy(other: List<A>)
-    modifies this
-    requires other.Valid()
-    ensures Valid()
-    ensures Model() == other.Model()
-    ensures Repr() == other.Repr()
-  {
-    head := other.head;
-    /*GHOST*/ spine := other.spine;
-  }
-
   method PopNode() returns (h: Node<A>)
     modifies this
     requires Valid()
@@ -328,14 +317,17 @@ class List<A> {
   }
 
   method Append(other: List<A>)
-    modifies this, Repr()
+    modifies this, Repr(), other
     requires Valid()
     requires other.Valid()
     // needed so that we don't build a cyclic list:
     requires Repr() !! other.Repr()
     ensures Valid()
-    ensures Model() == old(Model()) + other.Model()
-    ensures Repr() == old(Repr()) + other.Repr()
+    ensures Model() == old(Model() + other.Model())
+    ensures Repr() == old(Repr() + other.Repr())
+    ensures other.Valid()
+    ensures other.Model() == []
+    ensures other.Repr() == {}
   {
     if head == null {
       head := other.head;
@@ -357,6 +349,8 @@ class List<A> {
       /*GHOST*/ spine := spine + other.spine;
       /*GHOST*/ ModelAuxCommutesConcat(old(spine), other.spine);
     }
+    other.head := null;
+    /*GHOST*/ other.spine := [];
   }
 
   method PopPush(other: List<A>)

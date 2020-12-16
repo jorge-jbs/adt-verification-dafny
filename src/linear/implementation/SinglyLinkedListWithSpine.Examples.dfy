@@ -16,7 +16,8 @@ method Append<A>(self: List<A>, other: List<A>)
   ensures self.Model() == old(self.Model()) + other.Model()
 {
   if self.head == null {
-    self.Copy(other);
+    self.head := other.head;
+    /*GHOST*/ self.spine := other.spine;
   } else {
     var x := self.Pop();
     Append(self, other);
