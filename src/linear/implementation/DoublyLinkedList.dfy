@@ -200,7 +200,7 @@ class DoublyLinkedList {
     ensures Valid()
     ensures [x] + Model() == old(Model())
     ensures Repr() < old(Repr())
-    /*private*/ ensures spine == old(spine[1..])
+    ensures spine == old(spine[1..])
   {
     DistinctSpine();
     assert head in Repr();
@@ -240,7 +240,6 @@ class DoublyLinkedList {
     assert head !in old(Repr());
   }
 
-  // Private method
   method Insert(mid: Node, x: A)
     modifies this, Repr()
     requires Valid()
@@ -274,7 +273,6 @@ class DoublyLinkedList {
     }
   }
 
-  // Private method
   method RemoveNext(mid: Node)
     modifies this, Repr()
     requires Valid()
@@ -309,7 +307,6 @@ class DoublyLinkedList {
     }
   }
 
-  // Private method
   method FindPrev(mid: Node) returns (prev: Node)
     requires Valid()
     requires head != mid

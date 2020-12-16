@@ -1,22 +1,22 @@
 trait Stack {
-  function SizeOfRepr(): nat
-    ensures SizeOfRepr() > 0
+  function Depth(): nat
+    ensures Depth() > 0
 
   function ReprFamily(n: nat): set<object>
     decreases n
-    requires n <= SizeOfRepr()
+    requires n <= Depth()
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
 
   function Repr(): set<object>
-    reads this, ReprFamily(SizeOfRepr()-1)
-    // ensures Repr() == ReprFamily(SizeOfRepr())
+    reads this, ReprFamily(Depth()-1)
+    // ensures Repr() == ReprFamily(Depth())
   {
-    ReprFamily(SizeOfRepr())
+    ReprFamily(Depth())
   }
 
   lemma UselessLemma()
-    ensures Repr() == ReprFamily(SizeOfRepr());
+    ensures Repr() == ReprFamily(Depth());
 
   predicate Valid()
     reads this, Repr()

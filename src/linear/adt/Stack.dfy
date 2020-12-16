@@ -4,7 +4,7 @@ include "../../../src/linear/interface/Stack.dfy"
 class Stack1 extends Stack {
   var list: List<int>;
 
-  function SizeOfRepr(): nat
+  function Depth(): nat
   {
     1
   }

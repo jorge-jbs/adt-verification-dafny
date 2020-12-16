@@ -4,8 +4,8 @@ include "../../../src/linear/interface/Queue.dfy"
 class Queue2 extends Queue {
   var list: SinglyLinkedListWithLast<int>;
 
-  function SizeOfRepr(): nat
-    ensures SizeOfRepr() > 0
+  function Depth(): nat
+    ensures Depth() > 0
   {
     2
   }
@@ -30,7 +30,7 @@ class Queue2 extends Queue {
 
   function ReprFamily(n: nat): set<object>
     decreases n
-    requires n <= SizeOfRepr()
+    requires n <= Depth()
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
   {

@@ -197,7 +197,6 @@ class List<A> {
     ModelUntilAux(spine, last)
   }
 
-  // Private
   function GetIndex(n: Node<A>): nat
     reads this, spine
     requires Valid()
@@ -262,7 +261,6 @@ class List<A> {
     /*GHOST*/ spine := other.spine;
   }
 
-  // Private method
   method PopNode() returns (h: Node<A>)
     modifies this
     requires Valid()
@@ -294,13 +292,12 @@ class List<A> {
     ensures Valid()
     ensures [res] + Model() == old(Model())
     ensures Repr() < old(Repr())
-    /*private*/ ensures spine == old(spine[1..])
+    ensures spine == old(spine[1..])
   {
     var tmp := PopNode();
     res := tmp.data;
   }
 
-  // Private method
   method PushNode(h: Node<A>)
     modifies this, h`next
     requires Valid()
@@ -324,7 +321,7 @@ class List<A> {
     ensures Model() == [x] + old(Model())
     ensures Repr() > old(Repr())
     ensures fresh(Repr() - old(Repr()))
-    /*private*/ ensures spine[1..] == old(spine)
+    ensures spine[1..] == old(spine)
   {
     var n := new Node(x, null);
     PushNode(n);
@@ -406,7 +403,6 @@ class List<A> {
     }
   }
 
-  // Private method
   method Insert(mid: Node<A>, x: A)
     modifies this, mid
     requires Valid()
@@ -434,7 +430,6 @@ class List<A> {
     }
   }
 
-  // Private method
   method RemoveNext(mid: Node<A>)
     modifies this, mid
     requires Valid()
@@ -464,7 +459,6 @@ class List<A> {
     }
   }
 
-  // Private method
   method FindPrev(mid: Node<A>) returns (prev: Node<A>)
     requires Valid()
     requires head != mid

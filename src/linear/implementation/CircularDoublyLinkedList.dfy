@@ -225,7 +225,7 @@ class CircularDoublyLinkedList {
     ensures Valid()
     ensures [x] + Model() == old(Model())
     ensures Repr() < old(Repr())
-    /*private*/ ensures spine == old(spine[1..])
+    ensures spine == old(spine[1..])
   {
     DistinctSpine();
     assert head in Repr();
