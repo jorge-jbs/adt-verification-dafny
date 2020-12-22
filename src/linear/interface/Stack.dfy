@@ -43,7 +43,7 @@ trait Stack {
     ensures Valid()
     ensures Model() == [x] + old(Model())
     ensures Repr() > old(Repr())
-    ensures fresh(Repr() - old(Repr()))
+    ensures forall x | x in (Repr() - old(Repr())) :: fresh(x)
 
   method Pop() returns (x: int)
     modifies Repr()
