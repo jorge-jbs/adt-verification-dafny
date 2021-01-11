@@ -7,6 +7,14 @@ class Node {
   var data: A;
   var next: Node;
 
+  constructor Phantom()
+    ensures prev == this
+    ensures next == this
+  {
+    prev := this;
+    next := this;
+  }
+
   constructor(prev: Node, data: A, next: Node)
     ensures this.prev == prev
     ensures this.data == data
@@ -31,35 +39,26 @@ class Node {
 }
 
 class CircularDoublyLinkedList {
-  var head: Node?;
+  var phantom: Node;
   ghost var spine: seq<Node>;
 
   function Repr(): set<object>
     reads this
   {
-    set x | x in spine
+    {phantom} + set x | x in spine
   }
 
   predicate Valid()
     reads this, Repr()
   {
-    && (forall i | 1 <= i < |spine|-1 ::
-        && spine[i].next == spine[i+1]
-        && spine[i+1].prev == spine[i]
-      )
-    && (|spine| >= 2 ==>
-        && spine[0].next == spine[1]
-        && spine[1].prev == spine[0]
-        && spine[|spine|-1].next == spine[0]
-        && spine[0].prev == spine[|spine|-1]
-      )
-    && (if head == null then
-        spine == []
-      else
-        && spine != []
-        && spine[0] == head
-        && head !in spine[1..]
-      )
+    && spine != []
+    && phantom == spine[|spine|-1]
+    && phantom !in spine[..|spine|-1]
+
+    && (forall i | 0 <= i < |spine|-1 :: spine[i].next == spine[i+1])
+    && spine[|spine|-1].next == spine[0]
+    && (forall i | 0 <= i < |spine|-1 :: spine[i] == spine[i+1].prev)
+    && spine[|spine|-1] == spine[0].prev
   }
 
   lemma ForallNextPrev(i: nat)
@@ -78,6 +77,7 @@ class CircularDoublyLinkedList {
     requires Valid()
     requires 0 <= n <= |spine|
     ensures forall i, j | n <= i < j < |spine| :: spine[i] != spine[j]
+    /*
   {
     if n == |spine| {
       assert spine[n..] == [];
@@ -109,6 +109,7 @@ class CircularDoublyLinkedList {
       assert forall i, j | n <= i < j < |spine| :: spine[i] != spine[j];
     }
   }
+       */
 
   lemma DistinctSpine()
     requires Valid()
@@ -130,16 +131,16 @@ class CircularDoublyLinkedList {
 
   lemma HeadNextNullImpliesSingleton()
     requires Valid()
-    requires head != null
-    requires head.next == null
-    ensures spine == [head]
+    requires phantom.next != phantom
+    requires phantom.next.next == phantom
+    ensures spine == [phantom.next, phantom]
   {
-    if |spine| != 1 {
-      assert |spine| >= 2;
+    if |spine| != 2 {
+      assert |spine| >= 3;
       assert spine[0].next == spine[1];
       assert false;
     } else {
-      assert spine == [head];
+      assert spine == [phantom.next, phantom];
     }
   }
 
@@ -147,7 +148,7 @@ class CircularDoublyLinkedList {
     reads this, spine
     requires Valid()
   {
-    ModelAux(spine)
+    ModelAux(spine[..|spine|-1])
   }
 
   constructor()
@@ -155,8 +156,8 @@ class CircularDoublyLinkedList {
     ensures Model() == []
     ensures fresh(Repr())
   {
-    head := null;
-    /*GHOST*/ spine := [];
+    phantom := new Node.Phantom();
+    /*GHOST*/ spine := [phantom];
   }
 
   static lemma ModelRelationWithSpineAux(spine: seq<Node>, model: seq<A>)
@@ -172,18 +173,19 @@ class CircularDoublyLinkedList {
 
   lemma ModelRelationWithSpine()
     requires Valid()
-    ensures |spine| == |Model()|
-    ensures forall i | 0 <= i < |spine| :: spine[i].data == Model()[i]
+    ensures |spine|-1 == |Model()|
+    ensures forall i | 0 <= i < |spine|-1 :: spine[i].data == Model()[i]
   {
-    ModelRelationWithSpineAux(spine, Model());
+    ModelRelationWithSpineAux(spine[..|spine|-1], Model());
   }
 
   function GetIndex(n: Node): nat
-    reads this, spine
+    reads this, Repr()
     requires Valid()
     requires n in Repr()
+    // requires n != phantom
     ensures 0 <= GetIndex(n) < |spine|
-    ensures 0 <= GetIndex(n) < |Model()|
+    ensures n != phantom ==> 0 <= GetIndex(n) < |Model()|
     ensures spine[GetIndex(n)] == n
     ensures forall i | 0 <= i < |spine| && spine[i] == n :: i == GetIndex(n)
   {
@@ -196,6 +198,7 @@ class CircularDoublyLinkedList {
   lemma NextPrevIndex(n: Node)
     requires Valid()
     requires n in Repr()
+    requires n != phantom
     requires n.next in Repr()
     requires n.prev in Repr()
     ensures GetIndex(n.next) == (GetIndex(n)+1) % |spine|
