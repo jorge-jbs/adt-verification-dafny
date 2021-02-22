@@ -45,7 +45,7 @@ class CircularDoublyLinkedList {
   function Repr(): set<object>
     reads this
   {
-    {phantom} + set x | x in spine
+    set x | x in spine
   }
 
   predicate Valid()
@@ -71,6 +71,21 @@ class CircularDoublyLinkedList {
     } else {
     }
   }
+
+  /*
+  lemma ForallNextPrevPrime(i: nat)
+    requires Valid()
+    ensures spine[i % |spine|].next == spine[(i+1) % |spine|]
+    //ensures spine[i+1].prev == spine[i]
+  {
+    if i % |spine| == 0 {
+      if |spine| == 1 {
+      } else {
+      }
+    } else {
+    }
+  }
+   */
 
   lemma DistinctSpineAux(n: nat)
     decreases |spine| - n
@@ -131,7 +146,7 @@ class CircularDoublyLinkedList {
 
   lemma HeadNextNullImpliesSingleton()
     requires Valid()
-    requires phantom.next != phantom
+    requires phantom.next != phantom  // head != null
     requires phantom.next.next == phantom
     ensures spine == [phantom.next, phantom]
   {
@@ -220,9 +235,15 @@ class CircularDoublyLinkedList {
     }
   }
 
-  /*
+  lemma NextPrevIn(n: Node)
+    requires Valid()
+    requires n in Repr()
+    ensures n.next in Repr()
+    ensures n.prev in Repr()
+
+    /*
   method PopFront() returns (x: A)
-    modifies this, head.next
+    modifies this, phantom, phantom.next.next
     requires Valid()
     requires Model() != []
     ensures Valid()
@@ -230,25 +251,32 @@ class CircularDoublyLinkedList {
     ensures Repr() < old(Repr())
     ensures spine == old(spine[1..])
   {
-    DistinctSpine();
-    assert head in Repr();
-    if head.next == null {
-      HeadNextNullImpliesSingleton();
-    } else {
-      assert head == spine[0];
-      ForallNextPrev(1);
-      assert head.IsPrevOf(spine[1]);
-      assert spine[1] == head.next;
-      assert head.next in Repr();
+    { // GHOST
+      DistinctSpine();
+      NextPrevIn(phantom.next);
+      assert phantom.next.next in Repr();
+      if phantom.next.next == phantom {
+        HeadNextNullImpliesSingleton();
+      } else {
+        assert phantom.next == spine[0];
+        ForallNextPrev(1);
+        assert phantom.next.IsPrevOf(spine[1]);
+        assert spine[1] == phantom.next.next;
+        assert phantom.next.next in Repr();
+      }
     }
-    x := head.data;
-    head := head.next;
-    spine := spine[1..];
-    if head != null {
-      head.prev := null;
+    x := phantom.next.data;
+    phantom.next := phantom.next.next;
+    phantom.next.prev := phantom;
+    { // GHOST
+      spine := spine[1..];
+      assert Valid();
+      assert spine[..|spine|-1] == old(spine[1..|spine|-1]);
     }
   }
+       */
 
+  /*
   method PushFront(x: A)
     modifies this, head
     requires Valid()
@@ -270,78 +298,96 @@ class CircularDoublyLinkedList {
   }
   */
 
-  lemma NextPrevIn(n: Node)
-    requires Valid()
-    requires n in Repr()
-    ensures n.next in Repr()
-    ensures n.prev in Repr()
-
-  /*
   method Insert(mid: Node, x: A)
-    modifies this, Repr()
+    modifies this, mid, mid.prev
     requires Valid()
     requires mid in Repr()
     ensures Valid()
-    ensures spine == Seq.Insert(mid.next, old(spine), old(GetIndex(mid))+1)
-    ensures Model() == Seq.Insert(x, old(Model()), old(GetIndex(mid))+1)
-    ensures fresh(mid.next)
-    ensures mid.next in spine
-    ensures mid.next.next == old(mid.next)
+    ensures spine == Seq.Insert(mid.prev, old(spine), old(GetIndex(mid)))
+    ensures mid != phantom ==> Model()
+      == Seq.Insert(x, old(Model()), old(GetIndex(mid)))
+    ensures mid == phantom ==> Model() == old(Model()) + [x]
+    ensures fresh(mid.prev)
+    ensures mid.prev in spine
+    ensures mid.prev.prev == old(mid.prev)
     ensures forall n | n in old(spine) :: n in spine
   {
     { // GHOST
       DistinctSpine();
       ModelRelationWithSpine();
+      assert GetIndex(mid) < |spine|;
     }
-    var n := new Node(mid, x, mid.next);
-    assert n.prev == mid;
-    assert n.prev == mid;
-    // ghost var i :| 0 <= i < |spine| && spine[i] == mid;
+    var n := new Node(mid.prev, x, mid);
     ghost var i := GetIndex(mid);
-    // assert mid.next in Repr();
-    // assert mid.prev in Repr();
-    NextPrevIn(mid);
-    // assert spine[(i+1) % |spine|] == mid.next;
-    // assert mid.next in Repr();
-    mid.next.prev := n;
-    mid.next := n;
+    { //GHOST
+      assert spine[(i-1) % |spine|] == mid.prev;
+      NextPrevIn(mid);
+    }
+    mid.prev.next := n;
+    mid.prev := n;
     { // GHOST
-      spine := spine[..i+1] + [n] + spine[i+1..];
-      assert Valid();
+      spine := spine[..i] + [n] + spine[i..];
       ModelRelationWithSpine();
     }
   }
 
-  method RemoveNext(mid: Node)
-    modifies this, Repr()
+  method Remove(mid: Node)
+    modifies this, mid.prev, mid.next
     requires Valid()
     requires mid in Repr()
-    // requires mid.next != null
+    requires mid != phantom
     ensures Valid()
-    ensures spine == Seq.Remove(old(spine), old(GetIndex(mid))+1)
-    // Precondition needed for next line:
-    ensures old(GetIndex(mid))+1 < old(|Model()|)
-    ensures Model() == Seq.Remove(old(Model()), old(GetIndex(mid)+1))
-    ensures mid.next == old(mid.next.next)
-    ensures forall n | n in old(spine) && n != old(mid.next) :: n in spine
+    ensures spine == Seq.Remove(old(spine), old(GetIndex(mid)))
+    ensures Model() == Seq.Remove(old(Model()), old(GetIndex(mid)))
+    ensures mid.prev.next == old(mid.next)
+    ensures forall n | n in old(spine) && n != mid :: n in spine
   {
     { // GHOST
       DistinctSpine();
       ModelRelationWithSpine();
     }
     ghost var i :| 0 <= i < |spine| && spine[i] == mid;
-    assert spine[i+1] == mid.next;
-    assert i+2 < |spine| ==> spine[i+2] == mid.next.next;
-    mid.next := mid.next.next;
-    mid.next.prev := mid;
     { // GHOST
-      spine := spine[..i+1] + spine[i+2..];
+      assert spine[(i-1) % |spine|] == mid.prev;
+      assert spine[i+1] == mid.next;
+      NextPrevIn(mid);
+    }
+    mid.prev.next := mid.next;
+    mid.next.prev := mid.prev;
+    { // GHOST
+      spine := spine[..i] + spine[i+1..];
       assert Valid();
       ModelRelationWithSpine();
       assert Valid();
-      assert GetIndex(mid) == old(GetIndex(mid));
-      assert Model() == old(Seq.Remove(Model(), GetIndex(mid)+1));
+      assert Model() == old(Seq.Remove(Model(), GetIndex(mid)));
     }
   }
-  */
+
+  method PopFront() returns (x: A)
+    modifies this, phantom, phantom.next.next
+    requires Valid()
+    requires Model() != []
+    ensures Valid()
+    ensures [x] + Model() == old(Model())
+    ensures Repr() < old(Repr())
+    ensures spine == old(spine[1..])
+  {
+    x := phantom.next.data;
+    Remove(phantom.next);
+  }
+
+  method PushFront(x: A)
+    modifies this, phantom, phantom.next
+    requires Valid()
+    ensures Valid()
+    ensures Model() == [x] + old(Model())
+    ensures Repr() > old(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures spine[1..] == old(spine)
+  {
+    Insert(phantom.next, x);
+    assert fresh(phantom.next);
+    assert phantom.next in Repr();
+    assert phantom.next !in old(Repr());
+  }
 }
