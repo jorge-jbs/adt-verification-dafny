@@ -72,59 +72,28 @@ class CircularDoublyLinkedList {
     }
   }
 
-  /*
-  lemma ForallNextPrevPrime(i: nat)
-    requires Valid()
-    ensures spine[i % |spine|].next == spine[(i+1) % |spine|]
-    //ensures spine[i+1].prev == spine[i]
-  {
-    if i % |spine| == 0 {
-      if |spine| == 1 {
-      } else {
-      }
-    } else {
-    }
-  }
-   */
-
   lemma DistinctSpineAux(n: nat)
     decreases |spine| - n
     requires Valid()
     requires 0 <= n <= |spine|
     ensures forall i, j | n <= i < j < |spine| :: spine[i] != spine[j]
-    /*
   {
     if n == |spine| {
       assert spine[n..] == [];
     } else if n == |spine|-1 {
-      // assert exists o :: spine[n..] == [o];
     } else {
-      assert head != null;
       DistinctSpineAux(n+1);
       assert forall i, j | n+1 <= i < j < |spine| :: spine[i] != spine[j];
       if spine[n] in spine[n+1..] {
-        var i: nat :| n+1 <= i < |spine| && spine[i] == spine[n];
-        if i+1 < |spine| {
-          assert spine[i].next == spine[i+1];
-          assert i+1 != n+1;
-          assert spine[n].next == spine[n+1];
-          assert spine[n+1] == spine[i+1];
-          assert false;
-        } else {
-          assert i == |spine|-1;
-          assert head !in spine[1..];
-          assert spine[n].next == spine[n+1];
-          assert spine[n+1] == head;
-          assert head in spine[1..];
-          assert false;
-        }
+        var i: nat :| n+1 <= i < |spine| && spine[n] == spine[i];
+        assert spine[i].next == spine[i+1];
+        assert spine[n+1] == spine[i+1];
         assert false;
       }
-      assert forall j | n+1 <= j < |spine| :: spine[n] != spine[j];
-      assert forall i, j | n <= i < j < |spine| :: spine[i] != spine[j];
+      assert spine[n] !in spine[n+1..];
+      assert forall i | n+1 <= i < |spine| :: spine[n] != spine[i];
     }
   }
-       */
 
   lemma DistinctSpine()
     requires Valid()
@@ -198,7 +167,6 @@ class CircularDoublyLinkedList {
     reads this, Repr()
     requires Valid()
     requires n in Repr()
-    // requires n != phantom
     ensures 0 <= GetIndex(n) < |spine|
     ensures n != phantom ==> 0 <= GetIndex(n) < |Model()|
     ensures spine[GetIndex(n)] == n
@@ -210,93 +178,21 @@ class CircularDoublyLinkedList {
     i
   }
 
-  lemma NextPrevIndex(n: Node)
-    requires Valid()
-    requires n in Repr()
-    requires n != phantom
-    requires n.next in Repr()
-    requires n.prev in Repr()
-    ensures GetIndex(n.next) == (GetIndex(n)+1) % |spine|
-    ensures GetIndex(n.prev) == (GetIndex(n)-1) % |spine|
-
-  lemma LastHasLastIndex(last: Node)
-    requires Valid()
-    requires last.next == null
-    requires last in Repr()
-    ensures GetIndex(last) == |spine|-1
-  {
-    var i := GetIndex(last);
-    if i != |spine|-1 {
-      assert spine[i].IsPrevOf(spine[i+1]);
-      assert spine[i].next == spine[i+1];
-      assert spine[i+1] != null;
-      assert spine[i+1] == null;
-      assert false;
-    }
-  }
-
   lemma NextPrevIn(n: Node)
     requires Valid()
     requires n in Repr()
     ensures n.next in Repr()
     ensures n.prev in Repr()
-
-    /*
-  method PopFront() returns (x: A)
-    modifies this, phantom, phantom.next.next
-    requires Valid()
-    requires Model() != []
-    ensures Valid()
-    ensures [x] + Model() == old(Model())
-    ensures Repr() < old(Repr())
-    ensures spine == old(spine[1..])
   {
-    { // GHOST
-      DistinctSpine();
-      NextPrevIn(phantom.next);
-      assert phantom.next.next in Repr();
-      if phantom.next.next == phantom {
-        HeadNextNullImpliesSingleton();
-      } else {
-        assert phantom.next == spine[0];
-        ForallNextPrev(1);
-        assert phantom.next.IsPrevOf(spine[1]);
-        assert spine[1] == phantom.next.next;
-        assert phantom.next.next in Repr();
-      }
+    ghost var i := GetIndex(n);
+    if i > 1 {
+      assert spine[i].prev == spine[i-1];
     }
-    x := phantom.next.data;
-    phantom.next := phantom.next.next;
-    phantom.next.prev := phantom;
-    { // GHOST
-      spine := spine[1..];
-      assert Valid();
-      assert spine[..|spine|-1] == old(spine[1..|spine|-1]);
+    if i < |spine|-1 {
+      assert spine[i].next == spine[i+1];
+      assert n.next in Repr();
     }
   }
-       */
-
-  /*
-  method PushFront(x: A)
-    modifies this, head
-    requires Valid()
-    ensures Valid()
-    ensures Model() == [x] + old(Model())
-    ensures Repr() > old(Repr())
-    ensures fresh(Repr() - old(Repr()))
-    // ensures old(head) != null ==> head != null
-    // ensures old(head) != null && old(head.next) == null ==> head.next == null
-    ensures spine[1..] == old(spine)
-  {
-    var n := new Node(null, x, head);
-    if head != null {
-      head.prev := n;
-    }
-    head := n;
-    /*GHOST*/ spine := [head] + spine;
-    assert head !in old(Repr());
-  }
-  */
 
   method Insert(mid: Node, x: A)
     modifies this, mid, mid.prev
