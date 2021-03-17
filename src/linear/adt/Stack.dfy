@@ -184,9 +184,26 @@ method BalancedTest(s: string) returns (b: bool)
   return st.Empty();
 }
 
+method Print(st: Stack)
+  modifies st, st.Repr()
+  requires st.Valid()
+  ensures st.Valid()
+  ensures st.Empty()
+{
+  while !st.Empty()
+    decreases |st.Model()|
+    invariant st.Valid()
+    invariant forall x | x in st.Repr() - old(st.Repr()) :: fresh(x)
+  {
+    var x := st.Pop();
+    print x;
+    print "\n";
+  }
+}
+
 method Main() {
-  // var b := BalancedTest("({}()");
-  // print(b);
-  // var n := EvalPostfix("12+3*");
-  // print(n);
+  var st: Stack := new Stack1();
+  st.Push(1);
+  st.Push(2);
+  Print(st);
 }
