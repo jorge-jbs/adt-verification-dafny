@@ -9,10 +9,17 @@ module Array {
   {
     set x | x in l[..]
   }
+
+  function method melems<A>(l: array<A>): multiset<A>
+    reads l
+  {
+    multiset(l[..])
+  }
 }
 
 module Seq {
   function Rev<A>(xs: seq<A>): seq<A>
+    ensures |xs| == |Rev(xs)|
   {
     if |xs| == 0 then
       []
@@ -32,6 +39,11 @@ module Seq {
   function Elems<A>(xs: seq<A>): set<A>
   {
     set x | x in xs
+  }
+
+  function MElems<A>(xs: seq<A>): multiset<A>
+  {
+    multiset(xs)
   }
 
   lemma InEquivInMultiset<A>(xs: seq<A>)
