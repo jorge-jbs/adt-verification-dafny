@@ -3,6 +3,14 @@ function method BigUnion<A>(S: set<set<A>>): set<A>
   set X, x | X in S && x in X :: x
 }
 
+function method abs(x: int): int
+{
+  if x < 0 then
+    -x
+  else
+    x
+}
+
 module Array {
   function method elems<A>(l: array<A>): set<A>
     reads l
