@@ -1,11 +1,23 @@
 include "../../../src/Utils.dfy"
 include "../../../src/linear/interface/Stack.dfy"
 
-lemma {:verify false} lemma1(v: array<int>, i: int)
+lemma Allocated(s: set<object>)
+  ensures forall x | x in s :: allocated(x)
+{}
+
+lemma {:verify true} lemma1(v: array<int>, i: int)
   requires forall i | 0 <= i < v.Length - 1 :: abs(v[i]) <= abs(v[i+1])
   requires 0 <= i <= v.Length
-  ensures forall j | 0 <= j < i :: abs(v[j]) <= abs(v[i])
-{}
+  ensures forall j, k | 0 <= j < k < i :: abs(v[j]) <= abs(v[k])
+{
+  if i == 0 {
+  } else if i == 1 {
+  } else if i == 2 {
+  } else {
+    lemma1(v, i-1);
+    assert abs(v[i-2]) <= abs(v[i-1]);
+  }
+}
 
 method {:verify false} Reverse(st: Stack)
   modifies st, st.Repr()
@@ -13,21 +25,28 @@ method {:verify false} Reverse(st: Stack)
   ensures st.Valid()
   ensures st.Model() == Seq.Rev(old(st.Model()))
   ensures forall x | x in st.Repr() - old(st.Repr()) :: fresh(x)
+  // ensures forall x | x in st.Repr() :: allocated(x)  // this line somehow makes `reordonandoLaCola` time out
 {}
 
-method {:verify false} split(v: array<int>, neg: Stack, pos: Stack)
+method {:verify true} split(v: array<int>, neg: Stack, pos: Stack)
   modifies pos, pos.Repr(), neg, neg.Repr()
 
   requires v !in neg.Repr() && v !in pos.Repr()
   ensures v !in neg.Repr() && v !in pos.Repr()
-  ensures v[..] == old(v[..])
+  // ensures v[..] == old(v[..])
 
-  requires neg.Valid()
-  requires neg.Empty()
-  requires pos.Valid()
-  requires pos.Empty()
+  requires neg != pos
+  requires neg !in pos.Repr()
+  requires pos !in neg.Repr()
   requires pos.Repr() !! neg.Repr()
+  requires neg.Valid()
+  requires pos.Valid()
+  requires neg.Empty()
+  requires pos.Empty()
 
+  requires forall i | 0 <= i < v.Length - 1 :: abs(v[i]) <= abs(v[i+1])
+
+  ensures neg != pos
   ensures pos.Valid()
   ensures neg.Valid()
   ensures pos.Repr() !! neg.Repr()
@@ -53,69 +72,51 @@ method {:verify false} split(v: array<int>, neg: Stack, pos: Stack)
 
     invariant forall i | 0 <= i < v.Length - 1 :: abs(v[i]) <= abs(v[i+1])
 
+    invariant forall x | x in neg.Repr() - old(neg.Repr()) :: fresh(x)
+    invariant forall x | x in pos.Repr() - old(pos.Repr()) :: fresh(x)
+    invariant neg != pos
+    invariant neg !in pos.Repr()
+    invariant pos !in neg.Repr()
     invariant neg.Repr() !! pos.Repr()
-    invariant forall x | x in neg.Repr() :: fresh(x)
-    invariant forall x | x in pos.Repr() :: fresh(x)
-    // invariant neg != pos
-
-    invariant forall x | x in neg.Repr() :: fresh(x)
     invariant neg.Valid()
+    invariant pos.Valid()
+
     invariant forall x | x in neg.Model() :: x < 0
     invariant forall i | 0 <= i < |neg.Model()| - 1 :: abs(neg.Model()[i]) >= abs(neg.Model()[i+1])
-    // invariant forall i | 0 <= i < |neg.Model()| - 1 :: neg.Model()[i] <= neg.Model()[i+1]
 
-    invariant forall x | x in pos.Repr() :: fresh(x)
-    invariant pos.Valid()
     invariant forall x | x in pos.Model() :: x >= 0
     invariant forall i | 0 <= i < |pos.Model()| - 1 :: abs(pos.Model()[i]) >= abs(pos.Model()[i+1])
-    // invariant forall i | 0 <= i < |neg.Model()| - 1 :: neg.Model()[i] >= neg.Model()[i+1]
 
     invariant Seq.MElems(neg.Model()) + Seq.MElems(pos.Model())
       == Seq.MElems(v[..i])
 
+    invariant forall x | x in neg.Repr() :: allocated(x)
+    invariant forall x | x in pos.Repr() :: allocated(x)
   {
-    lemma1(v, i);
+    lemma1(v, i+1);
     assert forall j | 0 <= j < i :: abs(v[j]) <= abs(v[i]);
     if v[i] < 0 {
-      assert Seq.MElems(neg.Model()) + Seq.MElems(pos.Model())
-        == Seq.MElems(v[..i]);
-      assert Seq.MElems(neg.Model())
-        == Seq.MElems(v[..i]) - Seq.MElems(pos.Model());
-      assert forall x | x in Seq.MElems(neg.Model()) :: x in Seq.MElems(v[..i]) - Seq.MElems(pos.Model());
-      assert forall x | x in Seq.MElems(neg.Model()) :: x in Seq.MElems(v[..i]);
-      // assert forall x | x in Seq.MElems(neg.Model()) :: x in neg.Model();
-      assert forall x | x in neg.Model() :: x in Seq.MElems(neg.Model());
-      assert forall x | x in neg.Model() :: x in v[..i];
-      assert forall x | x in neg.Model() :: exists j | 0 <= j < i :: v[j] == x;
-      assert forall x | x in neg.Model() :: abs(v[i]) >= x;
-      assert |neg.Model()| > 0 ==> neg.Model()[0] in neg.Model();
-      assert |neg.Model()| > 0 ==> abs(v[i]) >= neg.Model()[0];
-      // assert forall j | 0 <= j < |neg.Model()| :: neg.Model()[j] in v[..i];
-      // assert forall j | 0 <= j < |neg.Model()| :: abs(neg.Model()[j]) <= abs(v[i]);
-      // assert forall j | 0 <= j < |neg.Model()| :: neg.Model()[j] <= v[i];
+      if |neg.Model()| > 0 {
+        assert neg.Model()[0] in Seq.MElems(neg.Model());
+        assert neg.Model()[0] in Seq.MElems(neg.Model()) + Seq.MElems(pos.Model());
+        assert neg.Model()[0] in Seq.MElems(v[..i]);
+        assert neg.Model()[0] in v[..i];
+        assert abs(v[i]) >= abs(neg.Model()[0]);
+      }
       neg.Push(v[i]);
     } else {
-      assert Seq.MElems(pos.Model()) + Seq.MElems(neg.Model())
-        == Seq.MElems(v[..i]);
-      assert Seq.MElems(pos.Model())
-        == Seq.MElems(v[..i]) - Seq.MElems(neg.Model());
-      assert forall x | x in Seq.MElems(pos.Model()) :: x in Seq.MElems(v[..i]) - Seq.MElems(neg.Model());
-      assert forall x | x in Seq.MElems(pos.Model()) :: x in Seq.MElems(v[..i]);
-      // assert forall x | x in Seq.MElems(pos.Model()) :: x in pos.Model();
-      assert forall x | x in pos.Model() :: x in Seq.MElems(pos.Model());
-      assert forall x | x in pos.Model() :: x in v[..i];
-      assert forall x | x in pos.Model() :: exists j | 0 <= j < i :: v[j] == x;
-      assert forall x | x in pos.Model() :: abs(v[i]) >= x;
-      assert |pos.Model()| > 0 ==> pos.Model()[0] in pos.Model();
-      assert |pos.Model()| > 0 ==> abs(v[i]) >= pos.Model()[0];
-      assert forall x | x in pos.Model() :: exists j | 0 <= j < i :: v[j] == x;
-      assert forall x | x in pos.Model() :: abs(v[i]) >= x;
-      assert |pos.Model()| > 0 ==> pos.Model()[0] in pos.Model();
-      assert |pos.Model()| > 0 ==> abs(v[i]) >= pos.Model()[0];
+      if |pos.Model()| > 0 {
+        assert pos.Model()[0] in Seq.MElems(pos.Model());
+        assert pos.Model()[0] in Seq.MElems(neg.Model()) + Seq.MElems(pos.Model());
+        assert pos.Model()[0] in Seq.MElems(v[..i]);
+        assert pos.Model()[0] in v[..i];
+        assert abs(v[i]) >= abs(pos.Model()[0]);
+      }
       pos.Push(v[i]);
     }
     i := i + 1;
   }
+  assert v[..i] == v[..];
 }
 
 method {:verify false} FillFromStack(r: array<int>, i: nat, st: Stack) returns (l: nat)
@@ -136,7 +137,7 @@ method {:verify false} FillFromStack(r: array<int>, i: nat, st: Stack) returns (
   }
 }
 
-method {:verify true} reordenandoLaCola(neg: Stack, pos: Stack, v: array<int>) returns (r: array<int>)
+method {:verify false} reordenandoLaCola(neg: Stack, pos: Stack, v: array<int>) returns (r: array<int>)
   modifies neg, neg.Repr()
   modifies pos, pos.Repr()
   modifies v
@@ -152,17 +153,18 @@ method {:verify true} reordenandoLaCola(neg: Stack, pos: Stack, v: array<int>) r
   ensures v !in neg.Repr()
   ensures v !in pos.Repr()
   ensures v.Length == r.Length
-  ensures old(Array.melems(v)) == Array.melems(r)
+  ensures old(Array.melems(v)) == Array.melems(r)  // Even if we don't modify v, it doesn't work if I remove `old` (???).
+                                                   // Maybe it has something to do with having another array, r.
   ensures forall i | 0 <= i < r.Length - 1 :: r[i] <= r[i+1]
 {
   ghost var ovd := v[..];
   assert ovd == old(v[..]);
-  assert v[..] == old(v[..]);
-  assert v == old(v);
+  // assert v[..] == old(v[..]);
+  // assert v == old(v);
   split(v, neg, pos);
   assert v == old(v);
-  assert v[..] == old(v[..]);
-  assert Seq.MElems(neg.Model()) + Seq.MElems(pos.Model()) == Seq.MElems(v[..]);
+  // assert v[..] == old(v[..]);
+  assert Seq.MElems(neg.Model()) + Seq.MElems(pos.Model()) == old(Seq.MElems(v[..]));
   calc == {
     |neg.Model()| + |pos.Model()|;
     |Seq.MElems(neg.Model())| + |Seq.MElems(pos.Model())|;
@@ -181,7 +183,7 @@ method {:verify true} reordenandoLaCola(neg: Stack, pos: Stack, v: array<int>) r
   ghost var onegmodel := neg.Model();
   ghost var oposmodel := pos.Model();
   assert ovd == old(v[..]);
-  assert Seq.MElems(onegmodel) + Seq.MElems(oposmodel) == Seq.MElems(v[..]);
+  assert Seq.MElems(onegmodel) + Seq.MElems(oposmodel) == old(Seq.MElems(v[..]));
   assert |onegmodel| + |oposmodel| == v.Length;
   assert neg.Repr() !! pos.Repr();
   assert pos !in neg.Repr();
