@@ -35,6 +35,11 @@ module Seq {
       Rev(xs[1..]) + [xs[0]]
   }
 
+  lemma LeRev(xs: seq<int>)
+    requires forall i | 0 <= i < |xs|-1 :: xs[i] >= xs[i+1]
+    ensures forall i | 0 <= i < |xs|-1 :: Rev(xs)[i] <= Rev(xs)[i+1]
+  {}
+
   function Map<A,B>(f: A -> B, xs: seq<A>): seq<B>
     reads (set x: A, o: object | x in xs && o in f.reads(x) :: o)
   {
@@ -48,6 +53,17 @@ module Seq {
   {
     set x | x in xs
   }
+
+  lemma MElemsRev<A>(l: seq<A>)
+    ensures MElems(Rev(l)) == MElems(l)
+  {
+    if |l| == 0 {
+    } else {
+      MElemsRev(l[1..]);
+      assert [l[0]] + l[1..] == l;
+    }
+  }
+
 
   function MElems<A>(xs: seq<A>): multiset<A>
   {
