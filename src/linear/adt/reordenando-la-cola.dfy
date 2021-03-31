@@ -1,5 +1,6 @@
 include "../../../src/Utils.dfy"
 include "../../../src/linear/interface/Stack.dfy"
+include "../../../src/linear/interface/Queue.dfy"
 
 lemma Allocated(s: set<object>)
   ensures forall x | x in s :: allocated(x)
@@ -19,28 +20,14 @@ lemma {:verify true} lemma1(v: array<int>, i: int)
   }
 }
 
-method {:verify false} Reverse(st: Stack)
-  modifies st, st.Repr()
-  requires st.Valid()
-  ensures st.Valid()
-  ensures st.Model() == Seq.Rev(old(st.Model()))
-  ensures forall x | x in st.Repr() - old(st.Repr()) :: fresh(x)
-
-  requires forall x | x in st.Repr() :: allocated(x)
-  ensures forall x | x in st.Repr() :: allocated(x)
-{}
-
-method {:verify true} split(v: array<int>, neg: Stack, pos: Stack)
+method {:verify true} split(v: array<int>, neg: Stack, pos: Queue)
   modifies pos, pos.Repr(), neg, neg.Repr()
 
   requires v !in neg.Repr() && v !in pos.Repr()
   ensures v !in neg.Repr() && v !in pos.Repr()
   // ensures v[..] == old(v[..])
 
-  requires neg != pos
-  requires neg !in pos.Repr()
-  requires pos !in neg.Repr()
-  requires pos.Repr() !! neg.Repr()
+  requires {pos} + pos.Repr() !! {neg} + neg.Repr()
   requires neg.Valid()
   requires pos.Valid()
   requires neg.Empty()
@@ -48,10 +35,9 @@ method {:verify true} split(v: array<int>, neg: Stack, pos: Stack)
 
   requires forall i | 0 <= i < v.Length - 1 :: abs(v[i]) <= abs(v[i+1])
 
-  ensures neg != pos
+  ensures {pos} + pos.Repr() !! {neg} + neg.Repr()
   ensures pos.Valid()
   ensures neg.Valid()
-  ensures pos.Repr() !! neg.Repr()
 
   ensures forall x | x in neg.Repr() - old(neg.Repr()) :: fresh(x)
   ensures forall x | x in neg.Model() :: x < 0
@@ -59,7 +45,7 @@ method {:verify true} split(v: array<int>, neg: Stack, pos: Stack)
 
   ensures forall x | x in pos.Repr() - old(pos.Repr()) :: fresh(x)
   ensures forall x | x in pos.Model() :: x >= 0
-  ensures forall i | 0 <= i < |pos.Model()| - 1 :: abs(pos.Model()[i]) >= abs(pos.Model()[i+1])
+  ensures forall i | 0 <= i < |pos.Model()| - 1 :: abs(pos.Model()[i]) <= abs(pos.Model()[i+1])
 
   ensures Seq.MElems(neg.Model()) + Seq.MElems(pos.Model()) == Seq.MElems(v[..])
 
@@ -76,10 +62,7 @@ method {:verify true} split(v: array<int>, neg: Stack, pos: Stack)
 
     invariant forall x | x in neg.Repr() - old(neg.Repr()) :: fresh(x)
     invariant forall x | x in pos.Repr() - old(pos.Repr()) :: fresh(x)
-    invariant neg != pos
-    invariant neg !in pos.Repr()
-    invariant pos !in neg.Repr()
-    invariant neg.Repr() !! pos.Repr()
+    invariant {pos} + pos.Repr() !! {neg} + neg.Repr()
     invariant neg.Valid()
     invariant pos.Valid()
 
@@ -87,7 +70,7 @@ method {:verify true} split(v: array<int>, neg: Stack, pos: Stack)
     invariant forall i | 0 <= i < |neg.Model()| - 1 :: abs(neg.Model()[i]) >= abs(neg.Model()[i+1])
 
     invariant forall x | x in pos.Model() :: x >= 0
-    invariant forall i | 0 <= i < |pos.Model()| - 1 :: abs(pos.Model()[i]) >= abs(pos.Model()[i+1])
+    invariant forall i | 0 <= i < |pos.Model()| - 1 :: abs(pos.Model()[i]) <= abs(pos.Model()[i+1])
 
     invariant Seq.MElems(neg.Model()) + Seq.MElems(pos.Model())
       == Seq.MElems(v[..i])
@@ -108,13 +91,13 @@ method {:verify true} split(v: array<int>, neg: Stack, pos: Stack)
       neg.Push(v[i]);
     } else {
       if |pos.Model()| > 0 {
-        assert pos.Model()[0] in Seq.MElems(pos.Model());
-        assert pos.Model()[0] in Seq.MElems(neg.Model()) + Seq.MElems(pos.Model());
-        assert pos.Model()[0] in Seq.MElems(v[..i]);
-        assert pos.Model()[0] in v[..i];
-        assert abs(v[i]) >= abs(pos.Model()[0]);
+        assert pos.Model()[|pos.Model()|-1] in Seq.MElems(pos.Model());
+        assert pos.Model()[|pos.Model()|-1] in Seq.MElems(neg.Model()) + Seq.MElems(pos.Model());
+        assert pos.Model()[|pos.Model()|-1] in Seq.MElems(v[..i]);
+        assert pos.Model()[|pos.Model()|-1] in v[..i];
+        assert abs(pos.Model()[|pos.Model()|-1]) <= abs(v[i]);
       }
-      pos.Push(v[i]);
+      pos.Enqueue(v[i]);
     }
     i := i + 1;
   }
@@ -164,37 +147,75 @@ method {:verify true} FillFromStack(r: array<int>, i: nat, st: Stack) returns (l
   l := l + i;
 }
 
-lemma LastLemma(neg: seq<int>, pos: seq<int>, s: seq<int>)
+method {:verify true} FillFromQueue(r: array<int>, i: nat, q: Queue) returns (l: nat)
+  modifies r, q, q.Repr()
+  requires q.Valid()
+  // we have to say that r is not equal to q even though they are not of the same type:
+  requires {r} !! {q} + q.Repr()
+  requires i + |q.Model()| <= r.Length
+  ensures q.Valid()
+  ensures q.Empty()
+  ensures forall x | x in q.Repr() - old(q.Repr()) :: fresh(x)
+  ensures forall x | x in q.Repr() :: allocated(x)
+  ensures r[..i] == old(r[..i])
+  ensures r[i..i+old(|q.Model()|)] == old(q.Model())
+  ensures r[i+old(|q.Model()|)..] == old(r[i+|q.Model()|..])
+  // ensures Seq.MElems(r[i..i+old(|q.Model()|)]) == Seq.MElems(old(q.Model()))
+  ensures l == i + old(|q.Model()|)
+
+  requires forall x | x in q.Repr() :: allocated(x)
+  ensures forall x | x in q.Repr() :: allocated(x)
+{
+  l := 0;
+  while !q.Empty()
+    decreases |q.Model()|
+
+    invariant q.Valid()
+    invariant {r} !! {q} + q.Repr()
+    invariant forall x | x in q.Repr() - old(q.Repr()) :: fresh(x)
+    invariant forall x | x in q.Repr() :: allocated(x)
+
+    invariant 0 <= l <= old(|q.Model()|)
+    invariant l == old(|q.Model()|) - |q.Model()|
+
+    invariant q.Model() == old(q.Model()[l..])
+    invariant r[..i] == old(r[..i])
+    invariant r[i..i+l] == old(q.Model()[..l])
+    invariant r[i+old(|q.Model()|)..] == old(r[i+|q.Model()|..])
+  {
+    var x := q.Dequeue();
+    r[i+l] := x;
+    l := l + 1;
+  }
+  l := l + i;
+}
+
+lemma {:verify true} LastLemma(neg: seq<int>, pos: seq<int>, s: seq<int>)
   requires forall x | x in neg :: x < 0
   requires forall i | 0 <= i < |neg|-1 :: abs(neg[i]) >= abs(neg[i+1])
 
   requires forall x | x in pos :: x >= 0
-  requires forall i | 0 <= i < |pos|-1 :: abs(pos[i]) >= abs(pos[i+1])
+  requires forall i | 0 <= i < |pos|-1 :: abs(pos[i]) <= abs(pos[i+1])
 
-  requires neg + Seq.Rev(pos) == s
+  requires neg + pos == s
 
   ensures forall i | 0 <= i < |s|-1 :: s[i] <= s[i+1]
 {
   assert forall x | x in neg :: x < 0 && abs(x) == -x;
   assert forall i | 0 <= i < |neg|-1 :: neg[i] <= neg[i+1];
-  ghost var rpos := Seq.Rev(pos);
-  Seq.ElemsRev(pos);
   assert forall x | x in pos :: x >= 0 && abs(x) == x;
-  assert forall x | x in rpos :: x in pos && x >= 0;
-  assert forall i | 0 <= i < |pos|-1 :: pos[i] >= pos[i+1];
-  Seq.LeRev(pos);
-  assert forall i | 0 <= i < |rpos|-1 :: rpos[i] <= rpos[i+1];
+  assert forall i | 0 <= i < |pos|-1 :: pos[i] <= pos[i+1];
   ghost var i := |neg|-1;
   if 0 <= i < |s|-1 {
     assert s[i] in neg && s[i] < 0;
-    assert s[i+1] in rpos && s[i+1] >= 0;
+    assert s[i+1] in pos && s[i+1] >= 0;
     assert s[i] <= s[i+1];
   } else {
-    assert s == neg || s == rpos;
+    assert s == neg || s == pos;
   }
 }
 
-method {:verify true} reordenandoLaCola(neg: Stack, pos: Stack, v: array<int>) returns (r: array<int>)
+method {:verify true} reordenandoLaCola(neg: Stack, pos: Queue, v: array<int>) returns (r: array<int>)
   modifies neg, neg.Repr()
   modifies pos, pos.Repr()
   modifies v
@@ -234,15 +255,6 @@ method {:verify true} reordenandoLaCola(neg: Stack, pos: Stack, v: array<int>) r
   ghost var onegmodel := neg.Model();
   ghost var oposmodel := pos.Model();
   i := FillFromStack(r, i, neg);
-  var j := i;
-  Reverse(pos);
-  i := FillFromStack(r, i, pos);
+  i := FillFromQueue(r, i, pos);
   LastLemma(onegmodel, oposmodel, r[..]);
-  calc == {
-    Seq.MElems(r[..]);
-    Seq.MElems(onegmodel) + Seq.MElems(Seq.Rev(oposmodel));
-    { Seq.MElemsRev(oposmodel); }
-    Seq.MElems(onegmodel) + Seq.MElems(oposmodel);
-    Seq.MElems(v[..]);
-  }
 }

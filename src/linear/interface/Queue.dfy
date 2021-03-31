@@ -21,6 +21,11 @@ trait Queue {
     reads this, Repr()
     requires Valid()
 
+  function method Empty(): bool
+    reads this, Repr()
+    requires Valid()
+    ensures Empty() <==> Model() == []
+
   method Front() returns (x: int)
     requires Valid()
     requires Model() != []
@@ -33,8 +38,9 @@ trait Queue {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + [x]
-    ensures Repr() > old(Repr())
-    ensures fresh(Repr() - old(Repr()))
+    // ensures Repr() > old(Repr())
+    ensures forall x | x in (Repr() - old(Repr())) :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
 
   method Dequeue() returns (x: int)
     modifies Repr()
@@ -42,5 +48,7 @@ trait Queue {
     requires Model() != []
     ensures Valid()
     ensures [x] + Model() == old(Model())
-    ensures Repr() < old(Repr())
+    // ensures Repr() < old(Repr())
+    ensures forall x | x in (Repr() - old(Repr())) :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
 }
