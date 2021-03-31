@@ -197,7 +197,7 @@ lemma {:verify true} LastLemma(neg: seq<int>, pos: seq<int>, s: seq<int>)
   requires forall x | x in pos :: x >= 0
   requires forall i | 0 <= i < |pos|-1 :: abs(pos[i]) <= abs(pos[i+1])
 
-  requires neg + pos == s
+  requires s == neg + pos
 
   ensures forall i | 0 <= i < |s|-1 :: s[i] <= s[i+1]
 {
@@ -215,10 +215,10 @@ lemma {:verify true} LastLemma(neg: seq<int>, pos: seq<int>, s: seq<int>)
   }
 }
 
-method {:verify true} reordenandoLaCola(neg: Stack, pos: Queue, v: array<int>) returns (r: array<int>)
+method {:verify true} reordenandoLaCola(neg: Stack, pos: Queue, v: array<int>)
+  modifies v
   modifies neg, neg.Repr()
   modifies pos, pos.Repr()
-  modifies v
   requires {v} !! {neg} + neg.Repr()
   requires {v} !! {pos} + pos.Repr()
   requires {pos} + pos.Repr() !! {neg} + neg.Repr()
@@ -228,33 +228,32 @@ method {:verify true} reordenandoLaCola(neg: Stack, pos: Queue, v: array<int>) r
   requires forall x | x in neg.Repr() :: allocated(x)
   requires forall x | x in pos.Repr() :: allocated(x)
 
-  // These are all true but I'm not sure if we need them
-  //ensures {v} !! {neg} + neg.Repr()
-  //ensures {v} !! {pos} + pos.Repr()
-  //ensures {r} !! {neg} + neg.Repr()
-  //ensures {r} !! {pos} + pos.Repr()
-  //ensures r != v
-  //ensures {pos} + pos.Repr() !! {neg} + neg.Repr()
+  ensures neg.Valid()
+  ensures pos.Valid()
+  ensures {v} !! {neg} + neg.Repr()
+  ensures {v} !! {pos} + pos.Repr()
+  ensures {pos} + pos.Repr() !! {neg} + neg.Repr()
+  ensures forall x | x in neg.Repr() - old(neg.Repr()) :: fresh(x)
+  ensures forall x | x in neg.Repr() :: allocated(x)
+  ensures forall x | x in pos.Repr() - old(pos.Repr()) :: fresh(x)
+  ensures forall x | x in pos.Repr() :: allocated(x)
 
-  ensures v.Length == r.Length
-  ensures Array.melems(v) == Array.melems(r)
-  ensures forall i | 0 <= i < r.Length - 1 :: r[i] <= r[i+1]
+  ensures Array.melems(v) == old(Array.melems(v))
+  ensures forall i | 0 <= i < v.Length - 1 :: v[i] <= v[i+1]
 {
   split(v, neg, pos);
-  assert Seq.MElems(neg.Model()) + Seq.MElems(pos.Model()) == Seq.MElems(v[..]);
+  ghost var negmodel := neg.Model();
+  ghost var posmodel := pos.Model();
   calc == {
-    |neg.Model()| + |pos.Model()|;
-    |Seq.MElems(neg.Model())| + |Seq.MElems(pos.Model())|;
-    |Seq.MElems(neg.Model()) + Seq.MElems(pos.Model())|;
+    |negmodel| + |posmodel|;
+    |Seq.MElems(negmodel)| + |Seq.MElems(posmodel)|;
+    |Seq.MElems(negmodel) + Seq.MElems(posmodel)|;
     |Seq.MElems(v[..])|;
     |v[..]|;
     v.Length;
   }
   var i := 0;
-  r := new int[v.Length];
-  ghost var onegmodel := neg.Model();
-  ghost var oposmodel := pos.Model();
-  i := FillFromStack(r, i, neg);
-  i := FillFromQueue(r, i, pos);
-  LastLemma(onegmodel, oposmodel, r[..]);
+  i := FillFromStack(v, i, neg);
+  i := FillFromQueue(v, i, pos);
+  LastLemma(negmodel, posmodel, v[..]);
 }
