@@ -54,7 +54,8 @@ class Stack1 extends Stack {
   constructor()
     ensures Valid()
     ensures Model() == []
-    ensures fresh(Repr())
+    ensures forall x | x in Repr() :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
   {
     list := new List();
   }
@@ -208,10 +209,10 @@ method Print(st: Stack)
   }
 }
 
-method Main() {
-  var st: Stack := new Stack1();
-  st.Push(3);
-  st.Push(2);
-  st.Push(1);
-  Print(st);
-}
+// method Main() {
+//   var st: Stack := new Stack1();
+//   st.Push(3);
+//   st.Push(2);
+//   st.Push(1);
+//   Print(st);
+// }

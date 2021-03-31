@@ -58,10 +58,19 @@ class Queue1 extends Queue {
     list.Model()
   }
 
+  function method Empty(): bool
+    reads this, Repr()
+    requires Valid()
+    ensures Empty() <==> Model() == []
+  {
+    list.list.head == null
+  }
+
   constructor()
     ensures Valid()
     ensures Model() == []
-    ensures fresh(Repr())
+    ensures forall x | x in Repr() :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
   {
     list := new DoublyLinkedListWithLast();
   }
@@ -102,7 +111,7 @@ class Queue1 extends Queue {
 class QueueIterator {
   ghost var index: nat
   ghost var parent: Queue1
-  var node: Node?
+  var node: DNode?
 
   predicate Valid()
     reads this, parent, parent.Repr()

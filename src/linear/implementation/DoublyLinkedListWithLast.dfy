@@ -2,7 +2,7 @@ include "../../../src/linear/implementation/DoublyLinkedList.dfy"
 
 class DoublyLinkedListWithLast {
   var list: DoublyLinkedList;
-  var last: Node?;
+  var last: DNode?;
 
   predicate Valid()
     reads this, list, list.spine
