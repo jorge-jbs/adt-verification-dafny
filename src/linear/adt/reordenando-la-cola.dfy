@@ -28,7 +28,7 @@ method {:verify false} Reverse(st: Stack)
   // ensures forall x | x in st.Repr() :: allocated(x)  // this line somehow makes `reordonandoLaCola` time out
 {}
 
-method {:verify true} split(v: array<int>, neg: Stack, pos: Stack)
+method {:verify false} split(v: array<int>, neg: Stack, pos: Stack)
   modifies pos, pos.Repr(), neg, neg.Repr()
 
   requires v !in neg.Repr() && v !in pos.Repr()
@@ -119,33 +119,61 @@ method {:verify true} split(v: array<int>, neg: Stack, pos: Stack)
   assert v[..i] == v[..];
 }
 
-method {:verify false} FillFromStack(r: array<int>, i: nat, st: Stack) returns (l: nat)
+method {:verify true} FillFromStack(r: array<int>, i: nat, st: Stack) returns (l: nat)
   modifies r, st, st.Repr()
   requires st.Valid()
+  // we have to say that r is not equal to st even though they are not of the same type:
+  requires {r} !! {st} + st.Repr()
   requires i + |st.Model()| <= r.Length
   ensures st.Valid()
   ensures st.Empty()
   ensures forall x | x in st.Repr() - old(st.Repr()) :: fresh(x)
   ensures forall x | x in st.Repr() :: allocated(x)
+  ensures r[..i] == old(r[..i])
   ensures r[i..i+old(|st.Model()|)] == old(st.Model())
-  ensures forall j | j < i || i+old(|st.Model()|) <= j :: r[j] == old(r[j])
-  ensures Seq.MElems(r[i..i+old(|st.Model()|)]) == Seq.MElems(old(st.Model()))
+  ensures r[i+old(|st.Model()|)..] == old(r[i+|st.Model()|..])
+  // ensures Seq.MElems(r[i..i+old(|st.Model()|)]) == Seq.MElems(old(st.Model()))
   ensures l == i + old(|st.Model()|)
+
+  requires forall x | x in st.Repr() :: allocated(x)
+  ensures forall x | x in st.Repr() :: allocated(x)
 {
-  if !st.Empty() {
-    r[i] := 0;
+  l := 0;
+  while !st.Empty()
+    decreases |st.Model()|
+
+    invariant st.Valid()
+    invariant {r} !! {st} + st.Repr()
+    invariant forall x | x in st.Repr() - old(st.Repr()) :: fresh(x)
+    invariant forall x | x in st.Repr() :: allocated(x)
+
+    invariant 0 <= l <= old(|st.Model()|)
+    invariant l == old(|st.Model()|) - |st.Model()|
+
+    invariant st.Model() == old(st.Model()[l..])
+    invariant r[..i] == old(r[..i])
+    invariant r[i..i+l] == old(st.Model()[..l])
+    invariant r[i+old(|st.Model()|)..] == old(r[i+|st.Model()|..])
+  {
+    var x := st.Pop();
+    r[i+l] := x;
+    l := l + 1;
   }
+  l := l + i;
 }
 
 method {:verify false} reordenandoLaCola(neg: Stack, pos: Stack, v: array<int>) returns (r: array<int>)
   modifies neg, neg.Repr()
   modifies pos, pos.Repr()
   modifies v
-  requires v !in neg.Repr() && v !in pos.Repr()
+  requires {v} !! {neg} + neg.Repr()
+  requires {v} !! {pos} + pos.Repr()
+  requires {pos} + pos.Repr() !! {neg} + neg.Repr()
+  // requires v !in neg.Repr() && v !in pos.Repr()
+  // requires neg != pos && neg.Repr() !! pos.Repr() && neg !in pos.Repr() && pos !in neg.Repr()
   requires forall i | 0 <= i < v.Length - 1 :: abs(v[i]) <= abs(v[i+1])
   requires neg.Valid() && neg.Empty()
   requires pos.Valid() && pos.Empty()
-  requires neg != pos && neg.Repr() !! pos.Repr() && neg !in pos.Repr() && pos !in neg.Repr()
   requires forall x | x in neg.Repr() :: allocated(x)
   requires forall x | x in pos.Repr() :: allocated(x)
   ensures r !in neg.Repr()
