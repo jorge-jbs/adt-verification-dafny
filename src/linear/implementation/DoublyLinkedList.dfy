@@ -2,12 +2,12 @@ include "../../../src/Utils.dfy"
 
 type A = int
 
-class Node {
-  var prev: Node?;
+class DNode {
+  var prev: DNode?;
   var data: A;
-  var next: Node?;
+  var next: DNode?;
 
-  constructor(prev: Node?, data: A, next: Node?)
+  constructor(prev: DNode?, data: A, next: DNode?)
     ensures this.prev == prev
     ensures this.data == data
     ensures this.next == next
@@ -17,13 +17,13 @@ class Node {
     this.next := next;
   }
 
-  predicate IsPrevOf(n: Node)
+  predicate IsPrevOf(n: DNode)
     reads this
   {
     next == n
   }
 
-  predicate IsNextOf(n: Node)
+  predicate IsNextOf(n: DNode)
     reads this
   {
     prev == n
@@ -31,8 +31,8 @@ class Node {
 }
 
 class DoublyLinkedList {
-  var head: Node?;
-  ghost var spine: seq<Node>;
+  var head: DNode?;
+  ghost var spine: seq<DNode>;
 
   function Repr(): set<object>
     reads this
@@ -88,7 +88,7 @@ class DoublyLinkedList {
     DistinctSpineAux(0);
   }
 
-  static function ModelAux(xs: seq<Node>): seq<A>
+  static function ModelAux(xs: seq<DNode>): seq<A>
     reads set x | x in xs :: x`data
   {
     if xs == [] then
@@ -130,7 +130,7 @@ class DoublyLinkedList {
     /*GHOST*/ spine := [];
   }
 
-  static lemma ModelRelationWithSpineAux(spine: seq<Node>, model: seq<A>)
+  static lemma ModelRelationWithSpineAux(spine: seq<DNode>, model: seq<A>)
     requires ModelAux(spine) == model
     ensures |spine| == |model|
     ensures forall i | 0 <= i < |spine| :: spine[i].data == model[i]
@@ -149,7 +149,7 @@ class DoublyLinkedList {
     ModelRelationWithSpineAux(spine, Model());
   }
 
-  function GetIndex(n: Node): nat
+  function GetIndex(n: DNode): nat
     reads this, spine
     requires Valid()
     requires n in Repr()
@@ -164,7 +164,7 @@ class DoublyLinkedList {
     i
   }
 
-  lemma LastHasLastIndex(last: Node)
+  lemma LastHasLastIndex(last: DNode)
     requires Valid()
     requires last.next == null
     requires last in Repr()
@@ -180,7 +180,7 @@ class DoublyLinkedList {
     }
   }
 
-  lemma PrevHasPrevIndex(prev: Node, node: Node)
+  lemma PrevHasPrevIndex(prev: DNode, node: DNode)
     requires Valid()
     requires prev in Repr()
     requires node in Repr()
@@ -231,7 +231,7 @@ class DoublyLinkedList {
     // ensures old(head) != null && old(head.next) == null ==> head.next == null
     ensures spine[1..] == old(spine)
   {
-    var n := new Node(null, x, head);
+    var n := new DNode(null, x, head);
     if head != null {
       head.prev := n;
     }
@@ -240,7 +240,7 @@ class DoublyLinkedList {
     assert head !in old(Repr());
   }
 
-  method Insert(mid: Node, x: A)
+  method Insert(mid: DNode, x: A)
     modifies this, Repr()
     requires Valid()
     requires mid in Repr()
@@ -257,7 +257,7 @@ class DoublyLinkedList {
       DistinctSpine();
       ModelRelationWithSpine();
     }
-    var n := new Node(mid, x, mid.next);
+    var n := new DNode(mid, x, mid.next);
     assert n.prev == mid;
     assert n.prev == mid;
     ghost var i :| 0 <= i < |spine| && spine[i] == mid;
@@ -273,7 +273,7 @@ class DoublyLinkedList {
     }
   }
 
-  method RemoveNext(mid: Node)
+  method RemoveNext(mid: DNode)
     modifies this, Repr()
     requires Valid()
     requires mid in Repr()
@@ -307,7 +307,7 @@ class DoublyLinkedList {
     }
   }
 
-  method FindPrev(mid: Node) returns (prev: Node)
+  method FindPrev(mid: DNode) returns (prev: DNode)
     requires Valid()
     requires head != mid
     requires mid in Repr()

@@ -1,10 +1,10 @@
 include "../../../src/Utils.dfy"
 
-class Node<A> {
+class SNode<A> {
   var data: A;
-  var next: Node?<A>;
+  var next: SNode?<A>;
 
-  constructor(data: A, next: Node?<A>)
+  constructor(data: A, next: SNode?<A>)
     ensures this.data == data
     ensures this.next == next
   {
@@ -12,7 +12,7 @@ class Node<A> {
     this.next := next;
   }
 
-  predicate IsPrevOf(n: Node<A>)
+  predicate IsPrevOf(n: SNode<A>)
     reads this
   {
     next == n
@@ -20,8 +20,8 @@ class Node<A> {
 }
 
 class List<A> {
-  var head: Node?<A>;
-  ghost var spine: seq<Node<A>>;
+  var head: SNode?<A>;
+  ghost var spine: seq<SNode<A>>;
 
   function Repr(): set<object>
     reads this
@@ -85,7 +85,7 @@ class List<A> {
     DistinctSpine();
   }
 
-  lemma NextNullImpliesLast(n: Node<A>)
+  lemma NextNullImpliesLast(n: SNode<A>)
     requires Valid()
     requires n in spine
     requires n.next == null
@@ -116,7 +116,7 @@ class List<A> {
     }
   }
 
-  static function ModelAux(xs: seq<Node<A>>): seq<A>
+  static function ModelAux(xs: seq<SNode<A>>): seq<A>
     reads set x | x in xs :: x`data
   {
     if xs == [] then
@@ -127,7 +127,7 @@ class List<A> {
       [xs[0].data] + ModelAux(xs[1..])
   }
 
-  lemma ModelAuxCommutesConcat(xs: seq<Node<A>>, ys: seq<Node<A>>)
+  lemma ModelAuxCommutesConcat(xs: seq<SNode<A>>, ys: seq<SNode<A>>)
     ensures ModelAux(xs + ys) == ModelAux(xs) + ModelAux(ys)
   {
     if xs == [] {
@@ -152,7 +152,7 @@ class List<A> {
     }
   }
 
-  static lemma ModelRelationWithSpineAux(spine: seq<Node<A>>, model: seq<A>)
+  static lemma ModelRelationWithSpineAux(spine: seq<SNode<A>>, model: seq<A>)
     requires ModelAux(spine) == model
     ensures |spine| == |model|
     ensures forall i | 0 <= i < |spine| :: spine[i].data == model[i]
@@ -179,7 +179,7 @@ class List<A> {
   }
 
   // TODO: remove
-  static function ModelUntilAux(xs: seq<Node<A>>, last: Node<A>): seq<A>
+  static function ModelUntilAux(xs: seq<SNode<A>>, last: SNode<A>): seq<A>
     reads set x | x in xs :: x`data
   {
     if xs == [] || xs[0] == last then
@@ -191,13 +191,13 @@ class List<A> {
   }
 
   // TODO: remove
-  function ModelUntil(last: Node<A>): seq<A>
+  function ModelUntil(last: SNode<A>): seq<A>
     reads this, spine
   {
     ModelUntilAux(spine, last)
   }
 
-  function GetIndex(n: Node<A>): nat
+  function GetIndex(n: SNode<A>): nat
     reads this, spine
     requires Valid()
     requires n in Repr()
@@ -212,7 +212,7 @@ class List<A> {
     i
   }
 
-  lemma LastHasLastIndex(last: Node<A>)
+  lemma LastHasLastIndex(last: SNode<A>)
     requires Valid()
     requires last.next == null
     requires last in Repr()
@@ -228,7 +228,7 @@ class List<A> {
     }
   }
 
-  lemma PrevHasPrevIndex(prev: Node<A>, node: Node<A>)
+  lemma PrevHasPrevIndex(prev: SNode<A>, node: SNode<A>)
     requires Valid()
     requires prev in Repr()
     requires node in Repr()
@@ -250,7 +250,7 @@ class List<A> {
     /*GHOST*/ spine := [];
   }
 
-  method PopNode() returns (h: Node<A>)
+  method PopNode() returns (h: SNode<A>)
     modifies this
     requires Valid()
     requires Model() != []
@@ -287,7 +287,7 @@ class List<A> {
     res := tmp.data;
   }
 
-  method PushNode(h: Node<A>)
+  method PushNode(h: SNode<A>)
     modifies this, h`next
     requires Valid()
     requires h !in Repr()
@@ -312,7 +312,7 @@ class List<A> {
     ensures fresh(Repr() - old(Repr()))
     ensures spine[1..] == old(spine)
   {
-    var n := new Node(x, null);
+    var n := new SNode(x, null);
     PushNode(n);
   }
 
@@ -397,7 +397,7 @@ class List<A> {
     }
   }
 
-  method Insert(mid: Node<A>, x: A)
+  method Insert(mid: SNode<A>, x: A)
     modifies this, mid
     requires Valid()
     requires mid in Repr()
@@ -414,7 +414,7 @@ class List<A> {
       DistinctSpine();
       ModelRelationWithSpine();
     }
-    var n := new Node(x, mid.next);
+    var n := new SNode(x, mid.next);
     mid.next := n;
     { // GHOST
       ghost var i :| 0 <= i < |spine| && spine[i] == mid;
@@ -424,7 +424,7 @@ class List<A> {
     }
   }
 
-  method RemoveNext(mid: Node<A>)
+  method RemoveNext(mid: SNode<A>)
     modifies this, mid
     requires Valid()
     requires mid in Repr()
@@ -453,7 +453,7 @@ class List<A> {
     }
   }
 
-  method FindPrev(mid: Node<A>) returns (prev: Node<A>)
+  method FindPrev(mid: SNode<A>) returns (prev: SNode<A>)
     requires Valid()
     requires head != mid
     requires mid in Repr()
