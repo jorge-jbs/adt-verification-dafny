@@ -447,8 +447,8 @@ class List<A> {
     mid.next := mid.next.next;
     { // GHOST
       spine := spine[..i+1] + spine[i+2..];
-      ModelRelationWithSpine();
       assert GetIndex(mid) == old(GetIndex(mid));
+      ModelRelationWithSpine();
       assert Model() == old(Seq.Remove(Model(), GetIndex(mid)+1));
     }
   }
