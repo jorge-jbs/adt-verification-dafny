@@ -54,6 +54,26 @@ module Seq {
     set x | x in xs
   }
 
+  lemma ElemsRev<A>(l: seq<A>)
+    ensures Elems(Rev(l)) == Elems(l)
+    ensures forall x | x in Rev(l) :: x in l
+    ensures forall x | x in l :: x in Rev(l)
+  {
+    if |l| == 0 {
+    } else {
+      ElemsRev(l[1..]);
+      assert Elems(Rev(l[1..])) == Elems(l[1..]);
+      calc == {
+        Elems(Rev(l));
+        { assert [l[0]] + l[1..] == l; }
+        Elems(Rev([l[0]] + l[1..]));
+        Elems(Rev(l[1..]) + [l[0]]);
+        Elems(Rev(l[1..])) + Elems([l[0]]);
+        Elems(l);
+      }
+    }
+  }
+
   lemma MElemsRev<A>(l: seq<A>)
     ensures MElems(Rev(l)) == MElems(l)
   {
@@ -63,7 +83,6 @@ module Seq {
       assert [l[0]] + l[1..] == l;
     }
   }
-
 
   function MElems<A>(xs: seq<A>): multiset<A>
   {
