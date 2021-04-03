@@ -69,12 +69,13 @@ class Stack1 extends Stack {
   }
 
   // O(1)
-  method Top() returns (x: int)
+  function method Top(): int
+    reads this, Repr()
     requires Valid()
     requires Model() != []
-    ensures x == Model()[0]
+    ensures Top() == Model()[0]
   {
-    x := list.head.data;
+    list.head.data
   }
 
   // O(1)

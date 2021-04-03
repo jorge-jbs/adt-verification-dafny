@@ -30,12 +30,12 @@ trait Stack {
     requires Valid()
     ensures Empty() <==> Model() == []
 
-  method Top() returns (x: int)
+  function method Top(): int
+    reads this, Repr()
     requires Valid()
     requires !Empty()
     ensures Valid()
-    ensures Model() == old(Model())
-    ensures x == Model()[0]
+    ensures Top() == Model()[0]
 
   method Push(x: int)
     modifies Repr()
