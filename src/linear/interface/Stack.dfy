@@ -1,22 +1,21 @@
 trait Stack {
-  function Depth(): nat
-    ensures Depth() > 0
+  function ReprDepth(): nat
+    ensures ReprDepth() > 0
 
   function ReprFamily(n: nat): set<object>
     decreases n
-    requires n <= Depth()
+    requires n <= ReprDepth()
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
 
   function Repr(): set<object>
-    reads this, ReprFamily(Depth()-1)
-    // ensures Repr() == ReprFamily(Depth())
+    reads this, ReprFamily(ReprDepth()-1)
   {
-    ReprFamily(Depth())
+    ReprFamily(ReprDepth())
   }
 
   lemma UselessLemma()
-    ensures Repr() == ReprFamily(Depth());
+    ensures Repr() == ReprFamily(ReprDepth());
 
   predicate Valid()
     reads this, Repr()
@@ -42,8 +41,8 @@ trait Stack {
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
-    ensures Repr() > old(Repr())
-    ensures forall x | x in (Repr() - old(Repr())) :: fresh(x)
+
+    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
 
   method Pop() returns (x: int)
@@ -52,7 +51,7 @@ trait Stack {
     requires !Empty()
     ensures Valid()
     ensures [x] + Model() == old(Model())
-    ensures forall x | x in (Repr() - old(Repr())) :: fresh(x)
+
+    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
-    // ensures Repr() < old(Repr())
 }

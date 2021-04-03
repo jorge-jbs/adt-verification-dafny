@@ -1,18 +1,21 @@
 trait Dequeue {
-  function Depth(): nat
-    ensures Depth() > 0
+  function ReprDepth(): nat
+    ensures ReprDepth() > 0
 
   function ReprFamily(n: nat): set<object>
     decreases n
-    requires n <= Depth()
+    requires n <= ReprDepth()
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
 
   function Repr(): set<object>
-    reads this, ReprFamily(Depth()-1)
+    reads this, ReprFamily(ReprDepth()-1)
   {
-    ReprFamily(Depth())
+    ReprFamily(ReprDepth())
   }
+
+  lemma UselessLemma()
+    ensures Repr() == ReprFamily(ReprDepth());
 
   predicate Valid()
     reads this, Repr()
@@ -21,20 +24,21 @@ trait Dequeue {
     reads this, Repr()
     requires Valid()
 
-  method Front() returns (x: int)
+  function method Front(): int
+    reads this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
-    ensures Model() == old(Model())
-    ensures x == Model()[0]
+    ensures Front() == Model()[0]
 
   method PushFront(x: int)
     modifies Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
-    ensures Repr() > old(Repr())
-    ensures fresh(Repr() - old(Repr()))
+
+    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
 
   method PopFront() returns (x: int)
     modifies Repr()
@@ -42,22 +46,25 @@ trait Dequeue {
     requires Model() != []
     ensures Valid()
     ensures [x] + Model() == old(Model())
-    ensures Repr() < old(Repr())
 
-  method Back() returns (x: int)
+    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
+
+  function method Back(): int
+    reads this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
-    ensures Model() == old(Model())
-    ensures x == Model()[|Model()|-1]
+    ensures Back() == Model()[|Model()|-1]
 
   method PushBack(x: int)
     modifies Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + [x]
-    ensures Repr() > old(Repr())
-    ensures fresh(Repr() - old(Repr()))
+
+    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
 
   method PopBack() returns (x: int)
     modifies Repr()
@@ -65,5 +72,7 @@ trait Dequeue {
     requires Model() != []
     ensures Valid()
     ensures Model() + [x] == old(Model())
-    ensures Repr() < old(Repr())
+
+    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
 }

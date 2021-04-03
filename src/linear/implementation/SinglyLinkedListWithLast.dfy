@@ -2,7 +2,7 @@ include "../../../src/linear/implementation/SinglyLinkedListWithSpine.dfy"
 
 class SinglyLinkedListWithLast<A> {
   var list: List<A>;
-  var last: Node?<A>;
+  var last: SNode?<A>;
 
   function Repr(): set<object>
     reads this, list
@@ -39,14 +39,14 @@ class SinglyLinkedListWithLast<A> {
     last := null;
   }
 
-  method Front() returns (x: A)
+  function method Front(): A
+    reads this, list, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
-    ensures Model() == old(Model())
-    ensures x == Model()[0]
+    ensures Front() == Model()[0]
   {
-    x := list.head.data;
+    list.head.data
   }
 
   // O(1)
@@ -143,9 +143,7 @@ class SinglyLinkedListWithLast<A> {
       list.RemoveNext(prev);
       x := last.data;
       last := prev;
-      assert Model() == Seq.Remove(old(Model()), old(list.GetIndex(prev)+1));
-      assert list.GetIndex(prev) == old(list.GetIndex(prev));
-      assert Model() + [x] == old(Model());
+      /*GHOST*/ list.LastHasLastIndex(last);
     }
   }
 }

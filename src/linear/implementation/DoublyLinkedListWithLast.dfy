@@ -39,26 +39,26 @@ class DoublyLinkedListWithLast {
     last := null;
   }
 
-  method Front() returns (x: int)
+  function method Front(): int
+    reads this, list, list.Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
-    ensures Model() == old(Model())
-    ensures x == Model()[0]
+    ensures Front() == Model()[0]
   {
-    x := list.head.data;
+    list.head.data
   }
 
-  method Back() returns (x: int)
+  function method Back(): int
+    reads this, list, list.Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
-    ensures Model() == old(Model())
-    ensures x == Model()[|Model()|-1]
+    ensures Back() == Model()[|Model()|-1]
   {
     list.LastHasLastIndex(last);
     list.ModelRelationWithSpine();
-    x := last.data;
+    last.data
   }
 
   // O(1)

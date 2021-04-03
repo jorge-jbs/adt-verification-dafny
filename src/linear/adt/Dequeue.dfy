@@ -4,8 +4,8 @@ include "../../../src/linear/interface/Dequeue.dfy"
 class Dequeue1 extends Dequeue {
   var list: DoublyLinkedListWithLast;
 
-  function Depth(): nat
-    ensures Depth() > 0
+  function ReprDepth(): nat
+    ensures ReprDepth() > 0
   {
     2
   }
@@ -30,7 +30,7 @@ class Dequeue1 extends Dequeue {
 
   function ReprFamily(n: nat): set<object>
     decreases n
-    requires n <= Depth()
+    requires n <= ReprDepth()
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
   {
@@ -44,6 +44,10 @@ class Dequeue1 extends Dequeue {
       assert false;
       {}
   }
+
+  lemma UselessLemma()
+    ensures Repr() == ReprFamily(ReprDepth());
+  {}
 
   predicate Valid()
     reads this, Repr()
@@ -66,14 +70,14 @@ class Dequeue1 extends Dequeue {
     list := new DoublyLinkedListWithLast();
   }
 
-  method Front() returns (x: int)
+  function method Front(): int
+    reads this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
-    ensures Model() == old(Model())
-    ensures x == Model()[0]
+    ensures Front() == Model()[0]
   {
-    x := list.Front();
+    list.Front()
   }
 
   method PushFront(x: int)
@@ -98,14 +102,14 @@ class Dequeue1 extends Dequeue {
     x := list.PopFront();
   }
 
-  method Back() returns (x: int)
+  function method Back(): int
+    reads this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
-    ensures Model() == old(Model())
-    ensures x == Model()[|Model()|-1]
+    ensures Back() == Model()[|Model()|-1]
   {
-    x := list.Back();
+    list.Back()
   }
 
   method PushBack(x: int)
