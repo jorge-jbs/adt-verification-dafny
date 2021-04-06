@@ -35,6 +35,27 @@ module Seq {
       Rev(xs[1..]) + [xs[0]]
   }
 
+  lemma LastRev<A>(xs: seq<A>)
+    requires |xs| > 0
+    ensures Rev(xs) == [xs[|xs|-1]] + Rev(xs[..|xs|-1])
+  {
+    if |xs| == 0 {
+    } else if |xs| == 1 {
+    } else {
+      calc == {
+        Rev(xs);
+        Rev([xs[0]] + xs[1..]);
+        Rev(xs[1..]) + [xs[0]];
+        { LastRev(xs[1..]); }
+        [xs[|xs|-1]] + Rev(xs[1..][..|xs[1..]|-1]) + [xs[0]];
+        { assert xs[1..][..|xs[1..]|-1] == xs[1..|xs|-1]; }
+        [xs[|xs|-1]] + Rev(xs[1..|xs|-1]) + [xs[0]];
+        [xs[|xs|-1]] + Rev([xs[0]] + xs[1..|xs|-1]);
+        [xs[|xs|-1]] + Rev(xs[..|xs|-1]);
+      }
+    }
+  }
+
   lemma LeRev(xs: seq<int>)
     requires forall i | 0 <= i < |xs|-1 :: xs[i] >= xs[i+1]
     ensures forall i | 0 <= i < |xs|-1 :: Rev(xs)[i] <= Rev(xs)[i+1]
