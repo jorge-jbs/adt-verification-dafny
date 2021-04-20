@@ -19,12 +19,14 @@ trait List {
 
   function Iterators(): set<ListIterator>
     reads this, Repr()
+    requires Valid()
     ensures forall it | it in Iterators() ::
       && it.Parent() == this
       && {it} !! {this} + Repr()
 
   function ValidIterators(): set<ListIterator>
     reads this, Repr()
+    requires Valid()
     ensures ValidIterators() <= Iterators()
 
   // predicate ValidIterator(it: ListIterator)
@@ -48,17 +50,17 @@ trait List {
     requires Valid()
     ensures Size() == |Model()|
 
-  method At(i: nat) returns (x: int)
-    requires Valid()
-    requires i < |Model()|
+  // method At(i: nat) returns (x: int)
+  //   requires Valid()
+  //   requires i < |Model()|
 
-    ensures Valid()
-    ensures Model() == old(Model())
-    ensures x == Model()[i]
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
-    ensures forall x | x in Repr() :: allocated(x)
+  //   ensures Valid()
+  //   ensures Model() == old(Model())
+  //   ensures x == Model()[i]
+  //   ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+  //   ensures forall x | x in Repr() :: allocated(x)
 
-  method GetIterator(i: nat) returns (it: ListIterator)
+  method GetIterator() returns (it: ListIterator)
     modifies this, Repr()
     requires Valid()
     ensures Valid()
@@ -66,7 +68,7 @@ trait List {
     ensures Iterators() == {it} + old(Iterators())
     // ensures it !in old(Iterators())
     // ensures it in Iterators()
-    ensures it.Index() == i
+    ensures it.Index() == 0
     // ensures ValidIterator(it)
     // ensures it.Valid()
     ensures fresh(it)
@@ -74,6 +76,7 @@ trait List {
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
 
+  /*
   method IAt(it: ListIterator) returns (x: int)
     requires Valid()
     requires it.Parent() == this
@@ -83,12 +86,14 @@ trait List {
     ensures Valid()
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
+    requires it in ValidIterators()
 
     ensures it.Index() == old(it.Index())
     ensures it.Parent() == old(it.Parent())
     ensures Model() == old(Model())
 
     ensures x == Model()[it.Index()]
+     */
 
   function method Front(): int
     reads this, Repr()
@@ -98,7 +103,7 @@ trait List {
     ensures Front() == Model()[0]
 
   method PushFront(x: int)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
@@ -107,7 +112,7 @@ trait List {
     ensures forall x | x in Repr() :: allocated(x)
 
   method PopFront() returns (x: int)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
@@ -136,7 +141,7 @@ trait List {
     ensures Back() == Model()[|Model()|-1]
 
   method PushBack(x: int)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + [x]
@@ -145,7 +150,7 @@ trait List {
     ensures forall x | x in Repr() :: allocated(x)
 
   method PopBack() returns (x: int)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
@@ -169,9 +174,9 @@ trait ListIterator {
     ensures {Parent()} !! {this}
 
   function Index(): nat
-    reads this, Parent(), Parent().Repr()
-    requires Parent().Valid()
-    ensures Index() < |Parent().Model()|
+    reads this //, Parent(), Parent().Repr()
+    // requires Parent().Valid()
+    // ensures Index() < |Parent().Model()|
 
   function method HasNext(): bool
     reads this, Parent(), Parent().Repr()
@@ -194,6 +199,7 @@ trait ListIterator {
     ensures this in Parent().ValidIterators()
     ensures old(Index()) < Index()
     ensures old(Parent()) == Parent()
+    ensures old(Index()) < |Parent().Model()|
     ensures x == Parent().Model()[old(Index())]
     ensures Index() == 1 + old(Index())
 
@@ -212,18 +218,19 @@ method ItertatorExample(l: List, v: array<int>)
   ensures l.Model() == old(l.Model())
   ensures v[..] == l.Model()  // parece que esta poscondición siempre es demostrada (bug de Dafny?)
 {
-  var it := l.GetIterator(0);
+  var it := l.GetIterator();
   var i := 0;
   // var it := new QueueIterator(l);
   while it.HasNext()
     modifies it, v
     decreases |l.Model()| - it.Index()
     invariant l.Model() == old(l.Model())
+    invariant it.Parent() == l
     invariant l.Valid()
     invariant it in l.ValidIterators()
     invariant {it} !! {l} + l.Repr()
     invariant it.Index() == i
-    invariant i < |l.Model()|
+    invariant i <= |l.Model()|
     invariant v[..i] == l.Model()[..i]
   {
     var x := it.Next();
