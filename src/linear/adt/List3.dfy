@@ -58,6 +58,7 @@ class ListIterator1 extends ListIterator {
     requires Valid()
     requires Parent().Valid()
     requires allocated(Parent())
+    requires forall it | it in Parent().Iterators() :: allocated(it)
     ensures Parent().Valid()
     ensures Valid()
     ensures old(Index()) < Index()
@@ -67,6 +68,8 @@ class ListIterator1 extends ListIterator {
     ensures Parent().Iterators() == old(Parent().Iterators())
     ensures x == Parent().Model()[old(Index())]
     ensures Index() == 1 + old(Index())
+    ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
+      it.Valid() && (it != this ==> it.Index() == old(it.Index()))
     ensures forall x | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
     ensures forall x | x in Parent().Repr() :: allocated(x)
   {

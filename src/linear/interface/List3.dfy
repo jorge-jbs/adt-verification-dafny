@@ -22,6 +22,7 @@ trait ListIterator {
     requires Valid()
     requires Parent().Valid()
     requires allocated(Parent())
+    requires forall it | it in Parent().Iterators() :: allocated(it)
     ensures Parent().Valid()
     ensures Valid()
     ensures old(Index()) < Index()
@@ -31,6 +32,8 @@ trait ListIterator {
     ensures Parent().Iterators() == old(Parent().Iterators())
     ensures x == Parent().Model()[old(Index())]
     ensures Index() == 1 + old(Index())
+    ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
+      it.Valid() && (it != this ==> it.Index() == old(it.Index()))
     ensures forall x | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
     ensures forall x | x in Parent().Repr() :: allocated(x)
 }
@@ -80,12 +83,15 @@ trait List {
   method Begin() returns (it: ListIterator)
     modifies this, Repr()
     requires Valid()
+    requires forall it | it in Iterators() :: allocated(it)
     ensures Valid()
     ensures Model() == old(Model())
     ensures fresh(it)
     ensures Iterators() == {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Index() == 0
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Index() == old(it.Index())
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
 
@@ -169,6 +175,20 @@ trait List {
         it.Valid() && it.Index() == old(it.Index())
 }
 
+lemma Obvious(x: object)
+  ensures allocated(x)
+{}
+
+lemma Obviouss(os: set<object>)
+  ensures forall x | x in os :: allocated(x)
+{
+  forall x | x in os
+    ensures allocated(x)
+  {
+    Obvious(x);
+  }
+}
+
 method ItertatorExample1(l: List, v: array<int>)
   modifies l, l.Repr(), v
   requires {v} !! {l} + l.Repr()
@@ -178,6 +198,7 @@ method ItertatorExample1(l: List, v: array<int>)
   ensures l.Model() == old(l.Model())
   ensures v[..] == l.Model()
 {
+  Obviouss(l.Iterators());
   var it := l.Begin();
   var i := 0;
   while it.HasNext()
@@ -199,4 +220,53 @@ method ItertatorExample1(l: List, v: array<int>)
     v[i] := x;
     i := i + 1;
   }
+}
+
+method ItertatorExample2(l: List)
+  modifies l, l.Repr()
+  requires l.Valid()
+  requires l.Model() != []
+  ensures l.Valid()
+  ensures l.Model() == old(l.Model())
+{
+  Obviouss(l.Iterators());
+  var it1 := l.Begin();
+  var x := it1.Next();
+}
+
+method ItertatorExample3(l: List)
+  modifies l, l.Repr()
+  requires l.Valid()
+  requires l.Model() != []
+  ensures l.Valid()
+  ensures l.Model() == old(l.Model())
+{
+  Obviouss(l.Iterators());
+  var it1 := l.Begin();
+  var it2 := l.Begin();
+  assert it2.Valid();
+  assert it2.Index() == 0;
+  assert it2.Index() < |l.Model()|;
+  assert it2.HasNext();
+  assert it1.Valid();
+  assert it1.Index() == 0;
+  assert it1.Index() < |l.Model()|;
+  assert it1.HasNext();
+  var x := it2.Next();
+}
+
+method ItertatorExample4(l: List)
+  modifies l, l.Repr()
+  requires l.Valid()
+  requires l.Model() != []
+  ensures l.Valid()
+{
+  /*GHOST*/ Obviouss(l.Iterators());
+  var it1 := l.Begin();
+  var it2 := l.Begin();
+  var x := it2.Next();
+  var y := l.PopFront();
+  assert x == y;
+  assert !it1.Valid();
+  assert it2.Valid();
 }
