@@ -36,6 +36,35 @@ trait ListIterator {
       it.Valid() && (it != this ==> it.Index() == old(it.Index()))
     ensures forall x | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
     ensures forall x | x in Parent().Repr() :: allocated(x)
+
+  function method Peek(): int
+    reads this, Parent(), Parent().Repr()
+    requires Valid()
+    requires Parent().Valid()
+    requires HasNext()
+    ensures Peek() == Parent().Model()[Index()]
+
+  method Copy() returns (it: ListIterator)
+    modifies Parent(), Parent().Repr()
+    requires Valid()
+    requires Parent().Valid()
+    requires allocated(Parent())
+    requires forall it | it in Parent().Iterators() :: allocated(it)
+    ensures fresh(it)
+    ensures Valid()
+    ensures it.Valid()
+    ensures Parent().Valid()
+    ensures it in Parent().Iterators()
+    ensures Parent().Iterators() == {it} + old(Parent().Iterators())
+    ensures Parent() == old(Parent())
+    ensures Parent() == it.Parent()
+    ensures Index() == it.Index()
+    ensures it.Valid()
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Index() == old(it.Index())
+    ensures Parent().Model() == old(Parent().Model())
+    ensures forall x | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
+    ensures forall x | x in Parent().Repr() :: allocated(x)
 }
 
 trait List {
@@ -269,4 +298,44 @@ method ItertatorExample4(l: List)
   assert x == y;
   assert !it1.Valid();
   assert it2.Valid();
+}
+
+method FindMax(l: List) returns (max: ListIterator)
+  modifies l, l.Repr()
+  requires l.Valid()
+  requires l.Model() != []
+  ensures l.Valid()
+  ensures l.Model() == old(l.Model())
+  ensures fresh(max)
+  ensures max.Valid()
+  ensures max.Parent() == l
+  ensures max.HasNext()
+  ensures forall x | x in l.Model() :: l.Model()[max.Index()] >= x
+{
+  /*GHOST*/ Obviouss(l.Iterators());
+  max := l.Begin();
+  var it := l.Begin();
+  while it.HasNext()
+    decreases |l.Model()| - it.Index()
+    invariant l.Valid()
+    invariant l.Model() == old(l.Model())
+    invariant it.Valid()
+    invariant it.Parent() == l
+    invariant it in l.Iterators()
+    invariant fresh(max)
+    invariant max.Valid()
+    invariant max.Parent() == l
+    invariant max in l.Iterators()
+    invariant max != it
+    invariant max.HasNext()
+    invariant it.Index() <= |l.Model()|
+    invariant forall k | 0 <= k < it.Index() :: l.Model()[max.Index()] >= l.Model()[k]
+    invariant forall x | x in l.Repr() - old(l.Repr()) :: fresh(x)
+    invariant forall x | x in l.Repr() :: allocated(x)
+  {
+    if it.Peek() > max.Peek() {
+      max := it.Copy();
+    }
+    var x := it.Next();
+  }
 }

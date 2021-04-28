@@ -46,6 +46,16 @@ class ListIterator1 extends ListIterator {
     node := l.list.list.head;
   }
 
+  constructor CopyCtr(it: ListIterator1)
+    requires it.Valid()
+    ensures Valid()
+    ensures parent == it.parent
+    ensures node == it.node
+  {
+    parent := it.parent;
+    node := it.node;
+  }
+
   function method HasNext(): bool
     reads this
   {
@@ -84,6 +94,43 @@ class ListIterator1 extends ListIterator {
     }
     x := node.data;
     node := node.next;
+  }
+
+  function method Peek(): int
+    reads this, Parent(), Parent().Repr()
+    requires Valid()
+    requires Parent().Valid()
+    requires HasNext()
+    ensures Peek() == Parent().Model()[Index()]
+  {
+    parent.list.list.ModelRelationWithSpine();
+    node.data
+  }
+
+  method Copy() returns (it: ListIterator)
+    modifies Parent(), Parent().Repr()
+    requires Valid()
+    requires Parent().Valid()
+    requires allocated(Parent())
+    requires forall it | it in Parent().Iterators() :: allocated(it)
+    ensures fresh(it)
+    ensures Valid()
+    ensures it.Valid()
+    ensures Parent().Valid()
+    ensures it in Parent().Iterators()
+    ensures Parent().Iterators() == {it} + old(Parent().Iterators())
+    ensures Parent() == old(Parent())
+    ensures Parent() == it.Parent()
+    ensures Index() == it.Index()
+    ensures it.Valid()
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+    it.Valid() && it.Index() == old(it.Index())
+    ensures Parent().Model() == old(Parent().Model())
+    ensures forall x | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
+    ensures forall x | x in Parent().Repr() :: allocated(x)
+  {
+    it := new ListIterator1.CopyCtr(this);
+    parent.iters := {it} + parent.iters;
   }
 }
 
@@ -211,11 +258,6 @@ class List3 extends List {
     size := 0;
     iters := {};
   }
-
-  // function Iterators(): set<ListIterator1>
-  // {
-  //   iters
-  // }
 
   function method Front(): int
     reads this, Repr()

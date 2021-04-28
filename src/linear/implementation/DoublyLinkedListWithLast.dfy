@@ -92,6 +92,7 @@ class DoublyLinkedListWithLast {
     ensures [x] + Model() == old(Model())
     ensures Repr() < old(Repr())
     ensures list == old(list)
+    ensures [old(list.head)] + list.spine == old(list.spine);
   {
     { // GHOST
       if list.head != null {
@@ -146,6 +147,7 @@ class DoublyLinkedListWithLast {
     ensures Model() + [x] == old(Model())
     ensures Repr() < old(Repr())
     ensures list == old(list)
+    ensures list.spine + [old(last)] == old(list.spine)
   {
     if list.head == last {
       assert list.head.next == null;
