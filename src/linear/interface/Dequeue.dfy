@@ -24,6 +24,11 @@ trait Dequeue {
     reads this, Repr()
     requires Valid()
 
+  function method Empty(): bool
+    reads this, Repr()
+    requires Valid()
+    ensures Empty() <==> Model() == []
+
   function method Front(): int
     reads this, Repr()
     requires Valid()

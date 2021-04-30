@@ -1,8 +1,8 @@
 include "../../../src/linear/implementation/DoublyLinkedListWithLast.dfy"
-include "../../../src/linear/interface/List3.dfy"
+include "../../../src/linear/interface/LinkedList.dfy"
 
 class ListIterator1 extends ListIterator {
-  ghost var parent: List3
+  ghost var parent: List1
   var node: DNode?
 
   predicate Valid()
@@ -31,7 +31,7 @@ class ListIterator1 extends ListIterator {
       |parent.list.list.spine|
   }
 
-  constructor(l: List3)
+  constructor(l: List1)
     requires l.Valid()
     ensures Valid()
     ensures parent == l
@@ -130,7 +130,7 @@ class ListIterator1 extends ListIterator {
   }
 }
 
-class List3 extends List {
+class List1 extends List {
   var list: DoublyLinkedListWithLast;
   var size: nat;
   ghost var iters: set<ListIterator1>;

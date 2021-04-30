@@ -140,8 +140,7 @@ method {:verify true} FillFromStack(r: array<int>, i: nat, st: Stack) returns (l
     invariant r[i..i+l] == old(st.Model()[..l])
     invariant r[i+old(|st.Model()|)..] == old(r[i+|st.Model()|..])
   {
-    var x := st.Pop();
-    r[i+l] := x;
+    r[i+l] := st.Pop();
     l := l + 1;
   }
   l := l + i;
@@ -183,8 +182,7 @@ method {:verify true} FillFromQueue(r: array<int>, i: nat, q: Queue) returns (l:
     invariant r[i..i+l] == old(q.Model()[..l])
     invariant r[i+old(|q.Model()|)..] == old(r[i+|q.Model()|..])
   {
-    var x := q.Dequeue();
-    r[i+l] := x;
+    r[i+l] := q.Dequeue();
     l := l + 1;
   }
   l := l + i;

@@ -62,6 +62,14 @@ class Dequeue1 extends Dequeue {
     list.Model()
   }
 
+  function method Empty(): bool
+    reads this, Repr()
+    requires Valid()
+    ensures Empty() <==> Model() == []
+  {
+    list.list.head == null
+  }
+
   constructor()
     ensures Valid()
     ensures Model() == []
