@@ -9,10 +9,7 @@ class ListIterator1 extends ListIterator {
     reads this, parent, parent.Repr()
   {
     && parent.Valid()
-    && ( node != null ==>
-          && node in parent.list.list.spine
-          // && index == parent.list.list.GetIndex(node)
-      )
+    && (node != null ==> node in parent.list.list.spine)
   }
 
   function Parent(): List
@@ -24,14 +21,13 @@ class ListIterator1 extends ListIterator {
   function Index(): nat
     reads this, parent, parent.Repr()
     requires Valid()
-    requires parent.Valid()
-    // reads this //, Parent(), Parent().Repr()
-    // requires Parent().Valid()
-    // ensures Index() < |Parent().Model()|
+    requires Parent().Valid()
+    ensures Index() <= |Parent().Model()|
   {
     if node != null then
       parent.list.list.GetIndex(node)
     else
+      parent.list.list.ModelRelationWithSpine();
       |parent.list.list.spine|
   }
 
@@ -64,9 +60,9 @@ class ListIterator1 extends ListIterator {
 
   method Next() returns (x: int)
     modifies this
-    requires HasNext()
     requires Valid()
     requires Parent().Valid()
+    requires HasNext()
     requires allocated(Parent())
     requires forall it | it in Parent().Iterators() :: allocated(it)
     ensures Parent().Valid()
@@ -124,7 +120,7 @@ class ListIterator1 extends ListIterator {
     ensures Index() == it.Index()
     ensures it.Valid()
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-    it.Valid() && it.Index() == old(it.Index())
+      it.Valid() && it.Index() == old(it.Index())
     ensures Parent().Model() == old(Parent().Model())
     ensures forall x | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
     ensures forall x | x in Parent().Repr() :: allocated(x)
@@ -189,10 +185,7 @@ class List3 extends List {
   {
     && size == |list.list.spine|
     && list.Valid()
-    && forall it | it in iters ::
-      && it.parent == this
-      && {it} !! {this}
-      // && it.node in list.list.spine
+    && forall it | it in iters :: it.parent == this && {it} !! {this}
   }
 
   function Model(): seq<int>
@@ -224,8 +217,7 @@ class List3 extends List {
   function Iterators(): set<ListIterator>
     reads this, Repr()
     requires Valid()
-    // ensures Iterators() <= Repr();
-    ensures forall it | it in Iterators() :: it in Repr() &&  it.Parent() == this
+    ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
   {
     iters
   }
@@ -280,7 +272,8 @@ class List3 extends List {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures iters == old(iters)
-    ensures forall it | it in iters && old(it.Valid()) :: it.Valid()
+    ensures forall it | it in Iterators() && old(it.Valid()) ::
+      it.Valid() // && it.Index() == old(it.Index()) + 1
   {
     /*GHOST*/ list.list.ModelRelationWithSpine();
     list.PushFront(x);
