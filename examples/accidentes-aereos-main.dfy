@@ -1,4 +1,4 @@
-include "../src/linear/adt/Stack.dfy"
+include "../src/linear/impl/LinkedStackImpl.dfy"
 include "../examples/accidentes-aereos.dfy"
 
 // method {:extern} Read() returns (x: int)
@@ -14,7 +14,7 @@ method {:verify false} Main()
   v[3] := 10;
   v[4] := 60;
   v[5] := 5;
-  var st := new Stack1();
+  var st := new LinkedStack();
   var r := FindSummits(v, st);
   var i := 0;
   while i < r.Length

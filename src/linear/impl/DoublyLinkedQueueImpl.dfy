@@ -1,7 +1,7 @@
-include "../../../src/linear/implementation/DoublyLinkedListWithLast.dfy"
-include "../../../src/linear/interface/Dequeue.dfy"
+include "../../../src/linear/aux/DoublyLinkedListWithLast.dfy"
+include "../../../src/linear/adt/Queue.dfy"
 
-class Dequeue1 extends Dequeue {
+class DoublyLinkedQueue extends Queue {
   var list: DoublyLinkedListWithLast;
 
   function ReprDepth(): nat
@@ -73,7 +73,8 @@ class Dequeue1 extends Dequeue {
   constructor()
     ensures Valid()
     ensures Model() == []
-    ensures fresh(Repr())
+    ensures forall x | x in Repr() :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
   {
     list := new DoublyLinkedListWithLast();
   }
@@ -88,39 +89,7 @@ class Dequeue1 extends Dequeue {
     list.Front()
   }
 
-  method PushFront(x: int)
-    modifies Repr()
-    requires Valid()
-    ensures Valid()
-    ensures Model() == [x] + old(Model())
-    ensures Repr() > old(Repr())
-    ensures fresh(Repr() - old(Repr()))
-  {
-    list.PushFront(x);
-  }
-
-  method PopFront() returns (x: int)
-    modifies Repr()
-    requires Valid()
-    requires Model() != []
-    ensures Valid()
-    ensures [x] + Model() == old(Model())
-    ensures Repr() < old(Repr())
-  {
-    x := list.PopFront();
-  }
-
-  function method Back(): int
-    reads this, Repr()
-    requires Valid()
-    requires Model() != []
-    ensures Valid()
-    ensures Back() == Model()[|Model()|-1]
-  {
-    list.Back()
-  }
-
-  method PushBack(x: int)
+  method Enqueue(x: int)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -131,14 +100,14 @@ class Dequeue1 extends Dequeue {
     list.PushBack(x);
   }
 
-  method PopBack() returns (x: int)
+  method Dequeue() returns (x: int)
     modifies Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
-    ensures Model() + [x] == old(Model())
+    ensures [x] + Model() == old(Model())
     ensures Repr() < old(Repr())
   {
-    x := list.PopBack();
+    x := list.PopFront();
   }
 }

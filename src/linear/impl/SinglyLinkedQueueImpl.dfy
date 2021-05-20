@@ -1,7 +1,7 @@
-include "../../../src/linear/implementation/SinglyLinkedListWithLast.dfy"
-include "../../../src/linear/interface/Queue.dfy"
+include "../../../src/linear/aux/SinglyLinkedListWithLast.dfy"
+include "../../../src/linear/adt/Queue.dfy"
 
-class Queue2 extends Queue {
+class SinglyLinkedQueue extends Queue {
   var list: SinglyLinkedListWithLast<int>;
 
   function ReprDepth(): nat

@@ -1,7 +1,7 @@
-include "../../../src/linear/implementation/DoublyLinkedListWithLast.dfy"
-include "../../../src/linear/interface/Queue.dfy"
+include "../../../src/linear/aux/DoublyLinkedListWithLast.dfy"
+include "../../../src/linear/adt/Deque.dfy"
 
-class Queue1 extends Queue {
+class Dequeue1 extends Dequeue {
   var list: DoublyLinkedListWithLast;
 
   function ReprDepth(): nat
@@ -73,8 +73,7 @@ class Queue1 extends Queue {
   constructor()
     ensures Valid()
     ensures Model() == []
-    ensures forall x | x in Repr() :: fresh(x)
-    ensures forall x | x in Repr() :: allocated(x)
+    ensures fresh(Repr())
   {
     list := new DoublyLinkedListWithLast();
   }
@@ -89,7 +88,39 @@ class Queue1 extends Queue {
     list.Front()
   }
 
-  method Enqueue(x: int)
+  method PushFront(x: int)
+    modifies Repr()
+    requires Valid()
+    ensures Valid()
+    ensures Model() == [x] + old(Model())
+    ensures Repr() > old(Repr())
+    ensures fresh(Repr() - old(Repr()))
+  {
+    list.PushFront(x);
+  }
+
+  method PopFront() returns (x: int)
+    modifies Repr()
+    requires Valid()
+    requires Model() != []
+    ensures Valid()
+    ensures [x] + Model() == old(Model())
+    ensures Repr() < old(Repr())
+  {
+    x := list.PopFront();
+  }
+
+  function method Back(): int
+    reads this, Repr()
+    requires Valid()
+    requires Model() != []
+    ensures Valid()
+    ensures Back() == Model()[|Model()|-1]
+  {
+    list.Back()
+  }
+
+  method PushBack(x: int)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -100,67 +131,14 @@ class Queue1 extends Queue {
     list.PushBack(x);
   }
 
-  method Dequeue() returns (x: int)
+  method PopBack() returns (x: int)
     modifies Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
-    ensures [x] + Model() == old(Model())
+    ensures Model() + [x] == old(Model())
     ensures Repr() < old(Repr())
   {
-    x := list.PopFront();
-  }
-}
-
-class QueueIterator {
-  ghost var index: nat
-  ghost var parent: Queue1
-  var node: DNode?
-
-  predicate Valid()
-    reads this, parent, parent.Repr()
-  {
-    && parent.Valid()
-    && ( node != null ==>
-          && node in parent.list.list.Repr()
-          && index == parent.list.list.GetIndex(node)
-      )
-  }
-
-  constructor(l: Queue1)
-    requires l.Valid()
-    ensures Valid()
-    ensures parent == l
-  {
-    index := 0;
-    parent := l;
-    node := l.list.list.head;
-  }
-
-  function method HasNext(): bool
-    reads this
-  {
-    node != null
-  }
-
-  method Next() returns (x: int)
-    modifies this
-    requires HasNext()
-    requires Valid()
-    ensures Valid()
-    ensures x == old(parent.Model()[index])
-    ensures old(index) < index
-    ensures parent == old(parent)
-  {
-    { // GHOST
-      parent.list.list.ModelRelationWithSpine();
-      if index < |parent.list.list.spine|-1 {
-        assert parent.list.list.spine[index+1]
-          == parent.list.list.spine[index].next;
-      }
-    }
-    x := node.data;
-    index := index + 1;
-    node := node.next;
+    x := list.PopBack();
   }
 }

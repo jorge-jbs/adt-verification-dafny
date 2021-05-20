@@ -1,4 +1,4 @@
-include "../src/linear/interface/Stack.dfy"
+include "../src/linear/adt/Stack.dfy"
 
 predicate AdjacentSummits(v: seq<nat>, i: nat, j: nat)
   requires 0 <= i < j < |v|

@@ -1,6 +1,6 @@
 include "../examples/reordenando-la-cola.dfy"
-include "../src/linear/adt/Stack.dfy"
-include "../src/linear/adt/Queue1.dfy"
+include "../src/linear/impl/LinkedStackImpl.dfy"
+include "../src/linear/impl/SinglyLinkedQueueImpl.dfy"
 
 method {:extern} Scan() returns (x: int)
 
@@ -29,8 +29,8 @@ method {:verify false} Main()
       break;
     } else {
       var v := ScanArray(n);
-      var neg := new Stack1();
-      var pos := new Queue1();
+      var neg := new LinkedStack();
+      var pos := new SinglyLinkedQueue();
       // assert {v} !! {neg} + neg.Repr();
       // assert {v} !! {pos} + pos.Repr();
       // assert {pos} + pos.Repr() !! {neg} + neg.Repr();
