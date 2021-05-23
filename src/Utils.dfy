@@ -116,8 +116,12 @@ module Seq {
 
   function Insert<A>(x: A, xs: seq<A>, i: nat): seq<A>
     requires 0 <= i <= |xs|
+    ensures |xs| + 1 == |Insert(x, xs, i)|
     ensures i == 0 ==> Insert(x, xs, i) == [x] + xs
     ensures i == |xs| ==> Insert(x, xs, i) == xs + [x]
+    ensures Insert(x, xs, i)[i] == x
+    ensures forall k | 0 <= k < i :: xs[k] == Insert(x, xs, i)[k]
+    ensures forall k | i <= k < |xs| :: xs[k] == Insert(x, xs, i)[k+1]
   {
     xs[..i] + [x] + xs[i..]
   }

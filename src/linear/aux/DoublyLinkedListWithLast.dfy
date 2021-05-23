@@ -18,7 +18,7 @@ class DoublyLinkedListWithLast {
   function Repr(): set<object>
     reads this, list
   {
-    list.Repr()
+    {list} + list.Repr()
   }
 
   function Model(): seq<A>
@@ -178,6 +178,30 @@ class DoublyLinkedListWithLast {
       }
       list.RemoveNext(prev);
       last := prev;
+    }
+  }
+
+  method Insert(mid: DNode, x: A)
+    modifies this, Repr()
+    requires Valid()
+    requires mid in Repr()
+    requires forall x | x in Repr() :: allocated(x)
+    ensures Valid()
+    ensures list.spine
+      == Seq.Insert(mid.next, old(list.spine), old(list.GetIndex(mid))+1)
+    ensures Model() == Seq.Insert(x, old(Model()), old(list.GetIndex(mid))+1)
+    ensures mid.next != null
+    ensures fresh(mid.next)
+    ensures mid.next in list.spine
+    ensures mid.next.next == old(mid.next)
+    ensures forall n | n in old(list.spine) :: n in list.spine
+    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
+  {
+    /*GHOST*/ list.LastHasLastIndex(last);
+    list.Insert(mid, x);
+    if mid.next.next == null {
+      last := mid.next;
     }
   }
 }
