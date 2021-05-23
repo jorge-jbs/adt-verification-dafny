@@ -1,10 +1,10 @@
-class Node<A> {
-  ghost var repr: set<Node<A>>;
+class LNode<A> {
+  ghost var repr: set<LNode<A>>;
   ghost var model: seq<A>
   var data: A;
-  var next: Node?<A>;
+  var next: LNode?<A>;
 
-  constructor(x: A, next: Node?<A>)
+  constructor(x: A, next: LNode?<A>)
     requires next != null ==> next.Valid()
     ensures Valid()
     ensures model == [x] + (if next == null then [] else next.model)

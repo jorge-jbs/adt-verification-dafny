@@ -2,7 +2,7 @@ include "../../../src/linear/aux/LeinoList.dfy"
 include "../../../src/linear/adt/Stack.dfy"
 
 class LeinoStack extends Stack {
-  var head: Node?<int>;
+  var head: LNode?<int>;
 
   function ReprDepth(): nat
     ensures ReprDepth() > 0
@@ -118,6 +118,6 @@ class LeinoStack extends Stack {
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
   {
-    head := new Node(x, head);
+    head := new LNode(x, head);
   }
 }
