@@ -402,8 +402,10 @@ class List<A> {
     requires Valid()
     requires mid in Repr()
     ensures Valid()
-    ensures spine == Seq.Insert(mid.next, old(spine), old(GetIndex(mid))+1)
     ensures Model() == Seq.Insert(x, old(Model()), old(GetIndex(mid))+1)
+    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+
+    ensures spine == Seq.Insert(mid.next, old(spine), old(GetIndex(mid))+1)
     ensures mid.next != null
     ensures fresh(mid.next)
     ensures mid.next in spine
@@ -419,7 +421,6 @@ class List<A> {
     { // GHOST
       ghost var i :| 0 <= i < |spine| && spine[i] == mid;
       spine := spine[..i+1] + [n] + spine[i+1..];
-      assert Valid();
       ModelRelationWithSpine();
     }
   }

@@ -133,4 +133,35 @@ module Seq {
   {
     xs[..i] + xs[i+1..]
   }
+
+  function Dup<A>(xs: seq<A>): seq<A>
+  {
+    if xs == [] then
+      []
+    else
+      [xs[0]] + [xs[0]] + Dup(xs[1..])
+  }
+
+  function DupRev<A>(xs: seq<A>): seq<A>
+    ensures 2*|xs| == |DupRev(xs)|
+  {
+    if xs == [] then
+      []
+    else
+      DupRev(xs[..|xs|-1]) + [xs[|xs|-1]] + [xs[|xs|-1]]
+  }
+
+  lemma DupDupRev<A>(xs: seq<A>)
+    ensures Dup(xs) == DupRev(xs)
+  // {
+  //   if xs == [] {
+  //   } else {
+  //     calc == {
+  //       Dup(xs);
+  //       [xs[0]] + [xs[0]] + Dup(xs[1..]);
+  //       DupRev(xs[..|xs|-1]) + [xs[|xs|-1]] + [xs[|xs|-1]];
+  //       DupRev(xs);
+  //     }
+  //   }
+  // }
 }

@@ -1,26 +1,25 @@
 include "../../../src/Utils.dfy"
 
-class Node {
+class Node<A> {
   ghost var repr: set<object>;
-  var data: int;
-  var next: Node?;
+  var data: A;
+  var next: Node?<A>;
 
   predicate Valid()
     reads this, repr
   {
     && this in repr
-    && ( next != null ==>
-          next in repr
-          && repr == {this} + next.repr
-          && this !in next.repr
-          && next.Valid()
-      )
-    && ( next == null ==>
-          repr == {this}
+    && (if next == null then
+        repr == {this}
+      else
+        && next in repr
+        && repr == {this} + next.repr
+        && this !in next.repr
+        && next.Valid()
       )
   }
 
-  predicate ValidUntil(n: Node)
+  predicate ValidUntil(n: Node<A>)
     reads this, repr
   {
     && this in repr
@@ -37,9 +36,21 @@ class Node {
       )
   }
 
-  constructor(d: int)
+  function Model(): seq<A>
+    decreases repr
+    reads this, repr
+    requires Valid()
+  {
+    if next == null then
+      [data]
+    else
+      [data] + next.Model()
+  }
+
+  constructor(d: A)
     ensures Valid()
-    ensures fresh(repr - {this})
+    ensures forall x | x in repr - {this} :: fresh(x)
+    ensures Model() == [d]
     ensures data == d
     ensures next == null
   {
@@ -48,20 +59,20 @@ class Node {
     next := null;
   }
 
-  predicate IsPrevOf(n: Node)
+  predicate IsPrevOf(n: Node<A>)
     reads this
   {
     next == n
   }
 
-  predicate IsBefore(n: Node)
+  predicate IsBefore(n: Node<A>)
     reads this
   {
     n in repr
   }
 }
 
-function ReprAux(node: Node?): set<object>
+function ReprAux<A>(node: Node?<A>): set<object>
   reads node
 {
   if node == null then
@@ -70,14 +81,14 @@ function ReprAux(node: Node?): set<object>
     node.repr
 }
 
-predicate ValidAux(node: Node?)
+predicate ValidAux<A>(node: Node?<A>)
   reads node, ReprAux(node)
 {
   node != null ==> node.Valid()
 }
 
-class SinglyLinkedListWithRecursion {
-  var head: Node?
+class SinglyLinkedListWithRecursion<A> {
+  var head: Node?<A>
 
   function Repr(): set<object>
     reads this, head
@@ -94,27 +105,17 @@ class SinglyLinkedListWithRecursion {
     head != null ==> head.Valid()
   }
 
-  static function ModelAux(node: Node?): seq<int>
-    reads node, ReprAux(node)
-    decreases ReprAux(node)
-    requires ValidAux(node)
-  {
-    if node == null then
-      []
-    else
-      assert ValidAux(node);
-      assert node.next != null ==> node.next.Valid();
-      [node.data] + ModelAux(node.next)
-  }
-
-  function Model(): seq<int>
+  function Model(): seq<A>
     reads this, head, Repr()
     requires Valid()
   {
-    ModelAux(head)
+    if head == null then
+      []
+    else
+      head.Model()
   }
 
-  method Top() returns (x: int)
+  method Top() returns (x: A)
     requires Valid()
     requires Model() != []
     ensures x == Model()[0]
@@ -135,7 +136,7 @@ class SinglyLinkedListWithRecursion {
   */
 
   /*
-  method Cons(x: A, xs: List) returns (res: Node)
+  method Cons(x: A, xs: List) returns (res: Node<A>)
     requires xs != null ==> xs.Valid()
     ensures res.Valid()
     ensures Model(res) == [x] + Model(xs)
@@ -164,8 +165,8 @@ class SinglyLinkedListWithRecursion {
     }
   }
 
-  method ReverseAux(xs: Node, ys: List)
-    returns (xs_: List, ys_: Node)
+  method ReverseAux(xs: Node<A>, ys: List)
+    returns (xs_: List, ys_: Node<A>)
     modifies xs, xs.repr
 
     requires Valid(xs) && Valid(ys)
@@ -206,7 +207,7 @@ class SinglyLinkedListWithRecursion {
   }
   */
 
-  static function PrevNode(head: Node, mid: Node): (prev: Node)
+  static function PrevNode(head: Node<A>, mid: Node<A>): (prev: Node<A>)
     decreases head.repr
     reads head, head.repr, mid, mid.repr
     requires mid in head.repr
@@ -221,7 +222,7 @@ class SinglyLinkedListWithRecursion {
       PrevNode(head.next, mid)
   }
 
-  static lemma ValidUntilFromValid(head: Node, mid: Node)
+  static lemma ValidUntilFromValid(head: Node<A>, mid: Node<A>)
     decreases head.repr
     requires mid in head.repr
     requires head.Valid()
@@ -232,7 +233,7 @@ class SinglyLinkedListWithRecursion {
     }
   }
 
-  ghost method Repair(prevs: seq<Node>, mid: Node?)
+  ghost method Repair(prevs: seq<Node<A>>, mid: Node?<A>)
     modifies set n | n in multiset(prevs) :: n`repr
     requires mid !in multiset(prevs)
     requires forall n | n in prevs :: n !in ReprAux(mid)
@@ -242,6 +243,7 @@ class SinglyLinkedListWithRecursion {
     requires ValidAux(mid)
     ensures ValidAux(mid)
     ensures forall n | n in multiset(prevs) :: n.Valid()
+    // ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
   {
     if prevs != [] {
       var prev := prevs[|prevs|-1];
@@ -253,7 +255,7 @@ class SinglyLinkedListWithRecursion {
     }
   }
 
-  lemma IsBeforeStepRight(a: Node, b: Node)
+  static lemma IsBeforeStepRight(a: Node<A>, b: Node<A>)
     decreases a.repr
     requires ValidAux(a)
     requires ValidAux(b)
@@ -266,7 +268,7 @@ class SinglyLinkedListWithRecursion {
     }
   }
 
-  lemma IsBeforeSubset(a: Node, b: Node)
+  static lemma IsBeforeSubset(a: Node<A>, b: Node<A>)
     decreases a.repr
     requires ValidAux(a)
     requires ValidAux(b)
@@ -278,7 +280,7 @@ class SinglyLinkedListWithRecursion {
     }
   }
 
-  lemma IsBeforeAntisym(a: Node, b: Node)
+  static lemma IsBeforeAntisym(a: Node<A>, b: Node<A>)
     decreases ReprAux(a)
     requires ValidAux(a)
     requires ValidAux(b)
@@ -292,7 +294,7 @@ class SinglyLinkedListWithRecursion {
     }
   }
 
-  function TakeSeq(head: Node, mid: Node): (res: seq<Node>)
+  static function TakeSeq(head: Node<A>, mid: Node<A>): (res: seq<Node<A>>)
     decreases ReprAux(head)
     reads ReprAux(head)
     reads ReprAux(mid)
@@ -323,23 +325,25 @@ class SinglyLinkedListWithRecursion {
         res
   }
 
-  method Insert(head: Node, mid: Node, x: int)
-    modifies head, head.repr, mid, mid.repr
-    requires head != mid
-    requires head.Valid() && mid.Valid()
-    requires mid in head.repr
-    ensures head.Valid() && mid.Valid()
+  method Insert(mid: Node<A>, x: A)
+    modifies Repr()
+    requires Valid()
+    requires mid.Valid()
+    requires mid in Repr()
+    ensures Valid()
+    ensures mid.Valid()
+    ensures fresh(mid.next)
+    // ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    // ensures Model() == Seq.Insert(x, old(Model()), old(GetIndex(mid))+1)
   {
     var n := new Node(x);
     ghost var prevs := TakeSeq(head, mid);
     assert forall i | 0 <= i < |prevs|-1 :: prevs[i].IsPrevOf(prevs[i+1]);
     assert prevs != [] ==> prevs[|prevs|-1].IsPrevOf(mid);
     n.next := mid.next;
-    n.repr := ReprAux(mid.next) + {n};
+    /*GHOST*/ n.repr := ReprAux(mid.next) + {n};
     mid.next := n;
-    mid.repr := {n} + mid.repr;
+    /*GHOST*/ mid.repr := {n} + mid.repr;
     /*GHOST*/ Repair(prevs, mid);
-    assert ValidAux(head);
-    assert ValidAux(mid);
   }
 }
