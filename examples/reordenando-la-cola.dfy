@@ -6,7 +6,7 @@ lemma Allocated(s: set<object>)
   ensures forall x | x in s :: allocated(x)
 {}
 
-lemma {:verify true} lemma1(v: array<int>, i: int)
+lemma TransitiveLemma(v: array<int>, i: int)
   requires forall i | 0 <= i < v.Length - 1 :: abs(v[i]) <= abs(v[i+1])
   requires 0 <= i <= v.Length
   ensures forall j, k | 0 <= j < k < i :: abs(v[j]) <= abs(v[k])
@@ -15,12 +15,12 @@ lemma {:verify true} lemma1(v: array<int>, i: int)
   } else if i == 1 {
   } else if i == 2 {
   } else {
-    lemma1(v, i-1);
+    TransitiveLemma(v, i-1);
     assert abs(v[i-2]) <= abs(v[i-1]);
   }
 }
 
-method {:verify true} split(v: array<int>, neg: Stack, pos: Queue)
+method Split(v: array<int>, neg: Stack, pos: Queue)
   modifies pos, pos.Repr(), neg, neg.Repr()
 
   requires v !in neg.Repr() && v !in pos.Repr()
@@ -78,7 +78,7 @@ method {:verify true} split(v: array<int>, neg: Stack, pos: Queue)
     invariant forall x | x in neg.Repr() :: allocated(x)
     invariant forall x | x in pos.Repr() :: allocated(x)
   {
-    lemma1(v, i+1);
+    TransitiveLemma(v, i+1);
     assert forall j | 0 <= j < i :: abs(v[j]) <= abs(v[i]);
     if v[i] < 0 {
       if |neg.Model()| > 0 {
@@ -104,7 +104,7 @@ method {:verify true} split(v: array<int>, neg: Stack, pos: Queue)
   assert v[..i] == v[..];
 }
 
-method {:verify true} FillFromStack(r: array<int>, i: nat, st: Stack) returns (l: nat)
+method FillFromStack(r: array<int>, i: nat, st: Stack) returns (l: nat)
   modifies r, st, st.Repr()
   requires st.Valid()
   // we have to say that r is not equal to st even though they are not of the same type:
@@ -146,7 +146,7 @@ method {:verify true} FillFromStack(r: array<int>, i: nat, st: Stack) returns (l
   l := l + i;
 }
 
-method {:verify true} FillFromQueue(r: array<int>, i: nat, q: Queue) returns (l: nat)
+method FillFromQueue(r: array<int>, i: nat, q: Queue) returns (l: nat)
   modifies r, q, q.Repr()
   requires q.Valid()
   // we have to say that r is not equal to q even though they are not of the same type:
@@ -188,7 +188,7 @@ method {:verify true} FillFromQueue(r: array<int>, i: nat, q: Queue) returns (l:
   l := l + i;
 }
 
-lemma {:verify true} LastLemma(neg: seq<int>, pos: seq<int>, s: seq<int>)
+lemma LastLemma(neg: seq<int>, pos: seq<int>, s: seq<int>)
   requires forall x | x in neg :: x < 0
   requires forall i | 0 <= i < |neg|-1 :: abs(neg[i]) >= abs(neg[i+1])
 
@@ -213,7 +213,7 @@ lemma {:verify true} LastLemma(neg: seq<int>, pos: seq<int>, s: seq<int>)
   }
 }
 
-method {:verify true} reordenandoLaCola(neg: Stack, pos: Queue, v: array<int>)
+method Reorder(neg: Stack, pos: Queue, v: array<int>)
   modifies v
   modifies neg, neg.Repr()
   modifies pos, pos.Repr()
@@ -239,7 +239,7 @@ method {:verify true} reordenandoLaCola(neg: Stack, pos: Queue, v: array<int>)
   ensures Array.melems(v) == old(Array.melems(v))
   ensures forall i | 0 <= i < v.Length - 1 :: v[i] <= v[i+1]
 {
-  split(v, neg, pos);
+  Split(v, neg, pos);
   ghost var negmodel := neg.Model();
   ghost var posmodel := pos.Model();
   calc == {

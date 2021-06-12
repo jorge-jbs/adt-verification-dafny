@@ -29,14 +29,6 @@ lemma UniqueSummits(v: seq<nat>, k: nat)
     :: i == j
 {}
 
-lemma InductionStep(v: seq<nat>, i: nat, j: nat)
-  requires i < j < |v|-1
-  requires AdjacentSummits(v, i, j)
-  ensures v[j] < v[j+1] && v[i] > v[j+1] ==> AdjacentSummits(v, i, j+1)
-  ensures v[j] < v[j+1] && v[i] <= v[j+1] ==> !AdjacentSummits(v, i, j+1)
-  ensures v[j] > v[j+1] ==> AdjacentSummits(v, j, j+1)
-{}
-
 lemma TransitiveSeq(v: seq<int>)
   requires forall i | 0 <= i < |v|-1 :: v[i] > v[i+1]
   ensures forall i, j | 0 <= i < j < |v| :: v[i] > v[j]
@@ -64,7 +56,7 @@ lemma TransitiveSeqSeq(v: seq<int>, is: seq<nat>)
   }
 }
 
-method RemoveLess(st: Stack, v: array<nat>, i: nat) returns (n: nat)
+method RemoveLess(st: Stack, v: array<nat>, i: nat) returns (ghost n: nat)
   modifies st, st.Repr()
   requires st.Valid()
   requires {v} !! {st} + st.Repr()
@@ -157,7 +149,7 @@ method FindSummits(v: array<nat>, st: Stack) returns (r: array<int>)
     invariant forall j | 0 <= j < i :: r[j] == -1 ==> forall k | 0 <= k < j :: !AdjacentSummits(v[..], k, j)
   {
     ghost var max := v[st.Model()[|st.Model()|-1]];
-    var k := RemoveLess(st, v, i);
+    ghost var k := RemoveLess(st, v, i);
     assert forall x | x in v[..i] :: max >= x;
     if st.Empty() {
       r[i] := -1;

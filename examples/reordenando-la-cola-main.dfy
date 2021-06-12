@@ -39,7 +39,7 @@ method {:verify false} Main()
       // assert pos.Valid();
       // assert pos.Empty();
       // assume forall i | 0 <= i < v.Length - 1 :: abs(v[i]) <= abs(v[i+1]);
-      reordenandoLaCola(neg, pos, v);
+      Reorder(neg, pos, v);
       var i := 0;
       while i < n
       {
