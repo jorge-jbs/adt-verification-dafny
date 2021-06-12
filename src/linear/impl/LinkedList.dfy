@@ -230,7 +230,7 @@ trait List {
     ensures forall x | x in Repr() :: allocated(x)
 }
 
-method ItertatorExample1(l: List, v: array<int>)
+method FillArray(l: List, v: array<int>)
   modifies l, l.Repr(), v
   requires {v} !! {l} + l.Repr()
   requires l.Valid()
@@ -265,7 +265,7 @@ method ItertatorExample1(l: List, v: array<int>)
   }
 }
 
-method ItertatorExample2(l: List)
+method IteratorExample1(l: List)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []
@@ -279,7 +279,7 @@ method ItertatorExample2(l: List)
   var x := it1.Next();
 }
 
-method ItertatorExample3(l: List)
+method IteratorExample2(l: List)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []
@@ -302,7 +302,7 @@ method ItertatorExample3(l: List)
   var x := it2.Next();
 }
 
-method ItertatorExample4(l: List)
+method IteratorExample3(l: List)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []
@@ -369,6 +369,7 @@ method FindMax(l: List) returns (max: ListIterator)
   }
 }
 
+
 function Dup<A>(xs: seq<A>): seq<A>
 {
   if xs == [] then
@@ -388,8 +389,19 @@ function DupRev<A>(xs: seq<A>): seq<A>
 
 lemma DupDupRev<A>(xs: seq<A>)
   ensures Dup(xs) == DupRev(xs)
+// {
+//   if xs == [] {
+//   } else {
+//     calc == {
+//       Dup(xs);
+//       [xs[0]] + [xs[0]] + Dup(xs[1..]);
+//       DupRev(xs[..|xs|-1]) + [xs[|xs|-1]] + [xs[|xs|-1]];
+//       DupRev(xs);
+//     }
+//   }
+// }
 
-method ItertatorExample5(l: List)
+method DupElements(l: List)
   modifies l, l.Repr()
   requires l.Valid()
   requires forall x | x in l.Repr() :: allocated(x)
@@ -399,7 +411,7 @@ method ItertatorExample5(l: List)
   ensures forall x | x in l.Repr() :: allocated(x)
 {
   var it := l.Begin();
-  var i := 0;
+  ghost var i := 0;
   while it.HasNext()
     decreases |l.Model()| - it.Index()
     invariant l.Valid()
@@ -433,6 +445,7 @@ method ItertatorExample5(l: List)
       { assert old(l.Model()[..i+1][..|l.Model()[..i+1]|-1]) == old(l.Model()[..i]); }
       old(DupRev(l.Model()[..i+1])) + omodel[2*i+1..];
     }
+    assert model == old(DupRev(l.Model()[..i+1])) + omodel[2*i+1..];
     x := it.Next();
     x := it.Next();
     i := i + 1;
@@ -446,4 +459,5 @@ method ItertatorExample5(l: List)
     { DupDupRev(old(l.Model())); }
     old(Dup(l.Model()));
   }
+  assert l.Model() == old(Dup(l.Model()));
 }
