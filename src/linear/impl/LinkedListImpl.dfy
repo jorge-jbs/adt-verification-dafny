@@ -360,7 +360,7 @@ class List1 extends List {
     /*GHOST*/ list.list.ModelRelationWithSpine();
   }
 
-  function method CoerceIter(it: ListIterator): ListIterator1
+  function method {:axiom} CoerceIter(it: ListIterator): ListIterator1
     reads this, Repr()
     requires Valid()
     requires it in Iterators()
