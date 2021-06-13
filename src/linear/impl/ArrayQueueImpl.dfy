@@ -49,6 +49,8 @@ class ArrayQueueImpl extends Queue {
   function ModelAux(a:array<int>,c:nat,nelems:nat):seq<int>
     reads a
     requires 0 <= c < a.Length && 0 <= nelems <= a.Length
+    ensures |ModelAux(a,c,nelems)|==nelems
+
   {
 
     if nelems == 0 then
@@ -160,8 +162,9 @@ class ArrayQueueImpl extends Queue {
     }
     assert ModelAux(list, c, nelems) == oldList;
     list[(c+nelems)%list.Length] := x;
+    //assert 0<=(c+nelems)<list.Length ==> (c+nelems)%list.Length==c+nelems;
     assert c+nelems<list.Length ==> list[c..c+nelems]==oldList;
-    // assert c+nelems>list.Length ==> list[c..list.Length]+list[0..(c+nelems)%list.Length]==oldList;
+    assert c+nelems>list.Length ==> list[c..list.Length]+list[0..(c+nelems)%list.Length]==oldList;
     nelems := nelems + 1;
     incEnque(list, c, nelems-1);
   }
