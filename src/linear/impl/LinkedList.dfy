@@ -1,8 +1,8 @@
 include "../../../src/Utils.dfy"
 include "../../../src/linear/adt/List.dfy"
 
-trait LinkedListIterator extends ListIterator {
-  function Parent(): List
+trait LinkedListIterator /*extends ListIterator*/ {
+  function Parent(): LinkedList //List
     reads this
 
   predicate Valid()
@@ -47,7 +47,7 @@ trait LinkedListIterator extends ListIterator {
     requires HasNext()
     ensures Peek() == Parent().Model()[Index()]
 
-  method Copy() returns (it: ListIterator)
+  method Copy() returns (it: LinkedListIterator) //ListIterator)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -70,7 +70,32 @@ trait LinkedListIterator extends ListIterator {
     ensures forall x | x in Parent().Repr() :: allocated(x)
 }
 
-trait LinkedList extends List {
+trait LinkedList /*extends List*/ {
+  function ReprDepth(): nat
+    ensures ReprDepth() > 0
+
+  function ReprFamily(n: nat): set<object>
+    decreases n
+    requires n <= ReprDepth()
+    ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
+    reads this, if n == 0 then {} else ReprFamily(n-1)
+
+  function Repr(): set<object>
+    reads this, ReprFamily(ReprDepth()-1)
+  {
+    ReprFamily(ReprDepth())
+  }
+
+  lemma UselessLemma()
+    ensures Repr() == ReprFamily(ReprDepth());
+
+  predicate Valid()
+    reads this, Repr()
+
+  function Model(): seq<int>
+    reads this, Repr()
+    requires Valid()
+
   function method Empty(): bool
     reads this, Repr()
     requires Valid()
@@ -81,7 +106,12 @@ trait LinkedList extends List {
     requires Valid()
     ensures Size() == |Model()|
 
-  method Begin() returns (it: ListIterator)
+  function Iterators(): set<LinkedListIterator>
+    reads this, Repr()
+    requires Valid()
+    ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
+
+  method Begin() returns (it: LinkedListIterator) //ListIterator)
     modifies this, Repr()
     requires Valid()
     requires forall it | it in Iterators() :: allocated(it)
@@ -180,7 +210,7 @@ trait LinkedList extends List {
       else
         it.Valid() && it.Index() == old(it.Index())
 
-  method Insert(mid: ListIterator, x: int)
+  method Insert(mid: LinkedListIterator, x: int)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -291,7 +321,7 @@ method IteratorExample3(l: LinkedList)
   assert it2.Valid();
 }
 
-method FindMax(l: LinkedList) returns (max: ListIterator)
+method FindMax(l: LinkedList) returns (max: LinkedListIterator)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []

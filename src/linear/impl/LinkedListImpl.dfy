@@ -12,7 +12,7 @@ class ListIterator1 extends LinkedListIterator {
     && (node != null ==> node in parent.list.list.spine)
   }
 
-  function Parent(): List
+  function Parent(): LinkedList
     reads this
   {
     parent
@@ -103,7 +103,7 @@ class ListIterator1 extends LinkedListIterator {
     node.data
   }
 
-  method Copy() returns (it: ListIterator)
+  method Copy() returns (it: LinkedListIterator)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -214,7 +214,7 @@ class List1 extends LinkedList {
     size
   }
 
-  function Iterators(): set<ListIterator>
+  function Iterators(): set<LinkedListIterator>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
@@ -222,7 +222,7 @@ class List1 extends LinkedList {
     iters
   }
 
-  method Begin() returns (it: ListIterator)
+  method Begin() returns (it: LinkedListIterator)
     modifies this, Repr()
     requires Valid()
     // requires forall x | x in Repr() :: allocated(x)
@@ -360,13 +360,13 @@ class List1 extends LinkedList {
     /*GHOST*/ list.list.ModelRelationWithSpine();
   }
 
-  function method {:axiom} CoerceIter(it: ListIterator): ListIterator1
+  function method {:axiom} CoerceIter(it: LinkedListIterator): ListIterator1
     reads this, Repr()
     requires Valid()
     requires it in Iterators()
     ensures it == CoerceIter(it)
 
-  method Insert(mid: ListIterator, x: int)
+  method Insert(mid: LinkedListIterator, x: int)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
