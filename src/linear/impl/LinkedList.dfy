@@ -1,8 +1,8 @@
 include "../../../src/Utils.dfy"
 include "../../../src/linear/adt/List.dfy"
 
-trait LinkedListIterator /*extends ListIterator*/ {
-  function Parent(): LinkedList //List
+trait LinkedListIterator extends ListIterator {
+  function Parent(): List
     reads this
 
   predicate Valid()
@@ -47,7 +47,7 @@ trait LinkedListIterator /*extends ListIterator*/ {
     requires HasNext()
     ensures Peek() == Parent().Model()[Index()]
 
-  method Copy() returns (it: LinkedListIterator) //ListIterator)
+  method Copy() returns (it: ListIterator)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -70,7 +70,8 @@ trait LinkedListIterator /*extends ListIterator*/ {
     ensures forall x | x in Parent().Repr() :: allocated(x)
 }
 
-trait LinkedList /*extends List*/ {
+trait LinkedList extends List {
+  /*
   function ReprDepth(): nat
     ensures ReprDepth() > 0
 
@@ -110,8 +111,9 @@ trait LinkedList /*extends List*/ {
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
+  */
 
-  method Begin() returns (it: LinkedListIterator) //ListIterator)
+  method Begin() returns (it: ListIterator)
     modifies this, Repr()
     requires Valid()
     requires forall it | it in Iterators() :: allocated(it)
@@ -210,7 +212,7 @@ trait LinkedList /*extends List*/ {
       else
         it.Valid() && it.Index() == old(it.Index())
 
-  method Insert(mid: LinkedListIterator, x: int)
+  method Insert(mid: ListIterator, x: int)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -321,7 +323,7 @@ method IteratorExample3(l: LinkedList)
   assert it2.Valid();
 }
 
-method FindMax(l: LinkedList) returns (max: LinkedListIterator)
+method FindMax(l: LinkedList) returns (max: ListIterator)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []
