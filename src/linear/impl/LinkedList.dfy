@@ -1,6 +1,7 @@
 include "../../../src/Utils.dfy"
+include "../../../src/linear/adt/List.dfy"
 
-trait ListIterator {
+trait LinkedListIterator extends ListIterator {
   function Parent(): List
     reads this
 
@@ -69,32 +70,7 @@ trait ListIterator {
     ensures forall x | x in Parent().Repr() :: allocated(x)
 }
 
-trait List {
-  function ReprDepth(): nat
-    ensures ReprDepth() > 0
-
-  function ReprFamily(n: nat): set<object>
-    decreases n
-    requires n <= ReprDepth()
-    ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
-    reads this, if n == 0 then {} else ReprFamily(n-1)
-
-  function Repr(): set<object>
-    reads this, ReprFamily(ReprDepth()-1)
-  {
-    ReprFamily(ReprDepth())
-  }
-
-  lemma UselessLemma()
-    ensures Repr() == ReprFamily(ReprDepth());
-
-  predicate Valid()
-    reads this, Repr()
-
-  function Model(): seq<int>
-    reads this, Repr()
-    requires Valid()
-
+trait LinkedList extends List {
   function method Empty(): bool
     reads this, Repr()
     requires Valid()
@@ -104,11 +80,6 @@ trait List {
     reads this, Repr()
     requires Valid()
     ensures Size() == |Model()|
-
-  function Iterators(): set<ListIterator>
-    reads this, Repr()
-    requires Valid()
-    ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
 
   method Begin() returns (it: ListIterator)
     modifies this, Repr()
@@ -302,7 +273,7 @@ method IteratorExample2(l: List)
   var x := it2.Next();
 }
 
-method IteratorExample3(l: List)
+method IteratorExample3(l: LinkedList)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []
@@ -320,7 +291,7 @@ method IteratorExample3(l: List)
   assert it2.Valid();
 }
 
-method FindMax(l: List) returns (max: ListIterator)
+method FindMax(l: LinkedList) returns (max: ListIterator)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []
@@ -401,7 +372,7 @@ lemma DupDupRev<A>(xs: seq<A>)
 //   }
 // }
 
-method DupElements(l: List)
+method DupElements(l: LinkedList)
   modifies l, l.Repr()
   requires l.Valid()
   requires forall x | x in l.Repr() :: allocated(x)

@@ -1,7 +1,7 @@
 include "../../../src/linear/aux/DoublyLinkedListWithLast.dfy"
 include "../../../src/linear/impl/LinkedList.dfy"
 
-class ListIterator1 extends ListIterator {
+class ListIterator1 extends LinkedListIterator {
   ghost var parent: List1
   var node: DNode?
 
@@ -130,7 +130,7 @@ class ListIterator1 extends ListIterator {
   }
 }
 
-class List1 extends List {
+class List1 extends LinkedList {
   var list: DoublyLinkedListWithLast;
   var size: nat;
   ghost var iters: set<ListIterator1>;
