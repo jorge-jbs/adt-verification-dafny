@@ -1,6 +1,6 @@
-include "../../../src/linear/adt/Queue.dfy"
+include "../../../src/linear/adt/Deque.dfy"
 
-class ArrayQueueImpl extends Queue {
+class ArrayDequeImpl extends Dequeue {
   var list: array<int>;
   var c: nat;
   var nelems: nat;
@@ -50,7 +50,6 @@ class ArrayQueueImpl extends Queue {
     reads a
     requires 0 <= c < a.Length && 0 <= nelems <= a.Length
     ensures |ModelAux(a,c,nelems)|==nelems
-
   {
 
     if nelems == 0 then
@@ -105,15 +104,7 @@ class ArrayQueueImpl extends Queue {
     nelems:=0;
   }
 
-  function method Front(): int
-    reads this, Repr()
-    requires Valid()
-    requires Model() != []
-    ensures Valid()
-    ensures Front() == Model()[0]
-  {
-    list[c]
-  }
+  
 
   // Auxiliary method to duplicate space
   method grow()
@@ -148,7 +139,21 @@ class ArrayQueueImpl extends Queue {
       c := 0;
   }
 
-  method Enqueue(x: int)
+  function method Back(): int
+    reads this, Repr()
+    requires Valid()
+    requires Model() != []
+    ensures Valid()
+    ensures Back() == Model()[|Model()|-1]
+    { 
+      /*if (c+nelems)==0 then list[list.Length-1]
+      else list[(c+nelems-1)%list.Length]*/
+      assert (c+nelems)==0 ==> (c+nelems-1)%list.Length==list.Length-1;
+      assert list[(c+nelems-1)%list.Length]==Model()[|Model()|-1];
+      list[(c+nelems-1)%list.Length]
+    }
+
+  method PushBack(x: int)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -160,16 +165,76 @@ class ArrayQueueImpl extends Queue {
     if nelems == list.Length {
       grow();
     }
+    
     assert ModelAux(list, c, nelems) == oldList;
+    
     list[(c+nelems)%list.Length] := x;
-    //assert 0<=(c+nelems)<list.Length ==> (c+nelems)%list.Length==c+nelems;
-    assert c+nelems<list.Length ==> list[c..c+nelems]==oldList;
+    
+    modulo(c+nelems,list.Length);
+    assert c+nelems<list.Length ==> (c+nelems)%list.Length==c+nelems;
+    assert c+nelems<list.Length ==> list[c..c+nelems]== oldList;
     assert c+nelems>list.Length ==> list[c..list.Length]+list[0..(c+nelems)%list.Length]==oldList;
+    
     nelems := nelems + 1;
+    
     incEnque(list, c, nelems-1);
   }
 
-  method Dequeue() returns (x: int)
+lemma modulo(a:int,b:int)
+requires b!=0
+ensures 0<=a<b ==> a/b==0 && a%b==a
+{}
+
+method PopBack() returns (x: int)
+    modifies Repr()
+    requires Valid()
+    requires Model() != []
+    ensures Valid()
+    ensures Model() + [x] == old(Model())
+
+    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
+{
+   x:=list[(c+nelems-1)%list.Length];
+    nelems:=nelems-1;
+    //assert c+nelems==0 ==> (c+nelems-1)%list.Length==list.Length-1;
+}
+
+
+function method Front(): int
+    reads this, Repr()
+    requires Valid()
+    requires Model() != []
+    ensures Valid()
+    ensures Front() == Model()[0]
+  {
+    list[c]
+  }
+  method PushFront(x: int)
+    modifies Repr()
+    requires Valid()
+    ensures Valid()
+    ensures Model() == [x] + old(Model())
+
+    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
+{
+  ghost var oldList := ModelAux(list,c,nelems);
+    if nelems == list.Length {
+      grow();
+    }
+    assert ModelAux(list, c, nelems) == oldList;
+    if (c==0) {c:=list.Length-1;}
+    else {c:=c-1;}
+    list[c]:= x;
+    nelems := nelems + 1;
+    assert Model() == [x] + old(Model());
+    //incEnque(list, c, nelems-1);
+  
+
+}
+
+  method PopFront() returns (x: int)
     modifies Repr()
     requires Valid()
     requires Model() != []
