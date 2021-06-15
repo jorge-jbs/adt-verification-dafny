@@ -149,6 +149,7 @@ class ArrayDequeImpl extends Dequeue {
       /*if (c+nelems)==0 then list[list.Length-1]
       else list[(c+nelems-1)%list.Length]*/
       assert (c+nelems)==0 ==> (c+nelems-1)%list.Length==list.Length-1;
+      assert list[(c+nelems-1)%list.Length]==Model()[|Model()|-1];
       list[(c+nelems-1)%list.Length]
     }
 
@@ -164,15 +165,25 @@ class ArrayDequeImpl extends Dequeue {
     if nelems == list.Length {
       grow();
     }
+    
     assert ModelAux(list, c, nelems) == oldList;
+    
     list[(c+nelems)%list.Length] := x;
-    assert c+nelems<=list.Length ==> list[c..c+nelems]== oldList;
+    
+    modulo(c+nelems,list.Length);
+    assert c+nelems<list.Length ==> (c+nelems)%list.Length==c+nelems;
+    assert c+nelems<list.Length ==> list[c..c+nelems]== oldList;
     assert c+nelems>list.Length ==> list[c..list.Length]+list[0..(c+nelems)%list.Length]==oldList;
+    
     nelems := nelems + 1;
+    
     incEnque(list, c, nelems-1);
   }
 
-
+lemma modulo(a:int,b:int)
+requires b!=0
+ensures 0<=a<b ==> a/b==0 && a%b==a
+{}
 
 method PopBack() returns (x: int)
     modifies Repr()
@@ -217,6 +228,7 @@ function method Front(): int
     else {c:=c-1;}
     list[c]:= x;
     nelems := nelems + 1;
+    assert Model() == [x] + old(Model());
     //incEnque(list, c, nelems-1);
   
 
