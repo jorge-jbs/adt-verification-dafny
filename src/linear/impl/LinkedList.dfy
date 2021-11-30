@@ -1,5 +1,5 @@
 include "../../../src/Utils.dfy"
-include "../../../src/linear/adt/List.dfy"
+include "../adt/List.dfy"
 
 trait LinkedListIterator extends ListIterator {
   function Parent(): List
@@ -116,7 +116,7 @@ trait LinkedList extends List {
   method Begin() returns (it: ListIterator)
     modifies this, Repr()
     requires Valid()
-    requires forall it | it in Iterators() :: allocated(it)
+    requires forall x | x in Repr()::allocated(x)
     ensures Valid()
     ensures Model() == old(Model())
     ensures fresh(it)
@@ -139,8 +139,7 @@ trait LinkedList extends List {
   method PushFront(x: int)
     modifies this, Repr()
     requires Valid()
-    // requires forall x | x in Repr() :: allocated(x)
-    requires forall x | x in Iterators() :: allocated(x)
+    requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
     ensures Model() == [x] + old(Model())
 
@@ -149,7 +148,7 @@ trait LinkedList extends List {
 
     ensures Iterators() == old(Iterators())
     ensures forall it | it in Iterators() && old(it.Valid()) ::
-      it.Valid() // && it.Index() == old(it.Index()) + 1
+      it.Valid()  && it.Index() == old(it.Index()) + 1
 
   method PopFront() returns (x: int)
     modifies this, Repr()
@@ -163,13 +162,9 @@ trait LinkedList extends List {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in Iterators() && old(it.Valid()) ::
-      if old(it.Index()) == 0 then
-        !it.Valid()
-      else
-        it.Valid() // && it.Index() + 1 == old(it.Index())
-    // ensures forall it | it in Iterators() && old(it.Valid()) && old(it.Index()) != 0 ::
-    //   it.Valid() && it.Index() + 1 == old(it.Index())
+
+    ensures forall it | it in Iterators() && old(it.Valid()) && old(it.Index()) != 0 ::
+      it.Valid() && it.Index() + 1 == old(it.Index())
 
   function method Back(): int
     reads this, Repr()
@@ -190,7 +185,11 @@ trait LinkedList extends List {
 
     ensures Iterators() == old(Iterators())
     ensures forall it | it in Iterators() && old(it.Valid()) ::
-      it.Valid() // && it.Index() == old(it.Index())
+      it.Valid()  &&
+      if old(it.Index()) == old(|Model()|) then
+        it.Index() == 1 + old(it.Index())
+      else
+        it.Index()== old(it.Index())
 
   method PopBack() returns (x: int)
     modifies this, Repr()
@@ -204,14 +203,14 @@ trait LinkedList extends List {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in Iterators() && old(it.Valid()) ::
-      if old(it.Index()) == old(|Model()|-1)  then
-        !it.Valid()
-      else if old(it.Index()) == old(|Model()|) then
-        it.Valid() && it.Index() + 1 == old(it.Index())
+    ensures forall it | it in Iterators() && old(it.Valid())&& old(it.Index()) != old(|Model()|-1)::
+      it.Valid()    &&
+      if old(it.Index()) == old(|Model()|) then
+        it.Index() + 1 == old(it.Index())
       else
-        it.Valid() && it.Index() == old(it.Index())
+        it.Index() == old(it.Index())
 
+  // Insertion before mid
   method Insert(mid: ListIterator, x: int)
     modifies this, Repr()
     requires Valid()
@@ -221,11 +220,11 @@ trait LinkedList extends List {
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
-    ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index())+1)
+    ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
     ensures Iterators() == old(Iterators())
     ensures forall it | it in Iterators() && old(it.Valid()) :: it.Valid()
     ensures forall it | it in Iterators() && old(it.Valid()) ::
-      if old(it.Index()) <= old(mid.Index())  then
+      if old(it.Index()) < old(mid.Index())  then
         it.Index() == old(it.Index())
       else
         it.Index() == old(it.Index()) + 1
@@ -244,8 +243,15 @@ method FillArray(l: List, v: array<int>)
   ensures v[..] == l.Model()
   ensures forall x | x in l.Repr() - old(l.Repr()) :: fresh(x)
   ensures forall x | x in l.Repr() :: allocated(x)
+  ensures {v} !! {l} + l.Repr()
 {
+
+  ghost var rep := l.Repr();
+
   var it := l.Begin();
+
+  assert v in l.Repr() - old(l.Repr()) ==> fresh(v);
+
   var i := 0;
   while it.HasNext()
     decreases |l.Model()| - it.Index()
@@ -262,11 +268,19 @@ method FillArray(l: List, v: array<int>)
     invariant forall x | x in l.Repr() - old(l.Repr()) :: fresh(x)
     invariant forall x | x in l.Repr() :: allocated(x)
   {
+    ghost var rep2 := l.Repr();
+
     var x := it.Next();
+
+    reprProgression(rep,rep2,l.Repr());
+    assert v in l.Repr() - old(l.Repr()) ==> fresh(v);
+
     v[i] := x;
     i := i + 1;
   }
 }
+
+
 
 method IteratorExample1(l: List)
   modifies l, l.Repr()
@@ -278,11 +292,17 @@ method IteratorExample1(l: List)
   ensures forall x | x in l.Repr() - old(l.Repr()) :: fresh(x)
   ensures forall x | x in l.Repr() :: allocated(x)
 {
+  ghost var rep := l.Repr();
   var it1 := l.Begin();
+
+  ghost var rep2 := l.Repr();
   var x := it1.Next();
+
+  reprProgression(rep,rep2,l.Repr());
+
 }
 
-method IteratorExample2(l: List)
+/*method IteratorExample2(l: List)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []
@@ -292,8 +312,28 @@ method IteratorExample2(l: List)
   ensures forall x | x in l.Repr() - old(l.Repr()) :: fresh(x)
   ensures forall x | x in l.Repr() :: allocated(x)
 {
+    ghost var rep := l.Repr();
+
   var it1 := l.Begin();
+ assert forall it | it in old(l.Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Index() == old(it.Index());
+
+     ghost var rep2 := l.Repr();
+          assert forall x | x in l.Repr() - old(l.Repr()) :: fresh(x);
+    assert it1.Valid();
+  assert it1.Index() == 0;
+  assert it1.Index() < |l.Model()|;
+  assert it1.HasNext();
+  assert l.Valid();
+  assert allocated(it1);
+  assert forall x | x in l.Repr()::allocated(x);
+  assert forall it | it in l.Iterators() :: it in l.Repr();
+assert it1 in l.Repr();
+
   var it2 := l.Begin();
+    assert (l.Repr()-rep) == (l.Repr()-rep2) + (rep2-rep)*l.Repr();
+    assert forall x | x in l.Repr() - rep :: fresh(x);
+
   assert it2.Valid();
   assert it2.Index() == 0;
   assert it2.Index() < |l.Model()|;
@@ -303,9 +343,9 @@ method IteratorExample2(l: List)
   assert it1.Index() < |l.Model()|;
   assert it1.HasNext();
   var x := it2.Next();
-}
+}*/
 
-method IteratorExample3(l: LinkedList)
+/*method IteratorExample3(l: LinkedList)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []
@@ -322,8 +362,8 @@ method IteratorExample3(l: LinkedList)
   assert !it1.Valid();
   assert it2.Valid();
 }
-
-method FindMax(l: LinkedList) returns (max: ListIterator)
+*/
+/*method FindMax(l: LinkedList) returns (max: ListIterator)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []
@@ -370,8 +410,7 @@ method FindMax(l: LinkedList) returns (max: ListIterator)
     }
     var x := it.Next();
   }
-}
-
+}*/
 
 function Dup<A>(xs: seq<A>): seq<A>
 {
@@ -392,17 +431,23 @@ function DupRev<A>(xs: seq<A>): seq<A>
 
 lemma DupDupRev<A>(xs: seq<A>)
   ensures Dup(xs) == DupRev(xs)
-// {
-//   if xs == [] {
-//   } else {
-//     calc == {
-//       Dup(xs);
-//       [xs[0]] + [xs[0]] + Dup(xs[1..]);
-//       DupRev(xs[..|xs|-1]) + [xs[|xs|-1]] + [xs[|xs|-1]];
-//       DupRev(xs);
-//     }
-//   }
-// }
+ {
+   if |xs| <=1 {
+   } else
+    {
+     calc == {
+       Dup(xs);
+       [xs[0]] + [xs[0]] + Dup(xs[1..]);
+       [xs[0]] + [xs[0]] + DupRev(xs[1..]);
+       {assert |xs[1..]|==|xs|-1 >=1;
+       assert xs[1..][|xs|-2]== xs[|xs|-1];
+       assert xs[1..][..|xs|-2]== xs[1..|xs|-1];}
+       [xs[0]] + [xs[0]]  + (DupRev(xs[1..|xs|-1]) + [xs[|xs|-1]] + [xs[|xs|-1]]);
+       DupRev(xs[..|xs|-1]) + [xs[|xs|-1]] + [xs[|xs|-1]];
+       DupRev(xs);
+     }
+   }
+ }
 
 method DupElements(l: LinkedList)
   modifies l, l.Repr()
@@ -413,6 +458,8 @@ method DupElements(l: LinkedList)
   ensures forall x | x in l.Repr() - old(l.Repr()) :: fresh(x)
   ensures forall x | x in l.Repr() :: allocated(x)
 {
+  ghost var rep := l.Repr();
+
   var it := l.Begin();
   ghost var i := 0;
   while it.HasNext()
@@ -433,13 +480,21 @@ method DupElements(l: LinkedList)
     assert i < old(|l.Model()|);
     ghost var omodel := l.Model();
     assert omodel[..2*i] == old(DupRev(l.Model()[..i]));
+
+    ghost var rep2 := l.Repr();
+
     var x := it.Peek();
+
+    reprProgression(rep,rep2,l.Repr());
+    ghost var rep3 := l.Repr();
+
     l.Insert(it, x);
+
     ghost var model := l.Model();
     calc == {
       model;
       Seq.Insert(x, omodel, it.Index());
-      omodel[..it.Index()+1] + [x] + omodel[it.Index()+1..];
+      omodel[..it.Index()] + [x] + omodel[it.Index()..];
       omodel[..2*i+1] + [x] + omodel[2*i+1..];
       omodel[..2*i] + [x] + [x] + omodel[2*i+1..];
       old(DupRev(l.Model()[..i])) + [x] + [x] + omodel[2*i+1..];
@@ -449,10 +504,17 @@ method DupElements(l: LinkedList)
       old(DupRev(l.Model()[..i+1])) + omodel[2*i+1..];
     }
     assert model == old(DupRev(l.Model()[..i+1])) + omodel[2*i+1..];
+
+    reprProgression(rep,rep3,l.Repr());
+    ghost var rep4 := l.Repr();
+
     x := it.Next();
-    x := it.Next();
+
+    reprProgression(rep,rep4,l.Repr());
+
     i := i + 1;
   }
+
   calc == {
     l.Model();
     l.Model()[..2*i];

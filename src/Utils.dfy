@@ -11,6 +11,18 @@ function method abs(x: int): int
     x
 }
 
+lemma reprProgression<A>(s1: set<A>, s2: set<A>, s3: set<A>)
+  requires (s3-s2) * s1 == {} // s3-s2 is completely fresh respect s1
+  ensures s3-s1 == (s3-s2) + (s2-s1) * s3
+{
+  if s1 == {} || s3 == {} || s2 == {}
+    {}
+  else {
+    assert s3-s1==(s3-s2)+(s2-s1)*s3-(s3-s2)*s1;
+    assert (s3-s2)*s1=={};
+  }
+}
+
 module Array {
   function method elems<A>(l: array<A>): set<A>
     reads l

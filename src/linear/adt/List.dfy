@@ -113,7 +113,7 @@ trait List {
   method Begin() returns (it: ListIterator)
     modifies this, Repr()
     requires Valid()
-    requires forall it | it in Iterators() :: allocated(it)
+    requires forall x | x in Repr()::allocated(x)
     ensures Valid()
     ensures Model() == old(Model())
     ensures fresh(it)
@@ -136,8 +136,7 @@ trait List {
   method PushFront(x: int)
     modifies this, Repr()
     requires Valid()
-    // requires forall x | x in Repr() :: allocated(x)
-    requires forall x | x in Iterators() :: allocated(x)
+    requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
     ensures Model() == [x] + old(Model())
 
@@ -177,8 +176,6 @@ trait List {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in Iterators() && old(it.Valid()) ::
-      it.Valid() // && it.Index() == old(it.Index())
 
   method PopBack() returns (x: int)
     modifies this, Repr()
