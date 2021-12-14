@@ -148,7 +148,7 @@ trait LinkedList extends List {
 
     ensures Iterators() == old(Iterators())
     ensures forall it | it in Iterators() && old(it.Valid()) ::
-      it.Valid()  && it.Index() == old(it.Index()) + 1
+      it.Valid() && it.Index() == old(it.Index()) + 1
 
   method PopFront() returns (x: int)
     modifies this, Repr()
@@ -162,7 +162,6 @@ trait LinkedList extends List {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-
     ensures forall it | it in Iterators() && old(it.Valid()) && old(it.Index()) != 0 ::
       it.Valid() && it.Index() + 1 == old(it.Index())
 
@@ -185,11 +184,11 @@ trait LinkedList extends List {
 
     ensures Iterators() == old(Iterators())
     ensures forall it | it in Iterators() && old(it.Valid()) ::
-      it.Valid()  &&
-      if old(it.Index()) == old(|Model()|) then
-        it.Index() == 1 + old(it.Index())
-      else
-        it.Index()== old(it.Index())
+      && it.Valid()
+      && if old(it.Index()) == old(|Model()|) then
+          it.Index() == 1 + old(it.Index())
+        else
+          it.Index()== old(it.Index())
 
   method PopBack() returns (x: int)
     modifies this, Repr()
@@ -203,12 +202,16 @@ trait LinkedList extends List {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in Iterators() && old(it.Valid())&& old(it.Index()) != old(|Model()|-1)::
-      it.Valid()    &&
-      if old(it.Index()) == old(|Model()|) then
-        it.Index() + 1 == old(it.Index())
-      else
-        it.Index() == old(it.Index())
+    ensures
+      forall it |
+          && it in Iterators()
+          && old(it.Valid())
+          && old(it.Index()) != old(|Model()|-1) ::
+        && it.Valid()
+        && if old(it.Index()) == old(|Model()|) then
+            it.Index() + 1 == old(it.Index())
+          else
+            it.Index() == old(it.Index())
 
   // Insertion before mid
   method Insert(mid: ListIterator, x: int)

@@ -271,11 +271,10 @@ class List1 extends LinkedList {
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
 
-    ensures iters == old(iters)
+    ensures Iterators() == old(Iterators())
     ensures forall it | it in Iterators() && old(it.Valid()) ::
-      it.Valid() // && it.Index() == old(it.Index()) + 1
+      it.Valid() && it.Index() == old(it.Index()) + 1
   {
-    /*GHOST*/ list.list.ModelRelationWithSpine();
     list.PushFront(x);
     /*GHOST*/ size := size + 1;
     /*GHOST*/ list.list.ModelRelationWithSpine();
@@ -292,14 +291,10 @@ class List1 extends LinkedList {
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
 
-    ensures iters == old(iters)
-    ensures forall it | it in iters && old(it.Valid()) ::
-      if old(it.Index()) == 0 then
-        !it.Valid()
-      else
-        it.Valid() // && it.Index() + 1 == old(it.Index())
+    ensures Iterators() == old(Iterators())
+    ensures forall it | it in Iterators() && old(it.Valid()) && old(it.Index()) != 0 ::
+      it.Valid() && it.Index() + 1 == old(it.Index())
   {
-    /*GHOST*/ list.list.ModelRelationWithSpine();
     x := list.PopFront();
     /*GHOST*/ size := size - 1;
     /*GHOST*/ list.list.ModelRelationWithSpine();
@@ -325,12 +320,15 @@ class List1 extends LinkedList {
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
 
-    ensures iters == old(iters)
-    ensures forall it | it in iters && old(it.Valid()) ::
-      it.Valid() // && it.Index() == old(it.Index())
+    ensures Iterators() == old(Iterators())
+    ensures forall it | it in Iterators() && old(it.Valid()) ::
+      && it.Valid()
+      && if old(it.Index()) == old(|Model()|) then
+          it.Index() == 1 + old(it.Index())
+        else
+          it.Index()== old(it.Index())
   {
-    /*GHOST*/ list.list.ModelRelationWithSpine();
-    list.PushBack(x);
+    var node := list.PushBack(x);
     /*GHOST*/ size := size + 1;
     /*GHOST*/ list.list.ModelRelationWithSpine();
   }
@@ -346,25 +344,31 @@ class List1 extends LinkedList {
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
 
-    ensures iters == old(iters)
-    ensures forall it | it in iters && old(it.Valid()) ::
-      if old(it.Index()) == old(|Model()|-1)  then
-        !it.Valid()
-      else if old(it.Index()) == old(|Model()|) then
-        it.Valid() && it.Index() + 1 == old(it.Index())
-      else
-        it.Valid() && it.Index() == old(it.Index())
+    ensures Iterators() == old(Iterators())
+    ensures
+      forall it |
+          && it in Iterators()
+          && old(it.Valid())
+          && old(it.Index()) != old(|Model()|-1) ::
+        && it.Valid()
+        && if old(it.Index()) == old(|Model()|) then
+            it.Index() + 1 == old(it.Index())
+          else
+            it.Index() == old(it.Index())
   {
     x := list.PopBack();
     /*GHOST*/ size := size - 1;
     /*GHOST*/ list.list.ModelRelationWithSpine();
   }
 
-  function method {:axiom} CoerceIter(it: ListIterator): ListIterator1
+  function method CoerceIter(it: ListIterator): ListIterator1
     reads this, Repr()
     requires Valid()
     requires it in Iterators()
     ensures it == CoerceIter(it)
+  {
+    it
+  }
 
   method Insert(mid: ListIterator, x: int)
     modifies this, Repr()
@@ -374,20 +378,21 @@ class List1 extends LinkedList {
     requires mid.HasNext()
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
-    requires mid.Index() < |Model()|
     ensures Valid()
-    ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index())+1)
+    ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
     ensures Iterators() == old(Iterators())
     ensures forall it | it in Iterators() && old(it.Valid()) :: it.Valid()
     ensures forall it | it in Iterators() && old(it.Valid()) ::
-      if old(it.Index()) <= old(mid.Index())  then
+      if old(it.Index()) < old(mid.Index())  then
         it.Index() == old(it.Index())
       else
         it.Index() == old(it.Index()) + 1
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
+  /*
   {
     list.Insert(CoerceIter(mid).node, x);
     size := size + 1;
   }
+  */
 }

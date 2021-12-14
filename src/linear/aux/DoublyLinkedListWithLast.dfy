@@ -63,13 +63,14 @@ class DoublyLinkedListWithLast {
 
   // O(1)
   method PushFront(x: A)
-    modifies this, list, Repr()
+    modifies this, list, list.Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
     ensures Repr() > old(Repr())
     ensures fresh(Repr() - old(Repr()))
     ensures list == old(list)
+    ensures list.spine[1..] == old(list.spine)
   {
     var ohead := list.head;
     { // GHOST
@@ -85,7 +86,7 @@ class DoublyLinkedListWithLast {
 
   // O(1)
   method PopFront() returns (x: A)
-    modifies this, list, Repr()
+    modifies this, list, list.Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
@@ -113,14 +114,16 @@ class DoublyLinkedListWithLast {
   }
 
   // O(1)
-  method PushBack(x: A)
-    modifies this, list, Repr()
+  method PushBack(x: A) returns (node: DNode)
+    modifies this, list, list.Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + [x]
     ensures Repr() > old(Repr())
     ensures fresh(Repr() - old(Repr()))
     ensures list == old(list)
+    // ensures list.spine == old(list.spine) + [node]
+    ensures list.spine[..|list.spine|-1] == old(list.spine)
   {
     if last == null {
       assert Model() == [];
@@ -131,7 +134,7 @@ class DoublyLinkedListWithLast {
         list.LastHasLastIndex(last);
         list.ModelRelationWithSpine();
       }
-      list.Insert(last, x);
+      node := list.Insert(last, x);
       last := last.next;
       assert last != null;
       assert Valid();
@@ -181,7 +184,7 @@ class DoublyLinkedListWithLast {
     }
   }
 
-  method Insert(mid: DNode, x: A)
+  method Insert(mid: DNode, x: A) returns (node: DNode)
     modifies this, Repr()
     requires Valid()
     requires mid in Repr()
@@ -199,7 +202,7 @@ class DoublyLinkedListWithLast {
     ensures forall x | x in Repr() :: allocated(x)
   {
     /*GHOST*/ list.LastHasLastIndex(last);
-    list.Insert(mid, x);
+    node := list.Insert(mid, x);
     if mid.next.next == null {
       last := mid.next;
     }

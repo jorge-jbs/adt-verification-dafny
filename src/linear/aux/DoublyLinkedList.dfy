@@ -240,7 +240,7 @@ class DoublyLinkedList {
     assert head !in old(Repr());
   }
 
-  method Insert(mid: DNode, x: A)
+  method Insert(mid: DNode, x: A) returns (node: DNode)
     modifies this, Repr()
     requires Valid()
     requires mid in Repr()
@@ -257,18 +257,18 @@ class DoublyLinkedList {
       DistinctSpine();
       ModelRelationWithSpine();
     }
-    var n := new DNode(mid, x, mid.next);
-    assert n.prev == mid;
-    assert n.prev == mid;
+    node := new DNode(mid, x, mid.next);
+    assert node.prev == mid;
+    assert node.prev == mid;
     ghost var i :| 0 <= i < |spine| && spine[i] == mid;
     if mid.next != null {
       assert spine[i+1] == mid.next;
       assert mid.next in Repr();
-      mid.next.prev := n;
+      mid.next.prev := node;
     }
-    mid.next := n;
+    mid.next := node;
     { // GHOST
-      spine := spine[..i+1] + [n] + spine[i+1..];
+      spine := spine[..i+1] + [node] + spine[i+1..];
       ModelRelationWithSpine();
     }
   }
