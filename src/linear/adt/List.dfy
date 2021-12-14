@@ -28,16 +28,18 @@ trait ListIterator {
     requires forall it | it in Parent().Repr() :: allocated(it)
     ensures Parent().Valid()
     ensures Valid()
-    ensures old(Index()) < Index()
     ensures old(Parent()) == Parent()
     ensures old(Parent().Model()) == Parent().Model()
+
+    ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
+    ensures fresh(Parent().Repr()-old(Parent().Repr()))
+    ensures forall x | x in Parent().Repr() :: allocated(x)
+
     ensures Parent().Iterators() == old(Parent().Iterators())
     ensures x == Parent().Model()[old(Index())]
     ensures Index() == 1 + old(Index())
     ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
       it.Valid() && (it != this ==> it.Index() == old(it.Index()))
-    ensures forall x | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
-    ensures forall x | x in Parent().Repr() :: allocated(x)
 
   function method Peek(): int
     reads this, Parent(), Parent().Repr()
@@ -56,6 +58,11 @@ trait ListIterator {
     ensures Valid()
     ensures it.Valid()
     ensures Parent().Valid()
+
+    ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
+    ensures fresh(Parent().Repr()-old(Parent().Repr()))
+    ensures forall x | x in Parent().Repr() :: allocated(x)
+
     ensures it in Parent().Iterators()
     ensures Parent().Iterators() == {it} + old(Parent().Iterators())
     ensures Parent() == old(Parent())
@@ -65,8 +72,6 @@ trait ListIterator {
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index())
     ensures Parent().Model() == old(Parent().Model())
-    ensures forall x | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
-    ensures forall x | x in Parent().Repr() :: allocated(x)
 }
 
 trait List {
@@ -116,6 +121,11 @@ trait List {
     requires forall x | x in Repr()::allocated(x)
     ensures Valid()
     ensures Model() == old(Model())
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+
     ensures fresh(it)
     ensures Iterators() == {it} + old(Iterators())
     ensures it.Valid()
@@ -123,8 +133,6 @@ trait List {
     ensures it.Parent() == this
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index())
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
-    ensures forall x | x in Repr() :: allocated(x)
 
   function method Front(): int
     reads this, Repr()
@@ -140,7 +148,8 @@ trait List {
     ensures Valid()
     ensures Model() == [x] + old(Model())
 
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
@@ -153,7 +162,8 @@ trait List {
     ensures Valid()
     ensures [x] + Model() == old(Model())
 
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
@@ -172,7 +182,8 @@ trait List {
     ensures Valid()
     ensures Model() == old(Model()) + [x]
 
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
@@ -185,8 +196,46 @@ trait List {
     ensures Valid()
     ensures Model() + [x] == old(Model())
 
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
+
+  // Insertion before mid
+  method Insert(mid: ListIterator, x: int)
+    modifies this, Repr()
+    requires Valid()
+    requires mid.Valid()
+    requires mid.Parent() == this
+    requires mid.HasNext()
+    requires mid in Iterators()
+    requires forall x | x in Repr() :: allocated(x)
+    ensures Valid()
+    ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+
+    ensures Iterators() == old(Iterators())
+
+  // Deletion of mid
+  method Erase(mid: ListIterator) returns (next: ListIterator)
+    modifies this, Repr()
+    requires Valid()
+    requires mid.Valid()
+    requires mid.Parent() == this
+    requires mid.HasNext()
+    requires mid in Iterators()
+    requires forall x | x in Repr() :: allocated(x)
+    ensures Valid()
+    ensures Model() == Seq.Remove(old(Model()), old(mid.Index()))
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+
+    ensures fresh(next)
+    ensures Iterators() == {next}+old(Iterators())
 }
