@@ -133,7 +133,7 @@ class DoublyLinkedListWithLast {
         list.LastHasLastIndex(last);
         list.ModelRelationWithSpine();
       }
-      list.Insert(last, x);
+      list.InsertAfter(last, x);
       last := last.next;
       assert last != null;
       assert Valid();
@@ -184,7 +184,7 @@ class DoublyLinkedListWithLast {
   }
 
   // Insertion after mid
-  method Insert(mid: DNode, x: A)
+  method InsertAfter(mid: DNode, x: A)
     modifies this, Repr()
     requires Valid()
     requires mid in Repr()
@@ -202,27 +202,34 @@ class DoublyLinkedListWithLast {
     ensures forall x | x in Repr() :: allocated(x)
   {
     /*GHOST*/ list.LastHasLastIndex(last);
-    list.Insert(mid, x);
+    list.InsertAfter(mid, x);
     if mid.next.next == null {
       last := mid.next;
     }
   }
 
   // Insertion before mid
-  method InsertBefore(mid: DNode, x: A) returns (node: DNode)
+  method InsertBefore(mid: DNode, x: A)
     modifies this, Repr()
     requires Valid()
     requires mid in Repr()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
     ensures list.spine
-      == Seq.Insert(mid.next, old(list.spine), old(list.GetIndex(mid)))
+      == Seq.Insert(mid.prev, old(list.spine), old(list.GetIndex(mid)))
     ensures Model() == Seq.Insert(x, old(Model()), old(list.GetIndex(mid)))
-    ensures mid.next != null
-    ensures fresh(mid.next)
-    ensures mid.next in list.spine
-    ensures mid.next.next == old(mid.next)
+    ensures mid.prev != null
+    ensures fresh(mid.prev)
+    ensures mid.prev in list.spine
+    ensures mid.prev.prev == old(mid.prev)
     ensures forall n | n in old(list.spine) :: n in list.spine
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
+  {
+    /*GHOST*/ list.LastHasLastIndex(last);
+    list.InsertBefore(mid, x);
+    if list.head.next == null {
+      last := list.head;
+    }
+  }
 }

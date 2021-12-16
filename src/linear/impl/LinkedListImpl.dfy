@@ -391,7 +391,7 @@ class List1 extends LinkedList {
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
   {
-    list.Insert(CoerceIter(mid).node, x);
+    list.InsertAfter(CoerceIter(mid).node, x);
     size := size + 1;
   }
 
@@ -415,6 +415,10 @@ class List1 extends LinkedList {
         it.Index() == old(it.Index()) + 1
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
+  {
+    list.InsertBefore(CoerceIter(mid).node, x);
+    size := size + 1;
+  }
 
   method Erase(mid: ListIterator) returns (next:ListIterator)
     modifies this, Repr()

@@ -239,7 +239,7 @@ class DoublyLinkedList {
     assert head !in old(Repr());
   }
 
-  method Insert(mid: DNode, x: A)
+  method InsertAfter(mid: DNode, x: A)
     modifies this, Repr()
     requires Valid()
     requires mid in Repr()
@@ -268,6 +268,43 @@ class DoublyLinkedList {
     mid.next := n;
     { // GHOST
       spine := spine[..i+1] + [n] + spine[i+1..];
+      ModelRelationWithSpine();
+    }
+  }
+
+  method InsertBefore(mid: DNode, x: A)
+    modifies this, Repr()
+    requires Valid()
+    requires mid in Repr()
+    ensures Valid()
+    ensures spine == Seq.Insert(mid.prev, old(spine), old(GetIndex(mid)))
+    ensures Model() == Seq.Insert(x, old(Model()), old(GetIndex(mid)))
+    ensures mid.prev != null
+    ensures fresh(mid.prev)
+    ensures mid.prev in spine
+    ensures mid.prev.prev == old(mid.prev)
+    ensures forall n | n in old(spine) :: n in spine
+  {
+    { // GHOST
+      DistinctSpine();
+      ModelRelationWithSpine();
+    }
+    var n := new DNode(mid.prev, x, mid);
+    assert n.next == mid;
+    assert n.next == mid;
+    ghost var i :| 0 <= i < |spine| && spine[i] == mid;
+    if mid.prev != null {
+      assert spine[i-1] == mid.prev;
+      assert mid.prev in Repr();
+      mid.prev.next := n;
+    } else {
+      head := n;
+      assert i == 0;
+    }
+    mid.prev := n;
+    { // GHOST
+      spine := spine[..i] + [n] + spine[i..];
+      assert Valid();
       ModelRelationWithSpine();
     }
   }
