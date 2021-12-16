@@ -328,7 +328,7 @@ class List1 extends LinkedList {
         else
           it.Index()== old(it.Index())
   {
-    var node := list.PushBack(x);
+    list.PushBack(x);
     /*GHOST*/ size := size + 1;
     /*GHOST*/ list.list.ModelRelationWithSpine();
   }
@@ -370,6 +370,32 @@ class List1 extends LinkedList {
     it
   }
 
+  // Insertion after mid
+  method InsertAfter(mid: ListIterator, x: int)
+    modifies this, Repr()
+    requires Valid()
+    requires mid.Valid()
+    requires mid.Parent() == this
+    requires mid.HasNext()
+    requires mid in Iterators()
+    requires forall x | x in Repr() :: allocated(x)
+    ensures Valid()
+    ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index())+1)
+    ensures Iterators() == old(Iterators())
+    ensures forall it | it in Iterators() && old(it.Valid()) :: it.Valid()
+    ensures forall it | it in Iterators() && old(it.Valid()) ::
+      if old(it.Index()) <= old(mid.Index())  then
+        it.Index() == old(it.Index())
+      else
+        it.Index() == old(it.Index()) + 1
+    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
+  {
+    list.Insert(CoerceIter(mid).node, x);
+    size := size + 1;
+  }
+
+  // Insertion before mid
   method Insert(mid: ListIterator, x: int)
     modifies this, Repr()
     requires Valid()
@@ -389,10 +415,29 @@ class List1 extends LinkedList {
         it.Index() == old(it.Index()) + 1
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
-  /*
-  {
-    list.Insert(CoerceIter(mid).node, x);
-    size := size + 1;
-  }
-  */
+
+  method Erase(mid: ListIterator) returns (next:ListIterator)
+    modifies this, Repr()
+    requires Valid()
+    requires mid.Valid()
+    requires mid.Parent() == this
+    requires mid.HasNext()
+    requires mid in Iterators()
+    requires forall x | x in Repr() :: allocated(x)
+    ensures Valid()
+    ensures Model() == Seq.Remove(old(Model()), old(mid.Index()))
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+
+    ensures fresh(next)
+    ensures Iterators() == {next}+old(Iterators())
+    ensures next.Valid() && next.Index()==old(mid.Index())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.Index()) != old(mid.Index()) :: it.Valid()
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.Index()) != old(mid.Index()) ::
+      if old(it.Index()) < old(mid.Index())  then
+        it.Index() == old(it.Index())
+      else
+        it.Index() == old(it.Index()) - 1
 }

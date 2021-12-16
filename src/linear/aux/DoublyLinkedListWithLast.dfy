@@ -114,7 +114,7 @@ class DoublyLinkedListWithLast {
   }
 
   // O(1)
-  method PushBack(x: A) returns (node: DNode)
+  method PushBack(x: A)
     modifies this, list, list.Repr()
     requires Valid()
     ensures Valid()
@@ -122,8 +122,7 @@ class DoublyLinkedListWithLast {
     ensures Repr() > old(Repr())
     ensures fresh(Repr() - old(Repr()))
     ensures list == old(list)
-    // ensures list.spine == old(list.spine) + [node]
-    ensures list.spine[..|list.spine|-1] == old(list.spine)
+    ensures list.spine == old(list.spine) + [last]
   {
     if last == null {
       assert Model() == [];
@@ -134,7 +133,7 @@ class DoublyLinkedListWithLast {
         list.LastHasLastIndex(last);
         list.ModelRelationWithSpine();
       }
-      node := list.Insert(last, x);
+      list.Insert(last, x);
       last := last.next;
       assert last != null;
       assert Valid();
@@ -184,7 +183,8 @@ class DoublyLinkedListWithLast {
     }
   }
 
-  method Insert(mid: DNode, x: A) returns (node: DNode)
+  // Insertion after mid
+  method Insert(mid: DNode, x: A)
     modifies this, Repr()
     requires Valid()
     requires mid in Repr()
@@ -202,9 +202,27 @@ class DoublyLinkedListWithLast {
     ensures forall x | x in Repr() :: allocated(x)
   {
     /*GHOST*/ list.LastHasLastIndex(last);
-    node := list.Insert(mid, x);
+    list.Insert(mid, x);
     if mid.next.next == null {
       last := mid.next;
     }
   }
+
+  // Insertion before mid
+  method InsertBefore(mid: DNode, x: A) returns (node: DNode)
+    modifies this, Repr()
+    requires Valid()
+    requires mid in Repr()
+    requires forall x | x in Repr() :: allocated(x)
+    ensures Valid()
+    ensures list.spine
+      == Seq.Insert(mid.next, old(list.spine), old(list.GetIndex(mid)))
+    ensures Model() == Seq.Insert(x, old(Model()), old(list.GetIndex(mid)))
+    ensures mid.next != null
+    ensures fresh(mid.next)
+    ensures mid.next in list.spine
+    ensures mid.next.next == old(mid.next)
+    ensures forall n | n in old(list.spine) :: n in list.spine
+    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
 }
