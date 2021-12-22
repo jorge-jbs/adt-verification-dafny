@@ -458,6 +458,7 @@ class List1 extends LinkedList {
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
+    requires mid.HasNext()
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()

@@ -93,7 +93,8 @@ trait LinkedListIterator extends ListIterator {
     ensures Parent().Iterators() == old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index())
-    ensures |Parent().Model()|== |old(Parent().Model())| && Index()==old(Index())
+    ensures |Parent().Model()| == old(|Parent().Model()|)
+    ensures Index() == old(Index())
     ensures Parent().Model()[Index()] == x
     ensures forall i | 0 <= i < |Parent().Model()| && i != Index() ::
       Parent().Model()[i] == old(Parent().Model()[i])

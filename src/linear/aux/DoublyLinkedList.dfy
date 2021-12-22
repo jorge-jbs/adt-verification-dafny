@@ -47,14 +47,13 @@ class DoublyLinkedList {
       // spine[i].IsPrevOf(spine[i+1]) && spine[i+1].IsNextOf(spine[i])
       spine[i].next == spine[i+1] && spine[i+1].prev == spine[i]
     )
-    && (if head == null then
-      spine == []
-    else
-      && spine != []
-      && spine[0] == head
-      && spine[0].prev == null
-      && spine[|spine|-1].next == null
-    )
+    && if head == null then
+        spine == []
+      else
+        && spine != []
+        && spine[0] == head
+        && spine[0].prev == null
+        && spine[|spine|-1].next == null
   }
 
   lemma DistinctSpineAux(n: nat)
