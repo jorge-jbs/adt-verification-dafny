@@ -401,7 +401,6 @@ class List1 extends LinkedList {
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
-    requires mid.HasNext()
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
@@ -416,8 +415,13 @@ class List1 extends LinkedList {
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
   {
-    list.InsertBefore(CoerceIter(mid).node, x);
-    size := size + 1;
+    if CoerceIter(mid).node == null {
+      list.list.ModelRelationWithSpine();
+      PushBack(x);
+    } else {
+      list.InsertBefore(CoerceIter(mid).node, x);
+      size := size + 1;
+    }
   }
 
   method Erase(mid: ListIterator) returns (next:ListIterator)
@@ -425,7 +429,6 @@ class List1 extends LinkedList {
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
-    requires mid.HasNext()
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
