@@ -75,6 +75,30 @@ trait ArrayListIterator extends ListIterator {
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
     it.Valid() && it.Index() == old(it.Index())
     ensures Parent().Model() == old(Parent().Model())
+
+  method Set(x: int)
+    modifies Parent(), Parent().Repr()
+    requires Valid()
+    requires Parent().Valid()
+    requires allocated(Parent())
+    requires forall it | it in Parent().Repr() :: allocated(it)
+    requires HasNext()
+    ensures Valid()
+    ensures Parent().Valid()
+    ensures Parent() == old(Parent())
+
+    ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
+    ensures fresh(Parent().Repr()-old(Parent().Repr()))
+    ensures forall x | x in Parent().Repr() :: allocated(x)
+
+    ensures Parent().Iterators() == old(Parent().Iterators())
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Index() == old(it.Index())
+    ensures |Parent().Model()| == old(|Parent().Model()|)
+    ensures Index() == old(Index())
+    ensures Parent().Model()[Index()] == x
+    ensures forall i | 0 <= i < |Parent().Model()| && i != Index() ::
+      Parent().Model()[i] == old(Parent().Model()[i])
 }
 
 
