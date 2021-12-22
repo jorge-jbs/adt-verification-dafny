@@ -128,6 +128,35 @@ class ListIterator1 extends LinkedListIterator {
     it := new ListIterator1.CopyCtr(this);
     parent.iters := {it} + parent.iters;
   }
+
+  method Set(x: int)
+    modifies node
+    requires Valid()
+    requires Parent().Valid()
+    requires allocated(Parent())
+    requires forall it | it in Parent().Repr() :: allocated(it)
+    requires HasNext()
+    ensures Valid()
+    ensures Parent().Valid()
+    ensures Parent() == old(Parent())
+
+    ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
+    ensures fresh(Parent().Repr()-old(Parent().Repr()))
+    ensures forall x | x in Parent().Repr() :: allocated(x)
+
+    ensures Parent().Iterators() == old(Parent().Iterators())
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Index() == old(it.Index())
+    ensures |Parent().Model()| == old(|Parent().Model()|)
+    ensures Index() == old(Index())
+    ensures Parent().Model()[Index()] == x
+    ensures forall i | 0 <= i < |Parent().Model()| && i != Index() ::
+      Parent().Model()[i] == old(Parent().Model()[i])
+  {
+    parent.list.list.ModelRelationWithSpine();
+    node.data := x;
+    parent.list.list.ModelRelationWithSpine();
+  }
 }
 
 class List1 extends LinkedList {
