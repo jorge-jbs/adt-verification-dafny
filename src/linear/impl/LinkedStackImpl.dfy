@@ -80,35 +80,33 @@ class LinkedStack extends Stack {
 
   // O(1)
   method Push(x: int)
-    modifies list
+    modifies Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
-    ensures Repr() > old(Repr())
-    ensures fresh(Repr() - old(Repr()))
-    ensures list == old(list)
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
   {
     list.Push(x);
   }
 
   // O(1)
   method Pop() returns (x: int)
-    modifies list
-    requires list.head != null
+    modifies Repr()
+    requires forall x | x in Repr()::allocated(x)
     requires Valid()
+    requires !Empty()
     ensures Valid()
     ensures [x] + Model() == old(Model())
-    ensures Repr() < old(Repr())
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
   {
     x := list.Pop();
   }
-
-  // method Reverse()
-  //   modifies this, Repr()
-  //   requires Valid()
-  //   ensures Valid()
-  //   ensures Model() == Seq.Rev(old(Model()))
-  //   ensures Repr() == old(Repr())
 }
 
 method EvalPostfix(s: string) returns (res: int)
@@ -195,14 +193,21 @@ method BalancedTest(s: string) returns (b: bool)
 
 method Print(st: Stack)
   modifies st, st.Repr()
+  requires forall x | x in st.Repr() :: allocated(x)
   requires st.Valid()
   ensures st.Valid()
   ensures st.Empty()
+  requires forall x | x in st.Repr() :: allocated(x)
+  ensures forall x {:trigger x in st.Repr(), x in old(st.Repr())} | x in st.Repr() - old(st.Repr()) :: fresh(x)
+  ensures fresh(st.Repr()-old(st.Repr()))
+  ensures forall x | x in st.Repr() :: allocated(x)
 {
   while !st.Empty()
     decreases |st.Model()|
     invariant st.Valid()
-    invariant forall x | x in st.Repr() - old(st.Repr()) :: fresh(x)
+    invariant forall x {:trigger x in st.Repr(), x in old(st.Repr())} | x in st.Repr() - old(st.Repr()) :: fresh(x)
+    invariant fresh(st.Repr()-old(st.Repr()))
+    invariant forall x | x in st.Repr() :: allocated(x)
   {
     var x := st.Pop();
     print x;
@@ -213,9 +218,10 @@ method Print(st: Stack)
 method PopTwice(s: Stack)
   modifies s.Repr()
   requires s.Valid() && |s.Model()| >= 2
-  ensures s.Valid()
-  ensures old(s.Model()) == old(s.Model()[0..2]) + s.Model()
-  ensures forall x | x in s.Repr() - old(s.Repr()) :: fresh(x)
+  requires forall x | x in s.Repr() :: allocated(x)
+  ensures forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+  ensures fresh(s.Repr()-old(s.Repr()))
+  ensures forall x | x in s.Repr() :: allocated(x)
 {
   var x := s.Pop();
   x := s.Pop();
@@ -236,7 +242,9 @@ method PopToArray(s: Stack, init: nat, n: nat, v: array<int>)
   ensures old(s.Model()[n..]) == s.Model()
 
   ensures {v} !! {s} + s.Repr()
-  ensures forall x | x in s.Repr() - old(s.Repr()) :: fresh(x)
+  requires forall x | x in s.Repr() :: allocated(x)
+  ensures forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+  ensures fresh(s.Repr()-old(s.Repr()))
   ensures forall x | x in s.Repr() :: allocated(x)
 {
   var i := 0;
@@ -246,7 +254,8 @@ method PopToArray(s: Stack, init: nat, n: nat, v: array<int>)
     invariant s.Model() == old(s.Model()[i..])
     invariant v[init..init+i] == old(s.Model()[..i])
 
-    invariant forall x | x in s.Repr() - old(s.Repr()) :: fresh(x)
+    invariant forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+    invariant fresh(s.Repr()-old(s.Repr()))
     invariant forall x | x in s.Repr() :: allocated(x)
   {
     v[init+i] := s.Pop();
@@ -264,7 +273,9 @@ method PushFromArray(s: Stack, a: array<int>)
   ensures s.Valid()
   ensures s.Model() == Seq.Rev(a[..]) + old(s.Model())
 
-  ensures forall x | x in s.Repr() - old(s.Repr()) :: fresh(x)
+  requires forall x | x in s.Repr() :: allocated(x)
+  ensures forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+  ensures fresh(s.Repr()-old(s.Repr()))
   ensures forall x | x in s.Repr() :: allocated(x)
 {
   var i := 0;
@@ -273,7 +284,8 @@ method PushFromArray(s: Stack, a: array<int>)
     invariant s.Valid()
     invariant s.Model() == Seq.Rev(a[..i]) + old(s.Model())
 
-    invariant forall x | x in s.Repr() - old(s.Repr()) :: fresh(x)
+    invariant forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+    invariant fresh(s.Repr()-old(s.Repr()))
     invariant forall x | x in s.Repr() :: allocated(x)
   {
     s.Push(a[i]);
@@ -301,7 +313,9 @@ method DoNothingNTimes(s: Stack, n: nat)
   ensures s.Valid()
   ensures s.Model() == old(s.Model())
 
-  ensures forall x | x in s.Repr() - old(s.Repr()) :: fresh(x)
+  requires forall x | x in s.Repr() :: allocated(x)
+  ensures forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+  ensures fresh(s.Repr()-old(s.Repr()))
   ensures forall x | x in s.Repr() :: allocated(x)
 {
   var i := 0;
@@ -310,7 +324,8 @@ method DoNothingNTimes(s: Stack, n: nat)
     invariant s.Valid()
     invariant s.Model() == old(s.Model())
 
-    invariant forall x | x in s.Repr() - old(s.Repr()) :: fresh(x)
+    invariant forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+    invariant fresh(s.Repr()-old(s.Repr()))
     invariant forall x | x in s.Repr() :: allocated(x)
   {
     var x := s.Pop();
@@ -322,17 +337,19 @@ method DoNothingNTimes(s: Stack, n: nat)
 method Clear(s: Stack)
   modifies s.Repr()
   requires s.Valid()
-  requires forall x | x in s.Repr() :: allocated(x)
-
   ensures s.Valid()
   ensures s.Empty()
-  ensures forall x | x in s.Repr() - old(s.Repr()) :: fresh(x)
+
+  requires forall x | x in s.Repr() :: allocated(x)
+  ensures forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+  ensures fresh(s.Repr()-old(s.Repr()))
   ensures forall x | x in s.Repr() :: allocated(x)
 {
   while !s.Empty()
     decreases |s.Model()|
     invariant s.Valid()
-    invariant forall x | x in s.Repr() - old(s.Repr()) :: fresh(x)
+    invariant forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+    invariant fresh(s.Repr()-old(s.Repr()))
     invariant forall x | x in s.Repr() :: allocated(x)
   {
     var x := s.Pop();
@@ -344,13 +361,15 @@ method FromStackToArray(s: Stack, a: array<int>, n: nat)
   requires s.Valid()
   requires {a} !! {s} + s.Repr()
   requires a.Length - n >= |s.Model()|
-  requires forall x | x in s.Repr() :: allocated(x)
   ensures s.Valid()
   ensures s.Empty()
   ensures a[..n] == old(a[..n])
   ensures a[n..n+old(|s.Model()|)] == old(s.Model())
   ensures a[n+old(|s.Model()|)..] == old(a[n+|s.Model()|..])
-  ensures forall x | x in s.Repr() - old(s.Repr()) :: fresh(x)
+
+  requires forall x | x in s.Repr() :: allocated(x)
+  ensures forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+  ensures fresh(s.Repr()-old(s.Repr()))
   ensures forall x | x in s.Repr() :: allocated(x)
 {
   var i := 0;
@@ -362,7 +381,8 @@ method FromStackToArray(s: Stack, a: array<int>, n: nat)
     invariant a[..n] == old(a[..n])
     invariant a[n..n+i] + s.Model() == old(s.Model())
     invariant a[n+i..] == old(a[n+i..])
-    invariant forall x | x in s.Repr() - old(s.Repr()) :: fresh(x)
+    invariant forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+    invariant fresh(s.Repr()-old(s.Repr()))
     invariant forall x | x in s.Repr() :: allocated(x)
   {
     a[n+i] := s.Pop();
@@ -377,9 +397,6 @@ method {:timeLimitMultiplier 4} PopPush(s: Stack, t: Stack)
   requires t.Valid()
   requires {s} + s.Repr() !! {t} + t.Repr()
 
-  requires forall y | y in s.Repr() :: allocated(y)
-  requires forall y | y in t.Repr() :: allocated(y)
-
   ensures s.Valid() && t.Valid()
   ensures {s} + s.Repr() !! {t} + t.Repr()
   ensures [old(s.Model()[0])] + s.Model() == old(s.Model())
@@ -387,9 +404,14 @@ method {:timeLimitMultiplier 4} PopPush(s: Stack, t: Stack)
   ensures Seq.Rev(old(s.Model())) + old(t.Model())
     == Seq.Rev(s.Model()) + t.Model()
 
-  ensures forall x | x in s.Repr() - old(s.Repr()) :: fresh(x)
-  ensures forall x | x in t.Repr() - old(t.Repr()) :: fresh(x)
+  requires forall x | x in s.Repr() :: allocated(x)
+  ensures forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+  ensures fresh(s.Repr()-old(s.Repr()))
   ensures forall x | x in s.Repr() :: allocated(x)
+
+  requires forall x | x in t.Repr() :: allocated(x)
+  ensures forall x {:trigger x in t.Repr(), x in old(t.Repr())} | x in t.Repr() - old(t.Repr()) :: fresh(x)
+  ensures fresh(t.Repr()-old(t.Repr()))
   ensures forall x | x in t.Repr() :: allocated(x)
 {
   var x := s.Pop();
@@ -423,9 +445,11 @@ method {:timeLimitMultiplier 2} Extract(s: Stack, t: Stack)
     invariant Seq.Rev(old(s.Model())) + old(t.Model())
       == Seq.Rev(s.Model()) + t.Model()
 
-    invariant forall x | x in s.Repr() - old(s.Repr()) :: fresh(x)
-    invariant forall x | x in t.Repr() - old(t.Repr()) :: fresh(x)
+    invariant forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+    invariant fresh(s.Repr()-old(s.Repr()))
     invariant forall x | x in s.Repr() :: allocated(x)
+    invariant forall x {:trigger x in t.Repr(), x in old(t.Repr())} | x in t.Repr() - old(t.Repr()) :: fresh(x)
+    invariant fresh(t.Repr()-old(t.Repr()))
     invariant forall x | x in t.Repr() :: allocated(x)
   {
     PopPush(s, t);
@@ -569,9 +593,11 @@ method {:timeLimitMultiplier 8} areEqual(s: Stack, r: Stack)
     invariant mr == mr[..i] + r.Model()
     invariant ms[..i] == mr[..i]
 
-    invariant forall x | x in r.Repr() - old(r.Repr()) :: fresh(x)
-    invariant forall x | x in s.Repr() - old(s.Repr()) :: fresh(x)
+    invariant forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+    invariant fresh(s.Repr()-old(s.Repr()))
     invariant forall x | x in s.Repr() :: allocated(x)
+    invariant forall x {:trigger x in r.Repr(), x in old(r.Repr())} | x in r.Repr() - old(r.Repr()) :: fresh(x)
+    invariant fresh(r.Repr()-old(r.Repr()))
     invariant forall x | x in r.Repr() :: allocated(x)
   {
     var x := s.Pop();
@@ -585,6 +611,8 @@ method FromArrayToStack(a: array<int>) returns (s: LinkedStack)
   ensures s.Valid()
   ensures s.Model() == Seq.Rev(a[..])
   ensures forall u | u in s.Repr() :: fresh(u)
+  ensures fresh(s.Repr())
+  ensures forall x | x in s.Repr() :: allocated(x)
 {
   s := new LinkedStack();
   PushFromArray(s, a);

@@ -42,7 +42,8 @@ trait Stack {
     ensures Valid()
     ensures Model() == [x] + old(Model())
 
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
   method Pop() returns (x: int)
@@ -52,6 +53,7 @@ trait Stack {
     ensures Valid()
     ensures [x] + Model() == old(Model())
 
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 }

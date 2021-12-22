@@ -142,7 +142,7 @@ trait List {
   method Begin() returns (it: ListIterator)
     modifies this, Repr()
     requires Valid()
-    requires forall x | x in Repr()::allocated(x)
+    requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
     ensures Model() == old(Model())
 
