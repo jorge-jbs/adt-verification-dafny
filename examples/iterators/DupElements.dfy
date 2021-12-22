@@ -11,12 +11,11 @@ function Dup<A>(xs: seq<A>): seq<A>
     [xs[0]] + [xs[0]] + Dup(xs[1..])
 }
 
-//This is the map that proves the subsequence property
+// This is the map that proves the subsequence property
 function DupMap<A>(xs: seq<A>):map<int,int>
 {
  map i | 0<=i<|xs| :: 2*i
 }
-
 
 function DupRev<A>(xs: seq<A>): seq<A>
   ensures 2*|xs| == |DupRev(xs)|
@@ -37,7 +36,7 @@ lemma DupDupRev<A>(xs: seq<A>)
        Dup(xs);
        [xs[0]] + [xs[0]] + Dup(xs[1..]);
        [xs[0]] + [xs[0]] + DupRev(xs[1..]);
-       {assert |xs[1..]|==|xs|-1 >=1; 
+       {assert |xs[1..]|==|xs|-1 >=1;
        assert xs[1..][|xs|-2]== xs[|xs|-1];
        assert xs[1..][..|xs|-2]== xs[1..|xs|-1];}
        [xs[0]] + [xs[0]]  + (DupRev(xs[1..|xs|-1]) + [xs[|xs|-1]] + [xs[|xs|-1]]);
@@ -46,9 +45,6 @@ lemma DupDupRev<A>(xs: seq<A>)
      }
    }
  }
-
-
-
 
 lemma {:induction xs} setDup<A>(xs: seq<A>)
 ensures forall x :: x in xs <==> x in Dup(xs)
@@ -93,32 +89,21 @@ ensures forall i | 0<=i<|xs| :: xs[i]==Dup(xs)[2*i]==Dup(xs)[2*i+1]
          2*multiset(xs[1..])[x];{assert xs==[xs[0]]+xs[1..];}
          2*multiset(xs)[x];
        }
-
-
-      }    
-
-
+      }
     }
-
 }
-
 
 lemma {:induction xs} dupEls<A>(xs: seq<A>)
  ensures forall x | x in xs :: multiset(Dup(xs))[x]==2*multiset(xs)[x]
-{ forall x | x in xs 
+{ forall x | x in xs
   ensures multiset(Dup(xs))[x]==2*multiset(xs)[x]{
    dupElsAux(xs,x);
-
   }
 }
 
-
  //ensures Seq.isSubSec(xs,Dup(xs))
 lemma PropSubSecDup<A>(xs: seq<A>)//TO DO
-ensures subSec(xs,Dup(xs),DupMap(xs))
-
-
-
+  ensures subSec(xs,Dup(xs),DupMap(xs))
 
 method DupElements(l: LinkedList)
   modifies l, l.Repr()
@@ -128,11 +113,11 @@ method DupElements(l: LinkedList)
   ensures l.Model() == old(Dup(l.Model()))
   ensures |l.Model()| == 2* |old(l.Model())|
   ensures forall i | 0<=i<|old(l.Model())| :: old(l.Model())[i] == l.Model()[2*i]==l.Model()[2*i+1]
-  
+
   ensures l.Iterators() >= old(l.Iterators())
-  ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: 
+  ensures forall it | it in old(l.Iterators()) && old(it.Valid())::
       it.Valid() &&
-      if (old(it.Index())== |old(l.Model())|) then 
+      if (old(it.Index())== |old(l.Model())|) then
            it.Index()==2*old(it.Index())
       else it.Index()==2*old(it.Index())+1 //Because we insert before
 
@@ -143,9 +128,9 @@ method DupElements(l: LinkedList)
 {
 
   var it := l.Begin();
-  
+
     ghost var i := 0;
-  
+
   while it.HasNext()
     decreases |l.Model()| - it.Index()
     invariant l.Valid()
@@ -162,9 +147,9 @@ method DupElements(l: LinkedList)
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall iter | iter in old(l.Iterators()) && old(iter.Valid())::
        iter.Valid() &&
-       (if (old(iter.Index())<i) then 
+       (if (old(iter.Index())<i) then
             iter.Index()==2*old(iter.Index())+1
-       else 
+       else
            iter.Index()==i + old(iter.Index()))
 
     invariant forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
@@ -174,9 +159,9 @@ method DupElements(l: LinkedList)
     assert i < old(|l.Model()|);
     ghost var omodel := l.Model();
     assert omodel[..2*i] == old(DupRev(l.Model()[..i]));
-    
+
     var x := it.Peek();
-    
+
     l.Insert(it, x);
 
     ghost var model := l.Model();
@@ -201,14 +186,11 @@ method DupElements(l: LinkedList)
   DupDupRev(old(l.Model()[..i]));
   assert old(l.Model()[..i]) == old(l.Model());
   //assert l.Model() == old(Dup(l.Model()));
-  
+
   setDup(old(l.Model())); // 0->0,1 1-> 2,3 ...
 }
 
-
-
 method DupElementsAL(l: ArrayList)
-
   modifies l, l.Repr()
   requires l.Valid()
   requires forall x | x in l.Repr() :: allocated(x)
@@ -218,7 +200,7 @@ method DupElementsAL(l: ArrayList)
   ensures forall i | 0<=i<|old(l.Model())| :: old(l.Model())[i] == l.Model()[2*i]==l.Model()[2*i+1]
 
   ensures l.Iterators() >= old(l.Iterators())
-  ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: 
+  ensures forall it | it in old(l.Iterators()) && old(it.Valid())::
       it.Valid() && it.Index()==old(it.Index())
 
 
@@ -226,11 +208,10 @@ method DupElementsAL(l: ArrayList)
   ensures fresh(l.Repr()-old(l.Repr()))
   ensures forall x | x in l.Repr() :: allocated(x)
 {
-
   var it := l.Begin();
-  
-    ghost var i := 0;
-  
+
+  ghost var i := 0;
+
   while it.HasNext()
     decreases |l.Model()| - it.Index()
     invariant l.Valid()
@@ -245,7 +226,7 @@ method DupElementsAL(l: ArrayList)
     invariant it in l.Iterators()
 
     invariant l.Iterators() >= old(l.Iterators())
-    invariant  forall it | it in old(l.Iterators()) && old(it.Valid()):: 
+    invariant  forall it | it in old(l.Iterators()) && old(it.Valid())::
       it.Valid() && it.Index()==old(it.Index())
 
     invariant forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
@@ -255,11 +236,11 @@ method DupElementsAL(l: ArrayList)
     assert i < old(|l.Model()|);
     ghost var omodel := l.Model();
     assert omodel[..2*i] == old(DupRev(l.Model()[..i]));
-    
-    var x := it.Peek();    
+
+    var x := it.Peek();
     assert x==l.Model()[2*i];
     l.Insert(it, x);
-    
+
     ghost var model := l.Model();
     calc == {
       model;
@@ -274,7 +255,6 @@ method DupElementsAL(l: ArrayList)
     }
     assert model == old(DupRev(l.Model()[..i+1])) + omodel[2*i+1..];
 
-
     x := it.Next();
     x := it.Next(); //In ArrayList index mid remains, so we jump over two elements to reach the following one
     i := i + 1;
@@ -287,6 +267,4 @@ method DupElementsAL(l: ArrayList)
 
   assert l.Model() == old(Dup(l.Model()));
   setDup(old(l.Model())); // 0->0,1 1-> 2,3 ...
-
 }
-
