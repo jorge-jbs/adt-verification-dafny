@@ -125,6 +125,7 @@ class ArrayQueueImpl extends Queue {
     ensures list.Length>old(list.Length)
     ensures c+nelems<list.Length
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(list)
   {
       ghost var oldList := ModelAux(list,c,nelems);
       var aux: array<int> := new int[2*list.Length+1];

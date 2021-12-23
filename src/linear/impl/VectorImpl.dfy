@@ -108,9 +108,9 @@ class ArrayListIteratorImpl extends ArrayListIterator {
     it.Valid() && it.Index() == old(it.Index())
     ensures Parent().Model() == old(Parent().Model())
     {
-      var itImpl := new ArrayListIteratorImpl(parent);      
+      var itImpl := new ArrayListIteratorImpl(parent);
       itImpl.index := index;
-      it := itImpl; 
+      it := itImpl;
       parent.iterators := parent.iterators + { itImpl };
     }
 
@@ -141,7 +141,6 @@ class ArrayListIteratorImpl extends ArrayListIterator {
     parent.elements[index] := x;
   }
 }
-
 
 class ArrayListImpl extends ArrayList {
   var elements: array<int>;
@@ -197,7 +196,6 @@ class ArrayListImpl extends ArrayList {
     iterators
   }
 
-
   constructor()
     ensures Valid()
     ensures Model() == []
@@ -216,7 +214,6 @@ class ArrayListImpl extends ArrayList {
     size == 0
   }
 
-
   function method Size(): nat
     reads this, Repr()
     requires Valid()
@@ -225,12 +222,11 @@ class ArrayListImpl extends ArrayList {
     size
   }
 
-
   function method Front(): int
     reads this, Repr()
     requires Valid()
     requires Model() != []
-    
+
     ensures Valid()
     ensures Front() == Model()[0]
   {
@@ -241,7 +237,7 @@ class ArrayListImpl extends ArrayList {
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
-    
+
     ensures Valid()
     ensures Model() == [x] + old(Model())
 
@@ -252,7 +248,7 @@ class ArrayListImpl extends ArrayList {
     ensures Iterators() == old(Iterators())
     ensures forall it | it in old(iterators) :: old(it.Valid())
       ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
-  {      
+  {
     if (size == elements.Length) {
       Grow(elements.Length * 2);
     }
@@ -284,12 +280,11 @@ class ArrayListImpl extends ArrayList {
     size := size - 1;
   }
 
-
   function method Back(): int
     reads this, Repr()
     requires Valid()
     requires Model() != []
-    
+
     ensures Valid()
     ensures Back() == Model()[|Model()|-1]
   {
@@ -301,7 +296,7 @@ class ArrayListImpl extends ArrayList {
     requires Valid()
     requires Model() != []
     requires forall x | x in Repr() :: allocated(x)
-    
+
     ensures Valid()
     ensures Model() + [x] == old(Model())
 
@@ -318,12 +313,11 @@ class ArrayListImpl extends ArrayList {
     size := size - 1;
   }
 
-
   method PushBack(x: int)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
-    
+
     ensures Valid()
     ensures Model() == old(Model()) + [x]
 
@@ -347,7 +341,7 @@ class ArrayListImpl extends ArrayList {
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr()::allocated(x)
-    
+
     ensures Valid()
     ensures Model() == old(Model())
 
@@ -409,7 +403,7 @@ class ArrayListImpl extends ArrayList {
     requires mid.HasNext()
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
-    
+
     ensures Valid()
     ensures Model() == Seq.Remove(old(Model()), old(mid.Index()))
 
@@ -420,7 +414,7 @@ class ArrayListImpl extends ArrayList {
     ensures fresh(next)
     ensures Iterators() == {next} + old(Iterators())
     ensures forall it | it in old(iterators) :: old(it.Valid()) && old(it.HasNext())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();    
+      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
     ensures next.Valid() && next.Parent() == this && next.Index() == mid.Index();
   {
     var midImpl := mid as ArrayListIteratorImpl;
@@ -446,20 +440,21 @@ class ArrayListImpl extends ArrayList {
     iterators := iterators + { next };
   }
 
-
   method Grow(newCapacity: nat)
+    modifies this
     requires newCapacity >= elements.Length
     requires Valid()
-    
+    requires forall x | x in Repr() :: allocated(x)
+
     ensures Valid()
     ensures Model() == old(Model())
     ensures this.elements.Length == newCapacity
 
+    ensures Iterators() == old(Iterators())
+
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr() - old(Repr()))
-    
-    ensures Iterators() == old(Iterators())
-    modifies this
+    ensures forall x | x in Repr() :: allocated(x)
   {
     var newElements := new int[newCapacity];
     var i := 0;
@@ -525,5 +520,4 @@ class ArrayListImpl extends ArrayList {
     }
     assert i == size - 1;
   }
-
 }

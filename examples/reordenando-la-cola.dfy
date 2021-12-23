@@ -51,7 +51,11 @@ method Split(v: array<int>, neg: Stack, pos: Queue)
 
   requires forall x | x in neg.Repr() :: allocated(x)
   requires forall x | x in pos.Repr() :: allocated(x)
+  ensures forall x {:trigger x in neg.Repr(), x in old(neg.Repr())} | x in neg.Repr() && x !in old(neg.Repr()) :: fresh(x)
+  ensures fresh(neg.Repr()-old(neg.Repr()))
   ensures forall x | x in neg.Repr() :: allocated(x)
+  ensures forall x {:trigger x in pos.Repr(), x in old(pos.Repr())} | x in pos.Repr() && x !in old(pos.Repr()) :: fresh(x)
+  ensures fresh(pos.Repr()-old(pos.Repr()))
   ensures forall x | x in pos.Repr() :: allocated(x)
 {
   var i := 0;
@@ -75,7 +79,11 @@ method Split(v: array<int>, neg: Stack, pos: Queue)
     invariant Seq.MElems(neg.Model()) + Seq.MElems(pos.Model())
       == Seq.MElems(v[..i])
 
+    invariant forall x {:trigger x in neg.Repr(), x in old(neg.Repr())} | x in neg.Repr() && x !in old(neg.Repr()) :: fresh(x)
+    invariant fresh(neg.Repr()-old(neg.Repr()))
     invariant forall x | x in neg.Repr() :: allocated(x)
+    invariant forall x {:trigger x in pos.Repr(), x in old(pos.Repr())} | x in pos.Repr() && x !in old(pos.Repr()) :: fresh(x)
+    invariant fresh(pos.Repr()-old(pos.Repr()))
     invariant forall x | x in pos.Repr() :: allocated(x)
   {
     TransitiveLemma(v, i+1);
@@ -121,6 +129,8 @@ method FillFromStack(r: array<int>, i: nat, st: Stack) returns (l: nat)
   ensures l == i + old(|st.Model()|)
 
   requires forall x | x in st.Repr() :: allocated(x)
+  ensures forall x {:trigger x in st.Repr(), x in old(st.Repr())} | x in st.Repr() && x !in old(st.Repr()) :: fresh(x)
+  ensures fresh(st.Repr()-old(st.Repr()))
   ensures forall x | x in st.Repr() :: allocated(x)
 {
   l := 0;
@@ -129,8 +139,6 @@ method FillFromStack(r: array<int>, i: nat, st: Stack) returns (l: nat)
 
     invariant st.Valid()
     invariant {r} !! {st} + st.Repr()
-    invariant forall x | x in st.Repr() - old(st.Repr()) :: fresh(x)
-    invariant forall x | x in st.Repr() :: allocated(x)
 
     invariant 0 <= l <= old(|st.Model()|)
     invariant l == old(|st.Model()|) - |st.Model()|
@@ -139,6 +147,10 @@ method FillFromStack(r: array<int>, i: nat, st: Stack) returns (l: nat)
     invariant r[..i] == old(r[..i])
     invariant r[i..i+l] == old(st.Model()[..l])
     invariant r[i+old(|st.Model()|)..] == old(r[i+|st.Model()|..])
+
+    invariant forall x {:trigger x in st.Repr(), x in old(st.Repr())} | x in st.Repr() && x !in old(st.Repr()) :: fresh(x)
+    invariant fresh(st.Repr()-old(st.Repr()))
+    invariant forall x | x in st.Repr() :: allocated(x)
   {
     r[i+l] := st.Pop();
     l := l + 1;
@@ -163,6 +175,8 @@ method FillFromQueue(r: array<int>, i: nat, q: Queue) returns (l: nat)
   ensures l == i + old(|q.Model()|)
 
   requires forall x | x in q.Repr() :: allocated(x)
+  ensures forall x {:trigger x in q.Repr(), x in old(q.Repr())} | x in q.Repr() && x !in old(q.Repr()) :: fresh(x)
+  ensures fresh(q.Repr()-old(q.Repr()))
   ensures forall x | x in q.Repr() :: allocated(x)
 {
   l := 0;
@@ -171,8 +185,6 @@ method FillFromQueue(r: array<int>, i: nat, q: Queue) returns (l: nat)
 
     invariant q.Valid()
     invariant {r} !! {q} + q.Repr()
-    invariant forall x | x in q.Repr() - old(q.Repr()) :: fresh(x)
-    invariant forall x | x in q.Repr() :: allocated(x)
 
     invariant 0 <= l <= old(|q.Model()|)
     invariant l == old(|q.Model()|) - |q.Model()|
@@ -181,6 +193,10 @@ method FillFromQueue(r: array<int>, i: nat, q: Queue) returns (l: nat)
     invariant r[..i] == old(r[..i])
     invariant r[i..i+l] == old(q.Model()[..l])
     invariant r[i+old(|q.Model()|)..] == old(r[i+|q.Model()|..])
+
+    invariant forall x {:trigger x in q.Repr(), x in old(q.Repr())} | x in q.Repr() && x !in old(q.Repr()) :: fresh(x)
+    invariant fresh(q.Repr()-old(q.Repr()))
+    invariant forall x | x in q.Repr() :: allocated(x)
   {
     r[i+l] := q.Dequeue();
     l := l + 1;

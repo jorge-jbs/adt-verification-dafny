@@ -32,7 +32,8 @@ class List<A> {
   predicate Valid()
     reads this, Repr()
   {
-    && (forall i | 0 <= i < |spine|-1 :: spine[i].IsPrevOf(spine[i+1]))
+    // && (forall i | 0 <= i < |spine|-1 :: spine[i].IsPrevOf(spine[i+1]))
+    && (forall i | 0 <= i < |spine|-1 :: spine[i].next == spine[i+1])
     && (if head == null then
         spine == []
       else

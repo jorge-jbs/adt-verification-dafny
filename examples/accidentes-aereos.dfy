@@ -42,17 +42,17 @@ lemma TransitiveSeq(v: seq<int>)
   }
 }
 
-lemma TransitiveSeqSeq(v: seq<int>, is: seq<nat>)
-  requires forall i | 0 <= i < |is| :: is[i] < |v|
-  requires forall i | 0 <= i < |is|-1 :: v[is[i]] < v[is[i+1]]
-  ensures forall i, j | 0 <= i < j < |is| :: v[is[i]] < v[is[j]]
+lemma TransitiveSeqSeq(v: seq<int>, idcs: seq<nat>)
+  requires forall i | 0 <= i < |idcs| :: idcs[i] < |v|
+  requires forall i | 0 <= i < |idcs|-1 :: v[idcs[i]] < v[idcs[i+1]]
+  ensures forall i, j | 0 <= i < j < |idcs| :: v[idcs[i]] < v[idcs[j]]
 {
-  if is == [] {
+  if idcs == [] {
   } else {
-    TransitiveSeqSeq(v, is[1..]);
-    assert forall i, j | 1 <= i < j < |is| :: v[is[i]] < v[is[j]];
-    assert |is| >= 2 ==> v[is[0]] < v[is[1]];
-    assert forall i | 1 <= i < |is| :: v[is[0]] < v[is[i]];
+    TransitiveSeqSeq(v, idcs[1..]);
+    assert forall i, j | 1 <= i < j < |idcs| :: v[idcs[i]] < v[idcs[j]];
+    assert |idcs| >= 2 ==> v[idcs[0]] < v[idcs[1]];
+    assert forall i | 1 <= i < |idcs| :: v[idcs[0]] < v[idcs[i]];
   }
 }
 
@@ -71,22 +71,23 @@ method RemoveLess(st: Stack, v: array<nat>, i: nat) returns (ghost n: nat)
 
   ensures {v} !! {st} + st.Repr()
   ensures st.Valid()
-  ensures forall x | x in st.Repr() - old(st.Repr()) :: fresh(x)
-  ensures forall x | x in st.Repr() :: allocated(x)
 
   ensures n <= old(|st.Model()|)
   ensures forall j | j in old(st.Model()[..n]) :: v[j] <= v[i]
   ensures forall j | j in old(st.Model()[n..]) :: v[j] > v[i]
   ensures st.Model() == old(st.Model()[n..])
   ensures !st.Empty() ==> forall j | st.Top() < j < i :: v[j] <= v[i]
+
+  requires forall x | x in st.Repr() :: allocated(x)
+  ensures forall x {:trigger x in st.Repr(), x in old(st.Repr())} | x in st.Repr() && x !in old(st.Repr()) :: fresh(x)
+  ensures fresh(st.Repr()-old(st.Repr()))
+  ensures forall x | x in st.Repr() :: allocated(x)
 {
   n := 0;
   while !st.Empty() && v[st.Top()] <= v[i]
     decreases old(|st.Model()|) - n
     invariant st.Valid()
     invariant {v} !! {st} + st.Repr()
-    invariant forall x | x in st.Repr() - old(st.Repr()) :: fresh(x)
-    invariant forall x | x in st.Repr() :: allocated(x)
 
     invariant n <= old(|st.Model()|)
     invariant st.Model() == old(st.Model()[n..])
@@ -96,6 +97,10 @@ method RemoveLess(st: Stack, v: array<nat>, i: nat) returns (ghost n: nat)
     invariant forall j | 0 <= j < |st.Model()|-1 :: st.Model()[j+1] < st.Model()[j]
     invariant forall j | 0 <= j < |st.Model()|-1 :: v[st.Model()[j+1]] > v[st.Model()[j]]
     invariant !st.Empty() ==> forall j | st.Top() < j < i :: v[j] < v[st.Top()] && v[j] <= v[i]
+
+    invariant forall x {:trigger x in st.Repr(), x in old(st.Repr())} | x in st.Repr() && x !in old(st.Repr()) :: fresh(x)
+    invariant fresh(st.Repr()-old(st.Repr()))
+    invariant forall x | x in st.Repr() :: allocated(x)
   {
     var T := st.Pop();
     n := n + 1;
@@ -107,18 +112,20 @@ method FindSummits(v: array<nat>, st: Stack) returns (r: array<int>)
   modifies st, st.Repr()
 
   requires st.Valid() && st.Empty()
-  requires {v} !! {st} + st.Repr()
-  requires forall x | x in st.Repr() :: allocated(x)
 
   ensures v.Length == r.Length
   ensures forall i | 0 <= i < r.Length :: -1 <= r[i] < i
   ensures forall i | 0 <= i < r.Length :: r[i] != -1 ==> AdjacentSummits(v[..], r[i], i)
   ensures forall i | 0 <= i < r.Length :: r[i] == -1 ==> forall j | 0 <= j < i :: !AdjacentSummits(v[..], j, i)
 
-  ensures forall x | x in st.Repr() - old(st.Repr()) :: fresh(x)
-  ensures forall x | x in st.Repr() :: allocated(x)
+  requires {v} !! {st} + st.Repr()
   ensures {v} !! {st} + st.Repr()
   ensures {r} !! {st} + st.Repr()
+
+  requires forall x | x in st.Repr() :: allocated(x)
+  ensures forall x {:trigger x in st.Repr(), x in old(st.Repr())} | x in st.Repr() && x !in old(st.Repr()) :: fresh(x)
+  ensures fresh(st.Repr()-old(st.Repr()))
+  ensures forall x | x in st.Repr() :: allocated(x)
 {
   r := new int[v.Length];
   var i := 0;
@@ -132,10 +139,6 @@ method FindSummits(v: array<nat>, st: Stack) returns (r: array<int>)
   while i < v.Length
     invariant 0 <= i <= v.Length
     invariant st.Valid()
-    invariant {v} !! {st} + st.Repr()
-    invariant {r} !! {st} + st.Repr()
-    invariant forall x | x in st.Repr() - old(st.Repr()) :: fresh(x)
-    invariant forall x | x in st.Repr() :: allocated(x)
 
     invariant !st.Empty()
     invariant st.Top() == i-1
@@ -147,6 +150,13 @@ method FindSummits(v: array<nat>, st: Stack) returns (r: array<int>)
     invariant forall j | 0 <= j < i :: -1 <= r[j] < j
     invariant forall j | 0 <= j < i :: r[j] != -1 ==> AdjacentSummits(v[..], r[j], j)
     invariant forall j | 0 <= j < i :: r[j] == -1 ==> forall k | 0 <= k < j :: !AdjacentSummits(v[..], k, j)
+
+    invariant {v} !! {st} + st.Repr()
+    invariant {r} !! {st} + st.Repr()
+
+    invariant forall x {:trigger x in st.Repr(), x in old(st.Repr())} | x in st.Repr() && x !in old(st.Repr()) :: fresh(x)
+    invariant fresh(st.Repr()-old(st.Repr()))
+    invariant forall x | x in st.Repr() :: allocated(x)
   {
     ghost var max := v[st.Model()[|st.Model()|-1]];
     ghost var k := RemoveLess(st, v, i);
