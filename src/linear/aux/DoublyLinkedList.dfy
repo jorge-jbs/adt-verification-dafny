@@ -342,24 +342,69 @@ class DoublyLinkedList {
     }
   }
 
-  method FindPrev(mid: DNode) returns (prev: DNode)
+  method Remove(mid: DNode)
+    modifies this, Repr()
     requires Valid()
-    requires head != mid
     requires mid in Repr()
-    ensures prev in Repr()
-    ensures prev.next == mid
+    ensures Valid()
+    ensures spine == Seq.Remove(old(spine), old(GetIndex(mid)))
+    // Precondition needed for next line:
+    ensures old(GetIndex(mid)) < old(|Model()|)
+    ensures Model() == Seq.Remove(old(Model()), old(GetIndex(mid)))
+    ensures old(mid.prev) != null ==> old(mid.prev).next == old(mid.next)
+    ensures old(mid.next) != null ==> old(mid.next).prev == old(mid.prev)
+    ensures old(mid.prev) == null ==> head == old(mid.next)
+    ensures mid.next == old(mid.next)
+    ensures mid.prev == old(mid.prev)
+    ensures forall n | n in old(spine) && n != mid :: n in spine
+    ensures forall n | n in old(spine) :: n != mid <==> n in spine
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
   {
-    prev := head;
-    ghost var i := 0;
-    while prev.next != mid
-      decreases |spine| - i
-      invariant 0 <= i < |spine|
-      invariant mid in spine[i+1..]
-      invariant spine[i] == prev
-    {
-      assert spine[i+1] == prev.next;
-      prev := prev.next;
-      /*GHOST*/ i := i + 1;
+    { // GHOST
+      DistinctSpine();
+      ModelRelationWithSpine();
+    }
+    ghost var i :| 0 <= i < |spine| && spine[i] == mid;
+    assert i == GetIndex(mid);
+    if mid.prev != null {
+      assert mid in Repr();
+      assert mid.prev == spine[i].prev == spine[i-1];
+      assert mid.prev in Repr();
+      mid.prev.next := mid.next;
+    } else {
+      assert mid.prev == null;
+      assert i >= 0;
+      assert i > 0 ==> spine[i-1].prev == spine[i] == mid ==> false;
+      assert i == 0;
+      assert mid == head;
+      if mid.next != null {
+        head := mid.next;
+      } else {
+        assert |spine| >= 1;
+        assert |spine| > 1 ==> spine[i].next == spine[i+1] ==> false;
+        assert |spine| == 1;
+        assert spine == [mid];
+        head := null;
+      }
+    }
+    if mid.next != null {
+      assert mid in Repr();
+      assert mid.next == spine[i+1];
+      assert mid.next in Repr();
+      mid.next.prev := mid.prev;
+    }
+    { // GHOST
+      spine := spine[..i] + spine[i+1..];
+      if mid.prev == null && mid.next == null {
+        assert old(spine) == [mid];
+        assert i == 0;
+        assert spine == [];
+      }
+      assert Valid();
+      ModelRelationWithSpine();
     }
   }
 }

@@ -453,7 +453,8 @@ class List1 extends LinkedList {
     }
   }
 
-  method Erase(mid: ListIterator) returns (next:ListIterator)
+  // Deletion of mid
+  method Erase(mid: ListIterator) returns (next: ListIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -469,12 +470,19 @@ class List1 extends LinkedList {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures fresh(next)
-    ensures Iterators() == {next}+old(Iterators())
-    ensures next.Valid() && next.Index()==old(mid.Index())
+    ensures Iterators() == {next} + old(Iterators())
+    ensures next.Valid()
+    ensures next.Index() == old(mid.Index())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.Index()) != old(mid.Index()) :: it.Valid()
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.Index()) != old(mid.Index()) ::
       if old(it.Index()) < old(mid.Index())  then
         it.Index() == old(it.Index())
       else
         it.Index() == old(it.Index()) - 1
+  {
+    next := mid.Copy();
+    var x := next.Next();
+    list.Remove(CoerceIter(mid).node);
+    size := size - 1;
+  }
 }

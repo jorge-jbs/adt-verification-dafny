@@ -232,4 +232,50 @@ class DoublyLinkedListWithLast {
       last := list.head;
     }
   }
+
+  method Remove(mid: DNode)
+    modifies this, Repr()
+    requires Valid()
+    requires mid in Repr()
+    requires forall x | x in Repr() :: allocated(x)
+    ensures Valid()
+    ensures list.spine == Seq.Remove(old(list.spine), old(list.GetIndex(mid)))
+    // Precondition needed for next line:
+    ensures old(list.GetIndex(mid)) < old(|Model()|)
+    ensures Model() == Seq.Remove(old(Model()), old(list.GetIndex(mid)))
+    ensures old(mid.prev) != null ==> old(mid.prev).next == old(mid.next)
+    ensures old(mid.next) != null ==> old(mid.next).prev == old(mid.prev)
+    ensures forall n | n in old(list.spine) && n != mid :: n in list.spine
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+  {
+    ghost var i :| 0 <= i < |list.spine| && list.spine[i] == mid;
+    list.DistinctSpine();
+    if mid != last {
+      list.LastHasLastIndex(last);
+      assert list.spine[|list.spine|-1] == last;
+      list.Remove(mid);
+      assert forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x);
+      assert list.spine[|list.spine|-1] == last;
+      assert last in list.Repr();
+      assert last.next == null;
+      assert Valid();
+    } else {
+      list.LastHasLastIndex(mid);
+      assert i == |list.spine|-1;
+      var prev := mid.prev;
+      assert prev != null ==> list.spine[i-1] == prev;
+      list.Remove(mid);
+      assert forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x);
+      assert prev != null ==> list.spine[i-1] == prev;
+      last := prev;
+      assert last != null ==> last in list.Repr();
+      assert last != null ==> last.next == null;
+      assert Valid();
+    }
+    list.ModelRelationWithSpine();
+    assert forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x);
+  }
 }
