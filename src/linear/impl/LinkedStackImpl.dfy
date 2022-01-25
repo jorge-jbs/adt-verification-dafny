@@ -23,6 +23,7 @@ class LinkedStack extends Stack {
 
   function ReprFamily(n: nat): set<object>
     decreases n
+    requires n <= ReprDepth()
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
   {
@@ -31,7 +32,8 @@ class LinkedStack extends Stack {
     else if n == 1 then
       Repr1()
     else
-      ReprFamily(n-1)
+      assert false;
+      {}
   }
 
   lemma UselessLemma()

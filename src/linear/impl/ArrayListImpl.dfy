@@ -151,7 +151,7 @@ class ArrayListImpl extends ArrayList {
     ensures Repr() == ReprFamily(ReprDepth());
   {}
 
-function method Size(): nat
+  function method Size(): nat
     reads this, Repr()
     requires Valid()
     ensures Size() == |Model()|
@@ -179,7 +179,6 @@ function method Size(): nat
     requires 0 <= c < a.Length && 0 <= nelems <= a.Length
     ensures |ModelAux(a,c,nelems)|==nelems
   {
-   
     if nelems == 0 then
       []
     else if c + nelems <= a.Length then
