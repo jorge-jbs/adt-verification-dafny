@@ -1,35 +1,15 @@
-/*
-class Node<A> {
-  var data: A;
-  var left: Node?<A>;
-  var right: Node?<A>;
+include "../../src/Order.dfy"
 
-  constructor(l: Node?<A>, d: A, r: Node?<A>)
-  {
-    data := d;
-    left := l;
-    right := r;
-  }
+//type tree<A> = Node?<A>
 
-  constructor Leaf(d: A)
-  {
-    data := d;
-    left := null;
-    right := null;
-  }
-}
+datatype tree<A> = Empty | Node(left: tree<A>, data: A, right: tree<A>)
 
-type BinTree<A> = Node?<A>
-*/
-
-datatype BinTree<A> = Empty | Node(left: BinTree<A>, data: A, right: BinTree<A>)
-
-function method Leaf<A>(d: A): BinTree<A>
+function method Leaf<A>(d: A): tree<A>
 {
   Node(Empty, d, Empty)
 }
 
-function method elems<A>(t: BinTree<A>): set<A>
+function method elems<A>(t: tree<A>): set<A>
 {
   match t {
     case Empty => {}
@@ -37,7 +17,7 @@ function method elems<A>(t: BinTree<A>): set<A>
   }
 }
 
-function method melems<A>(t: BinTree<A>): multiset<A>
+function method melems<A>(t: tree<A>): multiset<A>
 {
   match t {
     case Empty => multiset{}
@@ -45,7 +25,7 @@ function method melems<A>(t: BinTree<A>): multiset<A>
   }
 }
 
-function method preorder<A>(t: BinTree<A>): seq<A>
+function method preorder<A>(t: tree<A>): seq<A>
 {
   match t {
     case Empty => []
@@ -53,7 +33,7 @@ function method preorder<A>(t: BinTree<A>): seq<A>
   }
 }
 
-function method inorder<A>(t: BinTree<A>): seq<A>
+function method inorder<A>(t: tree<A>): seq<A>
 {
   match t {
     case Empty => []
@@ -61,7 +41,7 @@ function method inorder<A>(t: BinTree<A>): seq<A>
   }
 }
 
-function method revinorder<A>(t: BinTree<A>): seq<A>
+function method revinorder<A>(t: tree<A>): seq<A>
 {
   match t {
     case Empty => []
@@ -69,7 +49,7 @@ function method revinorder<A>(t: BinTree<A>): seq<A>
   }
 }
 
-function method postorder<A>(t: BinTree<A>): seq<A>
+function method postorder<A>(t: tree<A>): seq<A>
 {
   match t {
     case Empty => []
@@ -77,7 +57,7 @@ function method postorder<A>(t: BinTree<A>): seq<A>
   }
 }
 
-function method size<A>(t: BinTree<A>): nat
+function method size<A>(t: tree<A>): nat
 {
   |preorder(t)|
 }
@@ -90,10 +70,249 @@ function method max(x: int, y: int): int
     x
 }
 
-function method depth<A>(t: BinTree<A>): nat
+function method depth<A>(t: tree<A>): nat
 {
   match t {
     case Empty => 0
     case Node(l, x, r) => max(depth(l), depth(r))
+  }
+}
+
+class TNode<K, V> {
+  var key: K;
+  var value: V;
+  var left: TNode?<K, V>;
+  var right: TNode?<K, V>;
+
+  constructor(l: TNode?<K, V>, k: K, v: V, r: TNode?<K, V>)
+  {
+    key := k;
+    value := v;
+    left := l;
+    right := r;
+  }
+
+  constructor Leaf(k: K, v: V)
+  {
+    key := k;
+    value := v;
+    left := null;
+    right := null;
+  }
+}
+
+class Tree<K, V> {
+  var root: TNode?<K, V>;
+  ghost var skeleton: tree<TNode<K, V>>;
+
+  function Repr(): set<object>
+    reads this
+  {
+    set x | x in elems(skeleton)
+  }
+
+  static predicate ValidRec(tree: TNode?<K, V>, sk: tree<TNode<K, V>>)
+    reads elems(sk)
+  {
+    match sk {
+      case Empty => tree == null
+      case Node(l, x, r) =>
+        && x == tree
+        && ValidRec(tree.left, l)
+        && ValidRec(tree.right, r)
+    }
+  }
+
+  predicate Valid()
+    reads this, Repr()
+  {
+    ValidRec(root, skeleton)
+  }
+
+  lemma DistinctSkeleton()
+    requires Valid()
+    // ensures melems(skeleton) == elems(skeleton)
+    ensures forall n | n in melems(skeleton) :: melems(skeleton)[n] == 1
+
+  static function ModelRec(sk: tree<TNode<K, V>>): tree<K>
+    reads set x | x in elems(sk) :: x`key
+  {
+    match sk {
+      case Empty() => Empty()
+      case Node(l, n, r) => Node(ModelRec(l), n.key, ModelRec(r))
+    }
+  }
+
+  function Model(): tree<K>  // TODO: tree<(K, V)>
+    reads this, elems(skeleton)
+    requires Valid()
+  {
+    ModelRec(skeleton)
+  }
+
+  static function MapModelRec(sk: tree<TNode<K, V>>): map<K, V>
+    reads set x | x in elems(sk) :: x`key
+    reads set x | x in elems(sk) :: x`value
+  {
+    match sk {
+      case Empty() => map[]
+      case Node(l, n, r) => MapModelRec(l) + MapModelRec(r) + map[n.key := n.value]
+    }
+  }
+
+  function MapModel(): map<K, V>
+    reads this, elems(skeleton)
+    requires Valid()
+  {
+    MapModelRec(skeleton)
+  }
+
+  constructor()
+    ensures Valid()
+    ensures fresh(Repr())
+    ensures Model() == Empty
+  {
+    root := null;
+    skeleton := Empty;
+  }
+
+  predicate SearchTree(le: (K, K) -> bool)
+    reads this, Repr()
+    requires Valid()
+    requires isTotalOrder(le)
+  {
+    Ordered(inorder(Model()), le)
+  }
+
+  static predicate SearchTreeRec(sk: tree<TNode<K, V>>, le: (K, K) -> bool)
+    requires isTotalOrder(le)
+  {
+    match sk {
+      case Empty() => true
+      case Node(l, n, r) =>
+        && forall m | m in elems(l) :: le(m.key, n.key)
+        && forall m | m in elems(r) :: le(n.key, m.key)
+        && SearchTreeRec(l, le)
+        && SearchTreeRec(r, le)
+    }
+  }
+
+  static method GetRec(
+      n: TNode<K, V>,
+      ghost sk: tree<TNode<K, V>>,
+      k: K,
+      le: (K, K) -> bool)
+      returns (v: V)
+    requires ValidRec(n, sk)
+    requires n in elems(sk)
+    requires isTotalOrder(le)
+    requires SearchTreeRec(sk, le)
+    requires k in MapModelRec(sk)
+    requires ValidRec(n, sk)
+    ensures k in MapModelRec(sk)
+    ensures MapModelRec(sk)[k] == v
+  {
+    if le(n.key, k) && le(k, n.key) {
+      assert n.key == k;
+      v := n.value;
+      assert MapModelRec(sk)[k] == v;
+    } else if le(n.key, k) {
+      v := GetRec(n.left, sk.left, k, le);
+    } else if le(k, n.key) {
+      v := GetRec(n.right, sk.right, k, le);
+    } else {
+      assert false;
+    }
+  }
+
+  method Test()
+  {
+    assert false;
+  }
+
+  method Test1()
+    requires Valid()
+  {
+    assert false;
+  }
+
+  method Test4(k: K)
+    requires Valid()
+  {
+    assert false;
+  }
+
+  method Test5(k: K) returns (v: V)
+    requires Valid()
+  {
+    assert false;
+  }
+
+  method Test6(k: K, le: (K, K) -> bool) returns (v: V)
+    requires Valid()
+  {
+    assert false;
+  }
+
+  method Test2(k: K, le: (K, K) -> bool) returns (v: V)
+    requires Valid()
+    requires isTotalOrder(le)
+  {
+    assert false;
+  }
+
+  method Test3(k: K, le: (K, K) -> bool) returns (v: V)
+    requires Valid()
+    requires isTotalOrder(le)
+    requires SearchTree(le)
+  {
+    assert false;
+  }
+
+  method Get(k: K, le: (K, K) -> bool) returns (v: V)
+    requires Valid()
+    requires isTotalOrder(le)
+    requires SearchTree(le)
+    requires k in MapModel()
+    ensures Valid()
+    ensures k in MapModel()
+    ensures MapModel()[k] == v
+  {
+    assert false;
+    if root == null {
+      assert false;
+    }
+    assert SearchTree(le) ==> SearchTreeRec(skeleton, le);
+    v := GetRec(root, skeleton, k, le);
+  }
+}
+
+class STree<K(!new), V> {
+  var tree: Tree<K, V>;
+  var le: (K, K) -> bool;
+
+  constructor(le: (K, K) -> bool)
+    requires isTotalOrder(le)
+  {
+    this.tree := new Tree();
+    this.le := le;
+  }
+
+  predicate Valid()
+    reads this, tree, tree.Repr()
+  {
+    && tree.Valid()
+    && isTotalOrder(le)
+    && Ordered(inorder(tree.Model()), le)
+  }
+
+  method Get(k: K) returns (v: V)
+    requires Valid()
+    requires k in tree.MapModel()
+    ensures Valid()
+    ensures k in tree.MapModel()
+    ensures tree.MapModel()[k] == v
+  {
+    v := tree.Get(k, le);
   }
 }

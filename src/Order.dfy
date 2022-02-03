@@ -29,3 +29,9 @@ lemma partialOrderAndTotalPreorder<A(!new)>(le: (A, A) -> bool)
   ensures isTotalOrder(le)
 {
 }
+
+predicate Ordered<A>(xs: seq<A>, le: (A, A) -> bool)
+  requires isTotalOrder(le)
+{
+  forall i | 0 <= i < |xs|-1 :: le(xs[i], xs[i+1])
+}
