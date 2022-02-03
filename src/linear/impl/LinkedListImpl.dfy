@@ -1,7 +1,7 @@
 include "../../../src/linear/aux/DoublyLinkedListWithLast.dfy"
 include "../../../src/linear/impl/LinkedList.dfy"
 
-class ListIterator1 extends LinkedListIterator {
+class ListIterator1 extends ListIterator {
   ghost var parent: List1
   var node: DNode?
 
@@ -31,7 +31,18 @@ class ListIterator1 extends LinkedListIterator {
       |parent.list.list.spine|
   }
 
-  constructor(l: List1)
+  constructor(l: List1, n: DNode?)
+    requires l.Valid()
+    ensures Valid()
+    ensures parent == l
+    ensures Index() == 0
+    ensures node == l.list.list.head
+  {
+    parent := l;
+    node := n;
+  }
+
+  constructor Begin(l: List1)
     requires l.Valid()
     ensures Valid()
     ensures parent == l
@@ -264,7 +275,7 @@ class List1 extends LinkedList {
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
   {
-    var it1 := new ListIterator1(this);
+    var it1 := new ListIterator1.Begin(this);
     iters := {it1} + iters;
     it := it1;
   }
@@ -425,32 +436,58 @@ class List1 extends LinkedList {
   }
 
   // Insertion before mid
-  method Insert(mid: ListIterator, x: int)
+  method Insert(mid: ListIterator, x: int) returns (newt: ListIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
-    requires mid.Parent() == this
     requires mid in Iterators()
+    requires mid.Parent() == this
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
-    ensures Iterators() == old(Iterators())
-    ensures forall it | it in Iterators() && old(it.Valid()) :: it.Valid()
-    ensures forall it | it in Iterators() && old(it.Valid()) ::
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+
+    ensures fresh(newt)
+    ensures Iterators() == {newt} + old(Iterators())
+    ensures newt.Valid()
+    ensures newt.Parent() == this
+    ensures newt.Index() == old(mid.Index())
+
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() &&
       if old(it.Index()) < old(mid.Index())  then
         it.Index() == old(it.Index())
       else
         it.Index() == old(it.Index()) + 1
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
-    ensures forall x | x in Repr() :: allocated(x)
   {
+    // newt := mid;
+    // assert newt.Valid();
     if CoerceIter(mid).node == null {
+      assert mid.Index() == |list.list.spine|;
       list.list.ModelRelationWithSpine();
       PushBack(x);
+      newt := new ListIterator1(this, list.last);
+      assert list.last != null;
+      list.list.LastHasLastIndex(list.last);
+      calc == {
+        newt.Index();
+        list.list.GetIndex(list.last);
+        |list.list.spine|-1;
+        old(|list.list.spine|);
+        old(mid.Index());
+      }
     } else {
-      list.InsertBefore(CoerceIter(mid).node, x);
+      var node := CoerceIter(mid).node;
+      list.InsertBefore(node, x);
       size := size + 1;
+      newt := new ListIterator1(this, node.prev);
+      // assert newt.Index() + 1 == mid.Index();
+      assert newt.Index() == mid.Index() - 1 == old(mid.Index());
     }
+    iters := {newt} + iters;
   }
 
   // Deletion of mid
@@ -472,9 +509,13 @@ class List1 extends LinkedList {
     ensures fresh(next)
     ensures Iterators() == {next} + old(Iterators())
     ensures next.Valid()
-    ensures next.Index() == old(mid.Index())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.Index()) != old(mid.Index()) :: it.Valid()
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.Index()) != old(mid.Index()) ::
+    ensures next.Parent() == this
+    ensures next.Index()==old(mid.Index())
+    ensures forall it |
+        && it in old(Iterators())
+        && old(it.Valid())
+        && old(it.Index()) != old(mid.Index()) ::
+      it.Valid() &&
       if old(it.Index()) < old(mid.Index())  then
         it.Index() == old(it.Index())
       else

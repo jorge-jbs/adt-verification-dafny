@@ -56,22 +56,20 @@ trait ListIterator {
     requires forall it | it in Parent().Iterators() :: allocated(it)
     ensures fresh(it)
     ensures Valid()
-    ensures it.Valid()
+    ensures Parent() == old(Parent())
     ensures Parent().Valid()
+    ensures Parent().Model() == old(Parent().Model())
 
     ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
     ensures fresh(Parent().Repr()-old(Parent().Repr()))
     ensures forall x | x in Parent().Repr() :: allocated(x)
-
-    ensures it in Parent().Iterators()
+    
+    ensures it.Valid()
     ensures Parent().Iterators() == {it} + old(Parent().Iterators())
-    ensures Parent() == old(Parent())
     ensures Parent() == it.Parent()
     ensures Index() == it.Index()
-    ensures it.Valid()
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index())
-    ensures Parent().Model() == old(Parent().Model())
 
   method Set(x: int)
     modifies Parent(), Parent().Repr()
@@ -83,19 +81,19 @@ trait ListIterator {
     ensures Valid()
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
+    ensures |Parent().Model()| == old(|Parent().Model()|)
+    ensures Parent().Model()[old(Index())] == x
+    ensures forall i | 0 <= i < |Parent().Model()| && i != old(Index()) ::
+      Parent().Model()[i] == old(Parent().Model()[i])
 
     ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
     ensures fresh(Parent().Repr()-old(Parent().Repr()))
     ensures forall x | x in Parent().Repr() :: allocated(x)
 
+    //ensures Index() == old(Index())
     ensures Parent().Iterators() == old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index())
-    ensures |Parent().Model()| == old(|Parent().Model()|)
-    ensures Index() == old(Index())
-    ensures Parent().Model()[Index()] == x
-    ensures forall i | 0 <= i < |Parent().Model()| && i != Index() ::
-      Parent().Model()[i] == old(Parent().Model()[i])
 }
 
 trait List {
@@ -226,13 +224,12 @@ trait List {
 
     ensures Iterators() == old(Iterators())
 
-  // Insertion before mid
-  method Insert(mid: ListIterator, x: int)
+  // Insertion of x before mid, newt points to x
+  method Insert(mid: ListIterator, x: int) returns (newt:ListIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
-    requires mid.HasNext()
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
@@ -242,9 +239,12 @@ trait List {
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
-    ensures Iterators() == old(Iterators())
+    ensures fresh(newt)
+    ensures Iterators() == {newt}+old(Iterators())
+    ensures newt.Valid() && newt.Parent()==this && newt.Index()==old(mid.Index())
+ 
 
-  // Deletion of mid
+  // Deletion of mid, next points to the next element (or past-the-end)
   method Erase(mid: ListIterator) returns (next: ListIterator)
     modifies this, Repr()
     requires Valid()
@@ -262,4 +262,5 @@ trait List {
 
     ensures fresh(next)
     ensures Iterators() == {next}+old(Iterators())
+    ensures next.Valid() && next.Parent()==this && next.Index()==old(mid.Index())
 }

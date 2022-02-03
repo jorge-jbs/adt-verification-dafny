@@ -1,105 +1,6 @@
 include "../../../src/Utils.dfy"
 include "../adt/List.dfy"
 
-trait LinkedListIterator extends ListIterator {
-  function Parent(): List
-    reads this
-
-  predicate Valid()
-    reads this, Parent(), Parent().Repr()
-
-  function Index(): nat
-    reads this, Parent(), Parent().Repr()
-    requires Valid()
-    requires Parent().Valid()
-    ensures Index() <= |Parent().Model()|
-
-  function method HasNext(): bool
-    reads this, Parent(), Parent().Repr()
-    requires Valid()
-    requires Parent().Valid()
-    ensures HasNext() <==> Index() < |Parent().Model()|
-
-  method Next() returns (x: int)
-    modifies this
-    requires Valid()
-    requires Parent().Valid()
-    requires HasNext()
-    requires allocated(Parent())
-    requires forall it | it in Parent().Repr() :: allocated(it)
-    ensures Parent().Valid()
-    ensures Valid()
-    ensures old(Parent()) == Parent()
-    ensures old(Parent().Model()) == Parent().Model()
-
-    ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
-    ensures fresh(Parent().Repr()-old(Parent().Repr()))
-    ensures forall x | x in Parent().Repr() :: allocated(x)
-
-    ensures Parent().Iterators() == old(Parent().Iterators())
-    ensures x == Parent().Model()[old(Index())]
-    ensures Index() == 1 + old(Index())
-    ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
-      it.Valid() && (it != this ==> it.Index() == old(it.Index()))
-
-  function method Peek(): int
-    reads this, Parent(), Parent().Repr()
-    requires Valid()
-    requires Parent().Valid()
-    requires HasNext()
-    ensures Peek() == Parent().Model()[Index()]
-
-  method Copy() returns (it: ListIterator)
-    modifies Parent(), Parent().Repr()
-    requires Valid()
-    requires Parent().Valid()
-    requires allocated(Parent())
-    requires forall it | it in Parent().Iterators() :: allocated(it)
-
-    ensures fresh(it)
-    ensures Valid()
-    ensures it.Valid()
-    ensures Parent().Valid()
-    ensures Parent().Model() == old(Parent().Model())
-
-    ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
-    ensures fresh(Parent().Repr()-old(Parent().Repr()))
-    ensures forall x | x in Parent().Repr() :: allocated(x)
-
-    ensures it in Parent().Iterators()
-    ensures Parent().Iterators() == {it} + old(Parent().Iterators())
-    ensures Parent() == old(Parent())
-    ensures Parent() == it.Parent()
-    ensures Index() == it.Index()
-    ensures it.Valid()
-    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Index() == old(it.Index())
-
-  method Set(x: int)
-    modifies Parent(), Parent().Repr()
-    requires Valid()
-    requires Parent().Valid()
-    requires allocated(Parent())
-    requires forall it | it in Parent().Repr() :: allocated(it)
-    requires HasNext()
-    ensures Valid()
-    ensures Parent().Valid()
-    ensures Parent() == old(Parent())
-
-    ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
-    ensures fresh(Parent().Repr()-old(Parent().Repr()))
-    ensures forall x | x in Parent().Repr() :: allocated(x)
-
-    ensures Parent().Iterators() == old(Parent().Iterators())
-    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Index() == old(it.Index())
-    ensures |Parent().Model()| == old(|Parent().Model()|)
-    ensures Index() == old(Index())
-    ensures Parent().Model()[Index()] == x
-    ensures forall i | 0 <= i < |Parent().Model()| && i != Index() ::
-      Parent().Model()[i] == old(Parent().Model()[i])
-}
-
 trait LinkedList extends List {
 
   method Begin() returns (it: ListIterator)
@@ -199,23 +100,20 @@ trait LinkedList extends List {
 
     ensures Iterators() == old(Iterators())
     ensures
-      forall it |
-          && it in Iterators()
-          && old(it.Valid())
-          && old(it.Index()) != old(|Model()|-1) ::
-        && it.Valid()
+      forall it | it in Iterators() && old(it.Valid()) && old(it.Index()) != old(|Model()|-1) ::
+        it.Valid()
         && if old(it.Index()) == old(|Model()|) then
             it.Index() + 1 == old(it.Index())
           else
             it.Index() == old(it.Index())
 
-  // Insertion before mid
-  method Insert(mid: ListIterator, x: int)
+  // Insertion of x before mid, newt points to x
+  method Insert(mid: ListIterator, x: int) returns (newt: ListIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
-    requires mid.Parent() == this
     requires mid in Iterators()
+    requires mid.Parent() == this
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
@@ -224,16 +122,21 @@ trait LinkedList extends List {
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
-    ensures Iterators() == old(Iterators())
-    ensures forall it | it in Iterators() && old(it.Valid()) :: it.Valid()
-    ensures forall it | it in Iterators() && old(it.Valid()) ::
+    ensures fresh(newt)
+    ensures Iterators() == {newt} + old(Iterators())
+    ensures newt.Valid()
+    ensures newt.Parent() == this
+    ensures newt.Index() == 1 + old(mid.Index())
+
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() &&
       if old(it.Index()) < old(mid.Index())  then
         it.Index() == old(it.Index())
       else
         it.Index() == old(it.Index()) + 1
 
-  // Deletion of mid
-  method Erase(mid: ListIterator) returns (next:ListIterator)
+  // Deletion of mid, next points to the next element (or past-the-end)
+  method Erase(mid: ListIterator) returns (next: ListIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -249,12 +152,17 @@ trait LinkedList extends List {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures fresh(next)
-    ensures Iterators() == {next}+old(Iterators())
-    ensures next.Valid() && next.Index()==old(mid.Index())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.Index()) != old(mid.Index()) :: it.Valid()
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.Index()) != old(mid.Index()) ::
-      if old(it.Index()) < old(mid.Index())  then
-        it.Index() == old(it.Index())
-      else
-        it.Index() == old(it.Index()) - 1
+    ensures Iterators() == {next} + old(Iterators())
+    ensures next.Valid()
+    ensures next.Parent() == this
+    ensures next.Index()==old(mid.Index())
+    ensures forall it |
+    && it in old(Iterators())
+    && old(it.Valid())
+    && old(it.Index()) != old(mid.Index()) ::
+    it.Valid() &&
+    if old(it.Index()) < old(mid.Index())  then
+    it.Index() == old(it.Index())
+    else
+      it.Index() == old(it.Index()) - 1
 }
