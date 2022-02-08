@@ -1,7 +1,6 @@
 include "../../src/linear/adt/List.dfy"
 include "../../src/linear/impl/LinkedList.dfy"
 include "../../src/linear/impl/VectorImpl.dfy"
-include "../../src/Utils.dfy"
 include "../../src/UtilsAux.dfy"
 
 predicate smaller(xs1:seq<int>,xs2:seq<int>)
@@ -67,20 +66,25 @@ method {:timeLimitMultiplier 6} {:verify true} merge(l1:LinkedList,l2:LinkedList
     invariant forall x | x in l2.Repr() :: allocated(x)
     invariant forall x | x in ml.Repr() :: allocated(x)
   {
-    ghost var model1:=l1.Model()[..it1.Index()]; ghost var model2:=l2.Model()[..it2.Index()];
+      ghost var model1:=l1.Model()[..it1.Index()]; 
+      ghost var model2:=l2.Model()[..it2.Index()];
+
     if it1.Peek() <= it2.Peek() {
-      x := it1.Next();
-      assert l1.Model()[..it1.Index()]==model1+[x];
-      assert multiset(l1.Model()[..it1.Index()])==multiset(model1+[x]);
-      }
-    else
-      {
-        x:=it2.Next();
-          assert l2.Model()[..it2.Index()]==model2+[x];
-          assert multiset(l2.Model()[..it2.Index()])==multiset{x}+multiset(model2);
-      }
+
+      x := it1.Next();        
+        assert l1.Model()[..it1.Index()]==model1+[x];
+        assert multiset(l1.Model()[..it1.Index()])==multiset(model1+[x]);
+    }
+    else {
+      
+      x:=it2.Next();        
+        assert l2.Model()[..it2.Index()]==model2+[x];
+        assert multiset(l2.Model()[..it2.Index()])==multiset{x}+multiset(model2);
+    }
+      
       ghost var model:=ml.Model();
-      ml.PushBack(x);
+
+    ml.PushBack(x);
       assert multiset(ml.Model())==multiset(model)+multiset{x};
 
     }

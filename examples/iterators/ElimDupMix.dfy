@@ -1,26 +1,14 @@
 include "../../src/linear/adt/List.dfy"
 include "../../src/linear/impl/LinkedList.dfy"
 include "../../src/linear/impl/VectorImpl.dfy"
-
-  predicate Sorted(xs:seq<int>)
+ 
+ predicate Sorted(xs:seq<int>)
   { forall i,j | 0<=i<=j<|xs| :: xs[i]<=xs[j]}
 
 
   predicate StrictSorted(xs:seq<int>)
   { forall i,j | 0<=i<j<|xs| :: xs[i]<xs[j]}
  
-function validIt(xs:seq<int>,i:int):bool
-requires 0<=i<=|xs|
-ensures i==0==> validIt(xs,i)
-ensures i==|xs| ==> validIt(xs,i)
-ensures 0<i<|xs| ==> validIt(xs,i)==(xs[i]!=xs[i-1])
-{
- if (i==0) then true
- else if (i==|xs|) then true
- else xs[i]!=xs[i-1]
-
-}
-
 function delDup(xs:seq<int>,i:int):seq<int>//[0,i)
 requires 0<=i<=|xs|
 ensures i==0 ==>delDup(xs,i)==[]
@@ -35,19 +23,38 @@ ensures i>1 && xs[i-1]==xs[i-2] ==> delDup(xs,i)==delDup(xs,i-1)
 
 }
 
+function elimDupMapAux(xs:seq<int>,its:set<int>,i:int):map<int,int>
+requires 0<=i<=|xs| 
+{
+ if (i==0) then map[]
+ else if (i>1 && xs[i-1]==xs[i-2]) then elimDupMapAux(xs,its,i-1)
+ else if i-1 in its then  elimDupMapAux(xs,its,i-1)[i-1:=|delDup(xs,i)|-1]//i==1 or i>1
+ else elimDupMapAux(xs,its,i-1)
+       
+}    
 
-lemma propDelDupAux(oxs:seq<int>,xs:seq<int>,i:int,j:int)
-requires 0<=i<=|oxs| && 0<=j<= |xs| && xs[..j]==delDup(oxs,i) && xs[j..]==oxs[i..] && Sorted(oxs)
- ensures (set x | x in oxs) == (set x | x in xs)
- ensures StrictSorted(xs[..|delDup(oxs,i)|])
 
+function elimDupMap(xs:seq<int>,its:set<int>):map<int,int>
+{
+  if (|xs| in its) then elimDupMapAux(xs,its,|xs|)[|xs|:=|delDup(xs,|xs|)|]
+  else elimDupMapAux(xs,its,|xs|)
 
-lemma propDelDup(oxs:seq<int>,xs:seq<int>)
-requires  xs==delDup(oxs,|oxs|) && Sorted(oxs)
- ensures (set x | x in oxs) == (set x | x in xs)
- ensures StrictSorted(xs[..|delDup(oxs,|oxs|)|])
+}
+lemma elimMapAux(xs:seq<int>,its:set<int>,i:int)
+requires 0<=i<=|xs| 
+ensures forall it | it in elimDupMapAux(xs,its,i) :: it in its && 0<=it<i && 0<=elimDupMapAux(xs,its,i)[it]<|delDup(xs,i)|
+ensures forall it | it in elimDupMapAux(xs,its,i) :: (it==0) || (1<=it<i && xs[it]!=xs[it-1])
+{}
 
-method {:verify true} elimDup(l:LinkedList)  
+lemma elimMap(xs:seq<int>,its:set<int>)
+ensures forall it | it in elimDupMap(xs,its) :: it in its 
+ensures  forall it | it in elimDupMap(xs,its) :: 0<=it<=|xs| && 0<=elimDupMap(xs,its)[it]<=|delDup(xs,|xs|)|
+ensures forall it | it in elimDupMap(xs,its) :: (it==0) || (it==|xs|) || (1<=it<|xs| && xs[it]!=xs[it-1])
+
+{elimMapAux(xs,its,|xs|);}
+
+method {:verify true} elimDup(l:LinkedList) returns (ghost mit:map<int,int>)
+//method {:verify true} elimDupA(l:ArrayList) //NO CHANGES
 
  modifies l, l.Repr()
  requires l.Valid() && Sorted(l.Model())
@@ -59,8 +66,9 @@ method {:verify true} elimDup(l:LinkedList)
  ensures StrictSorted(l.Model())
 
  ensures l.Iterators() >= old(l.Iterators())
- ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && validIt(old(l.Model()),old(it.Index()))
-      ::it.Valid() && it.Index()==|delDup(old(l.Model()),old(it.Index()))|
+ ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && mit[old(it.Index())]==it.Index()
+ ensures mit==elimDupMap(old(l.Model()),(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())))
+ ensures forall it | it in mit :: (it==0) || (it==|old(l.Model())|) || (1<=it<|old(l.Model())| && old(l.Model())[it]!=old(l.Model())[it-1])
 
 
  ensures forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
@@ -85,7 +93,9 @@ method {:verify true} elimDup(l:LinkedList)
      assert it2.HasNext() ==> it1.HasNext() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()];
      assert it2.Index()==1 && it1.Index()==0;
   
-    
+     if (0 in validSet) {mit:=map[0:=0];}
+     else {mit:=map[];}
+  
 
 
    while (it2.HasNext())
@@ -104,16 +114,14 @@ method {:verify true} elimDup(l:LinkedList)
         
     invariant forall k | p<=k<j ::old(l.Model())[k]==old(l.Model())[j-1]==l.Model()[it1.Index()]
 
-   // invariant (set x | x in old(l.Model())) == (set x | x in l.Model())
-   // invariant Sorted(l.Model()) && StrictSorted(l.Model()[..it2.Index()])
+    invariant (set x | x in old(l.Model())) == (set x | x in l.Model())
+    invariant Sorted(l.Model()) && StrictSorted(l.Model()[..it2.Index()])
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant it1 !in old(l.Iterators()) && it2 !in old(l.Iterators())
-    invariant it2.Index()==|delDup(old(l.Model()),j)|<=j
-    invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && validIt(old(l.Model()),old(it.Index())) && old(it.Index())<j
-         ::it.Valid() && it.Index()==|delDup(old(l.Model()),old(it.Index()))|<it2.Index()
-    invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index())>=j
-         ::it.Valid() && it.Index()==old(it.Index())-(j-|delDup(old(l.Model()),j)|)
+    invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && mit[old(it.Index())]==it.Index()
+    invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index())>=j::it.Valid() && it.Index()==old(it.Index())-(j-|delDup(old(l.Model()),j)|)
+    invariant mit==elimDupMapAux(old(l.Model()),validSet,j)
 
 
     invariant forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
@@ -125,27 +133,34 @@ method {:verify true} elimDup(l:LinkedList)
      if (it1.Peek()==it2.Peek()) 
       {   assert old(l.Model())[j..]==l.Model()[it2.Index()..];
           assert old(l.Model())[j..][0]==l.Model()[it2.Index()..][0];
-          assert old(l.Model())[j]==old(l.Model())[j..][0]==l.Model()[it2.Index()..][0]==l.Model()[it2.Index()];
+          assert old(l.Model())[j]==l.Model()[it2.Index()];
           assert l.Model()[it1.Index()]==old(l.Model())[j-1];
-          
           ghost var oit2:=it2.Index();
-          //assert !validIt(old(l.Model()),j);
-          
-        it2 := l.Erase(it2); 
 
-
-        j:=j+1; 
+        it2 := l.Erase(it2); j:=j+1; 
           
           assert l.Model()==pmodel[..oit2]+pmodel[oit2+1..];
           assert l.Model()[..it2.Index()]==delDup(old(l.Model()),j);    
-        
+
+          assert mit==elimDupMapAux(old(l.Model()),validSet,j);
+          elimMapAux(old(l.Model()),validSet,j);
+          forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit
+          ensures it.Valid() && it.Index()==mit[old(it.Index())]{}
+
       }
      else 
        {   
          assert  old(l.Model())[j]==l.Model()[it2.Index()]!=l.Model()[it1.Index()]==old(l.Model())[j-1];
          assert l.Model()[it2.Index()..]==[l.Model()[it2.Index()]]+l.Model()[it2.Index()+1..];
-          assert validIt(old(l.Model()),j);
+         
+          if (j in validSet)
+           {mit:=mit[j:=it2.Index()];}
 
+          forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index())==j
+          ensures it.Valid() && it.Index()==it2.Index()==mit[j]{}
+          forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit
+          ensures it.Valid() && it.Index()==mit[old(it.Index())]{}
+         
          aux:=it2.Next(); 
          aux:=it1.Next();
            
@@ -153,18 +168,26 @@ method {:verify true} elimDup(l:LinkedList)
            j:=j+1;
            assert l.Model()[it2.Index()..]==old(l.Model())[j..];
            assert l.Model()[..it2.Index()]==delDup(old(l.Model()),j);    
+
+           assert mit==elimDupMapAux(old(l.Model()),validSet,j);
+           elimMapAux(old(l.Model()),validSet,j);
           }
          
       }
    
     assert j==|old(l.Model())| && it2.Index()==|l.Model()|;
     assert l.Model()==delDup(old(l.Model()),|old(l.Model())|);
-       //propDelDupAux(old(l.Model()),l.Model(),|old(l.Model())|,|l.Model()|);
-propDelDup(old(l.Model()),l.Model());
 
+    if (|omodel| in validSet) {mit:=mit[|omodel|:=|l.Model()|];}
+    elimMap(old(l.Model()),validSet);
+
+    //assert forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && mit[old(it.Index())]==it.Index();
    }
    else {
+       mit:=map[];
+       if (|omodel| in validSet) {mit:=mit[|omodel|:=|l.Model()|];
        }
 
+   }
 
   }
