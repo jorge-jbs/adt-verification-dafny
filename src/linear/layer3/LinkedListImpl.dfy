@@ -436,7 +436,7 @@ class List1 extends LinkedList {
   }
 
   // Insertion before mid
-  method {:verify false} Insert(mid: ListIterator, x: int) returns (newt: ListIterator)
+  method Insert(mid: ListIterator, x: int) returns (newt: ListIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -463,13 +463,17 @@ class List1 extends LinkedList {
       else
         it.Index() == old(it.Index()) + 1
   {
-    // newt := mid;
-    // assert newt.Valid();
+    
     if CoerceIter(mid).node == null {
+      
+      /*GHOST*/
       assert mid.Index() == |list.list.spine|;
       list.list.ModelRelationWithSpine();
+      
       PushBack(x);
       newt := new ListIterator1(this, list.last);
+      
+      /*GHOST*/
       assert list.last != null;
       list.list.LastHasLastIndex(list.last);
       calc == {
@@ -479,13 +483,19 @@ class List1 extends LinkedList {
         old(|list.list.spine|);
         old(mid.Index());
       }
+      
+      assert forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x);
+
     } else {
+      
       var node := CoerceIter(mid).node;
       list.InsertBefore(node, x);
       size := size + 1;
       newt := new ListIterator1(this, node.prev);
-      // assert newt.Index() + 1 == mid.Index();
+      
+      /*GHOST*/
       assert newt.Index() == mid.Index() - 1 == old(mid.Index());
+      assert forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x);
     }
     iters := {newt} + iters;
   }
