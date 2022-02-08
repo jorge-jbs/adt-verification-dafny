@@ -465,7 +465,6 @@ class List1 extends LinkedList {
   {
     
     if CoerceIter(mid).node == null {
-      
       /*GHOST*/
       assert mid.Index() == |list.list.spine|;
       list.list.ModelRelationWithSpine();
@@ -482,21 +481,21 @@ class List1 extends LinkedList {
         |list.list.spine|-1;
         old(|list.list.spine|);
         old(mid.Index());
-      }
-      
-      assert forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x);
 
+      }
+      assert forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x);
     } else {
       
       var node := CoerceIter(mid).node;
       list.InsertBefore(node, x);
       size := size + 1;
       newt := new ListIterator1(this, node.prev);
-      
+
       /*GHOST*/
       assert newt.Index() == mid.Index() - 1 == old(mid.Index());
       assert forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x);
     }
+    assert fresh(newt);
     iters := {newt} + iters;
   }
 

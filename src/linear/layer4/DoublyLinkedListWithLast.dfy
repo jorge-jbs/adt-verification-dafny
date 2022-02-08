@@ -198,6 +198,7 @@ class DoublyLinkedListWithLast {
     ensures mid.next in list.spine
     ensures mid.next.next == old(mid.next)
     ensures forall n | n in old(list.spine) :: n in list.spine
+    
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
   {
