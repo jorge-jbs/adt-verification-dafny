@@ -1,4 +1,4 @@
-include "../src/linear/impl/LinkedStackImpl.dfy"
+include "../src/linear/layer3/LinkedStackImpl.dfy"
 include "../examples/accidentes-aereos.dfy"
 
 // method {:extern} Read() returns (x: int)

@@ -1,6 +1,6 @@
 include "../src/Utils.dfy"
-include "../src/linear/adt/Stack.dfy"
-include "../src/linear/adt/Queue.dfy"
+include "../src/linear/layer1/Stack.dfy"
+include "../src/linear/layer1/Queue.dfy"
 
 lemma Allocated(s: set<object>)
   ensures forall x | x in s :: allocated(x)
