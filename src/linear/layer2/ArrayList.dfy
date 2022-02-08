@@ -1,6 +1,5 @@
-include "../../Utils.dfy"
-include "../layer1/List.dfy"
-
+include "../../../src/Utils.dfy"
+include "../../../src/linear/layer1/List.dfy"
 
 trait ArrayList extends List {
 
