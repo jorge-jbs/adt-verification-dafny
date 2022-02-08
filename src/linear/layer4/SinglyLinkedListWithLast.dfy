@@ -1,4 +1,4 @@
-include "../../../src/linear/aux/SinglyLinkedListWithSpine.dfy"
+include "../../../src/linear/layer4/SinglyLinkedListWithSpine.dfy"
 
 class SinglyLinkedListWithLast<A> {
   var list: List<A>;
