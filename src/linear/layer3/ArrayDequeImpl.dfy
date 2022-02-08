@@ -1,4 +1,4 @@
-include "../../../src/linear/adt/Deque.dfy"
+include "../../../src/linear/layer1/Deque.dfy"
 
 class ArrayDequeImpl extends Dequeue {
   var list: array<int>;

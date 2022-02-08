@@ -1,4 +1,4 @@
-include "../../../src/linear/layer3/LinkedList.dfy"
+include "../../../src/linear/layer2/LinkedList.dfy"
 include "../../../src/linear/layer4/DoublyLinkedListWithLast.dfy"
 
 class ListIterator1 extends ListIterator {

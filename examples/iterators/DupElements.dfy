@@ -1,7 +1,6 @@
-include "../../src/linear/adt/List.dfy"
-include "../../src/linear/impl/LinkedList.dfy"
-include "../../src/linear/impl/VectorImpl.dfy"
-include "../../src/UtilsAux.dfy"
+include "../../src/linear/layer1/List.dfy"
+include "../../src/linear/layer2/LinkedList.dfy"
+include "../../src/linear/layer2/ArrayList.dfy"
 
 function Dup<A>(xs: seq<A>): seq<A>
 {
@@ -101,9 +100,6 @@ lemma {:induction xs} dupEls<A>(xs: seq<A>)
   }
 }
 
- //ensures Seq.isSubSec(xs,Dup(xs))
-lemma PropSubSecDup<A>(xs: seq<A>)//TO DO
-  ensures subSec(xs,Dup(xs),DupMap(xs))
 
 method DupElements(l: LinkedList)
   modifies l, l.Repr()
@@ -156,13 +152,16 @@ method DupElements(l: LinkedList)
     //forall x | x in l.Repr() - old(l.Repr()) :: fresh(x)
     invariant forall x | x in l.Repr() :: allocated(x)
   {
-    assert i < old(|l.Model()|);
-    ghost var omodel := l.Model();
-    assert omodel[..2*i] == old(DupRev(l.Model()[..i]));
+     assert i < old(|l.Model()|);
+     ghost var omodel := l.Model();
+     assert omodel[..2*i] == old(DupRev(l.Model()[..i]));
+     assert omodel[2*i]==old(l.Model()[i]);
 
     var x := it.Peek();
+      
+      assert x==l.Model()[2*i]==old(l.Model()[i]);
 
-    l.Insert(it, x);
+    var it1:=l.Insert(it, x);
 
     ghost var model := l.Model();
     calc == {
@@ -239,7 +238,7 @@ method DupElementsAL(l: ArrayList)
 
     var x := it.Peek();
     assert x==l.Model()[2*i];
-    l.Insert(it, x);
+    var it1:=l.Insert(it, x); //also it:=l.Insert(it,x);
 
     ghost var model := l.Model();
     calc == {
@@ -268,3 +267,19 @@ method DupElementsAL(l: ArrayList)
   assert l.Model() == old(Dup(l.Model()));
   setDup(old(l.Model())); // 0->0,1 1-> 2,3 ...
 }
+
+method dupDup(l:LinkedList) 
+modifies l, l.Repr()
+  requires l.Valid()
+  requires forall x | x in l.Repr() :: allocated(x)
+
+  ensures l.Valid()
+  ensures l.Model() == Dup(Dup(old(l.Model())))
+  {
+    ghost var validSet:=(set it |it in old(l.Iterators()) && old(it.Valid())&& old(it.Index())<|old(l.Model())|);
+
+    DupElements(l);
+    DupElements(l);
+
+    assert forall it | it in validSet :: it.Valid() && it.Index() == 4*old(it.Index())+3;
+  }
