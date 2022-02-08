@@ -32,11 +32,11 @@ class ListIterator1 extends ListIterator {
   }
 
   constructor(l: List1, n: DNode?)
-    requires l.Valid()
+    requires l.Valid() && n in l.list.list.spine
     ensures Valid()
     ensures parent == l
-    ensures Index() == 0
-    ensures node == l.list.list.head
+    ensures Index() == parent.list.list.GetIndex(n)
+    ensures node == n
   {
     parent := l;
     node := n;
@@ -436,7 +436,7 @@ class List1 extends LinkedList {
   }
 
   // Insertion before mid
-  method Insert(mid: ListIterator, x: int) returns (newt: ListIterator)
+  method {:verify false} Insert(mid: ListIterator, x: int) returns (newt: ListIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()

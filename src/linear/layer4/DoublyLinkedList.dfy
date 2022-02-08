@@ -267,6 +267,7 @@ class DoublyLinkedList {
     mid.next := n;
     { // GHOST
       spine := spine[..i+1] + [n] + spine[i+1..];
+      assert Valid();
       ModelRelationWithSpine();
     }
   }
