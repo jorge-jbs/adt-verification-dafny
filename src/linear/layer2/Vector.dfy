@@ -208,7 +208,7 @@ trait ArrayList extends List {
     ensures forall it | it in old(Iterators()) :: old(it.Valid())
       ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
-  method Insert(mid: ListIterator, x: int)
+  method Insert(mid: ListIterator, x: int) returns (newt: ListIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -224,7 +224,10 @@ trait ArrayList extends List {
     ensures fresh(Repr() - old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
-    ensures Iterators() == old(Iterators())
+    ensures fresh(newt)
+    ensures Iterators() == {newt}+old(Iterators())
+    ensures newt.Valid() && newt.Parent()==this && newt.Index()==old(mid.Index())
+ 
     ensures forall it | it in old(Iterators()) :: old(it.Valid())
       ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 

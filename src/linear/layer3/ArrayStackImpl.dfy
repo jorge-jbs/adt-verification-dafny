@@ -1,4 +1,4 @@
-include "../../../src/linear/adt/Stack.dfy"
+include "../../../src/linear/layer1/Stack.dfy"
 include "../../../src/Utils.dfy"
 
 class ArrayStackImpl extends Stack {
