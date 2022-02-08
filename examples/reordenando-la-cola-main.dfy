@@ -1,6 +1,6 @@
 include "../examples/reordenando-la-cola.dfy"
-include "../src/linear/impl/LinkedStackImpl.dfy"
-include "../src/linear/impl/SinglyLinkedQueueImpl.dfy"
+include "../src/linear/layer3/LinkedStackImpl.dfy"
+include "../src/linear/layer3/SinglyLinkedQueueImpl.dfy"
 
 method {:extern} Scan() returns (x: int)
 
