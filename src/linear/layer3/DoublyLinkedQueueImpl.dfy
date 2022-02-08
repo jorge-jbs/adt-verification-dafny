@@ -1,8 +1,8 @@
-include "../../../src/linear/aux/SinglyLinkedListWithLast.dfy"
-include "../../../src/linear/adt/Queue.dfy"
+include "../../../src/linear/layer1/Queue.dfy"
+include "../../../src/linear/layer4/DoublyLinkedListWithLast.dfy"
 
-class SinglyLinkedQueue extends Queue {
-  var list: SinglyLinkedListWithLast<int>;
+class DoublyLinkedQueue extends Queue {
+  var list: DoublyLinkedListWithLast;
 
   function ReprDepth(): nat
     ensures ReprDepth() > 0
@@ -73,9 +73,10 @@ class SinglyLinkedQueue extends Queue {
   constructor()
     ensures Valid()
     ensures Model() == []
-    ensures fresh(Repr())
+    ensures forall x | x in Repr() :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
   {
-    list := new SinglyLinkedListWithLast();
+    list := new DoublyLinkedListWithLast();
   }
 
   function method Front(): int

@@ -1,5 +1,5 @@
-include "../../../src/linear/aux/DoublyLinkedListWithLast.dfy"
-include "../../../src/linear/impl/LinkedList.dfy"
+include "../../../src/linear/layer3/LinkedList.dfy"
+include "../../../src/linear/layer4/DoublyLinkedListWithLast.dfy"
 
 class ListIterator1 extends ListIterator {
   ghost var parent: List1

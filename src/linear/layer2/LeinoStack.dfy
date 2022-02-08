@@ -1,5 +1,5 @@
-include "../../../src/linear/aux/LeinoList.dfy"
-include "../../../src/linear/adt/Stack.dfy"
+include "../../../src/linear/layer1/Stack.dfy"
+  include "../../../src/linear/layer4/LeinoList.dfy"
 
 class LeinoStack extends Stack {
   var head: LNode?<int>;

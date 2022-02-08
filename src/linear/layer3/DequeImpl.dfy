@@ -1,5 +1,5 @@
-include "../../../src/linear/aux/DoublyLinkedListWithLast.dfy"
-include "../../../src/linear/adt/Deque.dfy"
+include "../../../src/linear/layer1/Deque.dfy"
+include "../../../src/linear/layer4/DoublyLinkedListWithLast.dfy"
 
 class Dequeue1 extends Dequeue {
   var list: DoublyLinkedListWithLast;

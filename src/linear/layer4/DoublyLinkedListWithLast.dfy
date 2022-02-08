@@ -1,4 +1,4 @@
-include "../../../src/linear/aux/DoublyLinkedList.dfy"
+include "../../../src/linear/layer4/DoublyLinkedList.dfy"
 
 class DoublyLinkedListWithLast {
   var list: DoublyLinkedList;

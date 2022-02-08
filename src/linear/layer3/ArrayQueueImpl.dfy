@@ -1,4 +1,4 @@
-include "../../../src/linear/adt/Queue.dfy"
+include "../../../src/linear/layer1/Queue.dfy"
 
 class ArrayQueueImpl extends Queue {
   var list: array<int>;

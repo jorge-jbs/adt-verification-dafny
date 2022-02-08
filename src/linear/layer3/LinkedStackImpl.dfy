@@ -1,5 +1,5 @@
-include "../../../src/linear/aux/SinglyLinkedListWithSpine.dfy"
-include "../../../src/linear/adt/Stack.dfy"
+include "../../../src/linear/layer1/Stack.dfy"
+include "../../../src/linear/layer4/SinglyLinkedListWithSpine.dfy"
 
 class LinkedStack extends Stack {
   var list: List<int>;
