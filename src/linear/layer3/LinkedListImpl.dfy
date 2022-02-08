@@ -436,7 +436,7 @@ class List1 extends LinkedList {
   }
 
   // Insertion before mid
-  method {:verify true} Insert(mid: ListIterator, x: int) returns (newt: ListIterator)
+  method Insert(mid: ListIterator, x: int) returns (newt: ListIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
