@@ -1,5 +1,5 @@
-include "../../src/linear/adt/List.dfy"
-include "../../src/linear/impl/LinkedList.dfy"
+include "../../src/linear/layer1/List.dfy"
+include "../../src/linear/layer2/LinkedList.dfy"
 
 predicate GSorted(xs:seq<int>,c:int,f:int)
   { forall i,j | 0<=c<=i<=j<f<=|xs| :: xs[i]<=xs[j]}

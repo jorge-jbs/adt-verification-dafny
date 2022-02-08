@@ -1,6 +1,6 @@
-include "../../src/linear/adt/List.dfy"
-include "../../src/linear/impl/LinkedList.dfy"
-include "../../src/linear/impl/VectorImpl.dfy"
+include "../../src/linear/layer1/List.dfy"
+include "../../src/linear/layer2/LinkedList.dfy"
+include "../../src/linear/layer2/ArrayList.dfy"
 
 method  FillArray(l: List, v: array<int>)
   modifies l,l.Repr(), v

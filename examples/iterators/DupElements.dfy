@@ -1,6 +1,6 @@
-include "../../src/linear/adt/List.dfy"
-include "../../src/linear/impl/LinkedList.dfy"
-include "../../src/linear/impl/Vector.dfy"
+include "../../src/linear/layer1/List.dfy"
+include "../../src/linear/layer2/LinkedList.dfy"
+include "../../src/linear/layer2/ArrayList.dfy"
 
 function Dup<A>(xs: seq<A>): seq<A>
 {
