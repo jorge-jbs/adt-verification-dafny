@@ -216,7 +216,7 @@ class CircularDoublyLinkedList {
     var n := new CNode(mid.prev, x, mid);
     ghost var i := GetIndex(mid);
     { //GHOST
-      assert spine[(i-1) % |spine|] == mid.prev;
+      assert spine[(i + |spine| - 1) % |spine|] == mid.prev;
       NextPrevIn(mid);
     }
     mid.prev.next := n;
@@ -244,7 +244,7 @@ class CircularDoublyLinkedList {
     }
     ghost var i :| 0 <= i < |spine| && spine[i] == mid;
     { // GHOST
-      assert spine[(i-1) % |spine|] == mid.prev;
+      assert spine[(i + |spine| - 1) % |spine|] == mid.prev;
       assert spine[i+1] == mid.next;
       NextPrevIn(mid);
     }
