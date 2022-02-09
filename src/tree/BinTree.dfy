@@ -25,6 +25,14 @@ function method melems<A>(t: tree<A>): multiset<A>
   }
 }
 
+function method fmap<A, B>(t: tree<A>, f: A -> B): tree<B>
+{
+  match t {
+    case Empty() => Empty()
+    case Node(l, x, r) => Node(fmap(l, f), f(x), fmap(r, f))
+  }
+}
+
 function method preorder<A>(t: tree<A>): seq<A>
 {
   match t {
@@ -153,6 +161,7 @@ class Tree<K, V> {
   static function MapModelRec(sk: tree<TNode<K, V>>): map<K, V>
     reads set x | x in elems(sk) :: x`key
     reads set x | x in elems(sk) :: x`value
+    ensures forall n | n in elems(sk) :: n.key in MapModelRec(sk)
   {
     match sk {
       case Empty() => map[]
@@ -185,13 +194,16 @@ class Tree<K, V> {
   }
 
   static predicate SearchTreeRec(sk: tree<TNode<K, V>>, le: (K, K) -> bool)
+    reads set x | x in elems(sk) :: x`key
     requires isTotalOrder(le)
   {
     match sk {
       case Empty() => true
       case Node(l, n, r) =>
-        && forall m | m in elems(l) :: le(m.key, n.key)
-        && forall m | m in elems(r) :: le(n.key, m.key)
+        // && (forall m | m in elems(l) :: le(m.key, n.key))
+        // && (forall m | m in elems(r) :: le(n.key, m.key))
+        && (forall k | k in MapModelRec(l) :: le(k, n.key))
+        && (forall k | k in MapModelRec(r) :: le(n.key, k))
         && SearchTreeRec(l, le)
         && SearchTreeRec(r, le)
     }
@@ -204,27 +216,72 @@ class Tree<K, V> {
       le: (K, K) -> bool)
       returns (v: V)
     requires ValidRec(n, sk)
-    requires n in elems(sk)
+    // requires n in elems(sk)
     requires isTotalOrder(le)
     requires SearchTreeRec(sk, le)
     requires k in MapModelRec(sk)
+    // requires sk.data == n
     requires ValidRec(n, sk)
     ensures k in MapModelRec(sk)
     ensures MapModelRec(sk)[k] == v
   {
+    /*
+    match sk {
+      case Empty() => assert false;
+      case Node(l, nn, r) =>
+        assert nn == n;
+        assert forall m | m in elems(sk.left) :: le(m.key, n.key);
+        assert forall m | m in elems(sk.right) :: le(n.key, m.key);
+        assert SearchTreeRec(sk.left, le);
+        assert SearchTreeRec(sk.right, le);
+    }
+    */
+    /*
+    assert sk != Empty;
+    assert sk.data == n;
+    assert forall m | m in elems(sk.left) :: le(m.key, n.key);
+    assert forall m | m in elems(sk.right) :: le(n.key, m.key);
+    assert SearchTreeRec(sk, le);
+    assert sk == Node(sk.left, n, sk.right);
+    assert SearchTreeRec(sk.left, le);
+    assert SearchTreeRec(sk.right, le);
+    */
     if le(n.key, k) && le(k, n.key) {
       assert n.key == k;
       v := n.value;
       assert MapModelRec(sk)[k] == v;
     } else if le(n.key, k) {
-      v := GetRec(n.left, sk.left, k, le);
-    } else if le(k, n.key) {
+      /*
+      forall p | p in MapModelRec(sk.left)
+        ensures le(p, k)
+      {
+        var nn :| nn in elems(sk) && nn.key == p;
+        assert le(nn.key, k);
+        assert le(p, n.key);
+        assert le(n.key, k);
+      }
+      if k in MapModelRec(sk.left) {
+        assert false;
+      }
+      */
+      assert k !in MapModelRec(sk.left);
+      assert k in MapModelRec(sk.right);
+      assert sk.right != Empty;
+      assert ValidRec(n.right, sk.right);
+      assert n.right != null;
       v := GetRec(n.right, sk.right, k, le);
+    } else if le(k, n.key) {
+      assert k in MapModelRec(sk.left);
+      assert sk.left != Empty;
+      assert ValidRec(n.left, sk.left);
+      assert n.left != null;
+      v := GetRec(n.left, sk.left, k, le);
     } else {
       assert false;
     }
   }
 
+  /*
   method Test()
   {
     assert false;
@@ -285,8 +342,10 @@ class Tree<K, V> {
     assert SearchTree(le) ==> SearchTreeRec(skeleton, le);
     v := GetRec(root, skeleton, k, le);
   }
+  */
 }
 
+/*
 class STree<K(!new), V> {
   var tree: Tree<K, V>;
   var le: (K, K) -> bool;
@@ -316,3 +375,4 @@ class STree<K(!new), V> {
     v := tree.Get(k, le);
   }
 }
+*/
