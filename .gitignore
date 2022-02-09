@@ -1,3 +1,4 @@
+*.runtimeconfig.json
 *.exe
 *.exe.mdb
 *.dll
