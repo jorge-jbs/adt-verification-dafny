@@ -484,7 +484,6 @@ class List1 extends LinkedList {
 
       }
       assert forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x);
-    
     } else {
       var node := CoerceIter(mid).node;
       list.InsertBefore(node, x);
