@@ -40,8 +40,8 @@ predicate SearchTreeRec<K, V>(sk: tree<TNode<K, V>>, le: (K, K) -> bool)
   match sk {
     case Empty() => true
     case Node(l, n, r) =>
-      && forall m | m in elems(l) :: le(m.key, n.key)
-      && forall m | m in elems(r) :: le(n.key, m.key)
+      && (forall m | m in elems(l) :: le(m.key, n.key))
+      && (forall m | m in elems(r) :: le(n.key, m.key))
       && SearchTreeRec(l, le)
       && SearchTreeRec(r, le)
   }
