@@ -119,7 +119,7 @@ class Tree {
   function Repr(): set<object>
     reads this
   {
-    set x | x in elems(skeleton)
+    elems(skeleton)
   }
 
   static predicate ValidRec(tree: TNode?, sk: tree<TNode>)
@@ -192,7 +192,7 @@ class Tree {
     reads this, Repr()
     requires Valid()
   {
-    OrderedInt(inorder(Model()))
+    SearchTreeRec(skeleton)
   }
 
   static predicate SearchTreeRec(sk: tree<TNode>)
@@ -209,6 +209,22 @@ class Tree {
         && SearchTreeRec(r)
     }
   }
+
+  // lemma SearchTreeDefEquiv()
+  //   requires Valid()
+  //   ensures SearchTree() <==> OrderedInt(inorder(Model()))
+
+  lemma ModelRelationWithSkeleton(k: K, v: V)
+    requires Valid()
+    ensures k in MapModel() && MapModel()[k] == v <==> exists n | n in elems(skeleton) :: n.key == k && n.value == v
+
+  static lemma ModelRelationWithSkeletonRec(node: TNode, sk: tree<TNode>, k: K, v: V)
+    requires ValidRec(node, sk)
+    ensures k in MapModelRec(sk) && MapModelRec(sk)[k] == v <==> exists n | n in elems(sk) :: n.key == k && n.value == v
+
+  lemma ModelRelationWithSkeletonKey(k: K)
+    requires Valid()
+    ensures k in MapModel() <==> exists n | n in elems(skeleton) :: n.key == k
 
   static method GetRec(n: TNode, ghost sk: tree<TNode>, k: K) returns (v: V)
     requires ValidRec(n, sk)
@@ -242,9 +258,17 @@ class Tree {
     ensures SearchTree()
     ensures k in MapModel()
     ensures MapModel()[k] == v
-  // {
-  //   v := GetRec(root, skeleton, k);
-  // }
+
+    requires forall x | x in Repr() :: allocated(x)
+    ensures forall x | x in Repr() :: allocated(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+  {
+    /*GHOST*/ ModelRelationWithSkeletonKey(k);
+    assert Repr() == elems(skeleton);
+    v := GetRec(root, skeleton, k);
+    /*GHOST*/ ModelRelationWithSkeleton(k, v);
+  }
 }
 
 class STree {
@@ -253,6 +277,12 @@ class STree {
   constructor()
   {
     this.tree := new Tree();
+  }
+
+  function Repr(): set<object>
+    reads this, tree
+  {
+    tree.Repr()
   }
 
   predicate Valid()
@@ -268,7 +298,13 @@ class STree {
     ensures Valid()
     ensures k in tree.MapModel()
     ensures tree.MapModel()[k] == v
+
+    requires forall x | x in Repr() :: allocated(x)
+    ensures forall x | x in Repr() :: allocated(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
   {
+    assert Repr() == tree.Repr();
     v := tree.Get(k);
   }
 }
