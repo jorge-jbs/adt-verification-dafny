@@ -6,18 +6,69 @@ function isSortedSet(xs:seq<int>):bool
 
 function isSubSet(xs:seq<int>,ys:seq<int>):bool
 requires isSortedSet(xs) && isSortedSet(ys)
-ensures isSubSet(xs,ys) == ((set x | x in xs) <= (set y | y in ys))
+ensures isSubSet(xs,ys) ==> ((set x | x in xs) <= (set y | y in ys))
+ensures !isSubSet(xs,ys) <== (exists x:: x in xs && x!in ys)
+{ forall x:: x in xs ==> x in ys}
 
 lemma lSubSet(xs:seq<int>,ys:seq<int>,i:int)
 requires 0<=i<=|ys| && isSortedSet(xs) && isSortedSet(ys)
 ensures isSubSet(xs,ys[..i]) ==> isSubSet(xs,ys)
-ensures !isSubSet(xs,ys[..i])
+{}
+
+lemma lmoreSubSet(xs:seq<int>,ys:seq<int>,i:int,j:int)
+requires 0<=i<|xs| && 0<=j<|ys| && isSortedSet(xs) && isSortedSet(ys)
+requires isSubSet(xs[..i],ys[..j]) && xs[i]==ys[j] 
+ensures isSubSet(xs[..i+1],ys[..j+1])
+{assert xs[..i+1]==xs[..i]+[xs[i]];}
+
+lemma lmoreSubSet2(xs:seq<int>,ys:seq<int>,i:int,j:int)
+requires 0<=i<|xs| && 0<=j<|ys| && isSortedSet(xs) && isSortedSet(ys)
+requires isSubSet(xs[..i],ys[..j]) && xs[i]>ys[j] 
+ensures isSubSet(xs[..i],ys[..j+1])
+{}
+
+
+lemma lnotSubSet(xs:seq<int>,ys:seq<int>,i:int,j:int)
+requires 0<=i<|xs| && 0<=j<|ys| && isSortedSet(xs) && isSortedSet(ys)
+requires (forall k::0<=k<j ==> ys[k]<xs[i]) && xs[i]<ys[j] 
+ensures !isSubSet(xs[..i+1],ys)
+{ assert forall k::j<k<|ys| ==> ys[j]<ys[k];
+  assert forall k::j<=k<|ys| ==> xs[i]<ys[k];
+  assert xs[i] in (set x | x in xs[..i+1]) && xs[i] !in (set y | y in ys);
+  }
+
+lemma lnotSubSet2(xs:seq<int>,ys:seq<int>,i:int)//no lo uso
+requires 0<=i<|xs| && isSortedSet(xs) && isSortedSet(ys)
+requires  (forall k::0<=k<|ys| ==> ys[k]<xs[i])
+ensures !isSubSet(xs,ys)
+{assert xs[i] in xs;
+ assert xs[i] !in ys;}
+
+function setSearchAux(xs:seq<int>,x:int,i:int):int
+requires 0<=i<=|xs| &&  isSortedSet(xs) && forall k::i<=k<|xs| ==> x<xs[k]
+ensures 0<=setSearchAux(xs,x,i)<=i 
+ensures forall k::0<=k<setSearchAux(xs,x,i) ==> x>xs[k]
+ensures forall k::setSearchAux(xs,x,i)<=k<|xs| ==> x<=xs[k]
+ensures x in xs ==> 0<=setSearchAux(xs,x,i)<i && xs[setSearchAux(xs,x,i)]==x
+{
+  if (i==0) then 0
+  else if (xs[i-1]==x) then i-1
+  else if (xs[i-1]>x) then setSearchAux(xs,x,i-1)
+  else i//xs[i-1]<x
+   
+}
+
 
 function setSearch(xs:seq<int>,x:int):int
-ensures 0<=setSearch(xs,x)<=|xs|
-ensures x !in xs ==> forall k::setSearch(xs,x)<=k<|xs| ==> x<xs[k]
-ensures x !in xs ==> forall k::0<=k<setSearch(xs,x) ==> x>xs[k]
+requires isSortedSet(xs)
+ensures 0<=setSearch(xs,x)<=|xs| 
+ensures forall k::0<=k<setSearch(xs,x) ==> x>xs[k]
+ensures forall k::setSearch(xs,x)<=k<|xs| ==> x<=xs[k]
 ensures x in xs ==> 0<=setSearch(xs,x)<|xs| && xs[setSearch(xs,x)]==x
+{assert xs[..|xs|]==xs;
+  setSearchAux(xs,x,|xs|)
+  
+}
 
 function  SetAdd(xs:seq<int>, x:int):seq<int>
 requires isSortedSet(xs)
@@ -39,8 +90,8 @@ ensures (set y | y in xs) - {x} == (set y | y in SetRemove(xs,x))
 
 }
 
-trait SetIterator {
-  function Parent(): Set
+trait OrderedSetIterator {
+  function Parent(): OrderedSet
     reads this
 
   predicate Valid()
@@ -115,7 +166,7 @@ trait SetIterator {
     requires HasNext()
     ensures Peek() == Parent().Model()[Index()]
 
-  method Copy() returns (it: SetIterator)
+  method Copy() returns (it: OrderedSetIterator)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -141,7 +192,7 @@ trait SetIterator {
   
 }
 
-trait Set {
+trait OrderedSet {
   function ReprDepth(): nat
     ensures ReprDepth() > 0
 
@@ -178,12 +229,12 @@ trait Set {
     requires Valid()
     ensures Size() == |Model()|
 
-  function Iterators(): set<SetIterator>
+  function Iterators(): set<OrderedSetIterator>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
 
-method Begin() returns (it: SetIterator)
+method First() returns (it: OrderedSetIterator)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -202,7 +253,7 @@ method Begin() returns (it: SetIterator)
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index())
 
-  method End() returns (it: SetIterator)//iterator to the last element
+  method Last() returns (it: OrderedSetIterator)//iterator to the last element
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -236,6 +287,9 @@ method Begin() returns (it: SetIterator)
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
+   
+    ensures Iterators() == old(Iterators())
+
 
 
   method remove(x:int) 
@@ -249,8 +303,10 @@ method Begin() returns (it: SetIterator)
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
+    ensures Iterators() == old(Iterators())
 
-  method find(x:int) returns (newt:SetIterator)
+
+  method find(x:int) returns (newt:OrderedSetIterator)
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid() 
@@ -264,7 +320,7 @@ method Begin() returns (it: SetIterator)
     ensures forall x | x in Repr() :: allocated(x)
     ensures Iterators() == {newt}+old(Iterators())
 
-  method insert(mid: SetIterator, x: int) returns (newt:SetIterator)
+  method insert(mid: OrderedSetIterator, x: int) returns (newt:OrderedSetIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid() 
@@ -288,7 +344,7 @@ method Begin() returns (it: SetIterator)
  
 
 
-  method erase(mid:SetIterator) returns (next: SetIterator)
+  method erase(mid:OrderedSetIterator) returns (next: OrderedSetIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -304,67 +360,9 @@ method Begin() returns (it: SetIterator)
     ensures next.Valid() && next.Parent()==this && next.Index()==old(mid.Index())
 }
 
-method isContained(s1:Set,s2:Set) returns (b:bool)
-modifies s1, s1.Repr(), s2, s2.Repr()
-requires s1.Valid() && s2.Valid()
-requires forall x | x in s1.Repr() :: allocated(x)
-requires forall x | x in s2.Repr() :: allocated(x)
-
-requires ({s1} + s1.Repr()) !! ({s2}+s2.Repr())
-ensures s1.Valid() && s2.Valid()
-ensures s1.Model()==old(s1.Model()) && s2.Model()==old(s2.Model())
-ensures b == isSubSet(s1.Model(),s2.Model())
-
-ensures forall x {:trigger x in s1.Repr(), x in old(s1.Repr())} | x in s1.Repr() - old(s1.Repr()) :: fresh(x)
-ensures fresh(s1.Repr()-old(s1.Repr()))
-ensures forall x | x in s1.Repr() :: allocated(x)
-
-ensures forall x {:trigger x in s2.Repr(), x in old(s2.Repr())} | x in s2.Repr() - old(s2.Repr()) :: fresh(x)
-ensures fresh(s2.Repr()-old(s2.Repr()))
-ensures forall x | x in s2.Repr() :: allocated(x)
-
-ensures s1.Iterators()>=old(s1.Iterators()) && s2.Iterators()>=old(s2.Iterators())
-{
- var it1:=s1.Begin(); var x1:int; var x2:int;
- var it2:=s2.Begin(); b:=true;
- while (it1.HasNext() && it2.HasNext() && b)
-   decreases |s1.Model()|+|s2.Model()|-(it1.Index()+it2.Index())+(if b then 1 else 0)
-   invariant s1.Valid() && s2.Valid() 
-   invariant ({s1} + s1.Repr()) !! ({s2}+s2.Repr()) 
-   invariant s1.Model()==old(s1.Model()) && s2.Model()==old(s2.Model())
-   invariant it1.Valid() && it2.Valid() 
-   invariant it1 in s1.Iterators() && it2 in s2.Iterators()
-   invariant it1.Parent()==s1 && it2.Parent()==s2
-   invariant 0<=it1.Index()<=|s1.Model()| && 0<=it2.Index()<=|s2.Model()|
-   invariant b == isSubSet(s1.Model()[..it1.Index()],s2.Model()[..it2.Index()])
-   invariant forall u,v::0<=u<it1.Index() && it2.Index()<=v<|s2.Model()| ==> s1.Model()[u]<s2.Model()[v]
-   invariant forall x {:trigger x in s1.Repr(), x in old(s1.Repr())} | x in s1.Repr() - old(s1.Repr()) :: fresh(x)
-   invariant forall x {:trigger x in s2.Repr(), x in old(s2.Repr())} | x in s2.Repr() - old(s2.Repr()) :: fresh(x)
-   invariant forall x | x in s1.Repr() :: allocated(x)
-   invariant forall x | x in s2.Repr() :: allocated(x)
-   invariant s1.Iterators() >= old(s1.Iterators()) && s2.Iterators() >= old(s2.Iterators())
-
- { 
-  if (it1.Peek()==it2.Peek())
-  {  x1 := it1.Next(); x2:=it2.Next(); }
-  else if (it1.Peek()<it2.Peek())
-   { b:=false; x1:=it1.Next();}
-  else { x2 := it2.Next();}
-  assert b ==> isSubSet(s1.Model()[..it1.Index()],s2.Model()[..it2.Index()]);
-  assert isSubSet(s1.Model()[..it1.Index()],s2.Model()[..it2.Index()]) ==> b;
- }
-
- lSubSet(s1.Model(),s2.Model(),it2.Index());
- assert b && !it1.HasNext() ==> isSubSet(s1.Model(),s2.Model());
-  b:=b && !it1.HasNext();
 
 
-
-
-
-}
-
-method {:verify false} try(s:Set)
+method {:verify false} try(s:OrderedSet)
 modifies s, s.Repr()
 requires s.Valid() && s.Empty()
 requires forall x | x in s.Repr() :: allocated(x)
@@ -391,7 +389,7 @@ ensures forall x | x in s.Repr() :: allocated(x)
  var b:=s.contains(10);
  assert b;
 
- var it:=s.Begin(); var cont:=0;
+ var it:=s.First(); var cont:=0;
   while (it.HasNext())
   decreases |s.Model()|-it.Index()
   invariant it.Valid() && it.Parent()==s
@@ -417,7 +415,7 @@ ensures forall x | x in s.Repr() :: allocated(x)
   var z:=it3.Prev();
   assert it3.Index()==4;
 
-  var it4:=s.End();
+  var it4:=s.Last();
   z:=it4.Prev();
   z:=it4.Prev();
 
