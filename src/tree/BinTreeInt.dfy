@@ -203,8 +203,6 @@ class Tree {
       case Node(l, n, r) =>
         && (forall m | m in elems(l) :: m.key < n.key)
         && (forall m | m in elems(r) :: n.key < m.key)
-        // && (forall m | m in MapModelRec(l) :: m < n.key)
-        // && (forall m | m in MapModelRec(r) :: n.key < m)
         && SearchTreeRec(l)
         && SearchTreeRec(r)
     }
@@ -216,15 +214,86 @@ class Tree {
 
   lemma ModelRelationWithSkeleton(k: K, v: V)
     requires Valid()
+    requires SearchTree()
     ensures k in MapModel() && MapModel()[k] == v <==> exists n | n in elems(skeleton) :: n.key == k && n.value == v
+  {
+    if k in MapModel() && MapModel()[k] == v {
+      ModelRelationWithSkeletonRecR(root, skeleton, k, v);
+    }
+    if exists n | n in elems(skeleton) :: n.key == k && n.value == v {
+      ModelRelationWithSkeletonRecL(root, skeleton, k, v);
+    }
+  }
 
-  static lemma ModelRelationWithSkeletonRec(node: TNode, sk: tree<TNode>, k: K, v: V)
+  static lemma ModelRelationWithSkeletonRecR(node: TNode?, sk: tree<TNode>, k: K, v: V)
     requires ValidRec(node, sk)
-    ensures k in MapModelRec(sk) && MapModelRec(sk)[k] == v <==> exists n | n in elems(sk) :: n.key == k && n.value == v
+    requires SearchTreeRec(sk)
+    requires k in MapModelRec(sk)
+    requires MapModelRec(sk)[k] == v
+    ensures (exists n | n in elems(sk) :: n.key == k && n.value == v)
+  {}
+
+  static lemma ModelRelationWithSkeletonRecL(node: TNode?, sk: tree<TNode>, k: K, v: V)
+    requires ValidRec(node, sk)
+    requires SearchTreeRec(sk)
+    requires (exists n | n in elems(sk) :: n.key == k && n.value == v)
+    ensures k in MapModelRec(sk)
+    ensures MapModelRec(sk)[k] == v
+  {
+    match sk {
+      case Empty => {}
+      case Node(l, n, r) => {
+        if n.key == k {
+        } else if k < n.key {
+          assert k in MapModelRec(l);
+
+          assert forall m | m in elems(r) :: n.key != m.key;
+          if k in MapModelRec(r) {
+            ModelRelationWithSkeletonKeyRecR(n.right, r, k);
+            assert false;
+          }
+          assert k !in MapModelRec(r);
+
+          assert MapModelRec(sk)[k] == v;
+        } else if n.key < k {
+        } else {
+          assert false;
+        }
+      }
+    }
+  }
 
   lemma ModelRelationWithSkeletonKey(k: K)
     requires Valid()
+    requires SearchTree()
     ensures k in MapModel() <==> exists n | n in elems(skeleton) :: n.key == k
+  {
+    if k in MapModel() {
+      ModelRelationWithSkeletonKeyRecR(root, skeleton, k);
+    }
+    if exists n | n in elems(skeleton) :: n.key == k {
+      ModelRelationWithSkeletonKeyRecL(root, skeleton, k);
+    }
+  }
+
+  static lemma ModelRelationWithSkeletonKeyRecR(node: TNode?, sk: tree<TNode>, k: K)
+    requires ValidRec(node, sk)
+    requires SearchTreeRec(sk)
+    requires k in MapModelRec(sk)
+    ensures (exists n | n in elems(sk) :: n.key == k)
+  {}
+
+  static lemma ModelRelationWithSkeletonKeyRecL(node: TNode?, sk: tree<TNode>, k: K)
+    requires ValidRec(node, sk)
+    requires SearchTreeRec(sk)
+    requires (exists n | n in elems(sk) :: n.key == k)
+    ensures k in MapModelRec(sk)
+  {
+    match sk {
+      case Empty => {}
+      case Node(l, n, r) => {}
+    }
+  }
 
   static method GetRec(n: TNode, ghost sk: tree<TNode>, k: K) returns (v: V)
     requires ValidRec(n, sk)
