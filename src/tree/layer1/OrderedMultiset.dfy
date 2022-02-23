@@ -1,194 +1,189 @@
-include "../../../src/tree/layer1/UnorderedSet.dfy"
+include "../../../src/tree/layer1/UnorderedMultiset.dfy"
 
 
 function isSortedSeq(xs:seq<int>):bool
-{forall i,j::0<=i<j<|xs| ==> xs[i]<xs[j]}
+{forall i,j::0<=i<j<|xs| ==> xs[i]<=xs[j]}
 
-function Pick(s: set<int>): int
-  requires s != {}
+function Pick(s: multiset<int>): int
+  requires s != multiset{}
 {
   var x :| x in s; x
 }
 
-function seq2Set (xs:seq<int>):set<int>
-{set x | x in xs::x}
+function seq2Multiset (xs:seq<int>):multiset<int>
+{multiset(xs)}
 
-function set2Seq(s:set<int>):seq<int>
+function multiset2Seq(s:multiset<int>):seq<int>
 decreases s
 {
-  if s == {} then []
+  if s == multiset{} then []
   else 
     var y := Pick(s);
-    [y] + set2Seq(s - {y})
+    [y] + multiset2Seq(s - multiset{y})
     
 }
 
-lemma sizesSet2Seq(s:set<int>)
-ensures |set2Seq(s)|==|s|
+lemma sizesSet2Seq(s:multiset<int>)
+ensures |multiset2Seq(s)|==|s|
 {}
 
-lemma  sizesSeq2Set(xs:seq<int>)
-requires forall i,j|0<=i<j<|xs|::xs[i]!=xs[j]
-ensures |seq2Set(xs)|==|xs|
+lemma  sizesSeq2Multiset(xs:seq<int>)
+ensures |seq2Multiset(xs)|==|xs|
 {if (xs==[]) {}
- else {sizesSeq2Set(xs[1..]);
+ else {sizesSeq2Multiset(xs[1..]);
        assert xs==[xs[0]]+xs[1..];
-       assert seq2Set(xs)=={xs[0]}+seq2Set(xs[1..]);
-       assert |seq2Set(xs)|==1+|seq2Set(xs[1..])|;}
+       assert seq2Multiset(xs)==multiset{xs[0]}+seq2Multiset(xs[1..]);
+       assert |seq2Multiset(xs)|==1+|seq2Multiset(xs[1..])|;}
 }
 
-lemma idem(s:set<int>)
-ensures seq2Set(set2Seq(s)) == s 
-{  if s != {} {
+lemma idem(s:multiset<int>)
+ensures seq2Multiset(multiset2Seq(s)) == s 
+{  if s != multiset{} {
     var y := Pick(s);
-    assert seq2Set([y] + set2Seq(s - {y})) == seq2Set([y]) + seq2Set(set2Seq(s - {y}));
+    assert seq2Multiset([y] + multiset2Seq(s - multiset{y})) == seq2Multiset([y]) + seq2Multiset(multiset2Seq(s - multiset{y}));
   }
 }
 
 function sort(xs:seq<int>):seq<int>
-ensures seq2Set(xs)==seq2Set(sort(xs)) && isSortedSeq(sort(xs))
+ensures seq2Multiset(xs)==seq2Multiset(sort(xs)) && isSortedSeq(sort(xs))
 ensures |xs|==|sort(xs)|
 
-function set2SortedSeq(s:set<int>):seq<int>
-ensures set2SortedSeq(s)==sort(set2Seq(s))
-{sort(set2Seq(s))
+function multiset2SortedSeq(s:multiset<int>):seq<int>
+ensures multiset2SortedSeq(s)==sort(multiset2Seq(s))
+{sort(multiset2Seq(s))
 }
 
-lemma sortedSeq(s:set<int>)
-ensures isSortedSeq(set2SortedSeq(s)) && seq2Set(set2SortedSeq(s))==s
-ensures |set2SortedSeq(s)|==|s|
+lemma sortedSeq(s:multiset<int>)
+ensures isSortedSeq(multiset2SortedSeq(s)) && seq2Multiset(multiset2SortedSeq(s))==s
+ensures |multiset2SortedSeq(s)|==|s|
 {idem(s);sizesSet2Seq(s);}
 
 
 
 
-function {:induction s} minimum(s:set<int>):int
-requires s != {}
+function {:induction s} minimum(s:multiset<int>):int
+requires s != multiset{}
 //ensures forall x | x in s :: minimum(s)<=x
 { 
   var x :| x in s;
-  if (s-{x}=={}) then x
-  else if (x < minimum(s-{x})) then x
-  else minimum(s-{x})
+  if (s-multiset{x}==multiset{}) then x
+  else if (x < minimum(s-multiset{x})) then x
+  else minimum(s-multiset{x})
 
 }
 
-lemma lmin(s:set<int>,x:int)
-requires s!={} && x in s
-ensures x>=minimum(s)
+lemma lmin(s:multiset<int>,x:int)
+requires s != multiset{} && x in s
+ensures x >= minimum(s)
 {
   var y:| y in s;
-  if (s-{y} == {}){assert s=={y};assert x==y;}
-  else if (minimum(s-{y})==minimum(s)){}
+  if (s-multiset{y} == multiset{}){assert s==multiset{y};assert x==y;}
+  else if (minimum(s-multiset{y})==minimum(s)){}
   else{}
 }
 
 
-lemma lminimum(s:set<int>)
-requires s != {}
+lemma lminimum(s:multiset<int>)
+requires s != multiset{}
 ensures minimum(s) in s && forall x | x in s :: minimum(s) <= x
 {forall x | x in s
  ensures minimum(s) <= x {lmin(s,x);}}
 
 
-function {:induction s} maximum(s:set<int>):int
-requires s != {}
+function {:induction s} maximum(s:multiset<int>):int
+requires s != multiset{}
 //ensures forall x | x in s :: maximum(s)>=x
 { 
   var x :| x in s;
-  if (s-{x}=={}) then x
-  else if (x > maximum(s-{x})) then x
-  else maximum(s-{x})
+  if (s-multiset{x}==multiset{}) then x
+  else if (x > maximum(s-multiset{x})) then x
+  else maximum(s-multiset{x})
 
 }
 
-lemma lmax(s:set<int>,x:int)
-requires s!={} && x in s
+lemma lmax(s:multiset<int>,x:int)
+requires s != multiset{} && x in s
 ensures x<=maximum(s)
 {
   var y:| y in s;
-  if (s-{y} == {}){assert s=={y};assert x==y;}
-  else if (maximum(s-{y})==maximum(s)){}
+  if (s-multiset{y} == multiset{}){assert s==multiset{y};assert x==y;}
+  else if (maximum(s-multiset{y})==maximum(s)){}
   else{}
 }
 
 
-lemma lmaximum(s:set<int>)
-requires s != {}
+lemma lmaximum(s:multiset<int>)
+requires s !=  multiset{}
 ensures maximum(s) in s && forall x | x in s :: maximum(s) >= x
 {forall x | x in s
  ensures maximum(s) >= x {lmax(s,x);}}
 
 
-function smaller(s:set<int>,x:int):set<int>
-ensures forall z | z in smaller(s,x) :: z < x
-{set z | z in s && z < x}
+function msmaller(s:multiset<int>,x:int):multiset<int>
+ensures forall z | z in msmaller(s,x) :: z < x && s[z]==msmaller(s,x)[z]
+ensures forall z | z in s && z < x :: z in msmaller(s,x) 
+{ if (s==multiset{}) then multiset{}
+  else
+    var y :| y in s;
+    if (y<x) then 
+       multiset{y} + msmaller(s-multiset{y},x)
+    else 
+       msmaller(s-multiset{y},x)
+}
 
-function elemth(s:set<int>,k:int):int
+function elemth(s:multiset<int>,k:int):int
 requires 0<=k<|s|
-//ensures elemth(s,k) in s && |smaller(s,elemth(s,k))|==k
 {
   var minim:=minimum(s);
   if (k==0) then minim
-  else elemth(s-{minim},k-1)
+  else elemth(s-multiset{minim},k-1)
 }
 
-lemma {:induction s,k} lelemth(s:set<int>,k:int)
+lemma {:induction s,k} lelemth(s:multiset<int>,k:int)
 requires 0<=k<|s|
-ensures elemth(s,k) in s && |smaller(s,elemth(s,k))|==k
+ensures elemth(s,k) in s && |msmaller(s,elemth(s,k))|<=k<=|msmaller(s,elemth(s,k))|+s[elemth(s,k)]-1
 { lminimum(s);
   if (k==0) { }
+  else if (minimum(s)== elemth(s-multiset{minimum(s)},k-1)){}
   else {
-    lelemth(s-{minimum(s)},k-1);
+    lelemth(s-multiset{minimum(s)},k-1);
     assert elemth(s,k) in s;
-    calc =={
-      |smaller(s,elemth(s,k))|;
-      |set z | z in s && z < elemth(s,k)|;{assert k>0;}
-      |set z | z in s && z < elemth(s-{minimum(s)},k-1)|;
-      {assert s==(s-{minimum(s)})+{minimum(s)};
-      assert minimum(s)<elemth(s-{minimum(s)},k-1);
-      assert (set z | z in s && z < elemth(s-{minimum(s)},k-1))==(set z | z in s-{minimum(s)} && z < elemth(s-{minimum(s)},k-1)) + {minimum(s)};
-      }
-      |(set z | z in s-{minimum(s)} && z < elemth(s-{minimum(s)},k-1)) + {minimum(s)}|;
-      |(set z | z in s-{minimum(s)} && z < elemth(s-{minimum(s)},k-1)) + {minimum(s)}|;
-
-    }
+    assert minimum(s)<elemth(s-multiset{minimum(s)},k-1);
+    assert msmaller(s-multiset{minimum(s)},elemth(s-multiset{minimum(s)},k-1))+multiset{minimum(s)}==msmaller(s,elemth(s,k));
+    assert |msmaller(s-multiset{minimum(s)},elemth(s-multiset{minimum(s)},k-1))|+1==|msmaller(s,elemth(s,k))|;
   }
 }
 
 
-trait OrderedSetIterator extends UnorderedSetIterator{
+trait OrderedMultisetIterator extends UnorderedMultisetIterator{
   
-  //Here "traversed" means those smaller than the element
-  //it does not mean if they have been traversed or not
-  //They are the |Traversed()| smaller elements of the set
-  //Peek is uniquely determined from the parent set and the size of traversed, so Traversed is enough
-
-  
-  function Traversed():set<int>
+  function Traversed():multiset<int>
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid() 
     ensures Traversed()<=Parent().Model()
-    ensures forall x,y | x in Traversed() && y in Parent().Model()-Traversed() :: x<y
+    ensures forall x,y | x in Traversed() && y in Parent().Model()-Traversed() :: x<=y
+
+   //Several elements equal to the Peek may be in Traversed and some others not
+  // Example: Model=={1,1,2,3,3,3,4,5} Traversed=={1,1,2,3,3} Peek=3 
 
   function method Peek(): int
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
     requires HasNext()
-    ensures Peek() in Parent().Model() && Peek() !in Traversed()
+    ensures Peek() in Parent().Model() && (Parent().Model()-Traversed())[Peek()]>0
     ensures Peek()==elemth(Parent().Model(),|Traversed()|)
-    ensures forall x | x in Traversed() :: x<Peek()
-    ensures forall x | x in Parent().Model()-Traversed() :: Peek()<x
+    ensures forall x | x in Traversed() :: x<=Peek()
+    ensures forall x | x in Parent().Model()-Traversed() :: Peek()<=x 
+
 
   function method Index(): int
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
-    ensures HasNext() ==> Index()==|Traversed()|==|smaller(Parent().Model(),Peek())|
+    ensures HasNext() ==> Index()==|Traversed()|
     ensures !HasNext() ==> Index()==|Parent().Model()|
-  
 
   method Next() returns (x: int)
     modifies this
@@ -207,7 +202,7 @@ trait OrderedSetIterator extends UnorderedSetIterator{
     ensures forall x | x in Parent().Repr() :: allocated(x)
 
     ensures Parent().Iterators() == old(Parent().Iterators())
-    ensures x==old(Peek()) && Traversed() == {old(Peek())}+old(Traversed()) 
+    ensures x==old(Peek()) && Traversed() == multiset{old(Peek())}+old(Traversed()) 
     ensures |Traversed()|==1+|old(Traversed())|
 
     ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
@@ -240,12 +235,12 @@ trait OrderedSetIterator extends UnorderedSetIterator{
 
     ensures Parent().Iterators() == old(Parent().Iterators())
     ensures x==old(Peek())  
-    ensures old(Traversed())=={} ==> Traversed()==Parent().Model()
-    ensures old(Traversed())!={} ==> Traversed()==old(Traversed())-{maximum(old(Traversed()))}
+    ensures old(Traversed())==multiset{} ==> Traversed()==Parent().Model()
+    ensures old(Traversed())!=multiset{} ==> Traversed()==old(Traversed())-multiset{maximum(old(Traversed()))}
     ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
       it.Valid() && (it != this ==> it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek())))
 
-  method Copy() returns (it: UnorderedSetIterator)
+  method Copy() returns (it: UnorderedMultisetIterator)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -261,7 +256,7 @@ trait OrderedSetIterator extends UnorderedSetIterator{
     ensures fresh(Parent().Repr()-old(Parent().Repr()))
     ensures forall x | x in Parent().Repr() :: allocated(x)
     
-    ensures it is OrderedSetIterator
+    ensures it is OrderedMultisetIterator
     ensures it.Valid()
     ensures Parent().Iterators() == {it} + old(Parent().Iterators())
     ensures Parent() == it.Parent()
@@ -273,7 +268,7 @@ trait OrderedSetIterator extends UnorderedSetIterator{
   
 }
 
-trait OrderedSet extends UnorderedSet{
+trait OrderedMultiset extends UnorderedMultiset{
   
    //Novelties respect UnorderedSet
    // Last iterator method 
@@ -283,13 +278,13 @@ trait OrderedSet extends UnorderedSet{
    // Methods receiving iterators may be called with OrderedSetIterator
    // The rest remains the same 
 
-  function Iterators(): set<UnorderedSetIterator>
+  function Iterators(): set<UnorderedMultisetIterator>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
-    ensures forall it | it in Iterators() :: it is OrderedSetIterator
+    ensures forall it | it in Iterators() :: it is OrderedMultisetIterator
 
-  method First() returns (it: UnorderedSetIterator)
+  method First() returns (it: UnorderedMultisetIterator)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -300,18 +295,18 @@ trait OrderedSet extends UnorderedSet{
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
-    ensures it is OrderedSetIterator
+    ensures it is OrderedMultisetIterator
     ensures fresh(it)
     ensures Iterators() == {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
-    ensures it.Traversed()=={} 
-    ensures Model()!={} ==> it.HasNext() && it.Peek()==elemth(Model(),0)
+    ensures it.Traversed()==multiset{} 
+    ensures Model()!=multiset{} ==> it.HasNext() && it.Peek()==elemth(Model(),0)
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
 
 
-  method Last() returns (it: OrderedSetIterator)//iterator to the last element
+  method Last() returns (it: OrderedMultisetIterator)//iterator to the last element
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -326,22 +321,23 @@ trait OrderedSet extends UnorderedSet{
     ensures Iterators() == {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
-    ensures Model()!={} ==> it.HasNext() && it.Traversed()==Model()-{elemth(Model(),|Model()|-1)} && it.Peek()==elemth(Model(),|Model()|-1)
-    ensures Model()=={} ==> it.Traversed()=={}
+    ensures Model()!=multiset{} ==> it.HasNext() && it.Traversed()==Model()-multiset{elemth(Model(),|Model()|-1)} && it.Peek()==elemth(Model(),|Model()|-1)
+    ensures Model()==multiset{} ==> it.Traversed()==multiset{}
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
 
 
-  method find(x:int) returns (newt:UnorderedSetIterator )
+  method find(x:int) returns (newt:UnorderedMultisetIterator )
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid() 
     ensures Model()==old(Model())
-    ensures newt is OrderedSetIterator
+
+    ensures newt is OrderedMultisetIterator
     ensures fresh(newt) 
     ensures newt.Valid() && newt.Parent()==this
-    ensures x in Model() ==> newt.HasNext() && newt.Traversed()==smaller(Model(),x) && newt.Peek()==x
+    ensures x in Model() ==> newt.HasNext() && newt.Traversed()==msmaller(Model(),x) && newt.Peek()==x //points to the first occurrence
     ensures x !in Model() ==> newt.Traversed()==Model()
 
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
@@ -350,7 +346,7 @@ trait OrderedSet extends UnorderedSet{
 
     ensures Iterators() == {newt}+old(Iterators())
 
-  method insert(mid: UnorderedSetIterator, x: int) returns (newt:UnorderedSetIterator)
+  method insert(mid: UnorderedMultisetIterator, x: int) returns (newt:UnorderedMultisetIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid() 
@@ -360,14 +356,15 @@ trait OrderedSet extends UnorderedSet{
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
-    ensures Model() == old(Model()) + {x}
+    ensures Model() == old(Model()) + multiset{x}
 
     
-    ensures newt is OrderedSetIterator
+    ensures newt is OrderedMultisetIterator
     ensures fresh(newt)
     ensures Iterators() == {newt}+old(Iterators())
     ensures newt.Valid() && newt.Parent()==this
-    ensures newt.HasNext() && newt.Traversed()==smaller(Model(),x) && newt.Peek()==x
+    ensures newt.HasNext() && msmaller(Model(),x)<=newt.Traversed()<=msmaller(Model(),x)[x:=Model()[x]]  && newt.Peek()==x 
+    //DUDAS
     
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr()-old(Repr()))
@@ -375,7 +372,7 @@ trait OrderedSet extends UnorderedSet{
 
     //points either to the inserted elemento or to the already existing one
 
-  method erase(mid:UnorderedSetIterator) returns (next: UnorderedSetIterator)
+  method erase(mid:UnorderedMultisetIterator) returns (next: UnorderedMultisetIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -384,9 +381,9 @@ trait OrderedSet extends UnorderedSet{
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
-    ensures Model()== old(Model())-{old(mid.Peek())}
+    ensures Model()== old(Model())-multiset{old(mid.Peek())}
     
-    ensures next is OrderedSetIterator
+    ensures next is OrderedMultisetIterator
     ensures fresh(next)
     ensures Iterators() == {next}+old(Iterators())
     ensures next.Valid() && next.Parent()==this 
@@ -399,7 +396,7 @@ trait OrderedSet extends UnorderedSet{
 }
 
 
-
+/*
 method {:verify true} try(s:OrderedSet)
 modifies s, s.Repr()
 requires s.Valid() && s.Empty()
@@ -416,7 +413,7 @@ ensures forall x | x in s.Repr() :: allocated(x)
 
  var b:=s.contains(10);
  assert b;
-
+*/
  /*var it : OrderedSetIterator :=s.First(); var cont:=0;
   while (it.HasNext())
   //decreases |s.Model()|-|it.Traversed()|
@@ -430,7 +427,7 @@ ensures forall x | x in s.Repr() :: allocated(x)
      if (aux%2==0) {cont:=cont+1;} 
     } 
 */
-   assert s.Model()=={0,1,2,7,10};
+ /*  assert s.Model()=={0,1,2,7,10};
   var it2 :=s.find(2) ;
   assert it2 is OrderedSetIterator;
   assert s is OrderedSet;
@@ -468,4 +465,4 @@ ensures forall x | x in s.Repr() :: allocated(x)
   z:=it4.Prev();
   assert !it4.HasPrev();
 
-}
+}*/

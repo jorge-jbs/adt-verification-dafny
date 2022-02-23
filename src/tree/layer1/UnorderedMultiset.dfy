@@ -1,14 +1,14 @@
 include "../../../src/Utils.dfy"
 
 
-trait UnorderedSetIterator {
-  function Parent(): UnorderedSet
+trait UnorderedMultisetIterator {
+  function Parent(): UnorderedMultiset
     reads this
 
   predicate Valid()
     reads this, Parent(), Parent().Repr()
 
-  function Traversed():set<int>
+  function Traversed():multiset<int>
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid() 
@@ -19,7 +19,7 @@ trait UnorderedSetIterator {
     requires Valid()
     requires Parent().Valid()
     requires HasNext()
-    ensures Peek() in Parent().Model() && Peek() !in Traversed()
+    ensures Peek() in Parent().Model() && (Parent().Model()-Traversed())[Peek()]>0
 
 
   function method HasNext(): bool
@@ -48,7 +48,7 @@ trait UnorderedSetIterator {
 
     ensures Parent().Iterators() == old(Parent().Iterators())
 
-    ensures x==old(Peek()) && Traversed() == {old(Peek())}+old(Traversed()) 
+    ensures x==old(Peek()) && Traversed() == multiset{old(Peek())}+old(Traversed()) 
     
     ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
       it.Valid() && (it != this ==> it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek())))
@@ -56,7 +56,7 @@ trait UnorderedSetIterator {
 
   
 
-  method Copy() returns (it: UnorderedSetIterator)
+  method Copy() returns (it: UnorderedMultisetIterator)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -82,7 +82,7 @@ trait UnorderedSetIterator {
   
 }
 
-trait UnorderedSet {
+trait UnorderedMultiset {
   function ReprDepth(): nat
     ensures ReprDepth() > 0
 
@@ -104,26 +104,26 @@ trait UnorderedSet {
   predicate Valid()
     reads this, Repr()
 
-  function Model(): set<int>
+  function Model(): multiset<int>
     reads this, Repr()
     requires Valid()
 
   function method Empty(): bool
     reads this, Repr()
     requires Valid()
-    ensures Empty() <==> Model() == {}
+    ensures Empty() <==> Model() == multiset{}
 
   function method Size(): nat
     reads this, Repr()
     requires Valid()
     ensures Size() == |Model()|
 
-  function Iterators(): set<UnorderedSetIterator>
+  function Iterators(): set<UnorderedMultisetIterator>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
 
-  method First() returns (it: UnorderedSetIterator)
+  method First() returns (it: UnorderedMultisetIterator)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -138,7 +138,7 @@ trait UnorderedSet {
     ensures Iterators() == {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
-    ensures it.Traversed()=={} 
+    ensures it.Traversed()== multiset{} 
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
 
@@ -148,12 +148,16 @@ trait UnorderedSet {
     requires Valid()
     ensures Valid() && b == (x in Model())
 
+  method count(x:int) returns (c:int)
+    requires Valid()
+    ensures Valid() && c==Model()[x]  
+
   method add(x:int)
     modifies this,Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
-    ensures Model() == old(Model()) + {x} 
+    ensures Model() == old(Model()) + multiset{x} 
 
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr()-old(Repr()))
@@ -168,7 +172,20 @@ trait UnorderedSet {
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
-    ensures Model()== old(Model()) - {x} 
+    ensures Model()== old(Model()) - multiset{x} 
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+
+    ensures Iterators() == old(Iterators())
+
+  method removeAll(x:int) 
+    modifies this,Repr()
+    requires Valid()
+    requires forall x | x in Repr() :: allocated(x)
+    ensures Valid()
+    ensures Model()== old(Model())[x:=0] 
 
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr()-old(Repr()))
@@ -177,7 +194,7 @@ trait UnorderedSet {
     ensures Iterators() == old(Iterators())
 
 
-  method find(x:int) returns (newt:UnorderedSetIterator)
+  method find(x:int) returns (newt:UnorderedMultisetIterator)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -195,7 +212,7 @@ trait UnorderedSet {
 
     ensures Iterators() == {newt}+old(Iterators())
 
-  method insert(mid: UnorderedSetIterator, x: int) returns (newt:UnorderedSetIterator)
+  method insert(mid: UnorderedMultisetIterator, x: int) returns (newt:UnorderedMultisetIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid() 
@@ -203,7 +220,7 @@ trait UnorderedSet {
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
-    ensures Model() == old(Model()) + {x}
+    ensures Model() == old(Model()) + multiset{x}
 
     ensures fresh(newt)
     ensures Iterators() == {newt}+old(Iterators())
@@ -219,7 +236,7 @@ trait UnorderedSet {
 
 
 
-  method erase(mid:UnorderedSetIterator) returns (next: UnorderedSetIterator)
+  method erase(mid:UnorderedMultisetIterator) returns (next: UnorderedMultisetIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -228,7 +245,7 @@ trait UnorderedSet {
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
-    ensures Model()== old(Model())-{old(mid.Peek())}
+    ensures Model()== old(Model())- multiset{old(mid.Peek())}
     
     ensures fresh(next)
     ensures Iterators() == {next}+old(Iterators())
@@ -241,7 +258,7 @@ trait UnorderedSet {
 
 }
 
-method main(s:UnorderedSet)
+method {:verify false} main(s:UnorderedMultiset)
 modifies s, s.Repr()
 requires s.Valid() && s.Empty()
 requires forall x | x in s.Repr() :: allocated(x)
@@ -250,11 +267,11 @@ ensures forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - 
 ensures fresh(s.Repr()-old(s.Repr()))
 ensures forall x | x in s.Repr() :: allocated(x)
 {
- assert s.Model()=={};
+ assert s.Model() == multiset{};
  s.add(2); s.add(4); s.add(6);
- assert s.Model()=={2,4,6};
+ assert s.Model() == multiset{2,4,6};
  var it := s.First();
- assert it.Traversed()=={};
+ assert it.Traversed() == multiset{};
  //assert it.Peek()==4; //Falla, se sabe cual es traversed pero no Peek
  var cont:=0; 
   while (it.HasNext())
@@ -274,7 +291,7 @@ ensures forall x | x in s.Repr() :: allocated(x)
   assert it.Traversed()==s.Model();  
 }
 
-method {:verify true} otry(s:UnorderedSet)
+method {:verify true} otry(s:UnorderedMultiset)
 modifies s, s.Repr()
 requires s.Valid() && s.Empty()
 requires forall x | x in s.Repr() :: allocated(x)
@@ -287,18 +304,22 @@ ensures forall x | x in s.Repr() :: allocated(x)
  s.add(4);
  assert 3 in s.Model();
  assert 4 in s.Model();
- assert (set x | x in s.Model()) == {3,4};
+ assert s.Model() == multiset{3,4};
  s.add(4);
- assert (set x | x in s.Model()) == {3,4};
+ assert  s.Model() == multiset{3,4,4};
  s.remove(2);
-  assert (set x | x in s.Model()) == {3,4};
+  assert  s.Model() == multiset{3,4,4};
  s.remove(3);
-  assert (set x | x in s.Model()) == {4};
- s.remove(4);
-   assert (set x | x in s.Model()) == {};
+  assert s.Model() == multiset{4,4};
+ s.removeAll(4);
+   assert s.Model() == multiset{};
  s.add(2); s.add(7); s.add(0); s.add(1);s.add(10);
-
- var b:=s.contains(10);
+ s.add(2); 
+ var c:=s.count(2);
+ var c':=s.count(25);
+ assert c==2 && c'==0;
+ 
+  var b:=s.contains(10);
  assert b;
 
   /* var s1:set<int>;
