@@ -54,8 +54,8 @@ ensures s1.Iterators()>=old(s1.Iterators()) &&
    invariant it1.Traversed()<=s1.Model() && it2.Traversed()<=s2.Model()
    invariant su.Model()==it1.Traversed() * it2.Traversed()
 
-   invariant forall x,y | x in it1.Traversed() && y in s2.Model()-it2.Traversed():: x<y
-   invariant forall x,y | x in it2.Traversed() && y in s1.Model()-it1.Traversed():: x<y
+   invariant forall x,y | x in it1.Traversed() && y in s2.Model()-it2.Traversed():: x<=y
+   invariant forall x,y | x in it2.Traversed() && y in s1.Model()-it1.Traversed():: x<=y
    
    
    invariant forall x {:trigger x in s1.Repr(), x in old(s1.Repr())} | x in s1.Repr() - old(s1.Repr()) :: fresh(x)

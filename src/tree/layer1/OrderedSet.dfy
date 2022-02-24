@@ -1,160 +1,5 @@
 include "../../../src/tree/layer1/UnorderedSet.dfy"
-
-
-function isSortedSeq(xs:seq<int>):bool
-{forall i,j::0<=i<j<|xs| ==> xs[i]<xs[j]}
-
-function Pick(s: set<int>): int
-  requires s != {}
-{
-  var x :| x in s; x
-}
-
-function seq2Set (xs:seq<int>):set<int>
-{set x | x in xs::x}
-
-function set2Seq(s:set<int>):seq<int>
-decreases s
-{
-  if s == {} then []
-  else 
-    var y := Pick(s);
-    [y] + set2Seq(s - {y})
-    
-}
-
-lemma sizesSet2Seq(s:set<int>)
-ensures |set2Seq(s)|==|s|
-{}
-
-lemma  sizesSeq2Set(xs:seq<int>)
-requires forall i,j|0<=i<j<|xs|::xs[i]!=xs[j]
-ensures |seq2Set(xs)|==|xs|
-{if (xs==[]) {}
- else {sizesSeq2Set(xs[1..]);
-       assert xs==[xs[0]]+xs[1..];
-       assert seq2Set(xs)=={xs[0]}+seq2Set(xs[1..]);
-       assert |seq2Set(xs)|==1+|seq2Set(xs[1..])|;}
-}
-
-lemma idem(s:set<int>)
-ensures seq2Set(set2Seq(s)) == s 
-{  if s != {} {
-    var y := Pick(s);
-    assert seq2Set([y] + set2Seq(s - {y})) == seq2Set([y]) + seq2Set(set2Seq(s - {y}));
-  }
-}
-
-function sort(xs:seq<int>):seq<int>
-ensures seq2Set(xs)==seq2Set(sort(xs)) && isSortedSeq(sort(xs))
-ensures |xs|==|sort(xs)|
-
-function set2SortedSeq(s:set<int>):seq<int>
-ensures set2SortedSeq(s)==sort(set2Seq(s))
-{sort(set2Seq(s))
-}
-
-lemma sortedSeq(s:set<int>)
-ensures isSortedSeq(set2SortedSeq(s)) && seq2Set(set2SortedSeq(s))==s
-ensures |set2SortedSeq(s)|==|s|
-{idem(s);sizesSet2Seq(s);}
-
-
-
-
-function {:induction s} minimum(s:set<int>):int
-requires s != {}
-//ensures forall x | x in s :: minimum(s)<=x
-{ 
-  var x :| x in s;
-  if (s-{x}=={}) then x
-  else if (x < minimum(s-{x})) then x
-  else minimum(s-{x})
-
-}
-
-lemma lmin(s:set<int>,x:int)
-requires s!={} && x in s
-ensures x>=minimum(s)
-{
-  var y:| y in s;
-  if (s-{y} == {}){assert s=={y};assert x==y;}
-  else if (minimum(s-{y})==minimum(s)){}
-  else{}
-}
-
-
-lemma lminimum(s:set<int>)
-requires s != {}
-ensures minimum(s) in s && forall x | x in s :: minimum(s) <= x
-{forall x | x in s
- ensures minimum(s) <= x {lmin(s,x);}}
-
-
-function {:induction s} maximum(s:set<int>):int
-requires s != {}
-//ensures forall x | x in s :: maximum(s)>=x
-{ 
-  var x :| x in s;
-  if (s-{x}=={}) then x
-  else if (x > maximum(s-{x})) then x
-  else maximum(s-{x})
-
-}
-
-lemma lmax(s:set<int>,x:int)
-requires s!={} && x in s
-ensures x<=maximum(s)
-{
-  var y:| y in s;
-  if (s-{y} == {}){assert s=={y};assert x==y;}
-  else if (maximum(s-{y})==maximum(s)){}
-  else{}
-}
-
-
-lemma lmaximum(s:set<int>)
-requires s != {}
-ensures maximum(s) in s && forall x | x in s :: maximum(s) >= x
-{forall x | x in s
- ensures maximum(s) >= x {lmax(s,x);}}
-
-
-function smaller(s:set<int>,x:int):set<int>
-ensures forall z | z in smaller(s,x) :: z < x
-{set z | z in s && z < x}
-
-function elemth(s:set<int>,k:int):int
-requires 0<=k<|s|
-//ensures elemth(s,k) in s && |smaller(s,elemth(s,k))|==k
-{
-  var minim:=minimum(s);
-  if (k==0) then minim
-  else elemth(s-{minim},k-1)
-}
-
-lemma {:induction s,k} lelemth(s:set<int>,k:int)
-requires 0<=k<|s|
-ensures elemth(s,k) in s && |smaller(s,elemth(s,k))|==k
-{ lminimum(s);
-  if (k==0) { }
-  else {
-    lelemth(s-{minimum(s)},k-1);
-    assert elemth(s,k) in s;
-    calc =={
-      |smaller(s,elemth(s,k))|;
-      |set z | z in s && z < elemth(s,k)|;{assert k>0;}
-      |set z | z in s && z < elemth(s-{minimum(s)},k-1)|;
-      {assert s==(s-{minimum(s)})+{minimum(s)};
-      assert minimum(s)<elemth(s-{minimum(s)},k-1);
-      assert (set z | z in s && z < elemth(s-{minimum(s)},k-1))==(set z | z in s-{minimum(s)} && z < elemth(s-{minimum(s)},k-1)) + {minimum(s)};
-      }
-      |(set z | z in s-{minimum(s)} && z < elemth(s-{minimum(s)},k-1)) + {minimum(s)}|;
-      |(set z | z in s-{minimum(s)} && z < elemth(s-{minimum(s)},k-1)) + {minimum(s)}|;
-
-    }
-  }
-}
+include "../../../src/tree/layer1/OrderedSetUtils.dfy"
 
 
 trait OrderedSetIterator extends UnorderedSetIterator{
@@ -170,7 +15,7 @@ trait OrderedSetIterator extends UnorderedSetIterator{
     requires Valid()
     requires Parent().Valid() 
     ensures Traversed()<=Parent().Model()
-    ensures forall x,y | x in Traversed() && y in Parent().Model()-Traversed() :: x<y
+    ensures forall x,y | x in Traversed() && y in Parent().Model()-Traversed() :: x < y
 
   function method Peek(): int
     reads this, Parent(), Parent().Repr()
@@ -179,8 +24,8 @@ trait OrderedSetIterator extends UnorderedSetIterator{
     requires HasNext()
     ensures Peek() in Parent().Model() && Peek() !in Traversed()
     ensures Peek()==elemth(Parent().Model(),|Traversed()|)
-    ensures forall x | x in Traversed() :: x<Peek()
-    ensures forall x | x in Parent().Model()-Traversed() :: Peek()<x
+    ensures forall x | x in Traversed() :: x < Peek()
+    ensures forall x | x in Parent().Model()-Traversed()-{Peek()} :: Peek() < x
 
   function method Index(): int
     reads this, Parent(), Parent().Repr()
@@ -241,7 +86,7 @@ trait OrderedSetIterator extends UnorderedSetIterator{
     ensures Parent().Iterators() == old(Parent().Iterators())
     ensures x==old(Peek())  
     ensures old(Traversed())=={} ==> Traversed()==Parent().Model()
-    ensures old(Traversed())!={} ==> Traversed()==old(Traversed())-{maximum(old(Traversed()))}
+    ensures old(Traversed())!={} ==> (Traversed()==old(Traversed())-{maximum(old(Traversed()))} && (HasNext() ==> Peek()==maximum(old(Traversed()))))
     ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
       it.Valid() && (it != this ==> it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek())))
 
@@ -455,17 +300,17 @@ ensures forall x | x in s.Repr() :: allocated(x)
   //assert maximum(it3.Traversed())==10;
   var z:=it3.Prev();
 
+  assert s.Model()=={0,1,2,5,7,10,12};
   var it4:=s.Last();
-  z:=it4.Prev();
-  z:=it4.Prev();
+  assert it4.Peek()==12;
+    assert it4.Traversed()=={0,1,2,5,7,10};
+  assert forall x | x in it4.Traversed() && x!=10 :: x < 10;
+  lmaximumrev(it4.Traversed(),10);
+    assert maximum(it4.Traversed())==10;
 
-  assert z==10;
-  z:=it4.Prev();
-  z:=it4.Prev();
-  z:=it4.Prev();
-  z:=it4.Prev();
-  z:=it4.Prev();
-  z:=it4.Prev();
-  assert !it4.HasPrev();
+  var it5:OrderedSetIterator:=s.First();
+  z:=it5.Prev();
+  assert !it5.HasPrev();
+
 
 }

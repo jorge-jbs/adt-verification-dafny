@@ -44,7 +44,7 @@ ensures s1.Iterators()>=old(s1.Iterators()) && s2.Iterators()>=old(s2.Iterators(
    invariant !b ==> !(it1.Traversed() <= s2.Model())
    invariant it1.HasNext() ==> it1.Peek() !in it2.Traversed()
    invariant forall u | u in it2.Traversed() && it1.Traversed()<s1.Model() :: u<it1.Peek()
-   
+
    invariant forall x {:trigger x in s1.Repr(), x in old(s1.Repr())} | x in s1.Repr() - old(s1.Repr()) :: fresh(x)
    invariant forall x {:trigger x in s2.Repr(), x in old(s2.Repr())} | x in s2.Repr() - old(s2.Repr()) :: fresh(x)
    invariant forall x | x in s1.Repr() :: allocated(x)
@@ -59,8 +59,9 @@ ensures s1.Iterators()>=old(s1.Iterators()) && s2.Iterators()>=old(s2.Iterators(
   }
   else if (it1.Peek()<it2.Peek())
    { 
-      assert s2.Model()==it2.Traversed()+(s2.Model()-it2.Traversed());
-     
+      assert s2.Model()==it2.Traversed()+{it2.Peek()}+(s2.Model()-it2.Traversed()-{it2.Peek()});
+      assert it1.Peek() !in it2.Traversed();
+      assert forall z | z in s2.Model()-it2.Traversed()-{it2.Peek()} :: it1.Peek() < it2.Peek() < z;
      b:=false;  
      x1:=it1.Next();
     }
