@@ -54,8 +54,8 @@ ensures s1.Iterators()>=old(s1.Iterators()) &&
    invariant it1.Traversed()<=s1.Model() && it2.Traversed()<=s2.Model()
    invariant su.Model()==it1.Traversed() * it2.Traversed()
 
-   invariant forall x,y | x in it1.Traversed() && y in s2.Model()-it2.Traversed():: x<=y
-   invariant forall x,y | x in it2.Traversed() && y in s1.Model()-it1.Traversed():: x<=y
+   invariant forall x,y | x in it1.Traversed() && y in s2.Model()-it2.Traversed():: x<y
+   invariant forall x,y | x in it2.Traversed() && y in s1.Model()-it1.Traversed():: x<y
    
    
    invariant forall x {:trigger x in s1.Repr(), x in old(s1.Repr())} | x in s1.Repr() - old(s1.Repr()) :: fresh(x)
@@ -70,20 +70,25 @@ ensures s1.Iterators()>=old(s1.Iterators()) &&
 
  { ghost var oit1:=it1.Traversed(); ghost var oit2:=it2.Traversed();
   if (it1.Peek()==it2.Peek())
-  { 
+    { 
         su.add(it1.Peek()); 
         x1 := it1.Next();
         x2 := it2.Next();
-  }
+    }
   else if (it1.Peek()<it2.Peek())
-   { 
+    { 
+     assert forall y | y in s2.Model()-it2.Traversed():: it1.Peek()<it2.Peek()<=y;
+   
      x1:=it1.Next();
     }
-  else { 
+  else 
+    { 
+    assert forall y | y in s1.Model()-it1.Traversed():: it2.Peek()<it1.Peek()<=y;
+
     x2 := it2.Next();
     }
-  //assert it1.Traversed()>=oit1 && it2.Traversed()>=oit2;
-  //assert it1.Traversed()>oit1 || it2.Traversed()>oit2;
+  assert it1.Traversed()>=oit1 && it2.Traversed()>=oit2;
+  assert it1.Traversed()>oit1 || it2.Traversed()>oit2;
   assert (s1.Model()-it1.Traversed())<s1.Model()-oit1 || (s2.Model()-it2.Traversed())<s2.Model()-oit2;
   assert (s1.Model()-it1.Traversed())+(s2.Model()-it2.Traversed())<(s1.Model()-oit1)+(s2.Model()-oit2);
   

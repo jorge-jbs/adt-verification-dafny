@@ -26,6 +26,7 @@ trait OrderedSetIterator extends UnorderedSetIterator{
     ensures Peek()==elemth(Parent().Model(),|Traversed()|)
     ensures forall x | x in Traversed() :: x < Peek()
     ensures forall x | x in Parent().Model()-Traversed()-{Peek()} :: Peek() < x
+    ensures forall x | x in Parent().Model()-Traversed() :: Peek() <= x
 
   function method Index(): int
     reads this, Parent(), Parent().Repr()
@@ -245,7 +246,7 @@ trait OrderedSet extends UnorderedSet{
 
 
 
-method {:verify true} try(s:OrderedSet)
+method {:verify false} try(s:OrderedSet)
 modifies s, s.Repr()
 requires s.Valid() && s.Empty()
 requires forall x | x in s.Repr() :: allocated(x)
