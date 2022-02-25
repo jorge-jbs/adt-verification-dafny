@@ -1,63 +1,8 @@
-
-
-function isSortedSeq(xs:seq<int>):bool
-{forall i,j::0<=i<j<|xs| ==> xs[i]<xs[j]}
-
 function Pick(s: set<int>): int
   requires s != {}
 {
   var x :| x in s; x
 }
-
-function seq2Set (xs:seq<int>):set<int>
-{set x | x in xs::x}
-
-function set2Seq(s:set<int>):seq<int>
-decreases s
-{
-  if s == {} then []
-  else 
-    var y := Pick(s);
-    [y] + set2Seq(s - {y})
-    
-}
-
-lemma sizesSet2Seq(s:set<int>)
-ensures |set2Seq(s)|==|s|
-{}
-
-lemma  sizesSeq2Set(xs:seq<int>)
-requires forall i,j|0 <= i < j < |xs| :: xs[i] != xs[j]
-ensures |seq2Set(xs)| == |xs|
-{if (xs==[]) {}
- else {sizesSeq2Set(xs[1..]);
-       assert xs==[xs[0]]+xs[1..];
-       assert seq2Set(xs)=={xs[0]}+seq2Set(xs[1..]);
-       assert |seq2Set(xs)|==1+|seq2Set(xs[1..])|;}
-}
-
-lemma idem(s:set<int>)
-ensures seq2Set(set2Seq(s)) == s 
-{  if s != {} {
-    var y := Pick(s);
-    assert seq2Set([y] + set2Seq(s - {y})) == seq2Set([y]) + seq2Set(set2Seq(s - {y}));
-  }
-}
-
-function sort(xs:seq<int>):seq<int>
-ensures seq2Set(xs)==seq2Set(sort(xs)) && isSortedSeq(sort(xs))
-ensures |xs|==|sort(xs)|
-
-function set2SortedSeq(s:set<int>):seq<int>
-ensures set2SortedSeq(s)==sort(set2Seq(s))
-{sort(set2Seq(s))
-}
-
-lemma sortedSeq(s:set<int>)
-ensures isSortedSeq(set2SortedSeq(s)) && seq2Set(set2SortedSeq(s))==s
-ensures |set2SortedSeq(s)|==|s|
-{idem(s);sizesSet2Seq(s);}
-
 
 lemma sizeOfSet(s:set<int>,x:int)
 requires x in s
@@ -74,7 +19,8 @@ function {:induction s} minimum(s:set<int>):int
 requires s != {}
 //ensures forall x | x in s :: minimum(s)<=x
 { 
-  var x :| x in s;
+  //var x :| x in s;
+  var x:=Pick(s);
   if (s-{x}=={}) then x
   else if (x < minimum(s-{x})) then x
   else minimum(s-{x})
@@ -86,7 +32,7 @@ lemma lmin(s:set<int>,x:int)
 requires s!={} && x in s
 ensures x>=minimum(s)
 {
-  var y:| y in s;
+  var y:=Pick(s);
   if (s-{y} == {}){assert s=={y};assert x==y;}
   else if (minimum(s-{y})==minimum(s)){}
   else{}
@@ -105,9 +51,9 @@ requires x in s && forall z | z in s && z!=x :: x < z
 ensures x == minimum(s)
 {
   lminimum(s);
-   assert minimum(s) in s;
-   if (x==minimum(s)){}
-   else {assert x < minimum(s);
+  assert minimum(s) in s;
+  if (x==minimum(s)){}
+  else {assert x < minimum(s);
          assert false;}//contradiction
 }
 
@@ -115,7 +61,7 @@ ensures x == minimum(s)
 function {:induction s} maximum(s:set<int>):int
 requires s != {}
 { 
-  var x :| x in s;
+  var x:=Pick(s);
   if (s-{x}=={}) then x
   else if (x > maximum(s-{x})) then x
   else maximum(s-{x})
@@ -127,7 +73,7 @@ lemma lmax(s:set<int>,x:int)
 requires s!={} && x in s
 ensures x<=maximum(s)
 {
-  var y:| y in s;
+  var y:=Pick(s);
   if (s-{y} == {}){assert s=={y};assert x==y;}
   else if (maximum(s-{y})==maximum(s)){}
   else{}
@@ -215,6 +161,13 @@ ensures smaller(s,maximum(s))==s-{maximum(s)} && |smaller(s,maximum(s))|== |s|-1
   }
   
 
+lemma smallerElem(s:set<int>,x:int)
+requires s!={} && x in s && x != minimum(s)
+ensures smaller(s-{minimum(s)},x)==smaller(s,x)-{minimum(s)}
+ensures |smaller(s-{minimum(s)},x)|==|smaller(s,x)|-1
+{ lminimum(s);
+  sizeOfSet(s,minimum(s));}
+
 function elemth(s:set<int>,k:int):int
 requires 0<=k<|s|
 //ensures elemth(s,k) in s && |smaller(s,elemth(s,k))|==k
@@ -263,8 +216,8 @@ ensures x==elemth(s,k)
    var minim:=minimum(s);
    if (minim==x){smallerMin(s);}
    else{
-
-     assume |smaller(s-{minim},x)|==k-1;
+     smallerElem(s,x);
+     assert |smaller(s-{minim},x)|==k-1;
      lelemthrev(s-{minim},x,k-1);
    }
    }
@@ -295,3 +248,59 @@ ensures maximum(s)==elemth(s,|s|-1)
         maximum(s);
       }
   }}
+
+
+
+//Sorted seqs
+
+function isSortedSeq(xs:seq<int>):bool
+{forall i,j::0<=i<j<|xs| ==> xs[i]<xs[j]}
+
+  function seq2Set (xs:seq<int>):set<int>
+{set x | x in xs::x}
+
+function set2Seq(s:set<int>):seq<int>
+decreases s
+{
+  if s == {} then []
+  else 
+    var y := Pick(s);
+    [y] + set2Seq(s - {y})
+    
+}
+
+lemma sizesSet2Seq(s:set<int>)
+ensures |set2Seq(s)|==|s|
+{}
+
+lemma  sizesSeq2Set(xs:seq<int>)
+requires forall i,j|0 <= i < j < |xs| :: xs[i] != xs[j]
+ensures |seq2Set(xs)| == |xs|
+{if (xs==[]) {}
+ else {sizesSeq2Set(xs[1..]);
+       assert xs==[xs[0]]+xs[1..];
+       assert seq2Set(xs)=={xs[0]}+seq2Set(xs[1..]);
+       assert |seq2Set(xs)|==1+|seq2Set(xs[1..])|;}
+}
+
+lemma idem(s:set<int>)
+ensures seq2Set(set2Seq(s)) == s 
+{  if s != {} {
+    var y := Pick(s);
+    assert seq2Set([y] + set2Seq(s - {y})) == seq2Set([y]) + seq2Set(set2Seq(s - {y}));
+  }
+}
+
+function sort(xs:seq<int>):seq<int>
+ensures seq2Set(xs)==seq2Set(sort(xs)) && isSortedSeq(sort(xs))
+ensures |xs|==|sort(xs)|
+
+function set2SortedSeq(s:set<int>):seq<int>
+ensures set2SortedSeq(s)==sort(set2Seq(s))
+{sort(set2Seq(s))
+}
+
+lemma sortedSeq(s:set<int>)
+ensures isSortedSeq(set2SortedSeq(s)) && seq2Set(set2SortedSeq(s))==s
+ensures |set2SortedSeq(s)|==|s|
+{idem(s);sizesSet2Seq(s);}

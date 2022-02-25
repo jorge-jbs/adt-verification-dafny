@@ -8,6 +8,7 @@ trait OrderedSetIterator extends UnorderedSetIterator{
   //it does not mean if they have been traversed or not
   //They are the |Traversed()| smaller elements of the set
   //Peek is uniquely determined from the parent set and the size of traversed, so Traversed is enough
+  //However I add all the knowledge to the postconditions about both 
 
   
   function Traversed():set<int>
@@ -55,6 +56,7 @@ trait OrderedSetIterator extends UnorderedSetIterator{
     ensures Parent().Iterators() == old(Parent().Iterators())
     ensures x==old(Peek()) && Traversed() == {old(Peek())}+old(Traversed()) 
     ensures |Traversed()|==1+|old(Traversed())|
+    ensures HasNext() ==> Peek()==elemth(Parent().Model(),|Traversed()|)//already known
 
     ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
       it.Valid() && (it != this ==> it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek())))
@@ -87,7 +89,8 @@ trait OrderedSetIterator extends UnorderedSetIterator{
     ensures Parent().Iterators() == old(Parent().Iterators())
     ensures x==old(Peek())  
     ensures old(Traversed())=={} ==> Traversed()==Parent().Model()
-    ensures old(Traversed())!={} ==> (Traversed()==old(Traversed())-{maximum(old(Traversed()))} && (HasNext() ==> Peek()==maximum(old(Traversed()))))
+    ensures old(Traversed())!={} ==> (Traversed()==old(Traversed())-{maximum(old(Traversed()))} &&
+                                      (HasNext() ==> Peek()==maximum(old(Traversed()))))
     ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
       it.Valid() && (it != this ==> it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek())))
 
@@ -113,6 +116,7 @@ trait OrderedSetIterator extends UnorderedSetIterator{
     ensures Parent() == it.Parent()
 
     ensures Traversed() == it.Traversed() 
+    ensures HasNext() ==> Peek()==it.Peek()
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
 
@@ -236,7 +240,8 @@ trait OrderedSet extends UnorderedSet{
     ensures fresh(next)
     ensures Iterators() == {next}+old(Iterators())
     ensures next.Valid() && next.Parent()==this 
-    ensures next.Traversed()==old(mid.Traversed())  && (next.HasNext() ==> next.Peek()==elemth(Model(),|next.Traversed()|))
+    ensures next.Traversed()==old(mid.Traversed())  && 
+            (next.HasNext() ==> next.Peek()==elemth(Model(),|next.Traversed()|))
 
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr()-old(Repr()))

@@ -144,9 +144,10 @@ trait UnorderedSet {
 
  
 
-  method contains(x:int) returns (b:bool)
+  function method contains(x:int):bool
+    reads this, Repr()
     requires Valid()
-    ensures Valid() && b == (x in Model())
+    ensures contains(x) == (x in Model())
 
   method add(x:int)
     modifies this,Repr()
@@ -241,7 +242,7 @@ trait UnorderedSet {
 
 }
 
-method main(s:UnorderedSet)
+method {:verify false} main(s:UnorderedSet)
 modifies s, s.Repr()
 requires s.Valid() && s.Empty()
 requires forall x | x in s.Repr() :: allocated(x)
@@ -274,7 +275,7 @@ ensures forall x | x in s.Repr() :: allocated(x)
   assert it.Traversed()==s.Model();  
 }
 
-method {:verify true} otry(s:UnorderedSet)
+method {:verify false} otry(s:UnorderedSet)
 modifies s, s.Repr()
 requires s.Valid() && s.Empty()
 requires forall x | x in s.Repr() :: allocated(x)

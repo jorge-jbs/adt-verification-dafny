@@ -51,6 +51,8 @@ trait OrderedMultisetIterator extends UnorderedMultisetIterator{
     ensures Parent().Iterators() == old(Parent().Iterators())
     ensures x==old(Peek()) && Traversed() == multiset{old(Peek())}+old(Traversed()) 
     ensures |Traversed()|==1+|old(Traversed())|
+    ensures HasNext() ==> Peek()==elemth(Parent().Model(),|Traversed()|)//already known
+
 
     ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
       it.Valid() && (it != this ==> it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek())))
@@ -109,6 +111,7 @@ trait OrderedMultisetIterator extends UnorderedMultisetIterator{
     ensures Parent() == it.Parent()
 
     ensures Traversed() == it.Traversed() 
+    ensures HasNext() ==> Peek()==it.Peek()
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
 
@@ -210,8 +213,11 @@ trait OrderedMultiset extends UnorderedMultiset{
     ensures fresh(newt)
     ensures Iterators() == {newt}+old(Iterators())
     ensures newt.Valid() && newt.Parent()==this
-    ensures newt.HasNext() && msmaller(Model(),x)<=newt.Traversed()<=msmaller(Model(),x)[x:=Model()[x]]  && newt.Peek()==x 
-    //DUDAS
+    ensures newt.HasNext() && 
+            msmaller(Model(),x)<=newt.Traversed()<=msmaller(Model(),x)[x:=old(Model())[x]] &&
+            newt.Peek()==x 
+            //Example: 1,2,2,2,2,3 insert another 2 , Traversed may be 
+            //{1} (newt points to the first 2), {1,2}, ..., {1,2,2,2,2} (newt points to the last 2)
     
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr()-old(Repr()))
@@ -234,7 +240,8 @@ trait OrderedMultiset extends UnorderedMultiset{
     ensures fresh(next)
     ensures Iterators() == {next}+old(Iterators())
     ensures next.Valid() && next.Parent()==this 
-    ensures next.Traversed()==old(mid.Traversed())  && (next.HasNext() ==> next.Peek()==elemth(Model(),|next.Traversed()|))
+    ensures next.Traversed()==old(mid.Traversed())  &&
+           (next.HasNext() ==> next.Peek()==elemth(Model(),|next.Traversed()|))
 
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr()-old(Repr()))

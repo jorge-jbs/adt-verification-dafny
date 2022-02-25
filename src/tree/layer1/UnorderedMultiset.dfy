@@ -144,9 +144,10 @@ trait UnorderedMultiset {
 
  
 
-  method contains(x:int) returns (b:bool)
+  function method contains(x:int):bool
+    reads this, Repr()
     requires Valid()
-    ensures Valid() && b == (x in Model())
+    ensures  contains(x) == (x in Model())
 
   method count(x:int) returns (c:int)
     requires Valid()
@@ -291,7 +292,7 @@ ensures forall x | x in s.Repr() :: allocated(x)
   assert it.Traversed()==s.Model();  
 }
 
-method {:verify true} otry(s:UnorderedMultiset)
+method {:verify false} otry(s:UnorderedMultiset)
 modifies s, s.Repr()
 requires s.Valid() && s.Empty()
 requires forall x | x in s.Repr() :: allocated(x)
