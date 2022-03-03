@@ -1,17 +1,44 @@
+include "../../../src/tree/layer1/UnorderedSet.dfy"
+include "../../../src/linear/layer3/LinkedListImpl.dfy"
 
 
-trait UnorderedSetIterator {
+
+
+class UnorderedSetIteratorImpl extends UnorderedSetIterator {
+  var iter:ListIterator1;
+  ghost var parent:UnorderedSetImpl;
+
+  constructor(it:ListIterator1,ghost p:UnorderedSetImpl)
+    requires p.Valid()
+    requires it.Valid()  && it in p.elems.Iterators()
+    ensures Valid()
+    ensures iter == it
+  {
+    iter := it;  
+    //ghost
+    parent:=p;
+  }
+  
   function Parent(): UnorderedSet
     reads this
+    ensures Parent() is UnorderedSetImpl
+  {
+      parent
+  }
 
   predicate Valid()
-    reads this, Parent(), Parent().Repr()
+    reads this,parent, parent.Repr()
+  {
+    iter.Valid() 
+  }
 
   function Traversed():set<int>
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid() 
     ensures Traversed()<=Parent().Model()
+   // ensures Traversed() == set x | x in parent.elems.Model()[..iter.Index()]
+  { set x | x in parent.elems.Model()[..iter.Index()] }
   
   function method Peek():int 
     reads this, Parent(), Parent().Repr()
@@ -19,6 +46,10 @@ trait UnorderedSetIterator {
     requires Parent().Valid()
     requires HasNext()
     ensures Peek() in Parent().Model() && Peek() !in Traversed()
+   // ensures Peek()==parent.elems.Model()[iter.Index()]
+  {
+    iter.Peek()
+  }
 
 
   function method HasNext(): bool
@@ -28,6 +59,7 @@ trait UnorderedSetIterator {
     ensures HasNext()  <==> Traversed() < Parent().Model() && |Traversed()| < |Parent().Model()|
     //|Traversed()| < |Parent().Model()| es necesario para poder verificar con cota |s.Model()|-|it.Traversed()|
     ensures !HasNext() ==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()|
+  { iter.HasNext()}
   
   method Next() returns (x: int)
     modifies this
@@ -51,7 +83,9 @@ trait UnorderedSetIterator {
     
     ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
       it.Valid() && (it != this ==> it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek())))
-
+  {
+    x:=iter.Next();
+  }
 
   
 
@@ -71,56 +105,116 @@ trait UnorderedSetIterator {
     ensures fresh(Parent().Repr()-old(Parent().Repr()))
     ensures forall x | x in Parent().Repr() :: allocated(x)
     
-    ensures it.Valid()
+    ensures it.Valid() && it is UnorderedSetIteratorImpl
     ensures Parent().Iterators() == {it} + old(Parent().Iterators())
     ensures Parent() == it.Parent()
     ensures Traversed() == it.Traversed() && (it.HasNext() ==> Peek()==it.Peek())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
 
-  
+  {
+    it:=new UnorderedSetIteratorImpl(iter,parent);
+
+
+  }
 }
 
-trait UnorderedSet {
+class UnorderedSetImpl extends UnorderedSet {
+
+  var elems:List1;
+  ghost var iters:set<UnorderedSetIteratorImpl>
+
+  constructor Wrap(els:List1)
+  requires els.Valid()
+  ensures Valid()
+  {elems:=els;}
+
+  constructor()
+    ensures Valid()
+    ensures Model() == {}
+    ensures forall x | x in Repr() :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
+  {
+    elems:=new List1();
+  }
+  
+  function Repr0(): set<object>
+    reads this
+  {
+    {elems} + iters
+  }
+
+  function Repr1(): set<object>
+    reads this, Repr0()
+  {
+    Repr0() + elems.Repr()
+  }
+
   function ReprDepth(): nat
     ensures ReprDepth() > 0
+  {1}
 
   function ReprFamily(n: nat): set<object>
     decreases n
     requires n <= ReprDepth()
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
-
-  function Repr(): set<object>
-    reads this, ReprFamily(ReprDepth()-1)
-  {
-    ReprFamily(ReprDepth())
+    {
+    if n == 0 then
+      Repr0()
+    else if (n==1) then
+      Repr1()  
+    else
+      assert false;
+      {}
   }
 
   lemma UselessLemma()
-    ensures Repr() == ReprFamily(ReprDepth());
+    ensures Repr() == ReprFamily(ReprDepth())
+    {}
 
   predicate Valid()
     reads this, Repr()
+  {elems.Valid() }
 
   function Model(): set<int>
     reads this, Repr()
     requires Valid()
+  {
+
+    set x | x in elems.Model():: x
+  }
 
   function method Empty(): bool
     reads this, Repr()
     requires Valid()
     ensures Empty() <==> Model() == {}
+  {
+       assert elems.Empty()<==> elems.Model()==[];
+       assert elems.Empty()<==> (set x | x in elems.Model():: x)=={};
+       assert elems.Empty() <==> Model() == {};
+
+     var b:=elems.Empty();
+     assert b <==> Model() == {};
+     b
+
+  }
 
   function method Size(): nat
     reads this, Repr()
     requires Valid()
     ensures Size() == |Model()|
+  {
+
+   elems.Size()
+
+  }
 
   function Iterators(): set<UnorderedSetIterator>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
+  
 
   method First() returns (it: UnorderedSetIterator)
     modifies this, Repr()
@@ -140,13 +234,17 @@ trait UnorderedSet {
     ensures it.Traversed()=={} 
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
-
+  { 
+    var listIter:ListIterator1:=elems.Begin();
+    it:=new UnorderedSetIteratorImpl(listIter,this);
+  }
  
 
   function method contains(x:int):bool
     reads this, Repr()
     requires Valid()
     ensures contains(x) == (x in Model())
+  
 
   method add(x:int)
     modifies this,Repr()
@@ -160,7 +258,9 @@ trait UnorderedSet {
     ensures forall x | x in Repr() :: allocated(x)
    
     ensures Iterators() == old(Iterators())
-
+  {
+    elems.PushBack(x);
+  }
 
 
   method remove(x:int) 
@@ -175,7 +275,7 @@ trait UnorderedSet {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-
+  
 
   method find(x:int) returns (newt:UnorderedSetIterator)
     modifies this, Repr()
@@ -184,7 +284,7 @@ trait UnorderedSet {
     ensures Valid() 
     ensures Model()==old(Model())
     
-    ensures fresh(newt) 
+    ensures fresh(newt) && newt is UnorderedSetIteratorImpl
     ensures newt.Valid() && newt.Parent()==this
     ensures x in old(Model()) ==> newt.HasNext() && newt.Peek()==x
     ensures x !in old(Model()) ==> newt.Traversed()==Model()
@@ -194,6 +294,16 @@ trait UnorderedSet {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == {newt}+old(Iterators())
+  {
+    var newl:ListIterator1:=elems.Begin();
+    while (newl.HasNext() && newl.Peek()!=x)
+     invariant x !in elems.Model()[..newl.Index()]
+     invariant elems.Model()==old(elems.Model());
+    { var aux:=newl.Next();}
+
+    newt:=new UnorderedSetIteratorImpl(newl,this);
+
+  }
 
   method insert(mid: UnorderedSetIterator, x: int) returns (newt:UnorderedSetIterator)
     modifies this, Repr()
@@ -241,92 +351,4 @@ trait UnorderedSet {
 
 }
 
-method {:verify false} main(s:UnorderedSet)
-modifies s, s.Repr()
-requires s.Valid() && s.Empty()
-requires forall x | x in s.Repr() :: allocated(x)
-ensures s.Valid()
-ensures forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
-ensures fresh(s.Repr()-old(s.Repr()))
-ensures forall x | x in s.Repr() :: allocated(x)
-{
- assert s.Model()=={};
- s.add(2); s.add(4); s.add(6);
- assert s.Model()=={2,4,6};
- var it := s.First();
- assert it.Traversed()=={};
- //assert it.Peek()==4; //Falla, se sabe cual es traversed pero no Peek
- var cont:=0; 
-  while (it.HasNext())
-     decreases |s.Model()|-|it.Traversed()|
-    //decreases |s.Model()-it.Model().0|
-    //decreases s.Model()-it.Traversed()
-     invariant it.Valid() && it.Parent()==s  
-     invariant s.Valid()
-     invariant  forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
-     invariant fresh(s.Repr()-old(s.Repr()))
-     invariant forall x | x in s.Repr() :: allocated(x)
-    {
-     var aux:=it.Next();
-     if (aux%2==0) {cont:=cont+1;} 
-    } 
-  assert !it.HasNext();  
-  assert it.Traversed()==s.Model();  
-}
 
-method {:verify false} otry(s:UnorderedSet)
-modifies s, s.Repr()
-requires s.Valid() && s.Empty()
-requires forall x | x in s.Repr() :: allocated(x)
-ensures s.Valid()
-ensures forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
-ensures fresh(s.Repr()-old(s.Repr()))
-ensures forall x | x in s.Repr() :: allocated(x)
-{
- s.add(3);
- s.add(4);
- assert 3 in s.Model();
- assert 4 in s.Model();
- assert (set x | x in s.Model()) == {3,4};
- s.add(4);
- assert (set x | x in s.Model()) == {3,4};
- s.remove(2);
-  assert (set x | x in s.Model()) == {3,4};
- s.remove(3);
-  assert (set x | x in s.Model()) == {4};
- s.remove(4);
-   assert (set x | x in s.Model()) == {};
- s.add(2); s.add(7); s.add(0); s.add(1);s.add(10);
-
- var b:=s.contains(10);
- assert b;
-
-  /* var s1:set<int>;
-   var s2:set<int>;
-   s1:={1,2,4};
-   s2:={0,1,2,3,4,8};
-   assert s1<=s2;
-   assert |s1|<=|s2|;*/
-
-
-  //var 
-  var it2:=s.First();
-  it2:=s.find(2);
-  assert it2.Peek()==2 && it2.Peek()!=3;
-
-  //var x:=it2.Next();
-  it2:=s.erase(it2);
-  
-  it2:=s.insert(it2,3);
-  assert it2.Peek()==3 && it2.Peek()!=2;
-
- 
-  var it3:=s.find(7);
-  it3:=s.insert(it3,5);
-  assert it3.Peek()==5;
-  it3:=s.insert(it3,12);
-  assert it3.Peek()==12;
-  var aux:=it3.Next();
-   assert 12 in it3.Traversed();
-   
-}
