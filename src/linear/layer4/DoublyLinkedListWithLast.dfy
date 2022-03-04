@@ -199,7 +199,9 @@ class DoublyLinkedListWithLast {
     ensures mid.next.next == old(mid.next)
     ensures forall n | n in old(list.spine) :: n in list.spine
     
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    // ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
   {
     /*GHOST*/ list.LastHasLastIndex(last);
@@ -224,7 +226,9 @@ class DoublyLinkedListWithLast {
     ensures mid.prev in list.spine
     ensures mid.prev.prev == old(mid.prev)
     ensures forall n | n in old(list.spine) :: n in list.spine
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    // ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
   {
     /*GHOST*/ list.LastHasLastIndex(last);

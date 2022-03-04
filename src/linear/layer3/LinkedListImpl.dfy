@@ -357,7 +357,9 @@ class List1 extends LinkedList {
     ensures Valid()
     ensures Model() == old(Model()) + [x]
 
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    // ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
@@ -446,6 +448,7 @@ class List1 extends LinkedList {
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
 
+    // ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
@@ -463,35 +466,26 @@ class List1 extends LinkedList {
       else
         it.Index() == old(it.Index()) + 1
   {
-    
     if CoerceIter(mid).node == null {
-      /*GHOST*/
       assert mid.Index() == |list.list.spine|;
-      list.list.ModelRelationWithSpine();
-      
+      /*GHOST*/ list.list.ModelRelationWithSpine();
       PushBack(x);
       newt := new ListIterator1(this, list.last);
-      
-      /*GHOST*/
       assert list.last != null;
-      list.list.LastHasLastIndex(list.last);
+      /*GHOST*/ list.list.LastHasLastIndex(list.last);
       calc == {
         newt.Index();
         list.list.GetIndex(list.last);
         |list.list.spine|-1;
         old(|list.list.spine|);
         old(mid.Index());
-
       }
       assert forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x);
     } else {
-      
       var node := CoerceIter(mid).node;
       list.InsertBefore(node, x);
       size := size + 1;
       newt := new ListIterator1(this, node.prev);
-
-      /*GHOST*/
       assert newt.Index() == mid.Index() - 1 == old(mid.Index());
       assert forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x);
     }
