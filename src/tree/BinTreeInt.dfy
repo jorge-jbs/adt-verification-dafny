@@ -356,24 +356,20 @@ class Tree {
     /*GHOST*/ ModelRelationWithSkeleton(k, v);
   }
 
-  static method {:verify true} {:timeLimitMultiplier 1} InsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V) returns (newNode: TNode, ghost newSk: tree<TNode>)
-    // modifies elems(sk)
+  static method InsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V) returns (newNode: TNode, ghost newSk: tree<TNode>)
     modifies set x | x in elems(sk) :: x`left
     modifies set x | x in elems(sk) :: x`right
     modifies set x | x in elems(sk) :: x`value
     requires ValidRec(node, sk)
     requires SearchTreeRec(sk)
-    // ensures forall m | m in old(MapModelRec(sk)) && k != m :: m in MapModelRec(newSk) && MapModelRec(newSk)[m] == old(MapModelRec(sk)[m])
-    // ensures forall m | m in old(MapModelRec(sk)) :: m in MapModelRec(newSk)
-    // ensures forall m | m in MapModelRec(newSk) && k != m :: m in old(MapModelRec(sk))
-    // ensures forall m | m in old(MapModelRec(sk)) && k != m :: MapModelRec(newSk)[m] == old(MapModelRec(sk)[m])
-    ensures k in MapModelRec(newSk)
-    ensures MapModelRec(newSk)[k] == v
 
     ensures newNode == node <==> node != null
     ensures node == null ==> newNode.left == null && newNode.key == k && newNode.value == v && newNode.right == null
     ensures ValidRec(newNode, newSk)
-    // ensures SearchTreeRec(newSk)
+    ensures SearchTreeRec(newSk)
+    ensures exists n | n in elems(newSk) :: n.key == k && n.value == v
+    ensures forall n | n in elems(sk) :: n.key == old(n.key) && (if n.key == k then n.value == v else n.value == old(n.value))
+    ensures forall n | n in elems(newSk) && n.key != k :: exists m | m in elems(sk) :: n.key == old(m.key) && n.value == old(m.value)
 
     requires forall x | x in elems(sk) :: allocated(x)
     ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
@@ -396,7 +392,6 @@ class Tree {
         ghost var newSkLeft;
         node.left, newSkLeft := InsertRec(node.left, sk.left, k, v);
         newSk := Node(newSkLeft, node, sk.right);
-        ContraModelRelationWithSkeletonKeyRecR(node.right, newSk.right, k);
       } else {
         assert false;
       }
@@ -430,7 +425,7 @@ class Tree {
     ensures exists n | n in elems(sk) :: n.key == minK
     ensures forall n | n in elems(sk) && n.key != minK :: minK < n.key
     ensures forall n | n in elems(sk) && n.key == minK :: minV == n.value && n !in elems(newSk)
-    ensures (set m | m in elems(sk) :: m.key) >= (set m | m in elems(newSk) :: m.key)
+    ensures forall n | n in elems(newSk) :: n.key == old(n.key)
 
     requires forall x | x in elems(sk) :: allocated(x)
     ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
@@ -450,7 +445,7 @@ class Tree {
     }
   }
 
-  static method {:verify false} RemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K) returns (newNode: TNode?, ghost newSk: tree<TNode>)
+  static method RemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K) returns (newNode: TNode?, ghost newSk: tree<TNode>)
     modifies set x | x in elems(sk) :: x`left
     modifies set x | x in elems(sk) :: x`right
     modifies set x | x in elems(sk) :: x`key
@@ -459,10 +454,10 @@ class Tree {
     requires SearchTreeRec(sk)
 
     ensures ValidRec(newNode, newSk)
-    // ensures SearchTreeRec(newSk)
+    ensures SearchTreeRec(newSk)
     ensures forall n | n in elems(newSk) :: n.key != k
     ensures elems(sk) >= elems(newSk)
-    ensures (set m | m in elems(sk) :: m.key) >= (set m | m in elems(newSk) :: m.key)
+    ensures forall m | m in elems(newSk) :: exists n | n in elems(sk) :: m.key == old(n.key)
 
     requires forall x | x in elems(sk) :: allocated(x)
     ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
@@ -492,27 +487,13 @@ class Tree {
           newNode := node.right;
           newSk := sk.right;
         } else {
-          assert forall m | m in elems(sk.left) :: m.key != k == node.key;
-          assert forall m | m in elems(sk.right) :: m.key != k == node.key;
           ghost var newSkRight;
           var minK, minV;
           node.right, newSkRight, minK, minV := RemoveMinRec(node.right, sk.right);
           newNode := node;
           newNode.key := minK;
           newNode.value := minV;
-          // newNode := new TNode(node.left, minK, minV, node.right);
-          assert ValidRec(node.right, newSkRight);
           newSk := Node(sk.left, newNode, newSkRight);
-          assert forall m | m in elems(newSk.left) :: m.key != k;
-          assert forall m | m in elems(newSk.right) :: m.key != k;
-          assert k != newNode.key;
-          assert forall m | m in elems(newSk) :: m.key != k;
-          // assert forall m | m in elems(newSk.left) :: m.key < newNode.key;
-          // assert forall m | m in elems(newSk.right) :: newNode.key < m.key;
-          // assert SearchTreeRec(newSk.left);
-          // assert SearchTreeRec(newSk.right);
-          // assert SearchTreeRec(newSk);
-          // assume false;
         }
       }
     }
