@@ -30,7 +30,7 @@ trait UnorderedSetIterator {
     ensures !HasNext() ==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()|
   
   method Next() returns (x: int)
-    modifies this
+    modifies this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
     requires HasNext()
@@ -83,6 +83,7 @@ trait UnorderedSetIterator {
 
 trait UnorderedSet {
   function ReprDepth(): nat
+    reads this
     ensures ReprDepth() > 0
 
   function ReprFamily(n: nat): set<object>
@@ -143,10 +144,24 @@ trait UnorderedSet {
 
  
 
-  function method contains(x:int):bool
+  function fcontains(x:int):bool
     reads this, Repr()
     requires Valid()
-    ensures contains(x) == (x in Model())
+    ensures fcontains(x) == (x in Model())
+  { x in Model() }
+
+  method contains(x:int) returns (b:bool)
+   modifies this, Repr()
+   requires Valid()
+   ensures Valid() && Model()==old(Model())
+   ensures b==(x in Model())
+
+   ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+   ensures fresh(Repr()-old(Repr()))
+   ensures forall x | x in Repr() :: allocated(x)
+   
+   ensures Iterators() == old(Iterators())
+
 
   method add(x:int)
     modifies this,Repr()

@@ -13,6 +13,35 @@ lemma sizes(s1:set<int>,s2:set<int>)
 requires s1==s2
 ensures |s1|==|s2|
 {}
+
+lemma sizesContained(s1:set<int>,s2:set<int>)
+requires s1 <= s2
+ensures |s1| <= |s2|
+{if (s1=={}) {}
+ else{
+  assert forall x | x in s1 :: x in s1;
+ var z:=Pick(s1);
+ calc  {
+   |s1|; ==
+   1+|s1-{z}|; <=
+   {sizesContained(s1-{z},s2-{z});assert z in s2;}
+   1 + |s2-{z}|; ==
+   |s2|; 
+  }
+ }
+}
+
+
+lemma sizesStrictContained(s1:set<int>,s2:set<int>)
+requires s1 < s2
+ensures |s1| < |s2|
+{
+  sizesContained(s1,s2);
+  assert |s1|<=|s2|;
+  assume s1 == s2;
+  sizes(s1,s2);
+  assert false;
+  }
 //MINIMUM DEFINITION:  
 
 function {:induction s} minimum(s:set<int>):int
@@ -256,8 +285,48 @@ ensures maximum(s)==elemth(s,|s|-1)
 function isSortedSeq(xs:seq<int>):bool
 {forall i,j::0<=i<j<|xs| ==> xs[i]<xs[j]}
 
-  function seq2Set (xs:seq<int>):set<int>
+function seq2Set (xs:seq<int>):set<int>
 {set x | x in xs::x}
+
+function isSet(xs:seq<int>):bool
+{forall i,j | 0 <= i < j < |xs| :: xs[i] != xs[j]}
+
+
+lemma emptyset(xs:seq<int>)
+ensures xs == [] <==> seq2Set(xs)=={}
+{ assume xs != [];
+  assert xs[0] in xs;
+  assert xs[0] in seq2Set(xs);
+}
+
+lemma existsOne(xs:seq<int>,i:int,j:int)
+requires isSet(xs) && |xs| > 0
+requires 0<=i<=j<=|xs| && j-i < |xs| 
+ensures exists k | 0 <= k < |xs| :: xs[k] !in xs[i..j];
+{
+ assert i>0 || j<|xs|;
+ assert (i>0) ==> xs[0] !in xs[i..j];
+ assert j<|xs| ==> xs[|xs|-1] !in xs[i..j];
+}
+
+//function lemma
+function seq2SetContained(xs:seq<int>, i:int,j:int):bool
+requires isSet(xs) 
+requires |xs| > 0 && 0<=i<=j<=|xs| && j-i < |xs| 
+ensures seq2Set(xs[i..j]) < seq2Set(xs)
+ensures seq2SetContained(xs,i,j)
+{
+
+ if (i==j) then 
+    sizesSeq2Set(xs); true
+  
+  else
+    existsOne(xs,i,j);
+    assert exists k | 0 <= k < |xs| :: xs[k] in  seq2Set(xs) && xs[k] !in  seq2Set(xs[i..j]);
+    true
+  
+}
+
 
 function set2Seq(s:set<int>):seq<int>
 decreases s
@@ -274,7 +343,7 @@ ensures |set2Seq(s)|==|s|
 {}
 
 lemma  sizesSeq2Set(xs:seq<int>)
-requires forall i,j|0 <= i < j < |xs| :: xs[i] != xs[j]
+requires isSet(xs)//forall i,j|0 <= i < j < |xs| :: xs[i] != xs[j]
 ensures |seq2Set(xs)| == |xs|
 {if (xs==[]) {}
  else {sizesSeq2Set(xs[1..]);

@@ -201,6 +201,7 @@ class ArrayListImpl extends ArrayList {
     ensures Valid()
     ensures Model() == []
     ensures fresh(Repr())
+    ensures forall x | x in Repr() :: fresh(x)
   {
     elements := new int[1];
     size := 0;
@@ -249,8 +250,8 @@ class ArrayListImpl extends ArrayList {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in old(iterators) :: old(it.Valid())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
+    ensures forall it | it in old(Iterators()) && old(it.Valid())
+      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
   {      
     if (size == elements.Length) {
       Grow(elements.Length * 2);
@@ -275,8 +276,8 @@ class ArrayListImpl extends ArrayList {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in old(iterators) :: old(it.Valid()) && old(it.HasNext())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
+    ensures forall it | it in old(iterators) && old(it.Valid()) && old(it.HasNext())
+      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
   {
     x := elements[0];
     ShiftLeft(0);
@@ -309,8 +310,8 @@ class ArrayListImpl extends ArrayList {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in old(iterators) :: old(it.Valid()) && old(it.HasNext())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext())
+      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
   {
     assert size > 0;
     x := elements[size - 1];
@@ -331,8 +332,8 @@ class ArrayListImpl extends ArrayList {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in old(iterators) :: old(it.Valid())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
+    ensures forall it | it in old(iterators) && old(it.Valid())
+      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
   {
     if (size == elements.Length) {
       Grow(elements.Length * 2);
@@ -359,8 +360,8 @@ class ArrayListImpl extends ArrayList {
     ensures it.Parent() == this
     ensures it.Index() == 0
     ensures Iterators() == {it} + old(Iterators())
-    ensures forall it | it in old(iterators) :: old(it.Valid())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
+    ensures forall it | it in old(Iterators()) && old(it.Valid())
+      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
   {
     it := new ArrayListIteratorImpl(this);
     iterators := iterators + { it };
@@ -386,8 +387,8 @@ class ArrayListImpl extends ArrayList {
     ensures Iterators() == {newt}+old(Iterators())
     ensures newt.Valid() && newt.Parent()==this && newt.Index()==old(mid.Index())
     
-    ensures forall it | it in old(iterators) :: old(it.Valid())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
+    ensures forall it | it in old(Iterators()) && old(it.Valid())
+      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
   {
     var midImpl := mid as ArrayListIteratorImpl;
    
@@ -424,8 +425,8 @@ class ArrayListImpl extends ArrayList {
 
     ensures fresh(next)
     ensures Iterators() == {next} + old(Iterators())
-    ensures forall it | it in old(iterators) :: old(it.Valid()) && old(it.HasNext())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();    
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext())
+      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();    
     ensures next.Valid() && next.Parent() == this && next.Index() == mid.Index();
   {
     var midImpl := mid as ArrayListIteratorImpl;
