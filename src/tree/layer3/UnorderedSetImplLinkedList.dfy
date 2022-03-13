@@ -286,7 +286,7 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
     ensures forall it | it in Iterators() :: it is UnorderedSetIteratorImplLinkedList
   { iters }
 
-  method {:verify true} First() returns (it: UnorderedSetIterator)
+  method {:verify false} First() returns (it: UnorderedSetIterator)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -527,7 +527,7 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
 
 
 
-  method {:verify false} erase(mid:UnorderedSetIterator) returns (next: UnorderedSetIterator)
+  method {:verify true} erase(mid:UnorderedSetIterator) returns (next: UnorderedSetIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -569,7 +569,11 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
     var index:= (it as UnorderedSetIteratorImplLinkedList).iter.Index(); 
     var oindex:= old((it as UnorderedSetIteratorImplLinkedList).iter.Index()); 
     var midindex:=old((mid as UnorderedSetIteratorImplLinkedList).iter.Index());
-    if (oindex <  midindex) 
+    
+    /*if (!old(it.HasNext())){
+      assert oindex > midindex;
+      assert it.Traversed() == old(it.Traversed())-{old(mid.Peek())};}
+    else*/ if (oindex <  midindex) 
        { 
          assert index==oindex;
          assert elems.Model()[..index]==old(elems.Model())[..oindex];
@@ -583,14 +587,17 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
        {
          assert index==oindex-1;
          assert old(mid.Peek()) in old(it.Traversed());
-         assert seq2Set(elems.Model()[..index])==seq2Set(old(elems.Model()[..oindex]))-{old(mid.Peek())};
-       
+         
+         assert oindex > midindex;
+         
+         subseq2SetRemove(old(elems.Model()),midindex,oindex);
+        assert it.Traversed() == old(it.Traversed())-{old(mid.Peek())};        
        }
 
 
 
-     assert it.Traversed() == old(it.Traversed())-{old(mid.Peek())};
-     assume (it.HasNext() && old(it.Peek())!=old(mid.Peek()) ==> it.Peek()==old(it.Peek()));
+     
+     assert (it.HasNext() && old(it.Peek())!=old(mid.Peek()) ==> it.Peek()==old(it.Peek()));
    
 
     }
@@ -604,3 +611,20 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
 }
 
 
+lemma subseq2SetRemove(xs:seq<int>,i:int,s:int)
+requires 0 <= i < s <=|xs| && isSet(xs)
+ensures |Seq.Remove(xs,i)| == |xs|-1 && seq2Set(Seq.Remove(xs,i)[..s-1])==seq2Set(xs[..s])-{xs[i]}
+{
+  if (i+1==s ){}
+  else 
+  {
+    assert i+1 < s;
+    calc =={
+      seq2Set(Seq.Remove(xs,i)[..s-1]);
+      seq2Set((xs[..i]+xs[i+1..])[..s-1]);
+       {assert (xs[..i]+xs[i+1..])[..s-1]==xs[..i]+xs[i+1..s];}
+      seq2Set(xs[..s])-{xs[i]};
+   }
+   }
+
+}
