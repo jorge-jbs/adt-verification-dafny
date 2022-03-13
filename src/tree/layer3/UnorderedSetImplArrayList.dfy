@@ -10,9 +10,9 @@ include "../../../src/tree/layer1/OrderedSetUtils.dfy"
 
 class UnorderedSetIteratorImplArrayList extends UnorderedSetIterator {
   var iter:ArrayListIteratorImpl//ListIterator1;
-  ghost var parent:UnorderedSetImpl;
+  ghost var parent:UnorderedSetImplArrayList;
 
-  constructor (it:ArrayListIteratorImpl/*ListIterator1*/,ghost p:UnorderedSetImpl)
+  constructor (it:ArrayListIteratorImpl/*ListIterator1*/,ghost p:UnorderedSetImplArrayList)
     requires p.Valid()
     requires it.Valid()  && it in p.Repr()
     requires it in p.elems.Iterators() && it.Parent()==p.elems
@@ -29,7 +29,7 @@ class UnorderedSetIteratorImplArrayList extends UnorderedSetIterator {
   
   function Parent(): UnorderedSet
     reads this
-    ensures Parent() is UnorderedSetImpl
+    ensures Parent() is UnorderedSetImplArrayList
   {
       parent
   }
@@ -180,7 +180,7 @@ class UnorderedSetIteratorImplArrayList extends UnorderedSetIterator {
   }
 }
 
-class UnorderedSetImpl extends UnorderedSetArrayList {
+class UnorderedSetImplArrayList extends UnorderedSetArrayList {
 
   var elems:ArrayListImpl//List1;
   ghost var iters:set<UnorderedSetIteratorImplArrayList>

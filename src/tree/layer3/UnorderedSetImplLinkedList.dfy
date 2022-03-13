@@ -7,13 +7,13 @@ include "../../../src/tree/layer1/OrderedSetUtils.dfy"
 
 class UnorderedSetIteratorImplLinkedList extends UnorderedSetIterator {
   var iter:LinkedListIteratorImpl;
-  ghost var parent:UnorderedSetImpl;
+  ghost var parent:UnorderedSetImplLinkedList;
 
-  constructor (it:LinkedListIteratorImpl,ghost p:UnorderedSetImpl)
+  constructor (it:LinkedListIteratorImpl,ghost p:UnorderedSetImplLinkedList)
     requires p.Valid()
     requires it.Valid()  && it in p.Repr()
     requires it in p.elems.Iterators() && it.Parent()==p.elems
-    requires forall itp | itp in p.iters :: (itp as UnorderedSetIteratorImpl).iter!=it
+    requires forall itp | itp in p.iters :: (itp as UnorderedSetIteratorImplLinkedList).iter!=it
     ensures Valid()
     ensures iter==it && parent==p
   { 
@@ -26,7 +26,7 @@ class UnorderedSetIteratorImplLinkedList extends UnorderedSetIterator {
   
   function Parent(): UnorderedSet
     reads this
-    ensures Parent() is UnorderedSetImpl
+    ensures Parent() is UnorderedSetImplLinkedList
   {
       parent
   }
@@ -37,7 +37,7 @@ class UnorderedSetIteratorImplLinkedList extends UnorderedSetIterator {
     iter.Parent() == parent.elems &&
     parent.Valid() && iter.Valid() &&
     iter in parent.elems.Iterators() &&
-    forall it | it in parent.iters && it != this :: (it as UnorderedSetIteratorImpl).iter!=iter 
+    forall it | it in parent.iters && it != this :: (it as UnorderedSetIteratorImplLinkedList).iter!=iter 
     //Duda this in parent.iters
   }
 
@@ -135,7 +135,7 @@ class UnorderedSetIteratorImplLinkedList extends UnorderedSetIterator {
        // assert Parent().Valid();
        // assert forall it1, it2 | it1 in parent.iters && it2 in parent.iters && it1!=it2 :: it1.iter!=it2.iter;
        // assert forall it1 | it1 in parent.iters && it1!=this :: it1.iter!=iter;
-        //assert forall it | it in old(Parent().Iterators()) && it != this ::  (it as UnorderedSetIteratorImpl).iter!=iter;
+        //assert forall it | it in old(Parent().Iterators()) && it != this ::  (it as UnorderedSetIteratorImplLinkedList).iter!=iter;
 
     x:=iter.Next();
     
@@ -159,7 +159,7 @@ class UnorderedSetIteratorImplLinkedList extends UnorderedSetIterator {
     ensures fresh(Parent().Repr()-old(Parent().Repr()))
     ensures forall x | x in Parent().Repr() :: allocated(x)
     
-    ensures it is UnorderedSetIteratorImpl
+    ensures it is UnorderedSetIteratorImplLinkedList
     ensures it.Valid() 
     ensures Parent().Iterators() == {it} + old(Parent().Iterators())
     ensures Parent() == it.Parent()
@@ -169,7 +169,7 @@ class UnorderedSetIteratorImplLinkedList extends UnorderedSetIterator {
 
   { 
     var listIter:LinkedListIteratorImpl:=iter.Copy();
-    it:=new UnorderedSetIteratorImpl(listIter,parent);
+    it:=new UnorderedSetIteratorImplLinkedList(listIter,parent);
 
     parent.iters:={it}+parent.iters;
     
@@ -177,7 +177,7 @@ class UnorderedSetIteratorImplLinkedList extends UnorderedSetIterator {
   }
 }
 
-class UnorderedSetImpl extends UnorderedSetLinkedList {
+class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
 
   var elems:LinkedListImpl;
   ghost var iters:set<UnorderedSetIteratorImplLinkedList>
@@ -283,7 +283,7 @@ class UnorderedSetImpl extends UnorderedSetLinkedList {
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
-    ensures forall it | it in Iterators() :: it is UnorderedSetIteratorImpl
+    ensures forall it | it in Iterators() :: it is UnorderedSetIteratorImplLinkedList
   { iters }
 
   method {:verify true} First() returns (it: UnorderedSetIterator)
@@ -297,7 +297,7 @@ class UnorderedSetImpl extends UnorderedSetLinkedList {
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
-    ensures it is UnorderedSetIteratorImpl
+    ensures it is UnorderedSetIteratorImplLinkedList
     ensures fresh(it)
     ensures Iterators() == {it} + old(Iterators())
     ensures it.Valid()
@@ -308,9 +308,9 @@ class UnorderedSetImpl extends UnorderedSetLinkedList {
   { 
     var listIter:LinkedListIteratorImpl:=elems.Begin();
 
-    it := new UnorderedSetIteratorImpl(listIter,this);
+    it := new UnorderedSetIteratorImplLinkedList(listIter,this);
 
-    assert forall it1 | it1 in iters :: it!=it1 && it1.iter != (it as UnorderedSetIteratorImpl).iter;
+    assert forall it1 | it1 in iters :: it!=it1 && it1.iter != (it as UnorderedSetIteratorImplLinkedList).iter;
 
     iters:={it}+iters;
     
@@ -348,7 +348,7 @@ class UnorderedSetImpl extends UnorderedSetLinkedList {
       invariant forall z {:trigger z in elems.Repr(), z in old(elems.Repr())} | z in elems.Repr() - old(elems.Repr()) :: fresh(z)
       invariant forall z | z in elems.Repr() :: allocated(x)
       
-      invariant forall it | it in old(Iterators()) && old(it.Valid()) :: (it as UnorderedSetIteratorImpl).iter!=aux
+      invariant forall it | it in old(Iterators()) && old(it.Valid()) :: (it as UnorderedSetIteratorImplLinkedList).iter!=aux
       invariant forall it | it in old(Iterators()) && old(it.Valid()) ::
          it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
 
@@ -443,7 +443,7 @@ class UnorderedSetImpl extends UnorderedSetLinkedList {
     ensures Valid() 
     ensures Model()==old(Model())
     
-    ensures fresh(newt) && newt is UnorderedSetIteratorImpl
+    ensures fresh(newt) && newt is UnorderedSetIteratorImplLinkedList
     ensures newt.Valid() && newt.Parent()==this
     ensures x in old(Model()) ==> newt.HasNext() && newt.Peek()==x
     ensures x !in old(Model()) ==> newt.Traversed()==Model()
@@ -474,7 +474,7 @@ class UnorderedSetImpl extends UnorderedSetLinkedList {
       invariant forall z | z in elems.Repr() :: allocated(x)
       invariant Iterators() == old(Iterators())
      
-      invariant forall itp | itp in iters :: (itp as UnorderedSetIteratorImpl).iter!=aux
+      invariant forall itp | itp in iters :: (itp as UnorderedSetIteratorImplLinkedList).iter!=aux
       invariant forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
 
@@ -484,7 +484,7 @@ class UnorderedSetImpl extends UnorderedSetLinkedList {
      y:=aux.Next();     
     }
 
-    newt := new UnorderedSetIteratorImpl(aux,this);
+    newt := new UnorderedSetIteratorImplLinkedList(aux,this);
     
     iters:={newt}+iters;
 
@@ -519,7 +519,7 @@ class UnorderedSetImpl extends UnorderedSetLinkedList {
   {
     newt := find(x);
     if (!newt.HasNext()) {
-       (newt as UnorderedSetIteratorImpl).iter:=elems.Insert((newt as UnorderedSetIteratorImpl).iter,x);} 
+       (newt as UnorderedSetIteratorImplLinkedList).iter:=elems.Insert((newt as UnorderedSetIteratorImplLinkedList).iter,x);} 
 
 
   }
@@ -527,7 +527,7 @@ class UnorderedSetImpl extends UnorderedSetLinkedList {
 
 
 
-  method {:verify true} erase(mid:UnorderedSetIterator) returns (next: UnorderedSetIterator)
+  method {:verify false} erase(mid:UnorderedSetIterator) returns (next: UnorderedSetIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -553,9 +553,9 @@ class UnorderedSetImpl extends UnorderedSetLinkedList {
       (it.HasNext() && old(it.Peek())!=old(mid.Peek()) ==> it.Peek()==old(it.Peek()))
  
 {
-    var newt:LinkedListIteratorImpl:=elems.Erase((mid as UnorderedSetIteratorImpl).iter);
-    assert forall itp | itp in iters :: (itp as UnorderedSetIteratorImpl).iter!=newt;
-    next := new UnorderedSetIteratorImpl(newt,this);
+    var newt:LinkedListIteratorImpl:=elems.Erase((mid as UnorderedSetIteratorImplLinkedList).iter);
+    assert forall itp | itp in iters :: (itp as UnorderedSetIteratorImplLinkedList).iter!=newt;
+    next := new UnorderedSetIteratorImplLinkedList(newt,this);
     
     forall it | it in old(Iterators()) && old(it.Valid()) 
              && (!old(it.HasNext()) || (old(it.HasNext()) && old(it.Peek())!=old(mid.Peek())) )
@@ -566,9 +566,9 @@ class UnorderedSetImpl extends UnorderedSetLinkedList {
 
      assert it.Valid();
 
-    var index:= (it as UnorderedSetIteratorImpl).iter.Index(); 
-    var oindex:= old((it as UnorderedSetIteratorImpl).iter.Index()); 
-    var midindex:=old((mid as UnorderedSetIteratorImpl).iter.Index());
+    var index:= (it as UnorderedSetIteratorImplLinkedList).iter.Index(); 
+    var oindex:= old((it as UnorderedSetIteratorImplLinkedList).iter.Index()); 
+    var midindex:=old((mid as UnorderedSetIteratorImplLinkedList).iter.Index());
     if (oindex <  midindex) 
        { 
          assert index==oindex;
