@@ -309,6 +309,7 @@ ensures exists k | 0 <= k < |xs| :: xs[k] !in xs[i..j];
  assert j<|xs| ==> xs[|xs|-1] !in xs[i..j];
 }
 
+
 //function lemma
 function seq2SetContained(xs:seq<int>, i:int,j:int):bool
 requires isSet(xs) 

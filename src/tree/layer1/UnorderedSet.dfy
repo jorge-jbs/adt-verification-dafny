@@ -153,6 +153,7 @@ trait UnorderedSet {
   method contains(x:int) returns (b:bool)
    modifies this, Repr()
    requires Valid()
+   requires forall x | x in Repr() :: allocated(x)
    ensures Valid() && Model()==old(Model())
    ensures b==(x in Model())
 
