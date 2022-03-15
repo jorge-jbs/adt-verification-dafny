@@ -144,10 +144,10 @@ class Tree {
     ValidRec(root, skeleton)
   }
 
-  lemma DistinctSkeleton()
-    requires Valid()
-    // ensures melems(skeleton) == elems(skeleton)
-    ensures forall n | n in melems(skeleton) :: melems(skeleton)[n] == 1
+  // lemma DistinctSkeleton()
+  //   requires Valid()
+  //   // ensures melems(skeleton) == elems(skeleton)
+  //   ensures forall n | n in melems(skeleton) :: melems(skeleton)[n] == 1
 
   static function ModelRec(sk: tree<TNode>): tree<K>
     reads set x | x in elems(sk) :: x`key
@@ -173,7 +173,7 @@ class Tree {
   {
     match sk {
       case Empty() => map[]
-      case Node(l, n, r) => MapModelRec(l) + MapModelRec(r) + map[n.key := n.value]
+      case Node(l, n, r) => (MapModelRec(l) + MapModelRec(r))[n.key := n.value]
     }
   }
 
@@ -358,6 +358,7 @@ class Tree {
     /*GHOST*/ ModelRelationWithSkeleton(k, v);
   }
 
+  // TODO: devolver el nuevo nodo insertado como fantasma
   static method InsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V) returns (newNode: TNode, ghost newSk: tree<TNode>)
     modifies set x | x in elems(sk) :: x`left
     modifies set x | x in elems(sk) :: x`right
@@ -372,6 +373,7 @@ class Tree {
     ensures exists n | n in elems(newSk) :: n.key == k && n.value == v
     ensures forall n | n in elems(sk) :: n.key == old(n.key) && (if n.key == k then n.value == v else n.value == old(n.value))
     ensures forall n | n in elems(newSk) && n.key != k :: exists m | m in elems(sk) :: n.key == old(m.key) && n.value == old(m.value)
+    ensures exists n | n in elems(newSk) :: n.key == k && n.value == v && elems(sk) + {n} == elems(newSk)
     // ensures elems(sk) <= elems(newSk)
     // ensures forall n | n in elems(sk) :: n in elems(newSk)
     ensures newNode in elems(newSk)
@@ -412,46 +414,27 @@ class Tree {
     ensures SearchTree()
     ensures k in MapModel()
     ensures MapModel()[k] == v
-    // ensures forall m | m in old(MapModel()) && k != m :: m in MapModel() && MapModel()[m] == old(MapModel()[m])
+    ensures forall m | m in old(MapModel()) && k != m :: m in MapModel() && MapModel()[m] == old(MapModel()[m])
     // ensures MapModel() == old(MapModel()) + map[k := v]
+    // ensures MapModel() == old(MapModel())[k := v]
 
     requires forall x | x in Repr() :: allocated(x)
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
   {
+    forall m | m in MapModel() && k != m
+      ensures exists n | n in elems(skeleton) :: n.key == m && n.value == MapModel()[m]
+    {
+      ModelRelationWithSkeleton(m, MapModel()[m]);
+    }
     root, skeleton := InsertRec(root, skeleton, k, v);
     ModelRelationWithSkeleton(k, v);
-    /*
-    assert forall n | n in old(elems(skeleton)) :: n.key == old(n.key) && (if n.key == k then n.value == v else n.value == old(n.value));
-    // assert old(elems(skeleton)) <= elems(skeleton);
-    // assert forall n | n in old(elems(skeleton)) :: n in elems(skeleton);
-    assume forall k' | k' in old(MapModel()) :: exists n | n in old(elems(skeleton)) :: n.key == k' && (if n.key == k then n.value == v else n.value == old(n.value));
-    assert forall k' | k' in old(MapModel()) && k != k' :: exists n | n in old(elems(skeleton)) :: n.key == k' && n.value == old(n.value);
-    assume forall k' | k' in old(MapModel()) && k != k' :: exists n | n in elems(skeleton) :: n.key == k' && n.value == old(n.value);
-    // assume forall k' | k' in old(MapModel()) :: exists
-    // assume forall k' | k' in old(MapModel()) && k != k' :: exists n | n in elems(skeleton) && n.key != k' :: exists m | m in elems(skeleton) :: m.key == n.key && m.value == old(MapModel()[k']);
-    // assume forall m | m in old(MapModel()) && k != m :: exists n | n in elems(skeleton) :: n.key == m && n.value == old(MapModel()[m]);
     forall m | m in old(MapModel()) && k != m
       ensures m in MapModel() && MapModel()[m] == old(MapModel()[m])
     {
-      // assert forall n | n in elems(skeleton) :: n.key == old(n.key) && (if n.key == k then n.value == v else n.value == old(n.value));
-      // assert exists nn | nn in elems(skeleton) :: n.key == old(nn.key) && n.value == old(nn.value);
-      // ModelRelationWithSkeletonRecR(root, skeleton, m, old(MapModel()[m]));
-
-      assume exists n | n in elems(skeleton) :: n.key == m && n.value == old(MapModel()[m]);
-      ModelRelationWithSkeletonRecL(root, skeleton, m, old(MapModel()[m]));
-      assert m in MapModel() && MapModel()[m] == old(MapModel()[m]);
-
-      // assert exists n | n in elems(skeleton) :: n.key == m && n.value == old(MapModel()[m]);
-      // assert exists n | n in elems(skeleton) :: n.key == m && n.value == old(MapModel()[m]);
-      // ModelRelationWithSkeletonRecL(root, skeleton, m, old(MapModel()[m]));
-      // ModelRelationWithSkeleton(m, old(MapModel()[m]));
-      // assume exists n | n in elems(skeleton) :: n.key == m && n.value == old(MapModel()[m]);
-      // assert m in MapModel() && MapModel()[m] == old(MapModel()[m]);
-      // assert k in MapModel() && MapModel()[m] == old(MapModel()[m]) <==> exists n | n in elems(skeleton) :: n.key == m && n.value == old(MapModel()[m]);
+      ModelRelationWithSkeleton(m, old(MapModel()[m]));
     }
-    */
   }
 
   static method RemoveMinRec(node: TNode, ghost sk: tree<TNode>) returns (newNode: TNode?, ghost newSk: tree<TNode>, minK: K, minV: V)
