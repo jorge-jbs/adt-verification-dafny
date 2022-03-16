@@ -401,5 +401,26 @@ ensures |Seq.Remove(xs,i)| == |xs|-1 && seq2Set(Seq.Remove(xs,i)[..s-1])==seq2Se
       seq2Set(xs[..s])-{xs[i]};
    }
    }
+}
 
+lemma subseq2SetRemoveL(xs:seq<int>,i:int,s:int)
+requires 0 <= i <= s <|xs| && isSet(xs)
+ensures |Seq.Remove(xs,i)| == |xs|-1 >=s && seq2Set(Seq.Remove(xs,i)[..s])==seq2Set(xs[..s])+{xs[s]}-{xs[i]}
+{
+ assert |Seq.Remove(xs,i)| == |xs|-1 >=s;
+ if (i==s){}
+ else{
+ calc =={
+    seq2Set(Seq.Remove(xs,i)[..s]);
+    seq2Set((xs[..i]+xs[i+1..])[..s]);
+    {assert (xs[..i]+xs[i+1..])[..s]==xs[..i]+xs[i+1..s+1];}
+    seq2Set( xs[..i]+xs[i+1..s+1]); 
+    {assert xs[..s+1]==xs[..i]+[xs[i]]+xs[i+1..s+1];
+     assert seq2Set(xs[..s+1]) == seq2Set(xs[..i]+xs[i+1..s+1])+{xs[i]};
+     assert xs[i] !in seq2Set(xs[..i]+xs[i+1..s+1]);
+     assert seq2Set(xs[..i]+xs[i+1..s+1])==seq2Set(xs[..s+1])-{xs[i]};}
+    seq2Set(xs[..s+1])-{xs[i]};
+    seq2Set(xs[..s])+{xs[s]}-{xs[i]};
+ }
+ }
 }

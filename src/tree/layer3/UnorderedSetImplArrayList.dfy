@@ -1,11 +1,6 @@
-//include "../../../src/tree/layer1/UnorderedSet.dfy"
-include "../../../src/tree/layer2/UnorderedSetArrayList.dfy"
-
-//include "../../../src/linear/layer3/LinkedListImpl.dfy"
-include "../../../src/linear/layer3/ArrayListImpl.dfy"
 include "../../../src/tree/layer1/OrderedSetUtils.dfy"
-
-
+include "../../../src/tree/layer2/UnorderedSetArrayList.dfy"
+include "../../../src/linear/layer3/ArrayListImpl.dfy"
 
 
 class UnorderedSetIteratorImplArrayList extends UnorderedSetIterator {
@@ -25,7 +20,6 @@ class UnorderedSetIteratorImplArrayList extends UnorderedSetIterator {
     parent:=p;
   }
 
-  
   
   function Parent(): UnorderedSet
     reads this
@@ -470,7 +464,7 @@ class UnorderedSetImplArrayList extends UnorderedSetArrayList {
       else 
        { 
          assert oindex > auxindex;
-         subseq2SetRemove(old(elems.Model()),auxindex,oindex);
+         subseq2SetRemoveL(old(elems.Model()),auxindex,oindex);
         assert it.Traversed() == old(it.Traversed())+{old(it.Peek())}-{x}; 
 
           } 
@@ -632,7 +626,7 @@ class UnorderedSetImplArrayList extends UnorderedSetArrayList {
       else 
        { 
          assert oindex > midindex;
-         subseq2SetRemove(old(elems.Model()),midindex,oindex);
+         subseq2SetRemoveL(old(elems.Model()),midindex,oindex);
         assert it.Traversed() == old(it.Traversed())+{old(it.Peek())}-{old(mid.Peek())}; 
 
           } 
@@ -643,29 +637,3 @@ class UnorderedSetImplArrayList extends UnorderedSetArrayList {
 }
 
 
-
-lemma subseq2SetRemove(xs:seq<int>,i:int,s:int)
-requires 0 <= i <= s <|xs| && isSet(xs)
-ensures |Seq.Remove(xs,i)| == |xs|-1 >=s && seq2Set(Seq.Remove(xs,i)[..s])==seq2Set(xs[..s])+{xs[s]}-{xs[i]}
-{
- assert |Seq.Remove(xs,i)| == |xs|-1 >=s;
- if (i==s){}
- else{
- calc =={
-    seq2Set(Seq.Remove(xs,i)[..s]);
-    seq2Set((xs[..i]+xs[i+1..])[..s]);
-    {assert (xs[..i]+xs[i+1..])[..s]==xs[..i]+xs[i+1..s+1];}
-    seq2Set( xs[..i]+xs[i+1..s+1]); 
-    {assert xs[..s+1]==xs[..i]+[xs[i]]+xs[i+1..s+1];
-     assert seq2Set(xs[..s+1]) == seq2Set(xs[..i]+xs[i+1..s+1])+{xs[i]};
-     assert xs[i] !in seq2Set(xs[..i]+xs[i+1..s+1]);
-     assert seq2Set(xs[..i]+xs[i+1..s+1])==seq2Set(xs[..s+1])-{xs[i]};}
-    seq2Set(xs[..s+1])-{xs[i]};
-    seq2Set(xs[..s])+{xs[s]}-{xs[i]};
- }
-
-
- }
-
-
-}
