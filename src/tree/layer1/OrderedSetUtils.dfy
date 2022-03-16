@@ -1,3 +1,6 @@
+include "../../../src/Utils.dfy"
+
+
 function Pick(s: set<int>): int
   requires s != {}
 {
@@ -374,3 +377,29 @@ lemma sortedSeq(s:set<int>)
 ensures isSortedSeq(set2SortedSeq(s)) && seq2Set(set2SortedSeq(s))==s
 ensures |set2SortedSeq(s)|==|s|
 {idem(s);sizesSet2Seq(s);}
+
+
+lemma subseq2SetRemoveElems(xs:seq<int>,i:int,s:int)
+requires isSet(xs) && 0 <= i< |xs| && 0 <= s <|xs|
+ensures |Seq.Remove(xs,i)| == |xs|-1 
+ensures |xs| > s > i >=0 ==>  Seq.Remove(xs,i)[s-1] == xs[s]
+ensures 0 <= s < i < |xs|==> Seq.Remove(xs,i)[s] == xs[s]
+{}
+
+lemma subseq2SetRemove(xs:seq<int>,i:int,s:int)
+requires 0 <= i < s <=|xs| && isSet(xs)
+ensures |Seq.Remove(xs,i)| == |xs|-1 && seq2Set(Seq.Remove(xs,i)[..s-1])==seq2Set(xs[..s])-{xs[i]}
+{
+  if (i+1==s ){}
+  else 
+  {
+    assert i+1 < s;
+    calc =={
+      seq2Set(Seq.Remove(xs,i)[..s-1]);
+      seq2Set((xs[..i]+xs[i+1..])[..s-1]);
+       {assert (xs[..i]+xs[i+1..])[..s-1]==xs[..i]+xs[i+1..s];}
+      seq2Set(xs[..s])-{xs[i]};
+   }
+   }
+
+}

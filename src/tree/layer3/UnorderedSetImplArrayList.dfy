@@ -66,7 +66,7 @@ class UnorderedSetIteratorImplArrayList extends UnorderedSetIterator {
   }
 
 
-  lemma {:verify false} HasNextTraversed()
+  lemma {:verify true} HasNextTraversed()
   requires Valid()
   requires Parent().Valid()
   requires iter.HasNext() 
@@ -79,18 +79,18 @@ class UnorderedSetIteratorImplArrayList extends UnorderedSetIterator {
    assert |Traversed()| < |Parent().Model()|;
    }
 
-  lemma {:verify false} NotHasNextTraversed()
+  lemma {:verify true} NotHasNextTraversed()
   requires Valid()
   requires Parent().Valid()
   requires !iter.HasNext() 
   ensures Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()|
   {
    assert iter.Index()<=|parent.elems.Model()|;
-   assume iter.HasNext() <==> iter.Index()<|parent.elems.Model()|;
+   assert iter.HasNext() <==> iter.Index()<|parent.elems.Model()|;
    assert iter.Index() == |parent.elems.Model()|;
   }
 
- lemma {:verify false} HasNext?Traversed()
+ lemma {:verify true} HasNext?Traversed()
  requires Valid()
   requires Parent().Valid()
   ensures iter.HasNext() ==> Traversed() < Parent().Model() && |Traversed()| < |Parent().Model()|
@@ -641,6 +641,7 @@ class UnorderedSetImplArrayList extends UnorderedSetArrayList {
     iters:={next}+iters;
 }
 }
+
 
 
 lemma subseq2SetRemove(xs:seq<int>,i:int,s:int)

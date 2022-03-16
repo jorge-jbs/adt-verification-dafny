@@ -63,7 +63,7 @@ class UnorderedSetIteratorImplLinkedList extends UnorderedSetIterator {
   }
 
 
-  lemma {:verify false} HasNextTraversed()
+  lemma {:verify true} HasNextTraversed()
   requires Valid()
   requires Parent().Valid()
   requires iter.HasNext() 
@@ -76,18 +76,18 @@ class UnorderedSetIteratorImplLinkedList extends UnorderedSetIterator {
    assert |Traversed()| < |Parent().Model()|;
    }
 
-  lemma {:verify false} NotHasNextTraversed()
+  lemma {:verify true} NotHasNextTraversed()
   requires Valid()
   requires Parent().Valid()
   requires !iter.HasNext() 
   ensures Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()|
   {
    assert iter.Index()<=|parent.elems.Model()|;
-   assume iter.HasNext() <==> iter.Index()<|parent.elems.Model()|;
+   assert iter.HasNext() <==> iter.Index()<|parent.elems.Model()|;
    assert iter.Index() == |parent.elems.Model()|;
   }
 
- lemma {:verify false} HasNext?Traversed()
+ lemma {:verify true} HasNext?Traversed()
  requires Valid()
   requires Parent().Valid()
   ensures iter.HasNext() ==> Traversed() < Parent().Model() && |Traversed()| < |Parent().Model()|
@@ -97,7 +97,7 @@ class UnorderedSetIteratorImplLinkedList extends UnorderedSetIterator {
   }
 
 
-  function method HasNext(): bool
+  function method {:verify true} HasNext(): bool
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -109,7 +109,7 @@ class UnorderedSetIteratorImplLinkedList extends UnorderedSetIterator {
     iter.HasNext()
   }
   
-  method Next() returns (x: int)
+  method {:verify true} Next() returns (x: int)
     modifies this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -143,7 +143,7 @@ class UnorderedSetIteratorImplLinkedList extends UnorderedSetIterator {
 
   
 
-  method Copy() returns (it: UnorderedSetIterator)
+  method {:verify true} Copy() returns (it: UnorderedSetIterator)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -221,7 +221,7 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
     {}
 
 
-  constructor()
+  constructor{:verify true}()
     ensures Valid()
     ensures Model() == {}
     ensures forall x | x in Repr() :: fresh(x)
@@ -257,7 +257,7 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
     seq2Set(elems.Model())
   }
 
-  function method Empty(): bool
+  function method {:verify true} Empty(): bool
     reads this, Repr()
     requires Valid()
     ensures Empty() <==> Model() == {}
@@ -268,7 +268,7 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
 
   }
 
-  function method Size(): nat
+  function method {:verify true} Size(): nat
     reads this, Repr()
     requires Valid()
     ensures Size() == |Model()|
@@ -279,14 +279,17 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
 
   }
 
-  function Iterators(): set<UnorderedSetIterator>
+  function {:verify true} Iterators(): set<UnorderedSetIterator>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
-    ensures forall it | it in Iterators() :: it is UnorderedSetIteratorImplLinkedList
-  { iters }
+    //ensures forall it | it in Iterators() :: it is UnorderedSetIteratorImplLinkedList
+  { 
+    assert forall it | it in iters :: it in Repr() && it.Parent() == this;
+    iters 
+    }
 
-  method {:verify false} First() returns (it: UnorderedSetIterator)
+  method {:verify true} First() returns (it: UnorderedSetIterator)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -317,7 +320,7 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
   }
  
 
-  method {:verify false} contains(x:int) returns (b:bool)
+  method {:verify true} contains(x:int) returns (b:bool)
    modifies Repr()
    requires Valid()
    ensures Valid() && Model()==old(Model())
@@ -336,34 +339,13 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
  
   {
 
-    var aux:LinkedListIteratorImpl := elems.Begin(); var y:int;
-    while (aux.HasNext() && aux.Peek()!=x)
-      decreases |elems.Model()|-aux.Index()
-      invariant Valid() &&  Model()==old(Model())
-      invariant aux.Valid() && aux in elems.Iterators() && aux.Parent()==elems
-      invariant 0<=aux.Index()<=|elems.Model()| 
-      invariant aux.HasNext() ==> aux.Index()<|elems.Model()| && aux.Peek()==elems.Model()[aux.Index()]
-      
-      invariant forall z | z in elems.Model()[..aux.Index()]:: z!=x
-      invariant forall z {:trigger z in elems.Repr(), z in old(elems.Repr())} | z in elems.Repr() - old(elems.Repr()) :: fresh(z)
-      invariant forall z | z in elems.Repr() :: allocated(x)
-      
-      invariant forall it | it in old(Iterators()) && old(it.Valid()) :: (it as UnorderedSetIteratorImplLinkedList).iter!=aux
-      invariant forall it | it in old(Iterators()) && old(it.Valid()) ::
-         it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
-
-    {
-    
-    assert elems.Model()[..aux.Index()+1]==elems.Model()[..aux.Index()]+[elems.Model()[aux.Index()]];
-     y:=aux.Next();     
-    }
-    assert  !aux.HasNext() ==> aux.Index()==|elems.Model()| && elems.Model()[..aux.Index()]==elems.Model();
+    var aux:LinkedListIteratorImpl := findAux(x,elems);
     b:=aux.HasNext();
   }
 
   
 
-  method {:verify false} add(x:int)
+  method {:verify true} add(x:int)
     modifies this,Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -390,7 +372,8 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
   }
 
 
-  method {:verify false} remove(x:int) 
+
+  method {:verify true} remove(x:int) 
     modifies this,Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -409,34 +392,112 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
       (it.HasNext() && old(it.Peek())!=x ==> it.Peek()==old(it.Peek()))
   
     {
-      var aux:LinkedListIteratorImpl := elems.Begin(); var y:int;
+       var aux:LinkedListIteratorImpl:=findAux(x,elems);
+
+       ghost var auxindex:=aux.Index(); 
+
+       if (aux.HasNext()) {
+                  aux:=elems.Erase(aux);
+
+      forall it | it in old(Iterators()) && old(it.Valid()) 
+             && (old(it.HasNext()) && old(it.Peek())!=x) 
+      ensures 
+      it.Valid() && 
+      it.Traversed() == old(it.Traversed())-{x}// &&
+      {
+
+        assert it.Valid();
+
+        var index:= (it as UnorderedSetIteratorImplLinkedList).iter.Index(); 
+        var oindex:= old((it as UnorderedSetIteratorImplLinkedList).iter.Index()); 
+    
+        if (oindex <  auxindex) 
+        { 
+         assert index==oindex;
+         assert elems.Model()[..index]==old(elems.Model())[..oindex];
+         assert x !in elems.Model()[..index];
+         assert seq2Set(elems.Model()[..index])==seq2Set(old(elems.Model()[..oindex]));
+         assert old(it.Traversed())-{x}==old(it.Traversed());
+         assert it.Traversed() == old(it.Traversed())-{x};
+
+       }
+    else 
+       {
+         assert index==oindex-1;
+         assert x in old(it.Traversed());
+         
+         assert oindex > auxindex;
+         
+         subseq2SetRemove(old(elems.Model()),auxindex,oindex);
+        assert it.Traversed() == old(it.Traversed())-{x};        
+       
+       }
+    }
+   }
+}
+
+  static method {:verify true} findAux(x:int,elems:LinkedListImpl) returns (aux:LinkedListIteratorImpl)
+   modifies elems, elems.Repr()
+    requires elems.Valid()
+    requires forall x | x in elems.Repr() :: allocated(x)
+    ensures elems.Valid() 
+    ensures elems.Model()==old(elems.Model())
+    
+    ensures fresh(aux) 
+    ensures aux.Valid() && aux.Parent()==elems
+    ensures x in old(elems.Model()) ==> aux.HasNext() && aux.Peek()==x
+    ensures x !in old(elems.Model()) ==> aux.Index() == |elems.Model()|
+
+    ensures elems.Iterators()==old(elems.Iterators())+{aux}
+    ensures forall itp | itp in old(elems.Iterators()) :: itp!=aux
+    ensures forall it | it in old(elems.Iterators()) && old(it.Valid()) ::
+     it.Valid() && it.Index() == old(it.Index()) 
+
+
+    ensures forall x {:trigger x in elems.Repr(), x in old(elems.Repr())} | x in elems.Repr() - old(elems.Repr()) :: fresh(x)
+    ensures fresh(elems.Repr()-old(elems.Repr()))
+    ensures forall x | x in elems.Repr() :: allocated(x)
+
+  {
+     aux:= elems.Begin(); var y:int;
+
     while (aux.HasNext() && aux.Peek()!=x)
       decreases |elems.Model()|-aux.Index()
-      invariant Valid() &&  Model()==old(Model())
+      invariant elems.Valid() &&  elems.Model()==old(elems.Model())
       invariant aux.Valid() && aux in elems.Iterators() && aux.Parent()==elems
       invariant 0<=aux.Index()<=|elems.Model()| 
       invariant aux.HasNext() ==> aux.Index()<|elems.Model()| && aux.Peek()==elems.Model()[aux.Index()]
       invariant forall z | z in elems.Model()[..aux.Index()]:: z!=x
+     
       invariant forall z {:trigger z in elems.Repr(), z in old(elems.Repr())} | z in elems.Repr() - old(elems.Repr()) :: fresh(z)
       invariant forall z | z in elems.Repr() :: allocated(x)
-      invariant Iterators() == old(Iterators())
-      invariant forall it | it in old(Iterators()) && old(it.Valid()) :: it.Valid() && 
-           it.Traversed() == old(it.Traversed()) &&
-           (it.HasNext() ==> it.Peek()==old(it.Peek()))
+     
+      invariant elems.Iterators()==old(elems.Iterators())+{aux}
+      invariant forall itp | itp in old(elems.Iterators()) :: itp!=aux
+      invariant forall it | it in old(elems.Iterators()) && old(it.Valid()) :: it.Valid() && it.Index() == old(it.Index()) 
+
     {
     
     assert elems.Model()[..aux.Index()+1]==elems.Model()[..aux.Index()]+[elems.Model()[aux.Index()]];
      y:=aux.Next();     
     }
-    assert  !aux.HasNext() ==> aux.Index()==|elems.Model()| && elems.Model()[..aux.Index()]==elems.Model();
-   // assert aux.HasNext() ==> aux.Peek()==x;
-    if (aux.HasNext()) {aux:=elems.Erase(aux);}
 
+    if (!aux.HasNext())
+    { assert aux.Index() == |elems.Model()|;
+      assert forall z | z in old(elems.Model())[..aux.Index()]:: z!=x;
+      assert old(elems.Model())[..aux.Index()]==old(elems.Model());
+      assert x !in old(elems.Model());}
+    else{
+
+     assert aux.Peek()== x;
+     assert aux.Peek()==old(elems.Model())[aux.Index()];
 
     }
-  
+    
+  }
 
-  method {:verify false} find(x:int) returns (newt:UnorderedSetIterator)
+
+  method {:verify true} find(x:int) returns (newt:UnorderedSetIterator)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -460,29 +521,7 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
 
   {
 
-    var aux:LinkedListIteratorImpl := elems.Begin(); var y:int;
-
-    while (aux.HasNext() && aux.Peek()!=x)
-      decreases |elems.Model()|-aux.Index()
-      invariant Valid() &&  Model()==old(Model())
-      invariant aux.Valid() && aux in elems.Iterators() && aux.Parent()==elems
-      invariant 0<=aux.Index()<=|elems.Model()| 
-      invariant aux.HasNext() ==> aux.Index()<|elems.Model()| && aux.Peek()==elems.Model()[aux.Index()]
-      invariant forall z | z in elems.Model()[..aux.Index()]:: z!=x
-     
-      invariant forall z {:trigger z in elems.Repr(), z in old(elems.Repr())} | z in elems.Repr() - old(elems.Repr()) :: fresh(z)
-      invariant forall z | z in elems.Repr() :: allocated(x)
-      invariant Iterators() == old(Iterators())
-     
-      invariant forall itp | itp in iters :: (itp as UnorderedSetIteratorImplLinkedList).iter!=aux
-      invariant forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
-
-    {
-    
-    assert elems.Model()[..aux.Index()+1]==elems.Model()[..aux.Index()]+[elems.Model()[aux.Index()]];
-     y:=aux.Next();     
-    }
+    var aux:=findAux(x,elems);
 
     newt := new UnorderedSetIteratorImplLinkedList(aux,this);
     
@@ -490,7 +529,7 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
 
   }
 
-  method {:verify false} insert(mid: UnorderedSetIterator, x: int) returns (newt:UnorderedSetIterator)
+  method {:verify true} insert(mid: UnorderedSetIterator, x: int) returns (newt:UnorderedSetIterator)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid() 
@@ -524,8 +563,6 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
 
   }
  
-
-
 
   method {:verify true} erase(mid:UnorderedSetIterator) returns (next: UnorderedSetIterator)
     modifies this, Repr()
@@ -570,10 +607,7 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
     var oindex:= old((it as UnorderedSetIteratorImplLinkedList).iter.Index()); 
     var midindex:=old((mid as UnorderedSetIteratorImplLinkedList).iter.Index());
     
-    /*if (!old(it.HasNext())){
-      assert oindex > midindex;
-      assert it.Traversed() == old(it.Traversed())-{old(mid.Peek())};}
-    else*/ if (oindex <  midindex) 
+    if (oindex <  midindex) 
        { 
          assert index==oindex;
          assert elems.Model()[..index]==old(elems.Model())[..oindex];
@@ -611,20 +645,5 @@ class UnorderedSetImplLinkedList extends UnorderedSetLinkedList {
 }
 
 
-lemma subseq2SetRemove(xs:seq<int>,i:int,s:int)
-requires 0 <= i < s <=|xs| && isSet(xs)
-ensures |Seq.Remove(xs,i)| == |xs|-1 && seq2Set(Seq.Remove(xs,i)[..s-1])==seq2Set(xs[..s])-{xs[i]}
-{
-  if (i+1==s ){}
-  else 
-  {
-    assert i+1 < s;
-    calc =={
-      seq2Set(Seq.Remove(xs,i)[..s-1]);
-      seq2Set((xs[..i]+xs[i+1..])[..s-1]);
-       {assert (xs[..i]+xs[i+1..])[..s-1]==xs[..i]+xs[i+1..s];}
-      seq2Set(xs[..s])-{xs[i]};
-   }
-   }
 
-}
+
