@@ -585,7 +585,8 @@ class Tree {
         // Red links lean left:
         && (!r.Empty? ==> r.data.color.Black?)
         // No node has two red links connected to it:
-        && (n.color.Red? && !l.Empty? ==> l.data.color.Black?)
+        && (!l.Empty? && l.data.color.Red? && !l.left.Empty? ==> l.left.data.color.Black?)
+        // && (n.color.Red? && !l.Empty? ==> l.data.color.Black?)
         // Perfect black balance:
         && BlackHeight(l) == BlackHeight(r)
 
@@ -608,11 +609,18 @@ class Tree {
     modifies set x | x in elems(sk) :: x`right
     modifies set x | x in elems(sk) :: x`color
     requires ValidRec(node, sk)
-    // requires RedBlackTreeRec(sk)
+    // requires node.left != null ==> node.left.color.Black?
     requires node.right != null
+    requires node.right.color.Red?
+    requires SearchTreeRec(sk)
+    requires RedBlackTreeRec(sk.left)
+    requires RedBlackTreeRec(sk.right)
+    requires BlackHeight(sk.left) == BlackHeight(sk.right)
 
     ensures ValidRec(newNode, newSk)
-    // ensures RedBlackTreeRec(newSk)
+    // ensures SearchTreeRec(sk)
+    // ensures BlackHeight(sk) == old(BlackHeight(sk))
+    // ensures old(node.left != null && node.left.color.Black?) ==> RedBlackTreeRec(sk)
 
     requires forall x | x in elems(sk) :: allocated(x)
     ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
