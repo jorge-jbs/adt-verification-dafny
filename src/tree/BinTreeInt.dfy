@@ -141,6 +141,9 @@ class Tree {
       case Empty => node == null
       case Node(l, x, r) =>
         && x == node
+        && x !in elems(l)
+        && x !in elems(r)
+        && elems(l) !! elems(r)
         && ValidRec(node.left, l)
         && ValidRec(node.right, r)
     }
@@ -644,10 +647,10 @@ class Tree {
     assert ValidRec(node.left, sk.left);
     assert ValidRec(node, Node(sk.left, node, sk.right.left));
     assert node != newNode.left;
-    assume newNode.left !in elems(Node(sk.left, node, sk.right.left));
+    // DistinctSkeletonRec(newNode, Node(sk.left, node, sk.right.left));
+    assume newNode !in elems(Node(sk.left, node, sk.right.left));
     newNode.left := node;
-    // assert ValidRec(newNode.left, Node(sk.left, node, sk.right.left));
-    // assert ValidRec(newNode.left, sk.right.right);
+    assert ValidRec(newNode.left, Node(sk.left, node, sk.right.left));
     newNode.color := node.color;
     node.color := Red;
     newSk := Node(Node(sk.left, node, sk.right.left), newNode, sk.right.right);
