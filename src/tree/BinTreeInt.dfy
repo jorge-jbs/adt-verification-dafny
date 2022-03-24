@@ -10,6 +10,8 @@ function method Leaf<A>(d: A): tree<A>
 }
 
 function method elems<A>(t: tree<A>): set<A>
+  ensures t.Empty? ==> elems(t) == {}
+  ensures !t.Empty? ==> elems(t) == elems(t.left) + {t.data} + elems(t.right)
 {
   match t {
     case Empty => {}
@@ -86,6 +88,8 @@ function method depth<A>(t: tree<A>): nat
   }
 }
 
+datatype Color = Red | Black
+
 type K = int
 type V = int
 
@@ -94,6 +98,8 @@ class TNode {
   var value: V;
   var left: TNode?;
   var right: TNode?;
+
+  var color: Color;
 
   constructor(l: TNode?, k: K, v: V, r: TNode?)
     ensures left == l
@@ -126,15 +132,17 @@ class Tree {
     elems(skeleton)
   }
 
-  static predicate ValidRec(tree: TNode?, sk: tree<TNode>)
-    reads elems(sk)
+  static predicate ValidRec(node: TNode?, sk: tree<TNode>)
+    // reads elems(sk)
+    reads set x | x in elems(sk) :: x`left
+    reads set x | x in elems(sk) :: x`right
   {
     match sk {
-      case Empty => tree == null
+      case Empty => node == null
       case Node(l, x, r) =>
-        && x == tree
-        && ValidRec(tree.left, l)
-        && ValidRec(tree.right, r)
+        && x == node
+        && ValidRec(node.left, l)
+        && ValidRec(node.right, r)
     }
   }
 
@@ -148,6 +156,11 @@ class Tree {
   //   requires Valid()
   //   // ensures melems(skeleton) == elems(skeleton)
   //   ensures forall n | n in melems(skeleton) :: melems(skeleton)[n] == 1
+
+  static lemma DistinctSkeletonRec(node: TNode, sk: tree<TNode>)
+    requires ValidRec(node, sk)
+    ensures node !in elems(sk.left)
+    ensures node !in elems(sk.right)
 
   static function ModelRec(sk: tree<TNode>): tree<K>
     reads set x | x in elems(sk) :: x`key
@@ -406,6 +419,11 @@ class Tree {
     }
   }
 
+  lemma InsertMap(omm: map<K, V>, mm: map<K, V>, k: K, v: V)
+    requires k in mm
+    requires mm[k] == v
+    requires forall m | m in omm && k != m :: m in mm && mm[m] == omm[m]
+
   method Insert(k: K, v: V)
     modifies this, Repr()
     requires Valid()
@@ -540,6 +558,93 @@ class Tree {
     root, skeleton := RemoveRec(root, skeleton, k);
     ContraModelRelationWithSkeletonKeyRecR(root, skeleton, k);
   }
+
+  static function BlackHeight(sk: tree<TNode>): nat
+    reads set x | x in elems(sk) :: x`color
+  {
+    match sk {
+      case Empty() => 0
+      case Node(l, n, r) =>
+        if n.color.Black? then
+          1 + max(BlackHeight(l), BlackHeight(r))
+        else
+          max(BlackHeight(l), BlackHeight(r))
+    }
+  }
+
+  static predicate RedBlackTreeRec(sk: tree<TNode>)
+    reads set x | x in elems(sk) :: x`key
+    reads set x | x in elems(sk) :: x`color
+  {
+    match sk {
+      case Empty() => true
+      case Node(l, n, r) =>
+        && (forall m | m in elems(l) :: m.key < n.key)
+        && (forall m | m in elems(r) :: n.key < m.key)
+        // Red links lean left:
+        && (!r.Empty? ==> r.data.color.Black?)
+        // No node has two red links connected to it:
+        && (!l.Empty? && l.data.color.Red? && !l.left.Empty? ==> l.left.data.color.Black?)
+        // Perfect black balance:
+        && BlackHeight(l) == BlackHeight(r)
+        && RedBlackTreeRec(l)
+        && RedBlackTreeRec(r)
+    }
+  }
+
+  predicate RedBlackTree()
+    reads this, Repr()
+    requires Valid()
+  {
+    RedBlackTreeRec(skeleton)
+  }
+
+  static method {:verify true} RotateLeft(node: TNode, ghost sk: tree<TNode>) returns (newNode: TNode, ghost newSk: tree<TNode>)
+    modifies set x | x in elems(sk) :: x`left
+    modifies set x | x in elems(sk) :: x`right
+    modifies set x | x in elems(sk) :: x`color
+    requires ValidRec(node, sk)
+    // requires RedBlackTreeRec(sk)
+    requires node.right != null
+
+    ensures ValidRec(newNode, newSk)
+    // ensures RedBlackTreeRec(newSk)
+
+    requires forall x | x in elems(sk) :: allocated(x)
+    ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
+    ensures fresh(elems(sk)-old(elems(sk)))
+    ensures forall x | x in elems(sk) :: allocated(x)
+  {
+    assert ValidRec(node, sk);
+    DistinctSkeletonRec(node, sk);
+    assert ValidRec(node.right, sk.right);
+    assert ValidRec(node.right.left, sk.right.left);
+    assert ValidRec(node.right.right, sk.right.right);
+    newNode := node.right;
+    assert ValidRec(newNode, sk.right);
+    assert ValidRec(newNode.right, sk.right.right);
+    assert ValidRec(newNode.left, sk.right.left);
+    DistinctSkeletonRec(newNode, sk.right);
+    assert node !in elems(sk.right.left);
+    // assume node !in elems(sk.right.left);
+    node.right := newNode.left;
+    assert ValidRec(node.right, sk.right.left);
+    assert ValidRec(node.left, sk.left);
+    assert ValidRec(node, Node(sk.left, node, sk.right.left));
+    assert node != newNode.left;
+    assume newNode.left !in elems(Node(sk.left, node, sk.right.left));
+    newNode.left := node;
+    // assert ValidRec(newNode.left, Node(sk.left, node, sk.right.left));
+    // assert ValidRec(newNode.left, sk.right.right);
+    newNode.color := node.color;
+    node.color := Red;
+    newSk := Node(Node(sk.left, node, sk.right.left), newNode, sk.right.right);
+    // assert ValidRec(node.left, sk.left);
+    // assert ValidRec(node.right, sk.right.left);
+    // assert ValidRec(node, Node(sk.left, node, sk.right.left));
+    // assert ValidRec(newNode.right, sk.right.right);
+    assume ValidRec(newNode, newSk);
+  }
 }
 
 class STree {
@@ -571,7 +676,7 @@ class STree {
     ensures tree.MapModel()[k] == v
 
     requires forall x | x in Repr() :: allocated(x)
-    ensures forall x | x in Repr() :: allocated(x)
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
   {
