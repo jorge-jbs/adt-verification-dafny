@@ -432,6 +432,7 @@ class Tree {
     ensures SearchTree()
     ensures k in MapModel()
     ensures MapModel()[k] == v
+    // TODO: la siguiente línea no es equivalente a las siguientes
     ensures forall m | m in old(MapModel()) && k != m :: m in MapModel() && MapModel()[m] == old(MapModel()[m])
     // ensures MapModel() == old(MapModel()) + map[k := v]
     // ensures MapModel() == old(MapModel())[k := v]
@@ -549,6 +550,8 @@ class Tree {
     ensures SearchTree()
     // ensures forall m | m in MapModel() && k != m :: m in old(MapModel()) && MapModel()[m] == old(MapModel()[m])
     ensures k !in MapModel()
+    // ensures MapModel() + map[k := old(MapModel()[k])] == old(MapModel())
+    // ensures MapModel() == map k' | k' in old(MapModel()) && k' != k :: old(MapModel()[k'])
 
     requires forall x | x in Repr() :: allocated(x)
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
@@ -579,14 +582,13 @@ class Tree {
     match sk {
       case Empty() => true
       case Node(l, n, r) =>
-        && (forall m | m in elems(l) :: m.key < n.key)
-        && (forall m | m in elems(r) :: n.key < m.key)
         // Red links lean left:
         && (!r.Empty? ==> r.data.color.Black?)
         // No node has two red links connected to it:
-        && (!l.Empty? && l.data.color.Red? && !l.left.Empty? ==> l.left.data.color.Black?)
+        && (n.color.Red? && !l.Empty? ==> l.data.color.Black?)
         // Perfect black balance:
         && BlackHeight(l) == BlackHeight(r)
+
         && RedBlackTreeRec(l)
         && RedBlackTreeRec(r)
     }
@@ -596,7 +598,9 @@ class Tree {
     reads this, Repr()
     requires Valid()
   {
-    RedBlackTreeRec(skeleton)
+    && SearchTree()
+    && (root != null ==> root.color.Black?)
+    && RedBlackTreeRec(skeleton)
   }
 
   static method {:verify true} RotateLeft(node: TNode, ghost sk: tree<TNode>) returns (newNode: TNode, ghost newSk: tree<TNode>)
