@@ -374,7 +374,7 @@ class Tree {
     ensures ValidRec(newNode, newSk)
     ensures SearchTreeRec(newSk)
     ensures MapModelRec(newSk)==MapModelRec(sk)[k:=v]
-    ensures elems(newSk)==elems(sk)-{node}+{z,newNode}
+//    ensures elems(newSk)==elems(sk)-{node}+{z,newNode}
     ensures forall x {:trigger x in elems(newSk), x in old(elems(newSk))} | x in elems(newSk) - old(elems(sk)) :: fresh(x)
     ensures fresh(elems(newSk)-old(elems(sk)))
     ensures forall x | x in elems(newSk) :: allocated(x)
@@ -403,7 +403,7 @@ class Tree {
     }
   }
 
-  method {:verify false} Insert(k: K, v: V)
+  method {:verify true} Insert(k: K, v: V)
     modifies this, Repr()
     requires Valid()
     requires SearchTree()
