@@ -607,7 +607,7 @@ class Tree {
     && RedBlackTreeRec(skeleton)
   }
 
-  static method {:verify true} RotateLeft(node: TNode, ghost sk: tree<TNode>) returns (newNode: TNode, ghost newSk: tree<TNode>)
+  static method RotateLeft(node: TNode, ghost sk: tree<TNode>) returns (newNode: TNode, ghost newSk: tree<TNode>)
     modifies set x | x in elems(sk) :: x`left
     modifies set x | x in elems(sk) :: x`right
     modifies set x | x in elems(sk) :: x`color
@@ -621,44 +621,27 @@ class Tree {
     requires BlackHeight(sk.left) == BlackHeight(sk.right)
 
     ensures ValidRec(newNode, newSk)
-    // ensures SearchTreeRec(sk)
-    // ensures BlackHeight(sk) == old(BlackHeight(sk))
-    // ensures old(node.left != null && node.left.color.Black?) ==> RedBlackTreeRec(sk)
+    ensures SearchTreeRec(newSk)
+    ensures BlackHeight(newSk) == old(BlackHeight(sk))
+    // ensures RedBlackTreeRec(newSk)
+    // ensures old(node.left != null && node.left.color.Black?) ==> RedBlackTreeRec(newSk)
+    ensures
+      old((node.left != null ==> node.left.color.Black?)
+        && (node.right.left != null ==> node.right.left.color.Black?)
+        && (node.right.right != null ==> node.right.right.color.Black?))
+      ==> RedBlackTreeRec(newSk)
 
     requires forall x | x in elems(sk) :: allocated(x)
     ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
     ensures fresh(elems(sk)-old(elems(sk)))
     ensures forall x | x in elems(sk) :: allocated(x)
   {
-    assert ValidRec(node, sk);
-    DistinctSkeletonRec(node, sk);
-    assert ValidRec(node.right, sk.right);
-    assert ValidRec(node.right.left, sk.right.left);
-    assert ValidRec(node.right.right, sk.right.right);
     newNode := node.right;
-    assert ValidRec(newNode, sk.right);
-    assert ValidRec(newNode.right, sk.right.right);
-    assert ValidRec(newNode.left, sk.right.left);
-    DistinctSkeletonRec(newNode, sk.right);
-    assert node !in elems(sk.right.left);
-    // assume node !in elems(sk.right.left);
     node.right := newNode.left;
-    assert ValidRec(node.right, sk.right.left);
-    assert ValidRec(node.left, sk.left);
-    assert ValidRec(node, Node(sk.left, node, sk.right.left));
-    assert node != newNode.left;
-    // DistinctSkeletonRec(newNode, Node(sk.left, node, sk.right.left));
-    assume newNode !in elems(Node(sk.left, node, sk.right.left));
     newNode.left := node;
-    assert ValidRec(newNode.left, Node(sk.left, node, sk.right.left));
     newNode.color := node.color;
     node.color := Red;
     newSk := Node(Node(sk.left, node, sk.right.left), newNode, sk.right.right);
-    // assert ValidRec(node.left, sk.left);
-    // assert ValidRec(node.right, sk.right.left);
-    // assert ValidRec(node, Node(sk.left, node, sk.right.left));
-    // assert ValidRec(newNode.right, sk.right.right);
-    assume ValidRec(newNode, newSk);
   }
 }
 
