@@ -144,7 +144,7 @@ trait UnorderedMultiset {
 
  
 
-  function method contains(x:int):bool
+  function contains(x:int):bool
     reads this, Repr()
     requires Valid()
     ensures  contains(x) == (x in Model())

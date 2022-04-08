@@ -314,7 +314,7 @@ class Tree {
     }
   }
 
-  static method {:verify true} GetRec(n: TNode, ghost sk: tree<TNode>, k: K) returns (v: V, ghost z:TNode)
+  static method {:verify false} GetRec(n: TNode, ghost sk: tree<TNode>, k: K) returns (v: V, ghost z:TNode)
     requires ValidRec(n, sk)
     requires SearchTreeRec(sk)
     requires k in MapModelRec(sk)
@@ -343,7 +343,7 @@ class Tree {
 
   }
 
-  method {:verify true} Get(k: K) returns (v: V)
+  method {:verify false} Get(k: K) returns (v: V)
     requires Valid()
     requires SearchTree()
     requires k in MapModel()
@@ -363,7 +363,13 @@ class Tree {
     v,z := GetRec(root, skeleton, k);
   }
 
-  static method {:verify false} InsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V) returns (newNode: TNode, ghost newSk: tree<TNode>, ghost z:TNode)
+
+
+static lemma commuteMapModelRec(sk: tree<TNode>,k:K, v:V)
+  requires sk!=Empty() && SearchTreeRec(sk) && k < sk.data.key
+  ensures MapModelRec(sk)[k:=v]==(MapModelRec(sk.left)[k:=v]+MapModelRec(sk.right))[sk.data.key:=sk.data.value]
+
+  static method {:verify true} InsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V) returns (newNode: TNode, ghost newSk: tree<TNode>, ghost z:TNode)
     modifies set x | x in elems(sk) :: x`left
     modifies set x | x in elems(sk) :: x`right
     modifies set x | x in elems(sk) :: x`value
@@ -373,16 +379,19 @@ class Tree {
 
     ensures ValidRec(newNode, newSk)
     ensures SearchTreeRec(newSk)
-    ensures MapModelRec(newSk)==MapModelRec(sk)[k:=v]
-//    ensures elems(newSk)==elems(sk)-{node}+{z,newNode}
+   // ensures MapModelRec(newSk)==MapModelRec(sk)[k:=v]
+    //ensures elems(newSk)==elems(sk)+{z}
     ensures forall x {:trigger x in elems(newSk), x in old(elems(newSk))} | x in elems(newSk) - old(elems(sk)) :: fresh(x)
     ensures fresh(elems(newSk)-old(elems(sk)))
     ensures forall x | x in elems(newSk) :: allocated(x)
   {
+
+
     if node == null {
       newNode := new TNode(null, k, v, null);
       newSk := Node(Empty, newNode, Empty);
       z:=newNode;
+
     } else {
       newNode := node;
       if k == node.key {
@@ -392,18 +401,23 @@ class Tree {
       } else if node.key < k {
         ghost var newSkRight;
         node.right, newSkRight, z := InsertRec(node.right, sk.right, k, v);
+        
         newSk := Node(sk.left, node, newSkRight);
+
       } else if k < node.key {
         ghost var newSkLeft;
         node.left, newSkLeft,z := InsertRec(node.left, sk.left, k, v);
+        
         newSk := Node(newSkLeft, node, sk.right);
+        
+        //commuteMapModelRec(newSk,k,v);
       } else {
         assert false;
       }
     }
   }
 
-  method {:verify true} Insert(k: K, v: V)
+  method {:verify false} Insert(k: K, v: V)
     modifies this, Repr()
     requires Valid()
     requires SearchTree()
