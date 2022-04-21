@@ -175,15 +175,26 @@ class Tree {
     reads set x | x in elems(sk) :: x`key
     reads set x | x in elems(sk) :: x`value
     ensures forall n | n in elems(sk) :: n.key in MapModelRec(sk)
-    ensures sk==Empty() ==> MapModelRec(sk)==map[]
-    ensures sk!=Empty ==>MapModelRec(sk) == (MapModelRec(sk.left)+MapModelRec(sk.right))[sk.data.key:=sk.data.value]
+   // ensures sk==Empty() ==> MapModelRec(sk)==map[]
+   // ensures sk!=Empty ==>MapModelRec(sk) == (MapModelRec(sk.left)+MapModelRec(sk.right))[sk.data.key:=sk.data.value]
   {
     match sk {
       case Empty() => map[]
       case Node(l, n, r) => (MapModelRec(l) + MapModelRec(r))[n.key := n.value]
-    }
+    }  
+  
+  }
+  
+  static function TreeKeys(sk: tree<TNode>): set<K>
+    reads elems(sk)
+  {
+    set n | n in elems(sk) :: n.key
   }
 
+ static lemma MapModelRecComAsoc(l:tree<TNode>,r:tree<TNode>)
+ requires MapModelRec(r).Keys !! MapModelRec(l).Keys
+ ensures MapModelRec(l)+MapModelRec(r) == MapModelRec(r) + MapModelRec(l)
+{}
 
   function MapModel(): map<K, V>
     reads this, elems(skeleton)

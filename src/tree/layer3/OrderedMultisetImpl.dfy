@@ -179,22 +179,97 @@ class OrderedMultisetImplMap extends OrderedMultiset{
     reads this, Repr()
   {
    tree.Valid() && tree.SearchTree() 
-   && forall p | p in tree.MapModel().Items:: p.1>0
+   && forall k | k in tree.MapModel():: tree.MapModel()[k]>0
   }  
 
 
 
-  function mapToMultiset(s:set<(K,V)>):multiset<K>
-  //requires forall p1,p2 | p1 in s && p2 in s && p1!=p2 :: p1.0!=p2.0
-  requires forall p | p in s :: p.1>0
+  function mapToMultiset(s:set<(K,V)>):multiset<K>  
+  ensures forall k | k in mapToMultiset(s):: (exists p | p in s ::p.0==k && p.1>0)
   {
     if (s=={}) then multiset{}
     else 
        var p:| p in s;
        //assert p.1>0 && p.0 !in mapToMultiset(s-{p});
-       mapToMultiset(s-{p})[p.0:=p.1]
-
+       if (p.1>0) then
+        mapToMultiset(s-{p})[p.0:=p.1]
+      else 
+        mapToMultiset(s-{p})
   }
+  
+  lemma MapMultisetMonotone(s:set<(K,V)>,z:(K,V))
+  ensures mapToMultiset(s-{z}) <= mapToMultiset(s)
+  
+
+  lemma MapMultisetMonotone2(s:set<(K,V)>,z:(K,V),p:(K,V))
+  requires p in s && p!=z
+  ensures mapToMultiset(s)[p.0]==mapToMultiset(s-{z})[p.0]
+  
+  
+  lemma  MapMultisetRelationAuxA(s:set<(K,V)>,p:(K,V))
+  requires s != {} && p in s && p.1>0
+  ensures p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1
+  {
+     //
+     if (s-{p}=={}) {assert s=={p}; //assert p==z;
+      assert mapToMultiset(s)==multiset{}[p.0:=p.1];
+     }
+     else{
+      var z:|z in s && p!=z;
+       {assert p in s-{z};
+        MapMultisetRelationAuxA(s-{z},p);
+        assert p.0 in mapToMultiset(s-{z}) && mapToMultiset(s-{z})[p.0]==p.1;
+        MapMultisetMonotone(s,z);
+        MapMultisetMonotone2(s,z,p);       
+        assert p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1;
+        }
+     }
+}
+
+lemma  MapMultisetRelationAux(s:set<(K,V)>)
+  ensures forall p | p in s && p.1>0 :: p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1
+  {forall p | p in s && p.1>0 
+  ensures p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1
+  {MapMultisetRelationAuxA(s,p);}}
+
+lemma mapItems(m:map<K,V>,k:K)
+requires m!=map[] && k in m
+ensures exists p :: p in m.Items && p.0==k
+{ assert (k,m[k]) in m.Items;}
+
+
+    lemma MapMultisetRelation(m:map<K,V>)
+    requires forall k | k in m :: m[k]>0
+    ensures m==map[] <==> mapToMultiset(m.Items)==multiset{}
+    ensures forall k | k in m :: k in mapToMultiset(m.Items) && mapToMultiset(m.Items)[k]==m[k]
+    ensures forall k | k in mapToMultiset(m.Items) :: k in m && mapToMultiset(m.Items)[k]==m[k]
+    ensures forall k | mapToMultiset(m.Items)[k]>0 :: k in m
+    ensures forall k | mapToMultiset(m.Items)[k]==0 :: k !in m
+    ensures forall k | k !in m :: mapToMultiset(m.Items)[k]==0
+    ensures forall k | k !in mapToMultiset(m.Items)::k !in m
+  {
+    forall k | k in m 
+    ensures k in mapToMultiset(m.Items) && mapToMultiset(m.Items)[k]==m[k]
+    { mapItems(m,k);
+      MapMultisetRelationAux(m.Items);}
+  }
+
+    lemma EquivalenceMapMultisetRelation(m:map<K,V>,ms:multiset<K>)
+    requires forall k | k in m :: m[k]>0
+    ensures (map k | k in ms :: ms[k]) == m <==> (mapToMultiset(m.Items)==ms)
+     {
+      MapMultisetRelation(m);
+      }
+
+   lemma equalMapMultiset(m:map<K,V>,m':map<K,V>)
+    requires forall k | k in m :: m[k]>0
+    requires forall k | k in m' :: m'[k]>0
+    requires mapToMultiset(m.Items)==mapToMultiset(m'.Items)
+    ensures m.Items==m'.Items && m==m'
+    {EquivalenceMapMultisetRelation(m,mapToMultiset(m'.Items));
+    EquivalenceMapMultisetRelation(m',mapToMultiset(m.Items));
+    } 
+
   function Model(): multiset<int>
     reads this, Repr()
     requires Valid()
@@ -202,11 +277,12 @@ class OrderedMultisetImplMap extends OrderedMultiset{
     mapToMultiset(tree.MapModel().Items)
   }
 
+
   function method Empty(): bool
     reads this, Repr()
     requires Valid()
     ensures Empty() <==> Model() == multiset{}
-  {
+  {MapMultisetRelation(tree.MapModel());
    tree.isEmpty()
   }
 
@@ -270,21 +346,34 @@ class OrderedMultisetImplMap extends OrderedMultiset{
     requires Valid()
     ensures  contains(x) == (x in Model())
 
-  method count(x:int) returns (c:int)
+  method {:verify false} count(x:int) returns (c:int)
+    modifies this,Repr()
+    requires forall x | x in Repr() :: allocated(x)
     requires Valid()
-    ensures Valid() && c==Model()[x]  
+    ensures Valid() 
+    ensures c==Model()[x] 
+    ensures Model()==old(Model())
+    
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+   
+    ensures Iterators() == old(Iterators())
+
   {
-   var b:=tree.Search(x);
-   if (b) 
+    var b:=tree.Search(x);
+    if (b) 
      {
        c:=tree.Get(x);
      }
    else 
-     { c:=0; }
-
+     {        
+       c:=0; 
+     }
+    MapMultisetRelation(tree.MapModel());
   }
   
-  method add(x:int)
+  method {:verify true} add(x:int)
     modifies this,Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -296,13 +385,17 @@ class OrderedMultisetImplMap extends OrderedMultiset{
     ensures forall x | x in Repr() :: allocated(x)
    
     ensures Iterators() == old(Iterators())
-  /*{
-   if (!contains(x)) {tree.Insert(x,1);}
-   else {
-     var c:=tree.Get(x);
-     tree.Insert(x,c+1);
-   }
-  }*/
+  {
+   var c:=count(x);
+   MapMultisetRelation(tree.MapModel());
+
+   if (c==0) 
+    { tree.Insert(x,1); }
+   else 
+     { tree.Insert(x,c+1); }
+
+    MapMultisetRelation(tree.MapModel());
+  }
 
 
   method find(x:int) returns (newt:UnorderedMultisetIterator )
@@ -367,14 +460,19 @@ class OrderedMultisetImplMap extends OrderedMultiset{
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-  /*{
-    if (contains(x))
-    {
+  {
+   var c:=count(x);
+   MapMultisetRelation(tree.MapModel());
+   if (c!=0) {
      var c:=tree.Get(x);
-     if (c-1 != 0) { tree.Insert(x,c-1);}
+     if (c-1 != 0) 
+        { tree.Insert(x,c-1); }
+     else 
+        {tree.Remove(x); }
     }
-   
-  }*/
+   MapMultisetRelation(tree.MapModel());
+
+  }
 
   method removeAll(x:int) 
     modifies this,Repr()
@@ -388,9 +486,16 @@ class OrderedMultisetImplMap extends OrderedMultiset{
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-   /*{
+   {   
+     MapMultisetRelation(tree.MapModel());
+
      tree.Remove(x);
-   }*/
+   
+     MapMultisetRelation(tree.MapModel());
+
+   }
+  
+  
   method erase(mid:UnorderedMultisetIterator) returns (next: UnorderedMultisetIterator)
     modifies this, Repr()
     requires Valid()

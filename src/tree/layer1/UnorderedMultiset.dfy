@@ -150,8 +150,16 @@ trait UnorderedMultiset {
     ensures  contains(x) == (x in Model())
 
   method count(x:int) returns (c:int)
+    modifies this,Repr()
+    requires forall x | x in Repr() :: allocated(x)
     requires Valid()
-    ensures Valid() && c==Model()[x]  
+    ensures Valid() && c==Model()[x] 
+
+   ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+   ensures fresh(Repr()-old(Repr()))
+   ensures forall x | x in Repr() :: allocated(x)
+   
+   ensures Iterators() == old(Iterators())
 
   method add(x:int)
     modifies this,Repr()
