@@ -317,31 +317,6 @@ class Tree {
     ensures Size() == |MapModel()|
   //TO  DO:añadir tamaño
 
-  static method {:verify false} SearchRec(n: TNode, ghost sk: tree<TNode>, k: K) returns (b:bool, ghost z:TNode)
-    requires ValidRec(n, sk)
-    requires SearchTreeRec(sk)
-    ensures ValidRec(n, sk)
-    ensures SearchTreeRec(sk)
-    ensures b == exists n | n in elems(sk) :: n.key == k
-    ensures b ==> z in elems(sk) && z.key==k
-
-    requires forall x | x in elems(sk) :: allocated(x)
-    ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
-    ensures fresh(elems(sk)-old(elems(sk)))
-    ensures forall x | x in elems(sk) :: allocated(x)
-
-  method {:verify false} Search(k: K) returns (b:bool)
-    requires Valid()
-    requires SearchTree()
-    ensures Valid()
-    ensures SearchTree()
-    ensures b == (k in MapModel())
-
-    requires forall x | x in Repr() :: allocated(x)
-    ensures forall x | x in Repr() :: allocated(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-
   static method {:verify false} GetRec(n: TNode, ghost sk: tree<TNode>, k: K) returns (v: V)
     requires ValidRec(n, sk)
     requires SearchTreeRec(sk)
@@ -358,22 +333,77 @@ class Tree {
     ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
     ensures fresh(elems(sk)-old(elems(sk)))
     ensures forall x | x in elems(sk) :: allocated(x)
+
+  static method {:verify false} SearchRec(n: TNode, ghost sk: tree<TNode>, k: K) returns (b:bool, ghost z:TNode)
+    requires ValidRec(n, sk)
+    requires SearchTreeRec(sk)
+    ensures ValidRec(n, sk)
+    ensures SearchTreeRec(sk)
+    ensures b == exists n | n in elems(sk) :: n.key == k
+    ensures b ==> z in elems(sk) && z.key==k
+
+    requires forall x | x in elems(sk) :: allocated(x)
+    ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
+    ensures fresh(elems(sk)-old(elems(sk)))
+    ensures forall x | x in elems(sk) :: allocated(x)
+
+  static method {:verify false} FindRec(node: TNode?, ghost sk: tree<TNode>, k: K) returns (found: TNode?)
+    requires ValidRec(node, sk)
+    requires SearchTreeRec(sk)
+
+    ensures ValidRec(node, sk)
+    ensures SearchTreeRec(sk)
+    //ensures MapModelRec(sk) == old(MapModelRec(sk))
+    ensures found != null ==> found.key == k
+
+    requires forall x | x in elems(sk) :: allocated(x)
+    ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
+    ensures fresh(elems(sk)-old(elems(sk)))
+    ensures forall x | x in elems(sk) :: allocated(x)
   {
-    ModelRelationWithSkeletonKeyRec(n,sk,k);
-    assert exists n | n in elems(sk) :: n.key == k;
-
-    if k == n.key {
-      v := n.value;
-    } else if n.key < k {
-      v := GetRec(n.right, sk.right, k);
-    } else if k < n.key {
-      v := GetRec(n.left, sk.left, k);
+    if node == null {
+      found := null;
     } else {
-      assert false;
+      if k == node.key {
+        found := node;
+      } else if node.key < k {
+        found := FindRec(node.right, sk.right, k);
+      } else if k < node.key {
+        found := FindRec(node.left, sk.left, k);
+      } else {
+        assert false;
+      }
     }
-    ModelRelationWithSkeletonRecL(n,sk,k,v);
-
   }
+
+  method {:verify true} Find(k: K) returns (found: TNode?)
+    requires Valid()
+    requires SearchTree()
+
+    //ensures Valid()
+    //ensures SearchTree()
+    //ensures MapModel() == old(MapModel())
+    //ensures found != null ==> found.key == k
+
+    requires forall x | x in Repr() :: allocated(x)
+    //ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    //ensures fresh(Repr()-old(Repr()))
+    //ensures forall x | x in Repr() :: allocated(x)
+  {
+    //found := FindRec(root, skeleton, k);
+  }
+
+  method {:verify false} Search(k: K) returns (b:bool)
+    requires Valid()
+    requires SearchTree()
+    ensures Valid()
+    ensures SearchTree()
+    ensures b == (k in MapModel())
+
+    requires forall x | x in Repr() :: allocated(x)
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() :: allocated(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
 
   method {:verify false} Get(k: K) returns (v: V)
     requires Valid()
@@ -875,7 +905,7 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     newSk := Node(Node(sk.left, node, sk.right.left), newNode, sk.right.right);
   }
   
-  method {:verify true} RotateRight(node: TNode, ghost sk: tree<TNode>) returns (newNode: TNode, ghost newSk: tree<TNode>)
+  method {:verify false} RotateRight(node: TNode, ghost sk: tree<TNode>) returns (newNode: TNode, ghost newSk: tree<TNode>)
     modifies set x | x in elems(sk) :: x`left
     modifies set x | x in elems(sk) :: x`right
     modifies set x | x in elems(sk) :: x`color
