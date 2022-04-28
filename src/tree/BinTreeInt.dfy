@@ -111,6 +111,20 @@ class TNode {
     right := r;
   }
 
+  constructor RedBlack(l: TNode?, k: K, v: V, r: TNode?, c: Color)
+    ensures left == l
+    ensures key == k
+    ensures value == v
+    ensures right == r
+    ensures color == c
+  {
+    key := k;
+    value := v;
+    left := l;
+    right := r;
+    color := c;
+  }
+
   constructor Leaf(k: K, v: V)
   {
     key := k;
@@ -492,7 +506,7 @@ static lemma {:verify false} oldNewMapModelRecR(newSk:tree<TNode>, moSk:map<K,V>
   }
 }
 
- static method {:verify false} InsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V) returns (newNode: TNode, ghost newSk: tree<TNode>, ghost insertedNode:TNode)
+  static method {:verify false} InsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V) returns (newNode: TNode, ghost newSk: tree<TNode>, ghost insertedNode:TNode)
     modifies set x | x in elems(sk) :: x`left
     modifies set x | x in elems(sk) :: x`right
     modifies set x | x in elems(sk) :: x`value
@@ -838,14 +852,28 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     && RedBlackTreeRec(skeleton)
   }
 
+  static predicate IsMaybeRed(node: TNode?)
+    reads node
+  {
+    node != null ==> node.color.Red?
+  }
+  static predicate IsMaybeBlack(node: TNode?)
+    reads node
+  {
+    node != null ==> node.color.Black?
+  }
+
   static method {:verify false} RotateLeft(node: TNode, ghost sk: tree<TNode>) returns (newNode: TNode, ghost newSk: tree<TNode>)
+    //modifies elems(sk)
     modifies set x | x in elems(sk) :: x`left
     modifies set x | x in elems(sk) :: x`right
     modifies set x | x in elems(sk) :: x`color
     requires ValidRec(node, sk)
-    // requires node.left != null ==> node.left.color.Black?
     requires node.right != null
     requires node.right.color.Red?
+    requires node.left != null ==> node.left.color.Black?
+    requires node.right.left != null ==> node.right.left.color.Black?
+    requires node.right.right != null ==> node.right.right.color.Black?
     requires SearchTreeRec(sk)
     requires RedBlackTreeRec(sk.left)
     requires RedBlackTreeRec(sk.right)
@@ -854,13 +882,16 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     ensures ValidRec(newNode, newSk)
     ensures SearchTreeRec(newSk)
     ensures BlackHeight(newSk) == old(BlackHeight(sk))
-    // ensures RedBlackTreeRec(newSk)
-    // ensures old(node.left != null && node.left.color.Black?) ==> RedBlackTreeRec(newSk)
-    ensures
-      old((node.left != null ==> node.left.color.Black?)
-        && (node.right.left != null ==> node.right.left.color.Black?)
-        && (node.right.right != null ==> node.right.right.color.Black?))
-      ==> RedBlackTreeRec(newSk)
+    ensures newNode.left != null
+    ensures newNode.left.color.Red?
+    ensures newNode.right != null ==> newNode.right.color.Black?  // TODO
+    ensures node.left.left != null ==> node.left.left.color.Black?  // TODO
+    ensures node.left.right != null ==> node.left.right.color.Black?  // TODO
+    ensures RedBlackTreeRec(newSk.left)
+    ensures RedBlackTreeRec(newSk.right)
+    ensures RedBlackTreeRec(newSk)
+    ensures MapModelRec(newSk) == old(MapModelRec(sk))  // TODO
+    ensures elems(newSk) == elems(sk)  // TODO
 
     requires forall x | x in elems(sk) :: allocated(x)
     ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
@@ -875,14 +906,22 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     newSk := Node(Node(sk.left, node, sk.right.left), newNode, sk.right.right);
   }
   
-  method {:verify true} RotateRight(node: TNode, ghost sk: tree<TNode>) returns (newNode: TNode, ghost newSk: tree<TNode>)
-    modifies set x | x in elems(sk) :: x`left
-    modifies set x | x in elems(sk) :: x`right
-    modifies set x | x in elems(sk) :: x`color
+  method {:verify false} RotateRight(node: TNode, ghost sk: tree<TNode>) returns (newNode: TNode, ghost newSk: tree<TNode>)
+    modifies elems(sk)
+    //modifies set x | x in elems(sk) :: x`left
+    //modifies set x | x in elems(sk) :: x`right
+    //modifies set x | x in elems(sk) :: x`color
     requires ValidRec(node, sk)
     // requires node.right != null ==> node.right.color.Black?
+    requires node.color.Black?
     requires node.left != null
     requires node.left.color.Red?
+    requires node.left.left != null
+    requires node.left.left.color.Red?
+    requires node.left.left.left != null ==> node.left.left.left.color.Black?
+    requires node.left.left.right != null ==> node.left.left.right.color.Black?
+    requires node.left.right != null ==> node.left.right.color.Black?
+    requires node.right != null ==> node.right.color.Black?
     requires SearchTreeRec(sk)
     requires RedBlackTreeRec(sk.left)
     requires RedBlackTreeRec(sk.right)
@@ -892,27 +931,16 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     ensures SearchTreeRec(newSk)
     ensures BlackHeight(newSk) == old(BlackHeight(sk))
     ensures RedBlackTreeRec(newSk.left)
-    ensures old(node.right != null ==> node.right.color.Black?) ==> RedBlackTreeRec(newSk.right)
-    
-    /*
-    ensures
-      old(
-        && node.color.Black?
-        && (node.right != null ==> node.right.color.Black?)
-        && (node.left.right != null ==> node.left.right.color.Black?)
-        && node.left.left != null
-        && (node.left.left.left != null ==> node.left.left.left.color.Black?)
-        && (node.left.left.right != null ==> node.left.left.right.color.Black?)
-      ) ==> (
-        && node.color.Black?
-        && node.left != null && node.left.color.Red?
-        && (node.left.left != null ==> node.left.left.color.Black?)
-        && (node.left.right != null ==> node.left.right.color.Black?)
-        && node.right != null && node.right.color.Red?
-        && (node.right.left != null ==> node.right.left.color.Black?)
-        && (node.right.right != null ==> node.right.right.color.Black?)
-      )
-    */
+    ensures RedBlackTreeRec(newSk.right)
+    ensures newNode.color.Black?
+    ensures newNode.left != null
+    ensures newNode.left.color.Red?
+    ensures newNode.left.left != null ==> newNode.left.left.color.Black?
+    ensures newNode.left.right != null ==> newNode.left.right.color.Black?
+    ensures newNode.right != null
+    ensures newNode.right.color.Red?
+    ensures newNode.right.left != null ==> newNode.right.left.color.Black?
+    ensures newNode.right.right != null ==> newNode.right.right.color.Black?
 
     requires forall x | x in elems(sk) :: allocated(x)
     ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
@@ -925,5 +953,138 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     newNode.color := node.color;
     node.color := Red;
     newSk := Node(sk.left.left, newNode, Node(sk.left.right, node, sk.right));
+  }
+
+  static method {:verify false} RestoreInsert(node: TNode?, ghost sk: tree<TNode>)
+      returns (newNode: TNode, ghost newSk: tree<TNode>)
+    modifies elems(sk)
+    //modifies set x | x in elems(sk) :: x`left
+    //modifies set x | x in elems(sk) :: x`right
+    //modifies set x | x in elems(sk) :: x`color
+    requires ValidRec(node, sk)
+    requires SearchTreeRec(sk)
+    requires RedBlackTreeRec(sk.left)
+    requires RedBlackTreeRec(sk.right)
+    requires BlackHeight(sk.left) == BlackHeight(sk.right)
+
+    ensures ValidRec(newNode, newSk)
+    ensures SearchTreeRec(newSk)
+    ensures RedBlackTreeRec(newSk)
+    ensures BlackHeight(newSk) == old(BlackHeight(sk))
+    ensures MapModelRec(newSk) == old(MapModelRec(sk))
+    ensures elems(newSk) == elems(sk)
+
+  static method {:verify true} RBInsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
+      returns (newNode: TNode, ghost newSk: tree<TNode>, ghost insertedNode:TNode)
+    modifies elems(sk)
+    //modifies set x | x in elems(sk) :: x`left
+    //modifies set x | x in elems(sk) :: x`right
+    //modifies set x | x in elems(sk) :: x`value
+    //modifies set x | x in elems(sk) :: x`color
+    requires ValidRec(node, sk)
+    requires SearchTreeRec(sk)
+    requires RedBlackTreeRec(sk)
+
+    ensures ValidRec(newNode, newSk)
+    ensures SearchTreeRec(newSk)
+    //ensures RedBlackTreeRec(newSk)
+    //ensures BlackHeight(newSk) == old(BlackHeight(sk))
+    ensures MapModelRec(newSk) == old(MapModelRec(sk))[k := v]
+
+    ensures elems(newSk) == elems(sk) + {insertedNode}
+    ensures insertedNode.key == k && insertedNode.value == v
+    ensures forall n | n in elems(sk) && old(n.key) != k ::
+      n.key == old(n.key) && n.value == old(n.value)
+
+    requires forall x | x in elems(sk) :: allocated(x)
+    ensures forall x {:trigger x in elems(newSk), x in old(elems(newSk))} | x in elems(newSk) - old(elems(sk)) :: fresh(x)
+    ensures fresh(elems(newSk)-old(elems(sk)))
+    ensures forall x | x in elems(newSk) :: allocated(x)
+  {
+    //assert RedBlackTreeRec(sk.left);
+    //assert RedBlackTreeRec(sk.right);
+    if node == null {
+      newNode := new TNode.RedBlack(null, k, v, null, Red);
+      newSk := Node(Empty, newNode, Empty);
+      insertedNode := newNode;
+      //assert newSk.Node?;
+    } else {
+      assert sk.data == node;
+      newNode := node;
+      if k == node.key {
+        node.value := v;
+        newSk := sk;
+        insertedNode := node;
+        //assert newSk.Node?;
+      } else if node.key < k {
+        ghost var newSkRight;
+        node.right, newSkRight, insertedNode := InsertRec(node.right, sk.right, k, v);
+        newSk := Node(sk.left, node, newSkRight);
+      } else if k < node.key {
+        ghost var oMMRight := MapModelRec(sk.right);
+        ghost var oMMLeft := MapModelRec(sk.left);
+        ghost var oMM := MapModelRec(sk);
+        keysSearchTree(sk, k);
+        ghost var newSkLeft;
+        node.left, newSkLeft, insertedNode := InsertRec(node.left, sk.left, k, v);
+        newSk := Node(newSkLeft, node, sk.right);
+        //assert RedBlackTreeRec(newSkLeft);
+        //assert RedBlackTreeRec(newSk.left);
+
+        assert node.key != k;
+        assert node.key == old(node.key) && node.value == old(node.value);
+        assert node.key !in oMMLeft && node.key !in oMMRight && node.key != k;
+
+        assert newSk.left==newSkLeft && newSk.right==sk.right && newSk.data==node;
+        assert MapModelRec(newSk.left)==oMMLeft[k:=v];
+        assert MapModelRec(newSk.right)==oMMRight;
+        assert oMM==(oMMLeft+oMMRight)[node.key:=node.value];
+        oldNewMapModelRecL(newSk,old(MapModelRec(sk)),oMMLeft,oMMRight,node,k,v);
+      } else {
+        assert false;
+      }
+    }
+
+    //assert RedBlackTreeRec(newSk.left) && RedBlackTreeRec(newSk.left);
+    //assert newNode.right.color.Black?
+    
+    /*
+    assume RedBlackTreeRec(newSk.left);
+    assume RedBlackTreeRec(newSk.right);
+    assume BlackHeight(newSk.left) == BlackHeight(newSk.right);
+
+    if newNode.left != null && newNode.left.color.Red? {
+      if newNode.left.left != null && newNode.left.left.color.Black? {
+        if newNode.right != null && newNode.right.color.Black? {
+          //assert RedBlackTreeRec(newSk);
+        }
+      }
+    }
+    */
+
+    assert ValidRec(newNode, newSk);
+    assert SearchTreeRec(newSk);
+    //assume false;
+    //assert RedBlackTreeRec(newSk.left);
+    //assert RedBlackTreeRec(newSk.right);
+    //assert BlackHeight(newSk.left) == BlackHeight(newSk.right);
+    //newNode, newSk := RestoreInsert(newNode, newSk);
+
+    //assume RedBlackTreeRec(newSk);
+    /*
+    if (newNode.right.color.Red? && newNode.left.color.Black?) {
+      assume ValidRec(newNode, newSk);
+      assume newNode.right != null;
+      assume newNode.right.color.Red?;
+      assume newNode.left != null ==> newNode.left.color.Black?;
+      assume newNode.right.left != null ==> newNode.right.left.color.Black?;
+      assume newNode.right.right != null ==> newNode.right.right.color.Black?;
+      assume SearchTreeRec(newSk);
+      assume RedBlackTreeRec(newSk.left);
+      assume RedBlackTreeRec(newSk.right);
+      assume BlackHeight(newSk.left) == BlackHeight(newSk.right);
+      newNode, newSk := RotateLeft(newNode, newSk);
+    }
+    */
   }
 }
