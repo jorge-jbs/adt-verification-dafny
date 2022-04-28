@@ -353,14 +353,18 @@ class Tree {
 
     ensures ValidRec(node, sk)
     ensures SearchTreeRec(sk)
+    ensures found == null <==> k !in old(MapModelRec(sk))
+    ensures found != null ==> found.key == k && found.value == MapModelRec(sk)[k] && found in elems(sk)
+
+    //ensures forall n | n in elems(sk) :: n.key == old(n.key) && n.value == old(n.value)
     //ensures MapModelRec(sk) == old(MapModelRec(sk))
-    ensures found != null ==> found.key == k
 
     requires forall x | x in elems(sk) :: allocated(x)
     ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
     ensures fresh(elems(sk)-old(elems(sk)))
     ensures forall x | x in elems(sk) :: allocated(x)
   {
+    ModelRelationWithSkeletonKeyRec(node, sk, k);
     if node == null {
       found := null;
     } else {
@@ -373,6 +377,9 @@ class Tree {
       } else {
         assert false;
       }
+    }
+    if found != null {
+      ModelRelationWithSkeletonRecL(node, sk, k, found.value);
     }
   }
 
