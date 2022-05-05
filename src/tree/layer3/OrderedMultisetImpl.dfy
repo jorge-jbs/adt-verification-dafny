@@ -2,18 +2,171 @@ include "../../../src/tree/layer1/OrderedMultiset.dfy"
 include "../../../src/tree/layer1/OrderedMultisetUtils.dfy"
 include "../../../src/tree/BinTreeIntClara.dfy"
 
+function mapToMultiset(s:set<(K,V)>):multiset<K>  
+  ensures forall k | k in mapToMultiset(s):: (exists p | p in s ::p.0==k && p.1>0)
+  {
+    if (s=={}) then multiset{}
+    else 
+       var p:| p in s;
+       //assert p.1>0 && p.0 !in mapToMultiset(s-{p});
+       if (p.1>0) then
+        mapToMultiset(s-{p})[p.0:=p.1]
+      else 
+        mapToMultiset(s-{p})
+  }
+  
+  lemma MapMultisetMonotone(s:set<(K,V)>,z:(K,V))
+  ensures mapToMultiset(s-{z}) <= mapToMultiset(s)
+  
+
+  lemma MapMultisetMonotone2(s:set<(K,V)>,z:(K,V),p:(K,V))
+  requires p in s && p!=z
+  ensures mapToMultiset(s)[p.0]==mapToMultiset(s-{z})[p.0]
+  
+  
+  lemma  MapMultisetRelationAuxA(s:set<(K,V)>,p:(K,V))
+  requires s != {} && p in s && p.1>0
+  ensures p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1
+  {
+     //
+     if (s-{p}=={}) {assert s=={p}; //assert p==z;
+      assert mapToMultiset(s)==multiset{}[p.0:=p.1];
+     }
+     else{
+      var z:|z in s && p!=z;
+       {assert p in s-{z};
+        MapMultisetRelationAuxA(s-{z},p);
+        assert p.0 in mapToMultiset(s-{z}) && mapToMultiset(s-{z})[p.0]==p.1;
+        MapMultisetMonotone(s,z);
+        MapMultisetMonotone2(s,z,p);       
+        assert p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1;
+        }
+     }
+}
+
+lemma  MapMultisetRelationAux(s:set<(K,V)>)
+  ensures forall p | p in s && p.1>0 :: p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1
+  {forall p | p in s && p.1>0 
+  ensures p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1
+  {MapMultisetRelationAuxA(s,p);}}
+
+lemma mapItems(m:map<K,V>,k:K)
+requires m!=map[] && k in m
+ensures exists p :: p in m.Items && p.0==k
+{ assert (k,m[k]) in m.Items;}
+
+
+    lemma MapMultisetRelation(m:map<K,V>)
+    requires forall k | k in m :: m[k]>0
+    ensures m==map[] <==> mapToMultiset(m.Items)==multiset{}
+    ensures forall k | k in m :: k in mapToMultiset(m.Items) && mapToMultiset(m.Items)[k]==m[k]
+    ensures forall k | k in mapToMultiset(m.Items) :: k in m && mapToMultiset(m.Items)[k]==m[k]
+    ensures forall k | mapToMultiset(m.Items)[k]>0 :: k in m
+    ensures forall k | mapToMultiset(m.Items)[k]==0 :: k !in m
+    ensures forall k | k !in m :: mapToMultiset(m.Items)[k]==0
+    ensures forall k | k !in mapToMultiset(m.Items)::k !in m
+  {
+    forall k | k in m 
+    ensures k in mapToMultiset(m.Items) && mapToMultiset(m.Items)[k]==m[k]
+    { mapItems(m,k);
+      MapMultisetRelationAux(m.Items);}
+  }
+
+    lemma EquivalenceMapMultisetRelation(m:map<K,V>,ms:multiset<K>)
+    requires forall k | k in m :: m[k]>0
+    ensures (map k | k in ms :: ms[k]) == m <==> (mapToMultiset(m.Items)==ms)
+     {
+      MapMultisetRelation(m);
+      }
+
+   lemma equalMapMultiset(m:map<K,V>,m':map<K,V>)
+    requires forall k | k in m :: m[k]>0
+    requires forall k | k in m' :: m'[k]>0
+    requires mapToMultiset(m.Items)==mapToMultiset(m'.Items)
+    ensures m.Items==m'.Items && m==m'
+    {EquivalenceMapMultisetRelation(m,mapToMultiset(m'.Items));
+    EquivalenceMapMultisetRelation(m',mapToMultiset(m.Items));
+    } 
+
+
+  
 
 class OrderedMultisetIteratorImplMap extends OrderedMultisetIterator{
   
-  // ghost var parent:UnorderedMultiset;
-   
+  ghost var parent:OrderedMultisetImplMap;
+  var stack:seq<(TNode, ghost tree<TNode>)>;//esto debería ser una Stack
+  var howmany:nat; //from 0 to howmany have already been traversed of the current element
+  
+  constructor(p:OrderedMultisetImplMap)
+  requires p.Valid()
+  { parent:=p;
+    stack := [];
+    howmany:=0;
+    }
+
   function Parent(): UnorderedMultiset
     reads this
-  //{ parent } 
+    ensures Parent() is OrderedMultisetImplMap
+  { parent } 
 
+  function straversed():set<TNode>
+      reads this,Parent(), Parent().Repr()
+  {set n | n in elems(parent.tree.skeleton) && n.key < stack[0].0.key}
+
+  function notYetTraversed():set<TNode>
+      reads this,Parent(), Parent().Repr()
+  { set n | n in elems(parent.tree.skeleton) && n.key > stack[0].0.key}
+
+  function current():TNode
+   reads this,Parent(), Parent().Repr()
+   requires stack != [] 
+  { stack[0].0}
+
+  function nodesStack():set<TNode>
+      reads this
+  { set p | p in stack ::p.0}
+
+  function reachableFromStack():set<TNode>
+  { nodesStack()+
+    unions(set p | p in stack :: elems(p.1.right))}
+  
+ function leftPathAux(n:TNode,sk:tree<TNode>,ac:seq<(TNode,tree<TNode>)>):seq<(TNode,tree<TNode>)>
+   reads elems(sk)
+   requires n in elems(sk)
+   {
+     match sk {
+       case Node(l,x,r) => 
+          if (n==x) then [(n,sk)]+ac
+          else if (n.key<x.key) then leftPathAux(n,l,[(x,sk)]+ac)
+          else leftPathAux(n,r,ac)
+     }
+   }
+
+  function unions<A> (ss:set<set<A>>):set<A>
+  {
+    if (ss=={}) then {}
+    else 
+     var s:| s in ss;
+     s+unions(ss-{s})
+  }
+
+  
+  
   predicate Valid()
     reads this, Parent(), Parent().Repr()
-  //{ true }
+  { parent.Valid() &&  
+    //all disjoint 
+    (set n | n in nodesStack())!! straversed() &&
+    straversed()!!notYetTraversed() && 
+    stack!=[] ==> current() !in straversed() && current() !in notYetTraversed() &&
+
+    elems(parent.tree.skeleton)==straversed()+{current()}+notYetTraversed() &&
+    notYetTraversed()==reachableFromStack() &&
+    0 <= howmany < stack[0].0.value &&
+
+
+    stack[..]==leftPathAux(stack[0].0,parent.tree.skeleton,[])
+  }
 
   function Traversed():multiset<int>
     reads this, Parent(), Parent().Repr()
@@ -21,6 +174,10 @@ class OrderedMultisetIteratorImplMap extends OrderedMultisetIterator{
     requires Parent().Valid() 
     ensures Traversed()<=Parent().Model()
     ensures forall x,y | x in Traversed() && y in Parent().Model()-Traversed() :: x<=y
+   /* {
+      mapToMultiset((set n | n in straversed::(n.key,n.value))+{(stack[top-1].key,howmany)})
+
+    }*/
 
    //Several elements equal to the Peek may be in Traversed and some others not
   // Example: Model=={1,1,2,3,3,3,4,5} Traversed=={1,1,2,3,3} Peek=3 
@@ -184,91 +341,7 @@ class OrderedMultisetImplMap extends OrderedMultiset{
 
 
 
-  function mapToMultiset(s:set<(K,V)>):multiset<K>  
-  ensures forall k | k in mapToMultiset(s):: (exists p | p in s ::p.0==k && p.1>0)
-  {
-    if (s=={}) then multiset{}
-    else 
-       var p:| p in s;
-       //assert p.1>0 && p.0 !in mapToMultiset(s-{p});
-       if (p.1>0) then
-        mapToMultiset(s-{p})[p.0:=p.1]
-      else 
-        mapToMultiset(s-{p})
-  }
   
-  lemma MapMultisetMonotone(s:set<(K,V)>,z:(K,V))
-  ensures mapToMultiset(s-{z}) <= mapToMultiset(s)
-  
-
-  lemma MapMultisetMonotone2(s:set<(K,V)>,z:(K,V),p:(K,V))
-  requires p in s && p!=z
-  ensures mapToMultiset(s)[p.0]==mapToMultiset(s-{z})[p.0]
-  
-  
-  lemma  MapMultisetRelationAuxA(s:set<(K,V)>,p:(K,V))
-  requires s != {} && p in s && p.1>0
-  ensures p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1
-  {
-     //
-     if (s-{p}=={}) {assert s=={p}; //assert p==z;
-      assert mapToMultiset(s)==multiset{}[p.0:=p.1];
-     }
-     else{
-      var z:|z in s && p!=z;
-       {assert p in s-{z};
-        MapMultisetRelationAuxA(s-{z},p);
-        assert p.0 in mapToMultiset(s-{z}) && mapToMultiset(s-{z})[p.0]==p.1;
-        MapMultisetMonotone(s,z);
-        MapMultisetMonotone2(s,z,p);       
-        assert p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1;
-        }
-     }
-}
-
-lemma  MapMultisetRelationAux(s:set<(K,V)>)
-  ensures forall p | p in s && p.1>0 :: p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1
-  {forall p | p in s && p.1>0 
-  ensures p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1
-  {MapMultisetRelationAuxA(s,p);}}
-
-lemma mapItems(m:map<K,V>,k:K)
-requires m!=map[] && k in m
-ensures exists p :: p in m.Items && p.0==k
-{ assert (k,m[k]) in m.Items;}
-
-
-    lemma MapMultisetRelation(m:map<K,V>)
-    requires forall k | k in m :: m[k]>0
-    ensures m==map[] <==> mapToMultiset(m.Items)==multiset{}
-    ensures forall k | k in m :: k in mapToMultiset(m.Items) && mapToMultiset(m.Items)[k]==m[k]
-    ensures forall k | k in mapToMultiset(m.Items) :: k in m && mapToMultiset(m.Items)[k]==m[k]
-    ensures forall k | mapToMultiset(m.Items)[k]>0 :: k in m
-    ensures forall k | mapToMultiset(m.Items)[k]==0 :: k !in m
-    ensures forall k | k !in m :: mapToMultiset(m.Items)[k]==0
-    ensures forall k | k !in mapToMultiset(m.Items)::k !in m
-  {
-    forall k | k in m 
-    ensures k in mapToMultiset(m.Items) && mapToMultiset(m.Items)[k]==m[k]
-    { mapItems(m,k);
-      MapMultisetRelationAux(m.Items);}
-  }
-
-    lemma EquivalenceMapMultisetRelation(m:map<K,V>,ms:multiset<K>)
-    requires forall k | k in m :: m[k]>0
-    ensures (map k | k in ms :: ms[k]) == m <==> (mapToMultiset(m.Items)==ms)
-     {
-      MapMultisetRelation(m);
-      }
-
-   lemma equalMapMultiset(m:map<K,V>,m':map<K,V>)
-    requires forall k | k in m :: m[k]>0
-    requires forall k | k in m' :: m'[k]>0
-    requires mapToMultiset(m.Items)==mapToMultiset(m'.Items)
-    ensures m.Items==m'.Items && m==m'
-    {EquivalenceMapMultisetRelation(m,mapToMultiset(m'.Items));
-    EquivalenceMapMultisetRelation(m',mapToMultiset(m.Items));
-    } 
 
   function Model(): multiset<int>
     reads this, Repr()
@@ -361,19 +434,22 @@ ensures exists p :: p in m.Items && p.0==k
     ensures Iterators() == old(Iterators())
 
   {
-    var b:=tree.Search(x);
+    /*var b:=tree.Search(x);
     if (b) 
-     {
-       c:=tree.Get(x);
-     }
+     { c:=tree.Get(x); }
    else 
-     {        
-       c:=0; 
-     }
+     { c:=0; }*/
+    //using Find
+    var found:=tree.Find(x);
+    if (found==null) 
+       { c := 0; }
+    else
+       { c := found.value; }
+
     MapMultisetRelation(tree.MapModel());
   }
   
-  method {:verify true} add(x:int)
+  method {:verify false} add(x:int)
     modifies this,Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -389,12 +465,9 @@ ensures exists p :: p in m.Items && p.0==k
    var c:=count(x);
    MapMultisetRelation(tree.MapModel());
 
-   if (c==0) 
-    { tree.Insert(x,1); }
-   else 
-     { tree.Insert(x,c+1); }
+   tree.Insert(x,c+1);
 
-    MapMultisetRelation(tree.MapModel());
+   MapMultisetRelation(tree.MapModel());
   }
 
 
@@ -448,7 +521,7 @@ ensures exists p :: p in m.Items && p.0==k
 
 
 
-  method remove(x:int) 
+  method {:verify false} remove(x:int) 
     modifies this,Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -461,7 +534,7 @@ ensures exists p :: p in m.Items && p.0==k
 
     ensures Iterators() == old(Iterators())
   {
-   var c:=count(x);
+   /*var c:=count(x);
    MapMultisetRelation(tree.MapModel());
    if (c!=0) {
      var c:=tree.Get(x);
@@ -469,12 +542,29 @@ ensures exists p :: p in m.Items && p.0==k
         { tree.Insert(x,c-1); }
      else 
         {tree.Remove(x); }
-    }
+    }*/
+
+    var found:=tree.Find(x);
+    
+    MapMultisetRelation(tree.MapModel());
+    
+    if (found!=null)
+    {
+     if (found.value - 1 > 0) 
+      {
+        tree.Insert(x,found.value-1);
+      }
+     else 
+      {
+        tree.Remove(x);
+      }
+
+     }
    MapMultisetRelation(tree.MapModel());
 
   }
 
-  method removeAll(x:int) 
+  method {:verify false} removeAll(x:int) 
     modifies this,Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)

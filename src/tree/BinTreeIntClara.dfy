@@ -356,20 +356,59 @@ class Tree {
     ensures Size() == |MapModel()|
   //TO  DO:añadir tamaño
 
-  static method {:verify false} SearchRec(n: TNode, ghost sk: tree<TNode>, k: K) returns (b:bool, ghost z:TNode)
-    requires ValidRec(n, sk)
+ static method {:verify true} FindRec(node: TNode?, ghost sk: tree<TNode>, k: K) returns (found: TNode?)
+    requires ValidRec(node, sk)
     requires SearchTreeRec(sk)
-    ensures ValidRec(n, sk)
+
+    ensures ValidRec(node, sk)
     ensures SearchTreeRec(sk)
-    ensures b == exists n | n in elems(sk) :: n.key == k
-    ensures b ==> z in elems(sk) && z.key==k  
+    ensures found == null <==> k !in old(MapModelRec(sk))
+    ensures found != null ==>  found in elems(sk) && found.key == k && found.value==old(MapModelRec(sk))[k]
+//    ensures MapModelRec(sk) == old(MapModelRec(sk))
 
     requires forall x | x in elems(sk) :: allocated(x)
     ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
     ensures fresh(elems(sk)-old(elems(sk)))
     ensures forall x | x in elems(sk) :: allocated(x)
+  {
+        ModelRelationWithSkeletonKeyRec(node,sk,k);
+
+    if node == null {
+      found := null;
+    } else {
+      if k == node.key {
+        found := node;
+      } else if node.key < k {
+        found := FindRec(node.right, sk.right, k);
+      } else if k < node.key {
+        found := FindRec(node.left, sk.left, k);
+      } else {
+        assert false;
+      }
+    if (found!=null)
+      { ModelRelationWithSkeletonRecL(node,sk,k,found.value); } 
  
-  method {:verify false} Search(k: K) returns (b:bool)
+    }
+  }
+
+method {:verify true} Find(k: K) returns (found: TNode?)
+    requires Valid()
+    requires SearchTree()
+    requires forall x | x in Repr() :: allocated(x)
+
+    ensures found == null <==> k !in old(MapModel())
+    ensures found != null ==>  found in elems(skeleton) && found.key == k && found.value == old(MapModel())[k]
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+  {
+    assert Repr() == elems(skeleton);
+    found := FindRec(root, skeleton, k);
+  }
+
+
+  method {:verify true} Search(k: K) returns (b:bool)
     requires Valid()
     requires SearchTree()
     ensures Valid()
@@ -380,6 +419,10 @@ class Tree {
     ensures forall x | x in Repr() :: allocated(x)
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
+
+    { var found:=Find(k);
+      b:= (found!=null); 
+    }
 
   static method {:verify false} GetRec(n: TNode, ghost sk: tree<TNode>, k: K) returns (v: V)
     requires ValidRec(n, sk)
