@@ -1052,8 +1052,8 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     requires RedBlackTreeRec(sk.left)
     requires RedBlackTreeRec(sk.right)
     requires BlackHeight(sk.left) == BlackHeight(sk.right)
-    //requires !(node.right != null && node.right.color.Red? && node.right.left != null && node.right.left.color.Red?)
-    //requires node.left != null && node.left.color.Red? && node.right != null && node.right.color.Red? ==> node.color.Black?
+    requires !(node.right != null && node.right.color.Red? && node.right.left != null && node.right.left.color.Red?)
+    requires node.left != null && node.left.color.Red? && node.right != null && node.right.color.Red? ==> node.color.Black?
 
     ensures ValidRec(newNode, newSk)
     ensures SearchTreeRec(newSk)
@@ -1213,15 +1213,13 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
       }
     }
 
-    //assume !(newNode.right != null && newNode.right.color.Red? && newNode.right.left != null && newNode.right.left.color.Red?);
-    //assume newNode.left != null && newNode.left.color.Red? && newNode.right != null && newNode.right.color.Red? ==> newNode.color.Black?;
-
     assert node == old(node);
     label A:
     assert old(node) != null ==> newNode.color == old(node.color);
     assert old(node) != null ==> newNode == node;
-    //assert !(newNode.right != null && newNode.right.color.Red? && newNode.right.left != null && newNode.right.left.color.Red?)
-    assert newNode.left != null && newNode.left.color.Red? && newNode.right != null && newNode.right.color.Red? ==> newNode.color.Black?;
+    if newNode.right != null && newNode.right.left != null {
+      assert ValidRec(newNode.right.left, newSk.right.left);
+    }
     var newNewNode, newNewSk := RestoreInsert(newNode, newSk);
     assert old@A(newNode.color).Black? && newNewNode.color.Red? ==> newNewNode.left == null || newNewNode.left.color.Black?;
     if old(node) != null && old(node.color).Black? {
@@ -1231,19 +1229,5 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
 
     newNode, newSk := newNewNode, newNewSk;
     assert old(node) != null && old(node.color).Black? && newNode.color.Red? ==> newNode.left == null || newNode.left.color.Black?;
-    /*
-    label A:
-    assert old(node) != null ==> newNode.color == old(node.color);
-    assert old(node) != null ==> newNode == old(node);
-    assert old(node) != null ==> old@A(newNode) == old(node);
-    newNode, newSk := RestoreInsert(newNode, newSk);
-    assume old@A(newNode.color).Black? && newNode.color.Red? ==> newNode.left == null || newNode.left.color.Black?;
-    assert old(node) != null ==> old@A(newNode) == old(node);
-    //assert old(node) != null && old(node.color).Black? && newNode.color.Red? ==> newNode.left == null || newNode.left.color.Black?;
-    if old(node) != null && old(node.color).Black? {
-      //assert old@A(newNode.color) == old(node.color);
-      //assert old@A(newNode.color).Black?;
-    }
-    */
   }
 }
