@@ -181,6 +181,57 @@ class Tree {
     }
   }
 
+  static function FindNode(k: K, node: TNode?, sk: tree<TNode>): TNode
+    reads elems(sk)
+    requires Tree.ValidRec(node, sk)
+    requires Tree.SearchTreeRec(sk)
+    requires exists n | n in elems(sk) :: n.key == k
+    ensures FindNode(k, node, sk).key == k
+    ensures forall n | n in elems(sk) && n.key == k :: n == FindNode(k, node, sk)
+  {
+    match sk {
+      case Empty() => assert false; node
+      case Node(l, n, r) =>
+        if k < n.key then
+        FindNode(k, node.left, sk.left)
+        else if n.key < k then
+          FindNode(k, node.right, sk.right)
+        else
+          assert n.key == k;
+          n
+    }
+  }
+
+  static function TreeKeys(sk: tree<TNode>): set<K>
+    reads elems(sk)
+  {
+    set n | n in elems(sk) :: n.key
+  }
+
+  static lemma MapModelLemmas(node: TNode?, sk: tree<TNode>)
+    requires ValidRec(node, sk)
+    requires SearchTreeRec(sk)
+    ensures MapModelRec(sk).Keys == TreeKeys(sk)
+    // ensures MapModelRec(root, sk) == map n | n in elems(sk) :: n.value
+    ensures MapModelRec(sk) == map k | k in TreeKeys(sk) :: FindNode(k, node, sk).value
+    ensures forall n | n in elems(sk) :: n.key in MapModelRec(sk)
+    ensures sk.Node? ==> sk.data.key !in MapModelRec(sk.left)
+    ensures sk.Node? ==> sk.data.key !in MapModelRec(sk.right)
+    ensures sk.Node? ==> forall k | k in MapModelRec(sk.left) :: k !in MapModelRec(sk.right)
+    ensures sk.Node? ==> forall k | k in MapModelRec(sk.right) :: k !in MapModelRec(sk.left)
+    // ensures sk.Node? ==> forall k | sk.data.key < k :: k !in MapModelRec(root.left, sk.left)
+  {
+    reveal MapModelRec();
+    match sk {
+      case Empty() => {}
+      case Node(l, n, r) => {
+        reveal MapModelRec();
+        MapModelLemmas(node.left, sk.left);
+        MapModelLemmas(node.right, sk.right);
+      }
+    }
+  }
+
   function MapModel(): map<K, V>
     reads this, elems(skeleton)
     requires Valid()
@@ -878,11 +929,15 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     node != null ==> node.color.Black?
   }
 
-  static method {:verify false} RotateLeft(node: TNode, ghost sk: tree<TNode>) returns (newNode: TNode, ghost newSk: tree<TNode>)
+  static method {:verify true} RotateLeft(node: TNode, ghost sk: tree<TNode>) returns (newNode: TNode, ghost newSk: tree<TNode>)
+    modifies node`color
+    modifies node`right
+    modifies node.right`left
+    modifies node.right`color
     //modifies elems(sk)
-    modifies set x | x in elems(sk) :: x`left
-    modifies set x | x in elems(sk) :: x`right
-    modifies set x | x in elems(sk) :: x`color
+    //modifies set x | x in elems(sk) :: x`left
+    //modifies set x | x in elems(sk) :: x`right
+    //modifies set x | x in elems(sk) :: x`color
     requires ValidRec(node, sk)
     requires node.right != null
     requires node.right.color.Red?
@@ -907,7 +962,7 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     ensures RedBlackTreeRec(newSk.right)
     ensures RedBlackTreeRec(newSk)
 
-    //ensures MapModelRec(newSk) == old(MapModelRec(sk))  // TODO
+    ensures MapModelRec(newSk) == old(MapModelRec(sk))
     ensures elems(newSk) == elems(sk)
 
     requires forall x | x in elems(sk) :: allocated(x)
@@ -929,6 +984,28 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     }
     if newNode.left.right != null {
       assert ValidRec(newNode.left.right, newSk.left.right);
+    }
+    assert MapModelRec(newSk) == old(MapModelRec(sk)) by {
+      reveal MapModelRec();
+      calc == {
+        MapModelRec(newSk);
+        MapModelRec(newSk.left) + MapModelRec(newSk.right)[newNode.key := newNode.value];
+        MapModelRec(Node(sk.left, node, sk.right.left)) + MapModelRec(sk.right.right)[newNode.key := newNode.value];
+        (MapModelRec(sk.left) + MapModelRec(sk.right.left))[node.key := node.value] + MapModelRec(sk.right.right)[newNode.key := newNode.value];
+        (MapModelRec(sk.left) + MapModelRec(sk.right.left)) + map[node.key := node.value] + MapModelRec(sk.right.right) + map[newNode.key := newNode.value];
+        {
+          assert node.key !in MapModelRec(sk.right.right) by {
+            MapModelLemmas(newNode, newSk);
+          }
+        }
+        (MapModelRec(sk.left) + MapModelRec(sk.right.left)) + MapModelRec(sk.right.right) + map[node.key := node.value] + map[newNode.key := newNode.value];
+        MapModelRec(sk.left) + (MapModelRec(sk.right.left) + MapModelRec(sk.right.right)) + map[node.key := node.value] + map[newNode.key := newNode.value];
+        (MapModelRec(sk.left) + (MapModelRec(sk.right.left) + MapModelRec(sk.right.right))[newNode.key := newNode.value])[node.key := node.value];
+        (MapModelRec(sk.left) + (MapModelRec(sk.right.left) + MapModelRec(sk.right.right))[old(node.right.key) := old(node.right.value)])[node.key := node.value];
+        old((MapModelRec(sk.left) + (MapModelRec(sk.right.left) + MapModelRec(sk.right.right))[node.right.key := node.right.value])[node.key := node.value]);
+        old((MapModelRec(sk.left) + MapModelRec(sk.right))[node.key := node.value]);
+        old(MapModelRec(sk));
+      }
     }
   }
 
@@ -1157,7 +1234,7 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     }
   }
 
-  static method {:verify true} RBInsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
+  static method {:verify false} RBInsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
       returns (newNode: TNode, ghost newSk: tree<TNode>, ghost insertedNode:TNode)
     //modifies elems(sk)
     modifies set x | x in elems(sk) :: x`left
