@@ -1,12 +1,5 @@
-type K = int
-type V = int
-type pairKV = (K,V)
+include "KeyValue.dfy"
 
-function key(p:pairKV):K
-{p.0}
-
-function value(p:pairKV):V
-{p.1}
 
 /*function Keys(m:map<K,V>): set<K>
      ensures Keys(m)==set k | k in m :: k
@@ -170,8 +163,16 @@ method First() returns (it: UnorderedMapIterator)
 
  method contains(k:K) returns (b:bool)
     requires Valid()
+    requires forall x | x in Repr() :: allocated(x)
     ensures Valid() 
     ensures b==(k in Model()) 
+  
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+   
+    ensures Iterators() == old(Iterators())
+
 
 method at(k:K) returns (v:V)
     //modifies this,Repr()

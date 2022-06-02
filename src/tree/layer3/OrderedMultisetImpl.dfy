@@ -14,7 +14,10 @@ function mapToMultiset(s:set<(K,V)>):multiset<K>
       else 
         mapToMultiset(s-{p})
   }
-  
+
+  /*function mapModelToMultiset(m:map<K,V>):multiset<K>
+  {mapToMultiset(m.)}
+  */
   lemma MapMultisetMonotone(s:set<(K,V)>,z:(K,V))
   ensures mapToMultiset(s-{z}) <= mapToMultiset(s)
   
@@ -24,7 +27,7 @@ function mapToMultiset(s:set<(K,V)>):multiset<K>
   ensures mapToMultiset(s)[p.0]==mapToMultiset(s-{z})[p.0]
   
   
-  lemma  MapMultisetRelationAuxA(s:set<(K,V)>,p:(K,V))
+  lemma  {:verify false} MapMultisetRelationAuxA(s:set<(K,V)>,p:(K,V))
   requires s != {} && p in s && p.1>0
   ensures p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1
   {
@@ -44,19 +47,19 @@ function mapToMultiset(s:set<(K,V)>):multiset<K>
      }
 }
 
-lemma  MapMultisetRelationAux(s:set<(K,V)>)
+lemma {:verify false} MapMultisetRelationAux(s:set<(K,V)>)
   ensures forall p | p in s && p.1>0 :: p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1
   {forall p | p in s && p.1>0 
   ensures p.0 in mapToMultiset(s) && mapToMultiset(s)[p.0]==p.1
   {MapMultisetRelationAuxA(s,p);}}
 
-lemma mapItems(m:map<K,V>,k:K)
+lemma {:verify false} mapItems(m:map<K,V>,k:K)
 requires m!=map[] && k in m
 ensures exists p :: p in m.Items && p.0==k
 { assert (k,m[k]) in m.Items;}
 
 
-    lemma MapMultisetRelation(m:map<K,V>)
+    lemma {:verify false} MapMultisetRelation(m:map<K,V>)
     requires forall k | k in m :: m[k]>0
     ensures m==map[] <==> mapToMultiset(m.Items)==multiset{}
     ensures forall k | k in m :: k in mapToMultiset(m.Items) && mapToMultiset(m.Items)[k]==m[k]
@@ -72,14 +75,14 @@ ensures exists p :: p in m.Items && p.0==k
       MapMultisetRelationAux(m.Items);}
   }
 
-    lemma EquivalenceMapMultisetRelation(m:map<K,V>,ms:multiset<K>)
+    lemma {:verify false} EquivalenceMapMultisetRelation(m:map<K,V>,ms:multiset<K>)
     requires forall k | k in m :: m[k]>0
     ensures (map k | k in ms :: ms[k]) == m <==> (mapToMultiset(m.Items)==ms)
      {
       MapMultisetRelation(m);
       }
 
-   lemma equalMapMultiset(m:map<K,V>,m':map<K,V>)
+   lemma {:verify false} equalMapMultiset(m:map<K,V>,m':map<K,V>)
     requires forall k | k in m :: m[k]>0
     requires forall k | k in m' :: m'[k]>0
     requires mapToMultiset(m.Items)==mapToMultiset(m'.Items)
@@ -94,53 +97,67 @@ ensures exists p :: p in m.Items && p.0==k
 class OrderedMultisetIteratorImplMap extends OrderedMultisetIterator{
   
   ghost var parent:OrderedMultisetImplMap;
-  var stack:seq<(TNode, ghost tree<TNode>)>;//esto debería ser una Stack
-  var howmany:nat; //from 0 to howmany have already been traversed of the current element
+  ghost var stackSK: seq<tree<TNode>>;//esto debería ser una Stack
+  ghost var index:nat;
+
+  var stack:seq<TNode>
+  var numTraversed:nat; //from 0 to numTraversed have already been traversed of the current element
   
+
   constructor(p:OrderedMultisetImplMap)
   requires p.Valid()
+  ensures Valid()
   { parent:=p;
     stack := [];
-    howmany:=0;
-    }
+    stackSK:=[];
+    numTraversed:=0;
+    index:=0;
+  }
 
   function Parent(): UnorderedMultiset
     reads this
     ensures Parent() is OrderedMultisetImplMap
   { parent } 
 
-  function straversed():set<TNode>
+ function straversed():set<TNode>
       reads this,Parent(), Parent().Repr()
-  {set n | n in elems(parent.tree.skeleton) && n.key < stack[0].0.key}
-
-  function notYetTraversed():set<TNode>
+      requires Valid()
+      requires stack !=[]
+  {set n | n in elems(parent.tree.skeleton) && n.key < stack[0].key :: n}
+  
+  /*function notYetTraversed():set<TNode>
       reads this,Parent(), Parent().Repr()
-  { set n | n in elems(parent.tree.skeleton) && n.key > stack[0].0.key}
+  { set n | n in elems(parent.tree.skeleton) && n.key > stack[0].key}*/
 
   function current():TNode
    reads this,Parent(), Parent().Repr()
    requires stack != [] 
-  { stack[0].0}
+  { stack[0]}
 
   function nodesStack():set<TNode>
       reads this
-  { set p | p in stack ::p.0}
+      requires stack!=[]
+  { set p | p in stack[1..] :: p}
 
-  function reachableFromStack():set<TNode>
+/*  function reachableFromStack():set<TNode>
   { nodesStack()+
-    unions(set p | p in stack :: elems(p.1.right))}
-  
- function leftPathAux(n:TNode,sk:tree<TNode>,ac:seq<(TNode,tree<TNode>)>):seq<(TNode,tree<TNode>)>
-   reads elems(sk)
+    unions(set p | p in stackSK :: elems(p.right))}
+  */
+ /*function leftPathAux(n:TNode,sk:tree<TNode>,ac:seq<TNode>):seq<TNode>
+  reads set x | x in elems(sk)+{n} :: x`key
+  reads  set x | x in ac 
    requires n in elems(sk)
    {
      match sk {
        case Node(l,x,r) => 
-          if (n==x) then [(n,sk)]+ac
-          else if (n.key<x.key) then leftPathAux(n,l,[(x,sk)]+ac)
+          if (n==x) then [n]+ac
+          else if (n.key<x.key) then leftPathAux(n,l,[x]+ac)
           else leftPathAux(n,r,ac)
      }
-   }
+   }*/
+
+
+
 
   function unions<A> (ss:set<set<A>>):set<A>
   {
@@ -151,10 +168,58 @@ class OrderedMultisetIteratorImplMap extends OrderedMultisetIterator{
   }
 
   
+  function method inorderKeysR(t: tree<TNode>): seq<int>
+  reads set x | x in elems(t) :: x`key
+  {
+   match t {
+    case Empty => []
+    case Node(l, x, r) => [x.key] + inorderKeys(r)
+   }
+  }
+  function method inorderKeys(t: tree<TNode>): seq<int>
+  reads set x | x in elems(t) :: x`key
+  {
+   match t {
+    case Empty => []
+    case Node(l, x, r) => inorderKeys(l) + [x.key] + inorderKeys(r)
+   }
+  }
+  function inorders(st:seq<tree<TNode>>):seq<int>
+  reads set t,x | t in st && x in elems(t) :: x`key 
+  {
+   if (st==[]) then []
+   else inorderKeysR(st[0])+inorders(st[1..])
+
+  }
+
+function fset2Seq(s:set<int>):seq<int> 
+  decreases s
+{
+  if s == {} then []
+  else 
+    var y := Pick(s);
+    [y] + fset2Seq(s - {y}) //mejor insertar ordenadamente 
+}
+
+function Pick(s: set<int>): int
+  requires s != {}
+{
+  var x :| x in s; x
+}
+  
+ /* function seqTraversed():seq<int>
+      reads this,Parent(), Parent().Repr()
+  { fset2Seq(set n | n in  elems(parent.tree.skeleton) && n.key < stack[0].key :: n.key)}
+  */
   
   predicate Valid()
     reads this, Parent(), Parent().Repr()
-  { parent.Valid() &&  
+  { parent.Valid() && 
+    |stack|==|stackSK| &&  
+    (forall i | 0 <= i < |stack| :: stack[i] in Parent().Repr()) &&
+    (forall i | 0 <= i < |stackSK| :: elems(stackSK[i]) <= Parent().Repr()) && 
+    (forall i | 0 <= i < |stack| :: Tree.ValidRec(stack[i],stackSK[i])) 
+    /*&&
     //all disjoint 
     (set n | n in nodesStack())!! straversed() &&
     straversed()!!notYetTraversed() && 
@@ -162,27 +227,30 @@ class OrderedMultisetIteratorImplMap extends OrderedMultisetIterator{
 
     elems(parent.tree.skeleton)==straversed()+{current()}+notYetTraversed() &&
     notYetTraversed()==reachableFromStack() &&
-    0 <= howmany < stack[0].0.value &&
+    0 <= numTraversed < stack[0].value &&
 
-
-    stack[..]==leftPathAux(stack[0].0,parent.tree.skeleton,[])
+    // secuencia ordenada de los ya recorridos+inorders(stackSK)==inorderKeys(parent.tree.skeleton)
+    stack[..]==leftPathAux(stack[0],parent.tree.skeleton,[]) &&
+    index==|straversed()|+numTraversed &&
+    stack[0].key==elemth(parent.Model(),index)*/
   }
 
-  function Traversed():multiset<int>
+
+  function {:verify false} Traversed():multiset<int>
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid() 
     ensures Traversed()<=Parent().Model()
     ensures forall x,y | x in Traversed() && y in Parent().Model()-Traversed() :: x<=y
    /* {
-      mapToMultiset((set n | n in straversed::(n.key,n.value))+{(stack[top-1].key,howmany)})
+      mapToMultiset((set n | n in straversed()::(n.key,n.value))+{(stack[0].key,numTraversed)})
 
     }*/
 
    //Several elements equal to the Peek may be in Traversed and some others not
   // Example: Model=={1,1,2,3,3,3,4,5} Traversed=={1,1,2,3,3} Peek=3 
 
-  function method Peek(): int
+  function method {:verify false} Peek(): int
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -191,7 +259,7 @@ class OrderedMultisetIteratorImplMap extends OrderedMultisetIterator{
     ensures Peek()==elemth(Parent().Model(),|Traversed()|)
     ensures forall x | x in Traversed() :: x<=Peek()
     ensures forall x | x in Parent().Model()-Traversed() :: Peek()<=x 
-
+  //{ stack[0].key}
 
   function method Index(): int
     reads this, Parent(), Parent().Repr()
@@ -200,14 +268,14 @@ class OrderedMultisetIteratorImplMap extends OrderedMultisetIterator{
     ensures HasNext() ==> Index()==|Traversed()|
     ensures !HasNext() ==> Index()==|Parent().Model()|
    
-  function method HasNext(): bool
+  function method {:verify false} HasNext(): bool
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
     ensures HasNext()  <==> Traversed() < Parent().Model() && |Traversed()| < |Parent().Model()|
     //|Traversed()| < |Parent().Model()| es necesario para poder verificar con cota |s.Model()|-|it.Traversed()|
     ensures !HasNext() ==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()|
-  //{ true }
+ // { stack!=[] }
 
   method Next() returns (x: int)
     modifies this

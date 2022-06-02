@@ -281,8 +281,6 @@ ensures maximum(s)==elemth(s,|s|-1)
       }
   }}
 
-
-
 //Sorted seqs
 
 function isSortedSeq(xs:seq<int>):bool
