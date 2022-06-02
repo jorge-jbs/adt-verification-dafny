@@ -117,13 +117,14 @@ ensures |Traversed()|==|traversed()|
   else {parent.tree.ModelRelationWithSkeletonKeys(stack[0].key);}
 
   assert Traversed()==(set n | n in traversed():: n.key);
-  //sizes(Traversed(),(set n | n in traversed():: n.key));
-  //assert |Traversed()|==|(set n | n in traversed():: n.key)|;
+  sizes(Traversed(),(set n | n in traversed():: n.key));
+  assert |Traversed()|==|(set n | n in traversed():: n.key)|;
   //assume false;
 
-  setProperty(Traversed(),(set n | n in traversed():: n.key));
-  assert |Traversed()|==|(set n | n in traversed():: n.key)|;
-  assume false;
+  //setProperty(Traversed(),(set n | n in traversed():: n.key));
+  //assert |Traversed()|==|(set n | n in traversed():: n.key)|;
+  assume |(set n | n in traversed():: n.key)| == |traversed()|;
+  //assume false;
   //==|traversed()|;
 
 }
@@ -131,7 +132,7 @@ ensures |Traversed()|==|traversed()|
 
 
 
-function method {:verify false} Peek():pairKV 
+function method {:verify true} Peek():pairKV 
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -144,6 +145,7 @@ function method {:verify false} Peek():pairKV
     ensures forall k | k in Parent().Model().Keys-Traversed()-{key(Peek())} :: key(Peek()) < k
     ensures forall k | k in Parent().Model().Keys-Traversed() :: key(Peek()) <= k
   { peekProperties();
+    elemthProperty();
     (stack[0].key,stack[0].value) }
   
   lemma {:verify true} peekProperties()
@@ -166,11 +168,20 @@ function method {:verify false} Peek():pairKV
   }
 
 
-/*lemma elemthProperty()
+lemma elemthProperty()
 requires Valid()
 requires stack!=[]
-ensures stack[0].key==elemth(Parent().Model().Keys,|traversed()|)  
-*/
+requires 0<=|Traversed()|< |Parent().Model().Keys|;
+ensures stack[0].key==elemth(Parent().Model().Keys,|Traversed()|)  
+{
+  // && x in s && |smaller(s,x)|==k
+  //assume false;
+
+  lelemthrev(Parent().Model().Keys, stack[0].key, |Traversed()|);
+  //assume false;
+}
+
+
  function method HasNext(): bool
     reads this, Parent(), Parent().Repr()
     requires Valid()
