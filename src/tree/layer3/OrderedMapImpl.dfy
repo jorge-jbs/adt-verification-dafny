@@ -228,7 +228,9 @@ function method HasPrev(): bool//igual que HasNext
     ensures HasPrev()  <==> Traversed() < Parent().Model().Keys && |Traversed()| < |Parent().Model().Keys|
     //|Traversed()| < |Parent().Model()| es necesario para poder verificar con cota |s.Model()|-|it.Traversed()|
     ensures !HasPrev() ==> Traversed() == Parent().Model().Keys && |Traversed()| == |Parent().Model().Keys|
-  
+  {hasNextProperties();
+   stack!=[]
+  }
 
   method Prev() returns (p: pairKV)
     modifies this
@@ -279,7 +281,7 @@ function method HasPrev(): bool//igual que HasNext
     ensures HasNext() ==> Peek()==it.Peek()
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
-
+    
 
 }
 
