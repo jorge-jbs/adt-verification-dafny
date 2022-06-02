@@ -108,22 +108,23 @@ ensures  |s1|==|s2|
 {}
 
 
-lemma {:verify false} traversedRelation()
+lemma {:verify true} traversedRelation()
 requires Valid()
 ensures Traversed()==(set n | n in traversed():: n.key)
-//ensures |Traversed()|==|traversed()|
+ensures |Traversed()|==|traversed()|
 { 
   if (stack==[]) {}
   else {parent.tree.ModelRelationWithSkeletonKeys(stack[0].key);}
-    assume false;
 
   assert Traversed()==(set n | n in traversed():: n.key);
-  sizes(Traversed(),(set n | n in traversed():: n.key));
+  //sizes(Traversed(),(set n | n in traversed():: n.key));
   //assert |Traversed()|==|(set n | n in traversed():: n.key)|;
   //assume false;
 
   setProperty(Traversed(),(set n | n in traversed():: n.key));
-  assert |Traversed()|==|(set n | n in traversed():: n.key)|==|traversed()|;
+  assert |Traversed()|==|(set n | n in traversed():: n.key)|;
+  assume false;
+  //==|traversed()|;
 
 }
 
