@@ -17,6 +17,7 @@ requires s1==s2
 ensures |s1|==|s2|
 {}
 
+
 lemma sizesContained(s1:set<int>,s2:set<int>)
 requires s1 <= s2
 ensures |s1| <= |s2|

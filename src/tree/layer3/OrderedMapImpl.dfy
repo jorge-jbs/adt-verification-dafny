@@ -6,12 +6,14 @@ class OrderedMapIteratorImpl extends OrderedMapIterator{
 
 ghost var parent:OrderedMapImpl;
   ghost var stackSK: seq<tree<TNode>>;//esto debería ser una Stack
-  var stack:seq<TNode>  
+  var stack:seq<TNode>;
+  var index:int;  
 
   constructor(p:OrderedMapImpl)
   requires p.Valid()
   ensures Valid()
   { parent:=p;
+    index:=0;
     assume false;//De momento para que see trague el valid
     stackSK:=[];
     stack := [];
@@ -74,10 +76,13 @@ predicate Valid()
     (forall i, n, m | 0 <= i < |stack| && n in traversed() && m in reachableFromStack(i):: n.key < m.key) && 
     (forall i,j,n,m | 0 <= i < j < |stack| && n in reachableFromStack(i) && m in reachableFromStack(j):: n.key < m.key)&&
     (stack !=[] ==> |stack| == |Tree.LeftPathAux(stack[0],parent.tree.skeleton)|) && 
-    (forall i | 0 <= i < |stack|  :: stack[i]==Tree.LeftPathAux(stack[0],parent.tree.skeleton)[i])  
+    (forall i | 0 <= i < |stack|  :: stack[i]==Tree.LeftPathAux(stack[0],parent.tree.skeleton)[i])&& 
+    index==|traversed()| 
+
 }
 
-
+//Node es descendiente de los que hay en la pila: usar leftPathAux
+//elems(skeleton) ==traversed()+ reachableFromStacks()+elems(stack[0].left)
 function traversed():set<TNode>
       reads this,Parent(), Parent().Repr()
       requires parent.Valid()
@@ -102,12 +107,6 @@ function Traversed():set<K>
    (set m | m in Parent().Model().Keys && m < stack[0].key)
 }
 
-lemma setProperty(s1:set<K>,s2:set<K>)
-requires s1==s2
-ensures  |s1|==|s2|
-{}
-
-
 lemma {:verify true} traversedRelation()
 requires Valid()
 ensures Traversed()==(set n | n in traversed():: n.key)
@@ -119,20 +118,14 @@ ensures |Traversed()|==|traversed()|
   assert Traversed()==(set n | n in traversed():: n.key);
   sizes(Traversed(),(set n | n in traversed():: n.key));
   assert |Traversed()|==|(set n | n in traversed():: n.key)|;
-  //assume false;
-
-  //setProperty(Traversed(),(set n | n in traversed():: n.key));
-  //assert |Traversed()|==|(set n | n in traversed():: n.key)|;
   assume |(set n | n in traversed():: n.key)| == |traversed()|;
-  //assume false;
-  //==|traversed()|;
-
+  
 }
 
 
 
 
-function method {:verify true} Peek():pairKV 
+function method {:verify false} Peek():pairKV 
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -145,13 +138,14 @@ function method {:verify true} Peek():pairKV
     ensures forall k | k in Parent().Model().Keys-Traversed()-{key(Peek())} :: key(Peek()) < k
     ensures forall k | k in Parent().Model().Keys-Traversed() :: key(Peek()) <= k
   { peekProperties();
-    elemthProperty();
     (stack[0].key,stack[0].value) }
   
-  lemma {:verify true} peekProperties()
+  lemma {:verify false} peekProperties()
   requires Valid() 
   requires stack!=[]
+  requires 0<=|Traversed()|< |Parent().Model().Keys|;
   ensures (stack[0].key,stack[0].value) in  Parent().Model().Items
+  ensures stack[0].key==elemth(Parent().Model().Keys,|Traversed()|)  
   ensures stack[0].key !in Traversed()
   ensures stack[0].value == Parent().Model()[stack[0].key]
   ensures forall k | k in Traversed() :: k < stack[0].key
@@ -165,22 +159,9 @@ function method {:verify true} Peek():pairKV
     parent.tree.mapModelRecContained(stack[0],stackSK[0],parent.tree.root,parent.tree.skeleton);
     assert Tree.MapModelRec(stackSK[0]).Items <= Parent().Model().Items;
     assert forall k | k in Parent().Model().Keys-Traversed() && k!=stack[0].key :: stack[0].key < k;
+    lelemthrev(Parent().Model().Keys, stack[0].key, |Traversed()|);
+
   }
-
-
-lemma elemthProperty()
-requires Valid()
-requires stack!=[]
-requires 0<=|Traversed()|< |Parent().Model().Keys|;
-ensures stack[0].key==elemth(Parent().Model().Keys,|Traversed()|)  
-{
-  // && x in s && |smaller(s,x)|==k
-  //assume false;
-
-  lelemthrev(Parent().Model().Keys, stack[0].key, |Traversed()|);
-  //assume false;
-}
-
 
  function method HasNext(): bool
     reads this, Parent(), Parent().Repr()
@@ -189,7 +170,21 @@ ensures stack[0].key==elemth(Parent().Model().Keys,|Traversed()|)
     ensures HasNext()  <==> Traversed() < Parent().Model().Keys && |Traversed()| < |Parent().Model().Keys|
     //|Traversed()| < |Parent().Model()| es necesario para poder verificar con cota |s.Model()|-|it.Traversed()|
     ensures !HasNext() ==> Traversed() == Parent().Model().Keys && |Traversed()| == |Parent().Model().Keys|
- // {stack != []}
+  { hasNextProperties();
+    stack != []
+  }
+
+lemma {:verify true} hasNextProperties()
+  requires Valid() 
+  ensures stack!=[] ==> Traversed() < Parent().Model().Keys && |Traversed()| < |Parent().Model().Keys|
+  ensures stack==[] ==> Traversed() == Parent().Model().Keys && |Traversed()| == |Parent().Model().Keys|
+{ if (stack!=[])
+   {
+   //assert stack[0].key in Parent().Model().Keys && stack[0].key !in Traversed();
+   sizesStrictContained(Traversed(),Parent().Model().Keys);
+   }
+
+}
 
 
   function method Index(): int
@@ -198,7 +193,8 @@ ensures stack[0].key==elemth(Parent().Model().Keys,|Traversed()|)
     requires Parent().Valid()
     ensures HasNext() ==> Index()==|Traversed()|==|smaller(Parent().Model().Keys,key(Peek()))|
     ensures !HasNext() ==> Index()==|Parent().Model()|
-  
+   { traversedRelation();
+     index }
 
   method Next() returns (p: pairKV)
     modifies this
