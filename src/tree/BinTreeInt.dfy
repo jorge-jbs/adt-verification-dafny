@@ -1218,7 +1218,6 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
       || newNode.right.color.Red?
       || (newNode.right.left != null && newNode.right.left.color.Red?)
     ensures TempRedBlack234TreeRec(newSk)
-    //ensures RedBlackTreeRec(newSk)
 
     //ensures MapModelRec(newSk) == old(MapModelRec(sk))
     ensures elems(newSk) == elems(sk)
@@ -1260,13 +1259,20 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     }
   }
 
-  static method {:verify false} RBRemoveMinRec(node: TNode, ghost sk: tree<TNode>)
+  static method {:verify true} RBRemoveMinRec(node: TNode, ghost sk: tree<TNode>)
       returns (newNode: TNode?, ghost newSk: tree<TNode>, removedNode: TNode)
-    modifies set x | x in elems(sk) :: x`left
+    decreases size(sk)
+    modifies set n | n in elems(sk) :: n`color
+    modifies set n | n in elems(sk) :: n`left
+    modifies set n | n in elems(sk) :: n`right
 
     requires ValidRec(node, sk)
     requires SearchTreeRec(sk)
-    //requires RedBlackTreeRec(sk)
+    requires RedBlackTreeRec(sk)
+    requires
+      || node.color.Red?
+      || (node.left != null && node.left.color.Red?)
+
     ensures ValidRec(newNode, newSk)
     ensures SearchTreeRec(newSk)
     //ensures RedBlackTreeRec(newSk)
@@ -1281,10 +1287,8 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     //ensures old(MapModelRec(sk))[removedNode.key] == removedNode.value
     //ensures MapModelRec(newSk) == old(MapModelRec(sk)) - {removedNode.key}
 
-    //ensures forall n | n in elems(sk) ::
-      //n.key==old(n.key) && n.value==old(n.value)
-    //ensures forall n | n in elems(sk) && n.key != removedNode.key ::
-      //removedNode.key < n.key
+    ensures forall n | n in elems(sk) ::
+      n.key == old(n.key) && n.value == old(n.value)
     ensures forall n | n in elems(newSk) ::
       removedNode.key < n.key
 
@@ -1292,8 +1296,25 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     ensures forall x {:trigger x in elems(newSk), x in old(elems(sk))} | x in elems(newSk) - old(elems(sk)) :: fresh(x)
     ensures fresh(elems(newSk)-old(elems(sk)))
     ensures forall x | x in elems(newSk) :: allocated(x)
+  {
+    if node.left == null {
+      newNode := node.right;
+      newSk := sk.right;
+      removedNode := node;
+    } else {
+      newNode := node;
+      newSk := sk;
+      if newNode.left != null && newNode.left.color.Black?
+          && (newNode.left.left == null || newNode.left.left.color.Black?) {
+        newNode, newSk := MoveRedLeft(newNode, newSk);
+      }
+      ghost var newSkLeft;
+      newNode.left, newSkLeft, removedNode := RBRemoveMinRec(newNode.left, newSk.left);
+      newSk := Node(newSkLeft, newNode, newSk.right);
+    }
+  }
 
-  static method {:verify true} RBRemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K)
+  static method {:verify false} RBRemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K)
       returns (newNode: TNode?, ghost newSk: tree<TNode>, ghost removedNode: TNode?)
     decreases size(sk)
     //modifies set x | x in elems(sk) :: x`color
@@ -1350,8 +1371,8 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
       } else if k < node.key {
         newNode := node;
         newSk := sk;
-        if node.left != null && node.left.color.Black?
-            && (node.left.left == null || node.left.left.color.Black?) {
+        if newNode.left != null && newNode.left.color.Black?
+            && (newNode.left.left == null || newNode.left.left.color.Black?) {
           newNode, newSk := MoveRedLeft(newNode, newSk);
         }
         ghost var newSkLeft;
