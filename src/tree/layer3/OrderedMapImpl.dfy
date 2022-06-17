@@ -22,6 +22,118 @@ ghost var parent:OrderedMapImpl;
 
 
 
+method {:verify true} descendAndPush(n:TNode,ghost sk: tree<TNode>)
+modifies this
+requires Parent().Valid()
+requires ValidStack() 
+requires index==|traversed()|
+requires Tree.ValidRec(n,sk) 
+requires Tree.SearchTreeRec(sk)
+requires n in Parent().Repr()
+requires elems(sk) <= Parent().Repr()
+requires (forall i | 0 <= i < |stackSK| :: elems(sk) < elems(stackSK[i])) 
+requires (forall i | 0 <= i < |stackSK| :: elems(sk) !! reachableFromStack(i)) 
+//requires (stack !=[] ==> |stack| == |Tree.LeftPathAux(stack[0],parent.tree.skeleton)|)  
+//requires (forall i | 0 <= i < |stack|  :: stack[i]==Tree.LeftPathAux(stack[0],parent.tree.skeleton)[i])
+//requires stack!=[] ==> n.key < stack[0].key
+ensures |stack|==|stackSK|
+ensures  (forall i | 0 <= i < |stack| :: stack[i] in Parent().Repr()) 
+ensures (forall i | 0 <= i < |stackSK| :: elems(stackSK[i]) <= Parent().Repr())  
+ensures (forall i,j | 0 <= i < j < |stackSK| :: elems(stackSK[i]) < elems(stackSK[j])) 
+ensures (forall i | 0 <= i < |stack| :: Tree.ValidRec(stack[i],stackSK[i])) 
+ensures (forall i | 0 <= i < |stackSK| :: Tree.SearchTreeRec(stackSK[i]))  
+
+//requires stack!=[] ==> Tree.LeftPathAux(n,parent.tree.skeleton)==[n]+Tree.LeftPathAux(stack[0],parent.tree.skeleton)
+//ensures Valid()
+//ensures ValidStack()
+{
+ var current:TNode? := n; var currentSK:tree<TNode>:=sk;
+
+ while (current != null)
+  decreases currentSK
+  invariant Parent().Valid()
+  invariant current!= null ==> current in Parent().Repr()
+  invariant elems(currentSK) <= Parent().Repr()
+  invariant Tree.ValidRec(current,currentSK)
+  invariant Tree.SearchTreeRec(currentSK)
+  invariant (forall i | 0 <= i < |stackSK| :: elems(currentSK) < elems(stackSK[i])) 
+  //invariant (forall i | 0 <= i < |stackSK| :: elems(currentSK) !! reachableFrom(stack[i],stackSK[i])) 
+  //invariant (forall i | 0 <= i < |stackSK| :: stack[i] !in elems(currentSK) )
+  
+  //invariant stack!=[] && currentSK!=Empty ==> current.key < stack[0].key
+  //invariant stack!=[] ==> Tree.LeftPathAux(current,parent.tree.skeleton)==[current]+Tree.LeftPathAux(stack[0],parent.tree.skeleton)
+
+
+  //De ValidStack
+  invariant |stack|==|stackSK|
+  invariant (forall i | 0 <= i < |stack| :: stack[i] in Parent().Repr()) 
+  invariant (forall i | 0 <= i < |stackSK| :: elems(stackSK[i]) <= Parent().Repr())  
+  invariant (forall i,j | 0 <= i < j < |stackSK| :: elems(stackSK[i]) < elems(stackSK[j])) 
+  invariant (forall i | 0 <= i < |stack| :: Tree.ValidRec(stack[i],stackSK[i])) 
+  invariant (forall i | 0 <= i < |stackSK| :: Tree.SearchTreeRec(stackSK[i]))  
+ // invariant (forall i,j | 0 <= i < j < |stack| :: reachableFromStack(i)!!reachableFromStack(j))
+  //invariant    (stack !=[] ==> |stack| == |Tree.LeftPathAux(stack[0],parent.tree.skeleton)|)  
+  //invariant     (forall i | 0 <= i < |stack|  :: stack[i]==Tree.LeftPathAux(stack[0],parent.tree.skeleton)[i])
+ // invariant ValidStack() 
+  //invariant traversed()==old(traversed())
+  //invariant index==|traversed()| 
+  //invariant elems(parent.tree.skeleton)==traversed()+ reachableFromStacks() + elems(stackSK[0].left)
+ { 
+   var ostack:=stack;
+   var ostackSK:= stackSK;
+
+  assert (forall i | 0 <= i < |stackSK| :: elems(currentSK) !! reachableFrom(ostack[i],ostackSK[i])) ;
+   stack:=[current]+stack;
+   stackSK:=[currentSK]+stackSK;
+   
+      assume forall i | 1 <= i < |stackSK| :: stack[i]==ostack[i-1] && stackSK[i]==ostackSK[i-1];
+      assert stack[0]==current;
+      assert stackSK[0]==currentSK;
+
+   /*assert stack[0]==current;
+   assert stackSK[0]==currentSK;
+   assume forall i | 1 <= i < |stackSK| :: stack[i]==ostack[i-1] && stackSK[i]==ostackSK[i-1];
+   assert (forall i | 1 <= i < |stackSK| :: elems(currentSK) !! reachableFrom(ostack[i-1],ostackSK[i-1]));
+   assert (forall i | 1 <= i < |stackSK| :: elems(currentSK) !! reachableFromStack(i));
+   assert elems(currentSK.left)<elems(currentSK);
+   assert (forall i | 1 <= i < |stackSK| :: elems(currentSK.left) !! reachableFromStack(i));
+   
+   assert elems(currentSK.left)!!reachableFrom(current,currentSK);*/
+//      assert (forall i | 0 <= i < |stackSK| :: elems(currentSK.left) !! reachableFromStack(i));
+
+
+   current:=current.left;
+   currentSK:=currentSK.left;
+   
+   //assume (forall i | 1 <= i < |stackSK| :: elems(currentSK) !! reachableFromStack(i));
+
+   //assume elems(currentSK)!!reachableFromStack(0);
+   //absurdo(currentSK);
+
+ }
+
+ 
+
+}
+
+lemma {:verify false} absurdo(sk:tree<TNode>)
+ requires |stack|==|stackSK|>0
+ requires parent.Valid() 
+ requires forall i | 0<=i<|stack| :: stack[i] in Parent().Repr()
+ requires forall i | 0<=i<|stackSK| ::elems(stackSK[i]) <= Parent().Repr()
+ requires forall i | 0<=i<|stackSK| :: Tree.ValidRec(stack[i],stackSK[i])
+requires (forall i | 1 <= i < |stackSK| :: elems(sk) !! reachableFromStack(i))
+requires elems(sk)!!reachableFromStack(0)
+ensures (forall i | 0 <= i < |stackSK| :: elems(sk) !! reachableFromStack(i))
+{
+  forall i | 0 <= i < |stackSK| ensures elems(sk) !! reachableFromStack(i)
+  {
+    if (i==0){ assert elems(sk)!!reachableFromStack(0);}
+    else { assert elems(sk) !! reachableFromStack(i);}
+  }
+
+}
+
 
 function Parent(): UnorderedMap
     reads this
@@ -29,7 +141,13 @@ function Parent(): UnorderedMap
 { parent }
 
 
-  
+static function reachableFrom(n:TNode,sk:tree<TNode>):set<TNode>  
+reads elems(sk)
+requires Tree.ValidRec(n,sk)
+{
+  {n}+elems(sk.right)
+}
+
 function reachableFromStack(i:int):set<TNode>
  reads this,Parent(), Parent().Repr()
  requires 0 <= i < |stack|==|stackSK|
@@ -37,7 +155,8 @@ function reachableFromStack(i:int):set<TNode>
  requires stack[i] in Parent().Repr()
  requires elems(stackSK[i]) <= Parent().Repr()
  requires Tree.ValidRec(stack[i],stackSK[i])
-{ {stack[i]} + elems(stackSK[i].right)}
+{ reachableFrom(stack[i],stackSK[i])}
+//{ {stack[i]} + elems(stackSK[i].right)}
 
 function reachableFromStacks():set<TNode>
  reads this,Parent(), Parent().Repr()
@@ -60,11 +179,11 @@ function unions<A> (ss:set<set<A>>):set<A>
   }
 
 
-predicate Valid()
+predicate ValidStack()
     reads this, Parent(), Parent().Repr()
-
-{   parent.Valid() && 
-    |stack|==|stackSK| &&  
+    requires parent.Valid()
+ { 
+   |stack|==|stackSK| &&  
     (forall i | 0 <= i < |stack| :: stack[i] in Parent().Repr()) &&
     (forall i | 0 <= i < |stackSK| :: elems(stackSK[i]) <= Parent().Repr()) && 
     (forall i,j | 0 <= i < j < |stackSK| :: elems(stackSK[i]) < elems(stackSK[j])) && //puede que se deduzca de leftPathAux
@@ -72,11 +191,19 @@ predicate Valid()
     (forall i | 0 <= i < |stackSK| :: Tree.SearchTreeRec(stackSK[i])) && 
     (forall i,j | 0 <= i < j < |stack| :: reachableFromStack(i)!!reachableFromStack(j)) && 
     (forall i | 0 <= i < |stack| :: reachableFromStack(i)!!traversed()) && 
-    elems(parent.tree.skeleton)==traversed()+ reachableFromStacks() &&
     (forall i, n, m | 0 <= i < |stack| && n in traversed() && m in reachableFromStack(i):: n.key < m.key) && 
     (forall i,j,n,m | 0 <= i < j < |stack| && n in reachableFromStack(i) && m in reachableFromStack(j):: n.key < m.key)&&
     (stack !=[] ==> |stack| == |Tree.LeftPathAux(stack[0],parent.tree.skeleton)|) && 
-    (forall i | 0 <= i < |stack|  :: stack[i]==Tree.LeftPathAux(stack[0],parent.tree.skeleton)[i])&& 
+    (forall i | 0 <= i < |stack|  :: stack[i]==Tree.LeftPathAux(stack[0],parent.tree.skeleton)[i])
+ }
+
+
+predicate Valid()
+    reads this, Parent(), Parent().Repr()
+
+{   parent.Valid() &&
+    ValidStack() && 
+    elems(parent.tree.skeleton)==traversed()+ reachableFromStacks() &&
     index==|traversed()| 
 
 }
@@ -107,7 +234,7 @@ function Traversed():set<K>
    (set m | m in Parent().Model().Keys && m < stack[0].key)
 }
 
-lemma {:verify true} traversedRelation()
+lemma {:verify false} traversedRelation()
 requires Valid()
 ensures Traversed()==(set n | n in traversed():: n.key)
 ensures |Traversed()|==|traversed()|
@@ -174,7 +301,7 @@ function method {:verify false} Peek():pairKV
     stack != []
   }
 
-lemma {:verify true} hasNextProperties()
+lemma {:verify false} hasNextProperties()
   requires Valid() 
   ensures stack!=[] ==> Traversed() < Parent().Model().Keys && |Traversed()| < |Parent().Model().Keys|
   ensures stack==[] ==> Traversed() == Parent().Model().Keys && |Traversed()| == |Parent().Model().Keys|
@@ -281,7 +408,6 @@ function method HasPrev(): bool//igual que HasNext
     ensures HasNext() ==> Peek()==it.Peek()
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
-    
 
 }
 

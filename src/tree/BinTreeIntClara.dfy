@@ -948,6 +948,8 @@ static function LeftPathAux(n: TNode, sk: tree<TNode>): seq<TNode>
             LeftPathAux(n, r)
     }
   }
+
+  
   
   lemma mapModelRecContained(node:TNode,sk:tree<TNode>,node':TNode,sk':tree<TNode>)
   requires ValidRec(node,sk) && ValidRec(node',sk')
