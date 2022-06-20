@@ -1162,7 +1162,10 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
       || (newNode.left.left != null && newNode.left.left.color.Red?)
     //ensures TempRedBlack234TreeRec(newSk)
     //ensures newNode.color.Red? ==> newNode.left == null || newNode.left.color.Black?
-    ensures AltTempRedBlack234TreeRec(newSk)
+    ensures AltTempRedBlack234TreeRec(newSk)  // TODO
+    ensures newNode.left.color.Red? ==>
+      newNode.left.left == null || newNode.left.left.color.Black?  // TODO
+    ensures BlackHeight(newSk) == old(BlackHeight(sk))  // TODO
 
     //ensures TempExtra(newNode, newSk)
     //ensures !(node.right != null && node.right.color.Red? && node.right.left != null && node.right.left.color.Red?)
@@ -1295,7 +1298,20 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
 
     requires ValidRec(node, sk)
     requires SearchTreeRec(sk)
-    requires AltTempRedBlack234TreeRec(sk)
+    //requires AltTempRedBlack234TreeRec(sk)
+
+    requires ((sk.left.Empty? || sk.left.data.color.Black?)
+            ==> (sk.right.Empty? || sk.right.data.color.Black?));
+    requires
+      (
+        && sk.left.Node?
+        && sk.left.data.color.Red?
+        //&& sk.right.Node?
+        //&& sk.right.data.color.Red?
+      ) ==> node.color.Black?
+    requires BlackHeight(sk.left) == BlackHeight(sk.right)
+    requires RedBlackTreeRec(sk.left)
+    requires RedBlackTreeRec(sk.right)
 
     ensures ValidRec(newNode, newSk)
     ensures SearchTreeRec(newSk)
@@ -1418,7 +1434,7 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     ensures AltTempRedBlack234TreeRec(sk)
   {}
 
-  static method {:verify true} RBRemoveMinRec(node: TNode, ghost sk: tree<TNode>)
+  static method {:verify false} RBRemoveMinRec(node: TNode, ghost sk: tree<TNode>)
       returns (newNode: TNode?, ghost newSk: tree<TNode>, removedNode: TNode)
     decreases size(sk)
     modifies set n | n in elems(sk) :: n`color
@@ -1432,8 +1448,7 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
       || node.color.Red?
       || (node.left != null && node.left.color.Red?)
 
-    requires node.color.Red? ==>
-      node.left == null || node.left.color.Black?
+    requires node.color.Red? ==> node.left == null || node.left.color.Black?
 
     ensures ValidRec(newNode, newSk)
     ensures SearchTreeRec(newSk)
@@ -1468,8 +1483,7 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
       newNode := node.right;
       newSk := sk.right;
       removedNode := node;
-      //assume BlackHeight(newSk) == old(BlackHeight(sk));
-      assert BlackHeight(newSk) == old(BlackHeight(sk));
+      assert RedBlackTreeRec(newSk);
     } else {
       newNode := node;
       newSk := sk;
@@ -1478,41 +1492,27 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
         newNode, newSk := MoveRedLeft(newNode, newSk);
       } else {
         RB23ImpliesAltTempRB234(newNode, newSk);
-      }
-      assert AltTempRedBlack234TreeRec(newSk);
-      //assert TempRedBlack234TreeRec(newSk);
-      //assert TempExtra(newNode, newSk);
-      ghost var newSkLeft;
-      if newNode.left.left != null {
-        assert ValidRec(newNode.left.left, newSk.left.left);
-      }
-      newNode.left, newSkLeft, removedNode := RBRemoveMinRec(newNode.left, newSk.left);
-      newSk := Node(newSkLeft, newNode, newSk.right);
-      //assert TempRedBlack234TreeRec(newSk);
-      //assert TempExtra(newNode, newSk);
-
-      /*
-      assert !(newNode.right != null && newNode.right.color.Red? && newNode.right.left != null && newNode.right.left.color.Red?) by {
-        if newNode.right != null && newNode.right.left != null {
-          assert ValidRec(newNode.right.left, newSk.right.left);
-        }
-      }
-      assert newNode.left != null && newNode.left.color.Red? && newNode.right != null && newNode.right.color.Red? ==>
-          newNode.color.Black? && (newNode.left.left == null || newNode.left.left.color.Black?) by {
-        assume false;
-        if newNode.left != null && newNode.left.left != null {
+        assert newNode.left.color.Red? ==>
+            newNode.left.left == null || newNode.left.left.color.Black? by {
           assert ValidRec(newNode.left.left, newSk.left.left);
         }
       }
-      assert newNode.left != null && newNode.left.color.Red? && newNode.left.left != null && newNode.left.left.color.Red? ==> newNode.color.Black? by {
-        assume false;
+      assert AltTempRedBlack234TreeRec(newSk);
+      ghost var newSkLeft;
+      newNode.left, newSkLeft, removedNode := RBRemoveMinRec(newNode.left, newSk.left);
+      newSk := Node(newSkLeft, newNode, newSk.right);
+      assume RedBlackTreeRec(newSk.left);
+      assert AltTempRedBlack234TreeRec(newSk) by {
+        assume ((newSk.left.Empty? || newSk.left.data.color.Black?)
+                ==> (newSk.right.Empty? || newSk.right.data.color.Black?));
+        assume ((newSk.left.Node? && newSk.left.data.color.Red?) ==> newNode.color.Black?);
+        assert BlackHeight(newSk.left) == BlackHeight(newSk.right);
+        assert RedBlackTreeRec(newSk.left);
+        assert RedBlackTreeRec(newSk.right);
       }
-      */
-      //assume old(node.color).Black? && newNode != null && newNode.color.Red? ==>
-        //newNode.left == null || newNode.left.color.Black?;
-      //assume BlackHeight(newSk) == old(BlackHeight(sk));
+      newNode, newSk := RBRestore(newNode, newSk);
     }
-    assert AltTempRedBlack234TreeRec(newSk);
+    assert RedBlackTreeRec(newSk);
   }
 
   static method {:verify false} RBRemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K)
