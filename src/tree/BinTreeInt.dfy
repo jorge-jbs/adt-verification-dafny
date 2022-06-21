@@ -1452,8 +1452,11 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
       }
       assert newSk.left.Node? && newSk.left.data.color.Red? && newSk.left.left.Node?
           ==> newSk.left.left.data.color.Black? by {
-        assume !(isRed(newNode.left) && isRed(newNode.left.left));
-        assume false;
+        if newNode.left != null {
+          assert ValidRec(newNode.left, newSk.left);
+          assert ValidRec(newNode.left.left, newSk.left.left);
+          assert !(isRed(newNode.left) && isRed(newNode.left.left));
+        }
       }
       assert BlackHeight(newSk.left) == BlackHeight(newSk.right);
       assert RedBlackTreeRec(newSk.left);
