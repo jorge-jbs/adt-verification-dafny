@@ -1326,7 +1326,7 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     ensures SearchTreeRec(newSk)
     ensures RedBlackTreeRec(newSk)
     ensures BlackHeight(newSk) == old(BlackHeight(sk))
-    //ensures old(node.color).Black? && newNode.color.Red? ==> newNode.left == null || newNode.left.color.Black?
+    ensures old(node.color).Black? && newNode.color.Red? ==> newNode.left == null || newNode.left.color.Black?
     //ensures MapModelRec(newSk) == old(MapModelRec(sk))
     ensures elems(newSk) == elems(sk)
 
@@ -1518,14 +1518,14 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     requires
       || node.color.Red?
       || (node.left != null && node.left.color.Red?)
-
     requires node.color.Red? ==> node.left == null || node.left.color.Black?
 
     ensures ValidRec(newNode, newSk)
     ensures SearchTreeRec(newSk)
     ensures RedBlackTreeRec(newSk)
-
     ensures BlackHeight(newSk) == old(BlackHeight(sk))
+    ensures old(node.color).Black? && newNode.color.Red? ==>
+      newNode.left == null || newNode.left.color.Black?
 
     ensures removedNode in elems(sk)
     ensures removedNode !in elems(newSk)
@@ -1542,9 +1542,6 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     ensures forall n | n in elems(newSk) ::
       removedNode.key < n.key
 
-    //ensures old(node.color).Black? && newNode != null && newNode.color.Red? ==>
-      //newNode.left == null || newNode.left.color.Black?
-
     requires forall x | x in elems(sk) :: allocated(x)
     ensures forall x {:trigger x in elems(newSk), x in old(elems(sk))} | x in elems(newSk) - old(elems(sk)) :: fresh(x)
     ensures fresh(elems(newSk)-old(elems(sk)))
@@ -1554,7 +1551,6 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
       newNode := node.right;
       newSk := sk.right;
       removedNode := node;
-      assert RedBlackTreeRec(newSk);
     } else {
       newNode := node;
       newSk := sk;
@@ -1576,29 +1572,7 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
       }
       newNode.left, newSkLeft, removedNode := RBRemoveMinRec(newNode.left, newSk.left);
       newSk := Node(newSkLeft, newNode, newSk.right);
-      assert RedBlackTreeRec(newSk.left);
-      assert !(
-        && isRed(newNode)
-        && isRed(newNode.left)
-        && isRed(newNode.left.left)
-      ) by {
-        assume false;
-      }
-      assert !(
-        && isRed(newNode.right)
-        && isRed(newNode.right.left)
-      );
-      assert !(
-        && isRed(newNode)
-        && isRed(newNode.left)
-        && isRed(newNode.right)
-      );
-      assert SearchTreeRec(newSk);
-      assert BlackHeight(newSk.left) == BlackHeight(newSk.right);
-      assert RedBlackTreeRec(newSk.left);
-      assert RedBlackTreeRec(newSk.right);
       newNode, newSk := RBRestore(newNode, newSk);
-      assert RedBlackTreeRec(newSk);
     }
   }
 
