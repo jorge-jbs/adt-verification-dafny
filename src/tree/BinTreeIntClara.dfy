@@ -343,6 +343,18 @@ class Tree {
     }
   }
 
+
+lemma ModelRelationWithSkeletonAllKeys()
+requires Valid() 
+requires SearchTree()
+ensures (set n | n in elems(skeleton):: n.key) == MapModel().Keys
+{forall m | m in MapModel().Keys  
+  ensures m in (set n | n in elems(skeleton) :: n.key)
+  {ModelRelationWithSkeletonKey(m);
+   assert exists n | n in elems(skeleton) :: n.key == m;
+   }
+}
+
 lemma ModelRelationWithSkeletonKeys(k: K)
 requires Valid() 
 requires SearchTree()
@@ -354,6 +366,7 @@ ensures |(set n | n in elems(skeleton) && n.key < k :: n.key)| ==
         |(set m | m in MapModel() && m < k)| 
 ensures |(set n | n in elems(skeleton) && n.key > k :: n.key)| == 
         |(set m | m in MapModel() && m > k)| 
+ 
          
 
 { assert (set n | n in elems(skeleton) && n.key < k :: n.key) <=
@@ -367,9 +380,7 @@ ensures |(set n | n in elems(skeleton) && n.key > k :: n.key)| ==
   ensures m in (set n | n in elems(skeleton) && n.key > k :: n.key)
   {ModelRelationWithSkeletonKey(m);
    assert exists n | n in elems(skeleton) :: n.key == m > k;
-
-  }
-  
+   }  
 }
   function method isEmpty(): bool
     reads this, Repr()
@@ -937,6 +948,8 @@ static function LeftPathAux(n: TNode, sk: tree<TNode>): seq<TNode>
     reads elems(sk)
     requires SearchTreeRec(sk)
     requires n in elems(sk)
+    ensures n==sk.data ==> LeftPathAux(n,sk)==[n]
+    ensures |LeftPathAux(n,sk)|>=1 && LeftPathAux(n,sk)[0]==n
   {
      match sk {
        case Node(l, x, r) => 
@@ -947,9 +960,154 @@ static function LeftPathAux(n: TNode, sk: tree<TNode>): seq<TNode>
           else
             LeftPathAux(n, r)
     }
+   // LeftPathAuxRec(n,sk,[])
   }
 
+
+static function LeftPathAuxRec(n: TNode, sk: tree<TNode>, ac:seq<TNode>): seq<TNode>
+    reads elems(sk)
+    requires SearchTreeRec(sk)
+    requires n in elems(sk)
+ {
+     match sk {
+       case Node(l, x, r) => 
+          if n == x then
+            [n]+ac
+          else if n.key < x.key then
+            LeftPathAuxRec(n, l,[x]+ac)
+          else
+            LeftPathAuxRec(n, r, ac)
+    }
+  }
+
+
+static lemma subTree(n:TNode,sk:tree<TNode>,root:TNode,p:tree<TNode>)
+requires SearchTreeRec(sk) && ValidRec(n,sk)
+requires SearchTreeRec(p) && ValidRec(root,p)
+requires n in elems(p) 
+ensures elems(sk)  <= elems(p)
+{} 
+
+
+static lemma {:verify true} propLeftPath(n:TNode,sk:tree<TNode>,root:TNode,p:tree<TNode>)
+requires SearchTreeRec(sk) && ValidRec(n,sk)
+requires SearchTreeRec(p) && ValidRec(root,p)
+requires n in elems(p) 
+ensures  SearchTreeRec(sk.left) && ValidRec(n.left,sk.left) 
+ensures n.left!=null ==> n.left in elems(p)
+ensures SearchTreeRec(sk.right) && ValidRec(n.right,sk.right) 
+ensures n.right!=null ==> n.right in elems(p)
+ensures n.left!=null ==> LeftPathAux(n.left,p)==[n.left]+LeftPathAux(n,p)
+ensures n.right!=null ==> |LeftPathAux(n,p)|>=1 && LeftPathAux(n.right,p)==[n.right]+(LeftPathAux(n,p)[1..])
+{
+  assert SearchTreeRec(sk.left);
+  assert ValidRec(n.left,sk.left);
+  assert SearchTreeRec(sk.right);
+  assert ValidRec(n.right,sk.right);
+  subTree(n,sk,root,p);
+  assert elems(sk)<=elems(p);
+
+  if (n.left!=null)
+  {
+   assert n.left in elems(p);
+  assert n.left==sk.left.data;
   
+  if (n==p.data) {
+    assert LeftPathAux(n,p)==[n];
+    assert LeftPathAux(n.left,p)==[n.left,n]; }
+  else if (n.key < p.data.key)
+  { 
+    
+    calc =={
+    LeftPathAux(n.left,p);
+    {assert n.left.key < n.key < p.data.key;}
+    LeftPathAux(n.left,p.left)+[p.data];
+    {propLeftPath(n.left,sk.left,p.left.data,p.left);}
+    [n.left]+LeftPathAux(n,p.left)+[p.data];
+    [n.left]+LeftPathAux(n,p);
+    }
+   }  
+   else //n.key>p.data.key
+   {
+    calc =={
+    LeftPathAux(n.left,p);
+    { assert n in elems(p.right);
+    subTree(n,sk,root.right,p.right);
+      assert elems(sk)<=elems(p.right);
+      assert n.left.key > p.data.key;}
+    LeftPathAux(n.left,p.right);
+    {propLeftPath(n.left,sk.left,p.right.data,p.right);}
+    [n.left]+LeftPathAux(n,p.right);
+    [n.left]+LeftPathAux(n,p);
+    }
+
+
+   }
+  }
+
+  if (n.right!=null)
+  {
+     assert n.right in elems(p);
+     assert n.right==sk.right.data;
+
+    if (n==p.data) {
+    assert LeftPathAux(n,p)==[n];
+    assert LeftPathAux(n,p)[1..]==[];
+    assert LeftPathAux(n.right,p)==[n.right]; }
+  else if (n.key > p.data.key)
+  { 
+    calc =={
+    LeftPathAux(n.right,p);
+    {assert n.right.key > n.key > p.data.key;}
+    LeftPathAux(n.right,p.right);
+    {propLeftPath(n.right,sk.right,p.right.data,p.right);}
+    [n.right]+LeftPathAux(n,p.right)[1..];
+    [n.right]+LeftPathAux(n,p)[1..];
+    }
+   }  
+   else //n.key<p.data.key
+   {
+    calc =={
+    LeftPathAux(n.right,p);
+    { assert n in elems(p.left);
+    subTree(n,sk,root.left,p.left);
+      assert elems(sk)<=elems(p.left);
+      assert n.right.key < p.data.key;
+     }
+    LeftPathAux(n.right,p.left)+[p.data];
+    {propLeftPath(n.right,sk.right,p.left.data,p.left);}
+    [n.right]+LeftPathAux(n,p.left)[1..]+[p.data];
+    [n.right]+LeftPathAux(n,p)[1..];
+    }
+
+
+   }
+ 
+  }
+}
+
+
+
+
+  /*static function LeftPath(n:TNode,sk: tree<TNode>, root:TNode, p: tree<TNode>): seq<TNode>
+    reads elems(sk), elems(p)
+    requires SearchTreeRec(sk)
+    requires SearchTreeRec(p)
+    requires ValidRec(n,sk)
+    requires ValidRec(root,p)
+    requires n in elems(p)  
+  {
+  
+      match p {
+       case Node(l, x, r) => 
+          if n == x then
+            [n]
+          else if n.key < x.key then
+            LeftPath(n, sk, root.left, l) + [x]
+          else
+            LeftPath(n, sk, root.right, r)
+      } 
+  }*/
   
   lemma mapModelRecContained(node:TNode,sk:tree<TNode>,node':TNode,sk':tree<TNode>)
   requires ValidRec(node,sk) && ValidRec(node',sk')
