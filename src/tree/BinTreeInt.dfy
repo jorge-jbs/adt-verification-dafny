@@ -1258,10 +1258,10 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     requires ValidRec(node, sk)
     requires SearchTreeRec(sk)
     requires RedBlackTreeRec(sk)
-    requires node.color.Red?
-    requires node.left != null && node.left.color.Black?  // not necessary, can be derived from RedBlackTree and node.color.Red?
-    requires node.right != null && node.right.color.Black?  // derivable
-    requires node.right.left == null || node.right.left.color.Black?
+    requires isRed(node)
+    requires isBlack(node.left)
+    requires isBlack(node.right)
+    requires !isRed(node.right.left)
 
     ensures ValidRec(newNode, newSk)
     ensures SearchTreeRec(newSk)
@@ -1269,8 +1269,17 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
       || newNode.right == null
       || newNode.right.color.Red?
       || (newNode.right.left != null && newNode.right.left.color.Red?)
-    // TODO
-    //ensures RestorePre(newNode, newSk)
+    ensures RedBlackTreeRec(newSk.left)  // TODO
+    ensures RedBlackTreeRec(newSk.right)  // TODO
+    ensures BlackHeight(newSk.right) == BlackHeight(newSk.left)  // TODO
+    ensures BlackHeight(newSk) == old(BlackHeight(sk))  // TODO
+    ensures newNode.left != null && newNode.right != null  // TODO
+    ensures
+      || isRed(newNode.left)
+      || isRed(newNode.left.left)
+    ensures  // TODO
+      || (!isRed(newNode) && isRed(newNode.left) && isRed(newNode.right) && !isRed(newNode.left.left) && !isRed(newNode.right.left) && !isRed(newNode.right.right))
+      || (isRed(newNode) && !isRed(newNode.left) && !isRed(newNode.right) && isRed(newNode.right.right))
 
     //ensures MapModelRec(newSk) == old(MapModelRec(sk))
     ensures elems(newSk) == elems(sk)
@@ -1315,7 +1324,7 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     node != null && node.color.Black?
   }
 
-  static method {:verify true} RBRestore(node: TNode, ghost sk: tree<TNode>)
+  static method {:verify false} RBRestore(node: TNode, ghost sk: tree<TNode>)
     returns (newNode: TNode, ghost newSk: tree<TNode>)
 
     modifies set x | x in elems(sk) :: x`left
@@ -1324,10 +1333,17 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
 
     requires ValidRec(node, sk)
     requires SearchTreeRec(sk)
-    requires !(
-      && isRed(node.right)
-      && isRed(node.right.left)
-    )
+    requires
+    || (
+        && isBlack(node)
+        && isRed(node.left)
+        && isRed(node.right)
+        && isRed(node.right.left)
+      )
+      || !(
+        && isRed(node.right)
+        && isRed(node.right.left)
+      )
     requires !(
       && isRed(node)
       && isRed(node.left)
@@ -1385,7 +1401,9 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
       assert newNode.right.left != newNode by {
         ParentNotChild2(newNode, newSk);
       }
-      assert newNode.right.left != newNode.right;
+      assert newNode.right.left != newNode.right by {
+        ParentNotChild1(newNode.right, newSk.right);
+      }
       newNode, newSk := GRotateLeft(newNode, newSk);
       assert !(
         && isRed(newNode)
@@ -1395,14 +1413,24 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
       assert newNode.left.right == old(node.right.left);
       assert newNode.left.right != null ==>
         newNode.left.right.color == old(node.right.left.color);
-      assert !isRed(newNode.left.right);
+      assert !isRed(newNode.left.right) || old(
+        && isBlack(node)
+        && isRed(node.left)
+        && isRed(node.right)
+        && isRed(node.right.left)
+      );
     } else {
       assert RedBlackTreeRec(newSk.left);
       assert RedBlackTreeRec(newSk.right);
     }
 
     if newNode.left != null {
-      assert !isRed(newNode.left.right);
+      assert !isRed(newNode.left.right) || old(
+        && isBlack(node)
+        && isRed(node.left)
+        && isRed(node.right)
+        && isRed(node.right.left)
+      );
     }
 
     assert !(
@@ -1473,13 +1501,13 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     }
   }
 
-  static method {:verify true} RBRemoveMinRec(node: TNode, ghost sk: tree<TNode>)
+  static method {:verify false} RBRemoveMinRec(node: TNode, ghost sk: tree<TNode>)
       returns (newNode: TNode?, ghost newSk: tree<TNode>, removedNode: TNode)
     decreases size(sk)
-    //modifies elems(sk)
-    modifies set n | n in elems(sk) :: n`color
-    modifies set n | n in elems(sk) :: n`left
-    modifies set n | n in elems(sk) :: n`right
+    modifies elems(sk)
+    //modifies set n | n in elems(sk) :: n`color
+    //modifies set n | n in elems(sk) :: n`left
+    //modifies set n | n in elems(sk) :: n`right
 
     requires ValidRec(node, sk)
     requires SearchTreeRec(sk)
@@ -1491,8 +1519,9 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     ensures SearchTreeRec(newSk)
     ensures RedBlackTreeRec(newSk)
     ensures BlackHeight(newSk) == old(BlackHeight(sk))
-    ensures old(node.color).Black? && newNode.color.Red? ==>
-      newNode.left == null || newNode.left.color.Black?
+    //ensures old(node.color).Black? && newNode.color.Red? ==>
+      //newNode.left == null || newNode.left.color.Black?
+    ensures old(isBlack(node)) && isRed(newNode) ==> !isRed(newNode.left)
 
     ensures removedNode in elems(sk)
     ensures removedNode !in elems(newSk)
@@ -1560,7 +1589,7 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     }
   }
 
-  static method {:verify false} RBRemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K)
+  static method {:verify true} RBRemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K)
       returns (newNode: TNode?, ghost newSk: tree<TNode>, ghost removedNode: TNode?)
     decreases size(sk)
     //modifies set x | x in elems(sk) :: x`color
@@ -1573,13 +1602,16 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     requires RedBlackTreeRec(sk)
     requires
       || node == null
-      || node.color.Red?
-      || (node.left != null && node.left.color.Red?)
+      || isRed(node)
+      || isRed(node.left)
+    requires !(isRed(node) && isRed(node.left))
 
     ensures ValidRec(newNode, newSk)
     ensures SearchTreeRec(newSk)
-    //ensures RedBlackTreeRec(newSk)
-    //ensures BlackHeight(newSk) == old(BlackHeight(sk))
+    ensures RedBlackTreeRec(newSk)
+    ensures BlackHeight(newSk) == old(BlackHeight(sk))
+    ensures old(isBlack(node)) && isRed(newNode) ==>
+      !isRed(newNode.left)
 
     ensures forall n | n in elems(sk) ::
       n.key == old(n.key) && n.value == old(n.value)
@@ -1601,47 +1633,357 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
       newSk := sk;
       removedNode := null;
     } else {
-      if node.key < k {
+      if node.key > k {
+        //assume false;
         newNode := node;
         newSk := sk;
-        if newNode.left != null && newNode.left.color.Red? {
-          newNode, newSk := GRotateRight(newNode, newSk);
-          assume RedBlackTreeRec(newSk.right);
-        } else if newNode.right != null && newNode.right.color.Black?
-            && (newNode.right.left == null || newNode.right.left.color.Black?) {
-          newNode, newSk := MoveRedRight(newNode, newSk);
-        }
-        ghost var newSkRight;
-        newNode.right, newSkRight, removedNode := RBRemoveRec(newNode.right, newSk.right, k);
-        newSk := Node(newSk.left, newNode, newSkRight);
-      } else if k < node.key {
-        newNode := node;
-        newSk := sk;
-        if newNode.left != null && newNode.left.color.Black?
-            && (newNode.left.left == null || newNode.left.left.color.Black?) {
+        if isBlack(newNode.left) && !isRed(newNode.left.left) {
           newNode, newSk := MoveRedLeft(newNode, newSk);
+        } else {
+          assert !(isRed(newNode.left) && isRed(newNode.left.left)) by {
+            assert RedBlackTreeRec(newSk);
+            if newNode.left != null {
+              assert ValidRec(newNode.left.left, newSk.left.left);
+            }
+          }
         }
         ghost var newSkLeft;
+        label PreRec:
         newNode.left, newSkLeft, removedNode := RBRemoveRec(newNode.left, newSk.left, k);
         newSk := Node(newSkLeft, newNode, newSk.right);
-      } else {
-        assert k == node.key;
-        if node.right == null {
-          newNode := node.left;
-          newSk := sk.left;
-          removedNode := node;
-        } else {
-          removedNode := node;
-          ghost var newSkRight;
-          var newRight;
-          newRight, newSkRight, newNode := RBRemoveMinRec(node.right, sk.right);
-
-          newNode.left := node.left;
-          newNode.right := newRight;
-          newSk := Node(sk.left, newNode, newSkRight);
+        //assume false;
+        assert ValidRec(newNode, newSk);
+        assert !(
+          && isRed(newNode.right)
+          && isRed(newNode.right.left)
+        ) by {
+          assert ValidRec(newNode.right, newSk.right);
+          if newNode.right != null {
+            assert ValidRec(newNode.right.left, newSk.right.left);
+          }
         }
+        assert !(
+          && isRed(newNode)
+          && isRed(newNode.left)
+          && isRed(newNode.right)
+        );
+        assert !(
+          && isRed(newNode)
+          && isRed(newNode.left)
+          && isRed(newNode.left.left)
+        ) by {
+          assert ValidRec(newNode.left, newSk.left);
+          if newNode.left != null {
+            assert ValidRec(newNode.left.left, newSk.left.left);
+          }
+        }
+        assert BlackHeight(newSk.left) == BlackHeight(newSk.right);
+        assert RedBlackTreeRec(newSk.left);
+        assert RedBlackTreeRec(newSk.right);
+      } else {
+        newNode := node;
+        newSk := sk;
+
+        if isRed(newNode.left) {
+          assert ValidRec(newNode.left.right, newSk.left.right);
+          newNode, newSk := GRotateRight(newNode, newSk);
+          assert isRed(newNode.right) || isRed(newNode.right.left);
+          assert !(isRed(newNode.right) && isRed(newNode.right.left));
+        }
+
+        if k == newNode.key && newNode.right == null {
+          label A:
+          assert elems(sk) == elems(newSk) == elems(newSk.left) + {newNode};
+          assert elems(sk) - {newNode} == elems(newSk) - {newNode} == elems(newSk.left);
+          newNode := newNode.left;
+          newSk := newSk.left;
+          removedNode := newNode;
+          assume elems(newSk) == elems(sk) - {removedNode};
+          assert elems(newSk) == old@A(elems(newSk) - {newNode}) == old@A(elems(sk)) - {removedNode};
+          return;
+        }
+
+        if isBlack(newNode.right) && !isRed(newNode.right.left) {
+          newNode, newSk := MoveRedRight(newNode, newSk);
+          assert !(isRed(newNode.right) && isRed(newNode.right.left));
+        } else {
+          assert
+            || newNode.right == null
+            || isRed(newNode.right)
+            || isRed(newNode.right.left);
+          assert !(isRed(newNode.right) && isRed(newNode.right.left));
+        }
+        assert !(isRed(newNode.right) && isRed(newNode.right.left));
+        if k == newNode.key {
+          //assume false;
+          label PreRec:
+          ghost var newSkRight;
+          newNode.right, newSkRight, removedNode := RBRemoveRec(newNode.right, newSk.right, k);
+          newSk := Node(newSk.left, newNode, newSkRight);
+          assert BlackHeight(newSk.left) == BlackHeight(newSk.right);
+          assert RedBlackTreeRec(newSk.right);
+          assert unchanged@PreRec(elems(newSk.left));
+          assert RedBlackTreeRec(newSk.left);
+          assert ValidRec(newNode, newSk);
+          assert || (
+              && isBlack(newNode)
+              && isRed(newNode.left)
+              && isRed(newNode.right)
+              && isRed(newNode.right.left)
+          ) || !(
+              && isRed(newNode.right)
+              && isRed(newNode.right.left)
+          ) by {
+            if isRed(newNode.right) {
+              if old@PreRec(isBlack(newNode.right)) {
+                assert !isRed(newNode.right.left);
+                assert !(
+                  && isRed(newNode.right)
+                  && isRed(newNode.right.left)
+                );
+              } else if isRed(newNode.right.left) && old@PreRec(newNode.right != null) {
+                assert isBlack(newNode);
+                assert isRed(newNode.left);
+                assert isRed(newNode.right);
+                assert isRed(newNode.right.left);
+              }
+            }
+            /*
+            if old@PreRec(isBlack(newNode.right)) && isRed(newNode.right) {
+              assert !isRed(newNode.right.left);
+              assert !(
+                && isRed(newNode.right)
+                && isRed(newNode.right.left)
+              );
+            } else if !isRed(newNode.right) {
+              assert !(
+                && isRed(newNode.right)
+                && isRed(newNode.right.left)
+              );
+            } else if old@PreRec(newNode.right == null) {
+              assert !(
+                && isRed(newNode.right)
+                && isRed(newNode.right.left)
+              );
+            } else if isRed(newNode.right.left) {
+              assert old@PreRec(isRed(newNode.right)) && isRed(newNode.right);
+              //assert isRed(newNode.left);
+              assert isBlack(newNode);
+              assert isRed(newNode.left);
+              assert isRed(newNode.right);
+              assert isRed(newNode.right.left);
+            } else {
+            }
+            */
+          }
+          assert !(
+            && isRed(newNode)
+            && isRed(newNode.left)
+            && isRed(newNode.right)
+          );
+          assert !(
+            && isRed(newNode)
+            && isRed(newNode.left)
+            && isRed(newNode.left.left)
+          ) by {
+            assert ValidRec(newNode.left, newSk.left);
+            if newNode.left != null {
+              assert ValidRec(newNode.left.left, newSk.left.left);
+            }
+          }
+        } else {
+          //assume false;
+          if newNode.right == null {
+            assume false;
+            return;
+          }
+          removedNode := newNode;
+          ghost var oldNewSkLeft := newSk.left;
+          var oldNewNodeLeft := newNode.left;
+          var oldNewNodeColor := newNode.color;
+          assert RedBlackTreeRec(newSk.left);
+          assert !(
+            && isRed(newNode)
+            && isRed(newNode.left)
+          );
+          label PreRec:
+          ghost var newSkRight;
+          var newNodeRight;
+          var minNode;
+          newNodeRight, newSkRight, minNode := RBRemoveMinRec(newNode.right, newSk.right);
+          /*
+          label PostRec:
+          assert old@PreRec(isBlack(newNode.right)) && isRed(newNodeRight)
+            ==> !isRed(newNodeRight.left);
+          assert newNode !in elems(newSkRight);
+          assert newNode != newNodeRight;
+          assert newNodeRight != null ==> newNode != newNodeRight.left;
+          assert minNode !in elems(newSkRight);
+          assert minNode != newNodeRight;
+          assert newNodeRight != null ==> minNode != newNodeRight.left;
+          */
+          newNode := minNode;
+          /*
+          // Somehow Dafny cannot prove the following:
+          assume old@PreRec(isBlack(newNode.right)) && old@PostRec(isRed(newNodeRight))
+            ==> old@PostRec(!isRed(newNodeRight.left));
+          assert old@PreRec(isBlack(newNode.right)) && isRed(newNodeRight)
+            ==> !isRed(newNodeRight.left);
+          */
+          /*
+          assert isRed(newNodeRight) <==> old@PostRec(isRed(newNodeRight));
+          if newNodeRight != null {
+            assert unchanged@PostRec(newNodeRight);
+            assert old@PostRec(newNodeRight.color) == newNodeRight.color;
+            assert isRed(newNodeRight.left) <==> old@PostRec(isRed(newNodeRight.left));
+            if newNodeRight.left != null {
+              assert unchanged@PostRec(newNodeRight.left);
+            }
+          }
+          */
+          newNode.left := oldNewNodeLeft;
+          newNode.right := newNodeRight;
+          newNode.color := oldNewNodeColor;
+          ghost var goodSk := Node(oldNewSkLeft, newNode, newSkRight);
+          newSk := goodSk;
+          //newSk := Node(oldNewSkLeft, newNode, newSkRight);
+          assert || (
+              && isBlack(newNode)
+              && isRed(newNode.left)
+              && isRed(newNode.right)
+              && isRed(newNode.right.left)
+          ) || !(
+              && isRed(newNode.right)
+              && isRed(newNode.right.left)
+          ) by {
+            assume false;
+            /*
+            assert old@PreRec(isBlack(newNode.right)) && isRed(newNode.right)
+              ==> !isRed(newNode.right.left);
+            if old@PreRec(isBlack(newNode.right)) && isRed(newNode.right) {
+              assert !isRed(newNode.right.left);
+              assert !(
+                && isRed(newNode.right)
+                && isRed(newNode.right.left)
+              );
+            } else if !isRed(newNode.right) {
+              assert !(
+                && isRed(newNode.right)
+                && isRed(newNode.right.left)
+              );
+            } else if old@PreRec(newNode.right == null) {
+              // The proof would be something like this but Dafny cannot even
+              // prove that newNode.right was valid before the call.
+              /*
+              assert isRed(newNode.right);
+              assert newNode.right != null;
+              assert old@PreRec(ValidRec(newNode.right, newSk.right));
+              assert old@PreRec(newSk.right.Empty?);
+              assert old@PreRec(elems(newSk.right)) == {};
+              assert elems(newSk.right) <= old@PreRec(elems(newSk.right));
+              assert elems(newSk.right) == {};
+              assert newNode.right in elems(newSk.right);
+              assert newNode.right in {};
+              assert false;
+              */
+              assume false;
+            } else if isRed(newNode.right.left) {
+              assert old@PreRec(isRed(newNode.right)) && isRed(newNode.right);
+              //assert isRed(newNode.left);
+              assert isBlack(newNode);
+              assert isRed(newNode.right);
+              assume false;
+              assert isRed(newNode.left);
+              assert isRed(newNode.right.left);
+            } else {
+              assume false;
+            }
+            */
+          }
+          assert unchanged@PreRec(elems(newSk.left));
+          assert newNode.left != null ==> unchanged@PreRec(newNode.left);
+          assert !(
+            && isRed(newNode)
+            && isRed(newNode.left)
+            && isRed(newNode.left.left)
+          ) by {
+            assert ValidRec(newNode.left, newSk.left);
+            if newNode.left != null {
+              assert ValidRec(newNode.left.left, newSk.left.left);
+            }
+          }
+          assert !(
+            && isRed(newNode)
+            && isRed(newNode.left)
+            && isRed(newNode.right)
+          );
+          assert RedBlackTreeRec(newSk.right);
+          assert RedBlackTreeRec(newSk.left);
+          assert BlackHeight(newSk.left) == BlackHeight(newSk.right);
+          assert ValidRec(newNode, newSk);
+          assert SearchTreeRec(newSk);
+          assert forall n | n in elems(sk) ::
+            n.key == old(n.key) && n.value == old(n.value);
+          assert elems(newSk) == elems(sk) - {removedNode};
+          assert removedNode != null ==>
+            && removedNode in elems(sk)
+            && removedNode !in elems(newSk)
+            && removedNode.key == k by {
+            assume false;
+          }
+        }
+        /*
+        assume false;
+        assert ValidRec(newNode, newSk);
+        assert !(
+          && isRed(newNode)
+          && isRed(newNode.left)
+          && isRed(newNode.right)
+        );
+        */
       }
+
+      assert || (
+          && isBlack(newNode)
+          && isRed(newNode.left)
+          && isRed(newNode.right)
+          && isRed(newNode.right.left)
+      ) || !(
+          && isRed(newNode.right)
+          && isRed(newNode.right.left)
+      );
+      assert !(
+        && isRed(newNode)
+        && isRed(newNode.left)
+        && isRed(newNode.right)
+      );
+      assert !(
+        && isRed(newNode)
+        && isRed(newNode.left)
+        && isRed(newNode.left.left)
+      );
+      assert BlackHeight(newSk.left) == BlackHeight(newSk.right);
+      assert RedBlackTreeRec(newSk.left);
+      assert RedBlackTreeRec(newSk.right);
+      assert ValidRec(newNode, newSk);
+      assert SearchTreeRec(newSk);
+      newNode, newSk := RBRestore(newNode, newSk);
+/*
+      assert ValidRec(node, newSk);
+      assert SearchTreeRec(newSk);
+      assume forall n | n in elems(sk) ::
+        n.key == old(n.key) && n.value == old(n.value);
+      assume elems(newSk) == elems(sk) - {removedNode};
+      assume removedNode != null ==>
+        && removedNode in elems(sk)
+        && removedNode !in elems(newSk)
+        && removedNode.key == k;
+*/
     }
+    assert BlackHeight(newSk) == old(BlackHeight(sk));
+    assert RedBlackTreeRec(newSk);
+    assert old(isBlack(node)) && isRed(newNode) ==>
+      !isRed(newNode.left);
   }
 
   method {:verify false} Remove(k: K)
