@@ -1141,7 +1141,7 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     assert ValidRec(node.right.right, sk.right.right);
   }
 
-  static method {:verify false} MoveRedLeft(node: TNode, ghost sk: tree<TNode>)
+  static method {:verify true} MoveRedLeft(node: TNode, ghost sk: tree<TNode>)
       returns (newNode: TNode, ghost newSk: tree<TNode>)
     modifies set n | n in elems(sk) :: n`color
     modifies set n | n in elems(sk) :: n`left
@@ -1158,15 +1158,15 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
 
     ensures ValidRec(newNode, newSk)
     ensures SearchTreeRec(newSk)
-    ensures RedBlackTreeRec(newSk.left)  // TODO
-    ensures RedBlackTreeRec(newSk.right)  // TODO
-    ensures BlackHeight(newSk.right) == BlackHeight(newSk.left)  // TODO
-    ensures BlackHeight(newSk) == old(BlackHeight(sk))  // TODO
-    ensures newNode.left != null && newNode.right != null  // TODO
+    ensures RedBlackTreeRec(newSk.left)
+    ensures RedBlackTreeRec(newSk.right)
+    ensures BlackHeight(newSk.right) == BlackHeight(newSk.left)
+    ensures BlackHeight(newSk) == old(BlackHeight(sk))
+    ensures newNode.left != null && newNode.right != null
     ensures
       || isRed(newNode.left)
       || isRed(newNode.left.left)
-    ensures  // TODO
+    ensures
       || (!isRed(newNode) && isRed(newNode.left) && isRed(newNode.right) && !isRed(newNode.right.left) && !isRed(newNode.left.left))
       || (isRed(newNode) && !isRed(newNode.left) && !isRed(newNode.right) && isRed(newNode.left.left))
 
@@ -1189,6 +1189,7 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     assert RedBlackTreeRec(newSk.left);
     assert RedBlackTreeRec(newSk.right);
     if (newNode.right.left != null && newNode.right.left.color.Red?) {
+      assert size(newSk.left) < size(sk);
       ghost var newSkRight;
       assert ValidRec(newNode.right.left, newSk.right.left);
       assert RedBlackTreeRec(newSk.right.right);
@@ -1197,54 +1198,87 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
       assert RedBlackTreeRec(newSk.right.left.right);
       label PreRR:
       newNode.right, newSkRight := GRotateRight(newNode.right, newSk.right);
+      assert forall n | n in elems(sk) ::
+        n.key == old(n.key) && n.value == old(n.value);
       assert unchanged(elems(newSk.right.right));
       assert unchanged(elems(newSk.right.left.left));
       assert unchanged(elems(newSk.right.left.right));
       newSk := Node(newSk.left, newNode, newSkRight);
+      assert size(newSk.left) < size(sk);
       assert unchanged@PreRR(elems(newSk.left));
       assert RedBlackTreeRec(newSk.left);
       assert RedBlackTreeRec(newSk.right.left);
       assert RedBlackTreeRec(newSk.right.right.left);
       assert RedBlackTreeRec(newSk.right.right.right);
-      //assert RedBlackTreeRec(newSk.right.left);
-      //assert RedBlackTreeRec(newSk.right.right);
+      assert forall n | n in elems(sk) ::
+        n.key == old(n.key) && n.value == old(n.value);
       label PreRL:
       newNode, newSk := GRotateLeft(newNode, newSk);
-      assert unchanged@PreRL(old@PreRL(elems(newSk.right.left)));
-      assume false;
-      assert RedBlackTreeRec(newSk.left.right);
-      /*
-      assert RedBlackTreeRec(newSk.right);
+      assert size(newSk.left) < size(sk);
+      assert forall n | n in elems(sk) ::
+        n.key == old(n.key) && n.value == old(n.value);
+      assert unchanged@PreRL(elems(newSk.left.left));
+      assert unchanged@PreRL(elems(newSk.left.right));
+      assert unchanged@PreRL(elems(newSk.right.left));
+      assert unchanged@PreRL(elems(newSk.right.right));
       assert RedBlackTreeRec(newSk.left.left);
       assert RedBlackTreeRec(newSk.left.right);
-      */
+      assert RedBlackTreeRec(newSk.right.left);
+      assert RedBlackTreeRec(newSk.right.right);
+      assert forall n | n in elems(sk) ::
+        n.key == old(n.key) && n.value == old(n.value);
+      label PreFlip:
       GFlipColors(newNode, newSk);
-      /*
-      assert RestorePre(newNode, newSk) by {
-        assert ValidRec(newNode.right.left, newSk.right.left);
-        assert ValidRec(newNode.right.right, newSk.right.right);
-        assume false;
-        assert RedBlackTreeRec(newSk.right);
-        assert RedBlackTreeRec(newSk.left);
+      assert size(newSk.left) < size(sk);
+      assert forall n | n in elems(sk) ::
+        n.key == old(n.key) && n.value == old(n.value);
+      assert RedBlackTreeRec(newSk.left) by {
+        assert unchanged@PreRL(elems(newSk.left.left));
+        assert unchanged@PreRL(elems(newSk.left.right));
+        assert !isRed(newNode.left.right);
+        assert !isRed(newNode.left.left.left);
+        assert BlackHeight(newSk.left.left) == BlackHeight(newSk.left.right);
+        assert RedBlackTreeRec(newSk.left.left);
+        assert RedBlackTreeRec(newSk.left.right);
       }
-      */
+      assert RedBlackTreeRec(newSk.right) by {
+        assert unchanged@PreRL(elems(newSk.right.left));
+        assert unchanged@PreRL(elems(newSk.right.right));
+        assert RedBlackTreeRec(newSk.right.left);
+        assert RedBlackTreeRec(newSk.right.right);
+        assert !isRed(newNode.right.right) by {
+          assert newNode.right.right == old(node.right.right);
+          assert ValidRec(newNode.right.right, newSk.right.right);
+        }
+        assert !isRed(newNode.right.left) by {
+          assert newNode.right.left == old(node.right.left.right);
+          assert ValidRec(newNode.right.left, newSk.right.left);
+        }
+        assert BlackHeight(newSk.right.left) == BlackHeight(newSk.right.right);
+      }
+      assert BlackHeight(newSk.left.left) == BlackHeight(newSk.left.right);
+      assert BlackHeight(newSk.right.left) == BlackHeight(newSk.right.right);
+      assert RedBlackTreeRec(newSk) by {
+        assert RedBlackTreeRec(newSk.left);
+        assert RedBlackTreeRec(newSk.right);
+        assert isBlack(newNode.right);
+        assert isBlack(newNode.left);
+        assert BlackHeight(newSk.left) == BlackHeight(newSk.right);
+      }
+      assert isRed(newNode);
+      assert isBlack(newNode.left);
+      assert isBlack(newNode.right);
+      assert isRed(newNode.left.left);
       assert ValidRec(newNode, newSk);
       assert SearchTreeRec(newSk);
-      assume false;
-      assert RedBlackTreeRec(newSk.left);
-      assert RedBlackTreeRec(newSk.right);
-      assert BlackHeight(newSk.right) == BlackHeight(newSk.left);
-      assert BlackHeight(newSk) == old(BlackHeight(sk));
-      assert newNode.left != null && newNode.right != null;
-      assert
-        || isRed(newNode.left)
-        || isRed(newNode.left.left);
-      assert
-        || (!isRed(newNode) && isRed(newNode.left) && isRed(newNode.right) && !isRed(newNode.right.left) && !isRed(newNode.left.left))
-        || (isRed(newNode) && !isRed(newNode.left) && !isRed(newNode.right) && isRed(newNode.left.left));
+      assert elems(newSk) == elems(sk);
+      assert size(newSk) == size(sk);
+      assert forall n | n in elems(sk) ::
+        n.key == old(n.key) && n.value == old(n.value);
+      assert size(newSk.left) < size(sk);
     } else {
       assert ValidRec(newNode.left.left, newSk.left.left);
-      assume false;
+      assert !isRed(newNode) && isRed(newNode.left) && isRed(newNode.right) && !isRed(newNode.right.left) && !isRed(newNode.left.left);
     }
   }
 
@@ -1589,7 +1623,7 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     }
   }
 
-  static method {:verify true} RBRemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K)
+  static method {:verify false} RBRemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K)
       returns (newNode: TNode?, ghost newSk: tree<TNode>, ghost removedNode: TNode?)
     decreases size(sk)
     //modifies set x | x in elems(sk) :: x`color
