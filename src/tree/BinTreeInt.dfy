@@ -1,98 +1,5 @@
 include "../../src/Order.dfy"
-
-datatype tree<A> = Empty | Node(left: tree<A>, data: A, right: tree<A>)
-
-function method {:verify false} Leaf<A>(d: A): tree<A>
-{
-  Node(Empty, d, Empty)
-}
-
-function method {:verify false} elems<A>(t: tree<A>): set<A>
-  ensures t.Empty? ==> elems(t) == {}
-  ensures !t.Empty? ==> elems(t) == elems(t.left) + {t.data} + elems(t.right)
-{
-  match t {
-    case Empty => {}
-    case Node(l, x, r) => elems(l) + {x} + elems(r)
-  }
-}
-
-function method {:verify false} elemsDownTo<A>(t: tree<A>, d: nat): set<A>
-{
-  if d == 0 || t.Empty? then
-    {}
-  else
-    elemsDownTo(t.left, d-1) + {t.data} + elemsDownTo(t.right, d-1)
-}
-
-function method {:verify false} melems<A>(t: tree<A>): multiset<A>
-{
-  match t {
-    case Empty => multiset{}
-    case Node(l, x, r) => melems(l) + multiset{x} + melems(r)
-  }
-}
-
-function method {:verify false} fmap<A, B>(t: tree<A>, f: A -> B): tree<B>
-{
-  match t {
-    case Empty() => Empty()
-    case Node(l, x, r) => Node(fmap(l, f), f(x), fmap(r, f))
-  }
-}
-
-function method {:verify false} preorder<A>(t: tree<A>): seq<A>
-{
-  match t {
-    case Empty => []
-    case Node(l, x, r) => [x] + preorder(l) + preorder(r)
-  }
-}
-
-function method {:verify false} inorder<A>(t: tree<A>): seq<A>
-{
-  match t {
-    case Empty => []
-    case Node(l, x, r) => inorder(l) + [x] + inorder(r)
-  }
-}
-
-function method {:verify false} revinorder<A>(t: tree<A>): seq<A>
-{
-  match t {
-    case Empty => []
-    case Node(l, x, r) => revinorder(r) + [x] + revinorder(l)
-  }
-}
-
-function method {:verify false} postorder<A>(t: tree<A>): seq<A>
-{
-  match t {
-    case Empty => []
-    case Node(l, x, r) => postorder(l) + postorder(r) + [x]
-  }
-}
-
-function method {:verify false} size<A>(t: tree<A>): nat
-{
-  |preorder(t)|
-}
-
-function method {:verify false} max(x: int, y: int): int
-{
-  if x < y then
-    y
-  else
-    x
-}
-
-function method {:verify false} depth<A>(t: tree<A>): nat
-{
-  match t {
-    case Empty => 0
-    case Node(l, x, r) => max(depth(l), depth(r)) + 1
-  }
-}
+include "../../src/tree/TreeData.dfy"
 
 datatype Color = Red | Black
 
@@ -1141,7 +1048,7 @@ static lemma {:verify false} oldNewMapModelRecRemoveRMin(newSk:tree<TNode>, moSk
     assert ValidRec(node.right.right, sk.right.right);
   }
 
-  static method {:verify true} MoveRedLeft(node: TNode, ghost sk: tree<TNode>)
+  static method {:verify false} MoveRedLeft(node: TNode, ghost sk: tree<TNode>)
       returns (newNode: TNode, ghost newSk: tree<TNode>)
     modifies set n | n in elems(sk) :: n`color
     modifies set n | n in elems(sk) :: n`left
