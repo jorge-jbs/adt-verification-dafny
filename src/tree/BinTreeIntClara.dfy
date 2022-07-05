@@ -950,6 +950,9 @@ static function LeftPathAux(n: TNode, sk: tree<TNode>): seq<TNode>
     requires n in elems(sk)
     ensures n==sk.data ==> LeftPathAux(n,sk)==[n]
     ensures |LeftPathAux(n,sk)|>=1 && LeftPathAux(n,sk)[0]==n
+    ensures forall i | 0 < i <|LeftPathAux(n,sk)| :: LeftPathAux(n,sk)[i].key > n.key   
+    ensures n.key < sk.data.key ==> LeftPathAux(n, sk)==LeftPathAux(n, sk.left)+ [sk.data]
+    ensures n.key > sk.data.key ==> LeftPathAux(n, sk)==LeftPathAux(n, sk.right)
   {
      match sk {
        case Node(l, x, r) => 
@@ -999,6 +1002,9 @@ ensures SearchTreeRec(sk.right) && ValidRec(n.right,sk.right)
 ensures n.right!=null ==> n.right in elems(p)
 ensures n.left!=null ==> LeftPathAux(n.left,p)==[n.left]+LeftPathAux(n,p)
 ensures n.right!=null ==> |LeftPathAux(n,p)|>=1 && LeftPathAux(n.right,p)==[n.right]+(LeftPathAux(n,p)[1..])
+ensures forall i | 0<i<|LeftPathAux(n,p)| ::  LeftPathAux(n,p)[0].key < LeftPathAux(n,p)[i].key
+ 
+ensures forall i,j | 0 <= i < j < |LeftPathAux(n,p)| :: LeftPathAux(n,p)[i].key < LeftPathAux(n,p)[j].key
 {
   assert SearchTreeRec(sk.left);
   assert ValidRec(n.left,sk.left);
@@ -1082,11 +1088,25 @@ ensures n.right!=null ==> |LeftPathAux(n,p)|>=1 && LeftPathAux(n.right,p)==[n.ri
 
 
    }
- 
   }
+
+   assert LeftPathAux(n,p)[0]==n;
+    forall i | 0<i<|LeftPathAux(n,p)| 
+    ensures  LeftPathAux(n,p)[0].key < LeftPathAux(n,p)[i].key
+    {assert n.key == LeftPathAux(n,p)[0].key < LeftPathAux(n,p)[i].key; }
+  
+  assume forall i,j | 0 <= i < j < |LeftPathAux(n,p)| :: LeftPathAux(n,p)[i].key < LeftPathAux(n,p)[j].key;
+  
 }
 
 
+
+static lemma elemsProps(n:TNode,sk:tree<TNode>)
+requires ValidRec(n,sk)
+requires SearchTreeRec(sk)
+ensures forall m | m in elems(sk.left) :: m.key < n.key
+ensures  forall m | m in elems(sk.right) :: m.key > n.key
+{}
 
 
   /*static function LeftPath(n:TNode,sk: tree<TNode>, root:TNode, p: tree<TNode>): seq<TNode>
