@@ -1148,4 +1148,28 @@ ensures  forall m | m in elems(sk.right) :: m.key > n.key
   }
   else{}
 }
+
+lemma {:verify true} propSmaller(n:TNode, sk:tree<TNode>, root:TNode, p:tree<TNode>)
+requires ValidRec(n,sk) && ValidRec(root,p)
+requires SearchTreeRec(sk) && SearchTreeRec(p)
+requires n in elems(p) && n.left !=null && sk.left!=Empty
+ensures (set m | m in elems(sk) && m.key < n.key && m.key > n.left.key) == elems(sk.left.right)
+ensures (set m | m in elems(p) && m.key < n.key && m.key > n.left.key) == 
+(set m | m in elems(sk) && m.key < n.key && m.key > n.left.key)
+//ensures (set m | m in elems(p) && m.key < n.key) == 
+//  (set m | m in elems(p) && m.key < n.left.key)+{n.left}+elems(sk.left.right)
+
+{
+
+    subTree(n,sk,root,p);
+  assert elems(sk)<=elems(p);
+
+   forall m | m in elems(p) && m.key < n.key && m.key > n.left.key
+   ensures m in elems(sk)
+   {
+    assume m in elems(sk);
+   }
+}  
+
+
 }

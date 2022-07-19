@@ -18,7 +18,7 @@ ghost var parent:OrderedMapImpl;
     stack := [];
     index:=0;
     if (p.tree.root!=null)
-    { descendAndPush(p.tree.root,p.tree.skeleton);
+    { descendAndPush(p.tree.root,p.tree.skeleton,null,Empty);
       assume index==|traversed()|;
     }
 
@@ -26,7 +26,179 @@ ghost var parent:OrderedMapImpl;
 
 
 
-method {:verify true} descendAndPush(n:TNode,ghost sk: tree<TNode>)
+method {:verify true} descendAndPush(n:TNode,ghost sk: tree<TNode>, p:TNode?, ghost pk:tree<TNode>)
+modifies this
+requires Parent().Valid()
+requires ValidStack() 
+requires Tree.ValidRec(n,sk) 
+requires Tree.SearchTreeRec(sk)
+requires  n in Parent().Repr()
+requires elems(sk) <= Parent().Repr()
+requires (forall i | 0 <= i < |stackSK| :: elems(sk) < elems(stackSK[i])) 
+
+requires stack !=[] ==> Tree.LeftPathAux(n,parent.tree.skeleton)==[n]+Tree.LeftPathAux(stack[0],parent.tree.skeleton)
+requires stack == [] ==> [n] == Tree.LeftPathAux(n, parent.tree.skeleton) 
+requires stack != [] ==> stack==Tree.LeftPathAux(stack[0],parent.tree.skeleton)
+
+requires p!=null ==> p in Parent().Repr() && Tree.ValidRec(p,pk) && Tree.SearchTreeRec(pk) && p.right==n && pk.right==sk
+requires p==null ==> index==0 && stack==[] && sk==parent.tree.skeleton
+requires p != null ==> index==|set m | m in elems(parent.tree.skeleton) && m.key < p.key|
+
+ensures Parent().Valid() && Parent().Repr()==old(Parent().Repr())
+ensures ValidStack()
+ensures stack!=[] && stack == Tree.LeftPathAux(stack[0],parent.tree.skeleton)
+ensures p==null ==> index==0
+ensures p!=null ==> index==old(index)+1
+ensures p!=null ==> (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)==(set m | m in elems(parent.tree.skeleton) && m.key < p.key)+{p} 
+ensures p==null ==> (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)=={} 
+//ensures index==|(set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)|
+
+
+{
+ var current:TNode? := n; var currentSK:tree<TNode>:=sk;
+ ghost var oset;
+ if (p!=null) {oset:=set m | m in elems(parent.tree.skeleton) && m.key < p.key;}
+ else {oset:={};}
+
+assert n==current;
+assert current!=null;
+assert stack!=[] ==> Tree.LeftPathAux(n,parent.tree.skeleton)==[n]+Tree.LeftPathAux(stack[0],parent.tree.skeleton);
+assert stack==[] ==> [current] == Tree.LeftPathAux(current, parent.tree.skeleton);
+
+//assert p!=null && current!=null ==> 
+//  (set m | m in elems(parent.tree.skeleton) && m.key <= current.key) == (set m | m in elems(parent.tree.skeleton) && m.key <= p.key) + (set m | m in elems(sk) && m.key <= current.key);
+//assert p==null ==>  traversed()== (set m | m in elems(sk) && m.key <= current.key);
+//assert current==null ==> traversed() == (set m | m in elems(parent.tree.skeleton) && m.key <= p.key);
+
+
+
+ while (current != null)
+  decreases currentSK
+  invariant Parent().Valid() && Parent().Repr()==old(Parent().Repr())
+  invariant elems(currentSK) <= Parent().Repr()
+  invariant Tree.ValidRec(current,currentSK)
+  invariant Tree.SearchTreeRec(currentSK)
+  invariant (forall i | 0 <= i < |stackSK| :: elems(currentSK) < elems(stackSK[i])) 
+  invariant ValidStack()
+  invariant current!=null || stack != []
+  invariant (current!=null && stack!=[]) ==>  Tree.LeftPathAux(current,parent.tree.skeleton)==[current]+Tree.LeftPathAux(stack[0],parent.tree.skeleton)
+  invariant stack!=[] ==> stack == Tree.LeftPathAux(stack[0],parent.tree.skeleton)
+  invariant stack==[] && current != null ==> [current]==Tree.LeftPathAux(current, parent.tree.skeleton)
+  invariant index==old(index)
+  invariant p!=null ==> p in Parent().Repr() && Tree.ValidRec(p,pk) && Tree.SearchTreeRec(pk) && p.right==n && pk.right==sk
+  invariant p!=null ==> oset == set m | m in elems(parent.tree.skeleton) && m.key < p.key
+  invariant p==null ==> oset == {}
+  invariant p==null && stack!=[] ==> stack[0].left==current
+  invariant p==null && stack!=[] ==> 
+    (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)==
+    (set m | m in elems(currentSK) && m.key < stack[0].key)
+  /*invariant p==null && stack!=[] ==> 
+    (set m | m in elems(sk) && m.key < stack[0].key)==
+    (set m | m in elems(currentSK) && m.key < stack[0].key)*/
+
+  /*invariant p==null && current!=null ==>  
+    (set m | m in elems(parent.tree.skeleton) && m.key < current.key) ==
+    (set m | m in elems(currentSK) && m.key < current.key)*/
+
+  /*invariant p!=null && stack!=[] ==>
+    (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)==
+    ((set m | m in elems(parent.tree.skeleton) && m.key < p.key) + {p} +
+    (set m | m in elems(currentSK) && m.key < stack[0].key))*/
+ 
+
+  //invariant current != n  ==> traversed() == (set m | m in elems(parent.tree.skeleton) && m.key <= p.key)+(if (current!=null) then (set m | m in elems(sk) && m.key < current.key) else {})
+  //invariant p!=null && current!=null ==> traversed()== (set m | m in elems(parent.tree.skeleton) && m.key <= p.key) + (set m | m in elems(sk) && m.key <= current.key)
+  //invariant current==null ==> traversed() == (set m | m in elems(parent.tree.skeleton) && m.key <= p.key)
+ {
+
+   var ostack:=stack;
+   var ostackSK:= stackSK;
+   var ocurrent:=current;   
+   var ocurrentSK:=currentSK;
+
+   assert (current !=null && stack!=[]) ==> Tree.LeftPathAux(current,parent.tree.skeleton)==[current]+Tree.LeftPathAux(ostack[0],parent.tree.skeleton);
+      
+  
+   stack:=[current]+stack;
+   stackSK:=[currentSK]+stackSK;
+   
+      assert stackSK[1..|stackSK|]==ostackSK[0..|ostackSK|];
+      assert stack[1..|stack|]==ostack[0..|ostack|];
+      assert stack[0]==current;
+      assert stackSK[0]==currentSK;
+      assert current!=null && stack!=[];
+    
+      assert current.left!=null ==> Tree.LeftPathAux(current.left,parent.tree.skeleton)==[current.left]+Tree.LeftPathAux(stack[0],parent.tree.skeleton)
+      by{
+         assert stack != [];
+         Tree.propLeftPath(current,currentSK,parent.tree.root,parent.tree.skeleton);
+        } 
+
+   current:=current.left;
+   currentSK:=currentSK.left;
+     assert stack!=[];
+     assert current!=null ==> Tree.LeftPathAux(current,parent.tree.skeleton)==[current]+Tree.LeftPathAux(stack[0],parent.tree.skeleton);
+     assert stack==[] && current != null ==> [current]==Tree.LeftPathAux(current, parent.tree.skeleton);
+     
+     if (ostack==[]) {
+       assert stack==[ocurrent]==Tree.LeftPathAux(ocurrent,parent.tree.skeleton);
+       }
+     else{
+       calc =={
+         stack;
+         [stack[0]]+stack[1..|stack|];
+         [stack[0]]+ostack[0..|ostack|];
+         {assert ostack[0..|ostack|]==Tree.LeftPathAux(ostack[0],parent.tree.skeleton);}
+         [stack[0]]+Tree.LeftPathAux(ostack[0],parent.tree.skeleton);
+         {assert stack[1]==ostack[0];}
+         [stack[0]]+Tree.LeftPathAux(stack[1],parent.tree.skeleton);
+         {assert Tree.LeftPathAux(stack[0],parent.tree.skeleton)==[stack[0]]+Tree.LeftPathAux(stack[1],parent.tree.skeleton);}
+         Tree.LeftPathAux(stack[0],parent.tree.skeleton);
+        }   
+      } 
+
+  assert ValidStack();
+  
+
+  if (p==null)
+  { assert (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)==
+  (set m | m in elems(parent.tree.skeleton) && m.key < ocurrent.key);
+  assume (set m | m in elems(parent.tree.skeleton) && m.key < ocurrent.key)==
+      (set m | m in elems(ocurrentSK.left) && m.key < ocurrent.key);
+  assert (set m | m in elems(ocurrentSK.left) && m.key < ocurrent.key)==
+  (set m | m in elems(currentSK) && m.key < stack[0].key);
+  }
+  else{
+   assume (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)==
+    ((set m | m in elems(parent.tree.skeleton) && m.key < p.key) + {p} +
+    (set m | m in elems(currentSK) && m.key < stack[0].key));
+  }
+ }
+   assert current==null && stack!=[] && stack == Tree.LeftPathAux(stack[0],parent.tree.skeleton);
+   assert currentSK==Empty;
+  
+  if (p!=null) {index:=index+1;}
+  assume p==null ==> 
+    (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)==
+    (set m | m in elems(currentSK) && m.key < stack[0].key);
+  assert p==null ==>   (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)=={};
+ 
+  assume p!=null ==>
+    (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)==
+    (set m | m in elems(parent.tree.skeleton) && m.key < p.key) + {p} +
+    (set m | m in elems(currentSK) && m.key < stack[0].key);
+  assert p!=null ==> 
+    (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)==
+    (set m | m in elems(parent.tree.skeleton) && m.key < p.key) + {p};
+
+ 
+
+
+
+}
+
+
+/*method {:verify false} descendAndPush(n:TNode,ghost sk: tree<TNode>)
 modifies this
 requires Parent().Valid()
 requires ValidStack() 
@@ -115,7 +287,9 @@ assert stack==[] ==> [current] == Tree.LeftPathAux(current, parent.tree.skeleton
    assert current==null && stack!=[] && stack == Tree.LeftPathAux(stack[0],parent.tree.skeleton);
 
 
-}
+}*/
+
+
 
 /*lemma {:verify false} absurdo(sk:tree<TNode>)
  requires |stack|==|stackSK|>0
@@ -273,7 +447,7 @@ predicate Valid()
 
 {   Parent().Valid() &&
     ValidStack() &&
-   // stack!=[] ==> stack == Tree.LeftPathAux(stack[0],parent.tree.skeleton) && 
+    (stack!=[] ==> stack == Tree.LeftPathAux(stack[0],parent.tree.skeleton)) && 
     //elems(parent.tree.skeleton)==traversed()+ reachableFromStacks() &&
     index==|traversed()| 
 
@@ -289,7 +463,6 @@ function traversed():set<TNode>
     else 
       (set n | n in elems(parent.tree.skeleton) && n.key < stack[0].key :: n)
   }
-
 
 
 
@@ -327,7 +500,7 @@ ensures |Traversed()|==|traversed()|
 
 
 
-function method {:verify false} Peek():pairKV 
+function method {:verify true} Peek():pairKV 
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
