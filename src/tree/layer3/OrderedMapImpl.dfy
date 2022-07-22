@@ -11,7 +11,9 @@ ghost var parent:OrderedMapImpl;
 
   constructor(p:OrderedMapImpl)
   requires p.Valid()
-  ensures Valid()
+  ensures Valid() 
+  ensures Parent()==p
+  ensures Traversed()=={}
   { parent:=p;
     new;
     stackSK:=[];
@@ -19,14 +21,15 @@ ghost var parent:OrderedMapImpl;
     index:=0;
     if (p.tree.root!=null)
     { descendAndPush(p.tree.root,p.tree.skeleton,null,Empty);
-      assume index==|traversed()|;
+      assert index==|traversed()|==0;
+      traversedRelation();
     }
 
   }
 
 
 
-method {:verify true} descendAndPush(n:TNode,ghost sk: tree<TNode>, p:TNode?, ghost pk:tree<TNode>)
+method {:verify false} descendAndPush(n:TNode,ghost sk: tree<TNode>, p:TNode?, ghost pk:tree<TNode>)
 modifies this
 requires Parent().Valid()
 requires ValidStack() 
@@ -44,7 +47,8 @@ requires p!=null ==> p in Parent().Repr() && Tree.ValidRec(p,pk) && Tree.SearchT
 requires p==null ==> index==0 && stack==[] && sk==parent.tree.skeleton
 requires p != null ==> index==|set m | m in elems(parent.tree.skeleton) && m.key < p.key|
 
-ensures Parent().Valid() && Parent().Repr()==old(Parent().Repr())
+ensures Parent().Valid() 
+ensures Parent()==old(Parent()) && Parent().Repr()==old(Parent().Repr())
 ensures ValidStack()
 ensures stack!=[] && stack == Tree.LeftPathAux(stack[0],parent.tree.skeleton)
 ensures p==null ==> index==0
@@ -115,6 +119,7 @@ assert stack==[] ==> [current] == Tree.LeftPathAux(current, parent.tree.skeleton
    var ostackSK:= stackSK;
    var ocurrent:=current;   
    var ocurrentSK:=currentSK;
+   var oindex:=index;
 
    assert (current !=null && stack!=[]) ==> Tree.LeftPathAux(current,parent.tree.skeleton)==[current]+Tree.LeftPathAux(ostack[0],parent.tree.skeleton);
       
@@ -177,19 +182,35 @@ assert stack==[] ==> [current] == Tree.LeftPathAux(current, parent.tree.skeleton
    assert current==null && stack!=[] && stack == Tree.LeftPathAux(stack[0],parent.tree.skeleton);
    assert currentSK==Empty;
   
-  if (p!=null) {index:=index+1;}
-  assume p==null ==> 
-    (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)==
-    (set m | m in elems(currentSK) && m.key < stack[0].key);
-  assert p==null ==>   (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)=={};
+  
+  if (p==null)
+    { assert (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)=={};
+      assert index == 0 == |traversed()|;
+    }
+  else
+  //if (p!=null)
+  { assert old(index)== |(set m | m in elems(parent.tree.skeleton) && m.key < p.key)|;
  
-  assume p!=null ==>
+    assume
     (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)==
     (set m | m in elems(parent.tree.skeleton) && m.key < p.key) + {p} +
     (set m | m in elems(currentSK) && m.key < stack[0].key);
-  assert p!=null ==> 
+   assert  
     (set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)==
     (set m | m in elems(parent.tree.skeleton) && m.key < p.key) + {p};
+   calc{
+       |traversed()|;
+       |(set m | m in elems(parent.tree.skeleton) && m.key < stack[0].key)|;
+       |(set m | m in elems(parent.tree.skeleton) && m.key < p.key) + {p}|;
+       {assert p !in (set m | m in elems(parent.tree.skeleton) && m.key < p.key);}
+       |(set m | m in elems(parent.tree.skeleton) && m.key < p.key)| + 1;
+       old(index)+1;
+       index+1;
+    } 
+     index:=index+1;
+  } 
+
+     
 
  
 
@@ -493,7 +514,7 @@ ensures |Traversed()|==|traversed()|
   assert Traversed()==(set n | n in traversed():: n.key);
   sizes(Traversed(),(set n | n in traversed():: n.key));
   assert |Traversed()|==|(set n | n in traversed():: n.key)|;
-  assume |(set n | n in traversed():: n.key)| == |traversed()|;
+  assert |(set n | n in traversed():: n.key)| == |traversed()|;
   
 }
 
@@ -666,6 +687,10 @@ class OrderedMapImpl extends OrderedMap {
 
 
   constructor()
+  ensures Valid()
+  ensures Model()==map[]
+  ensures fresh(Repr())
+  ensures forall x | x in Repr() :: fresh(x) 
   {
    tree:=new Tree();
    iters:={};
@@ -678,6 +703,11 @@ class OrderedMapImpl extends OrderedMap {
     {tree} + iters 
   }
 
+function Repr1(): set<object>
+    reads this, Repr0()
+  {
+    Repr0() + tree.Repr()
+  }
   function ReprDepth(): nat
     reads this
     ensures ReprDepth() > 0
@@ -690,7 +720,7 @@ class OrderedMapImpl extends OrderedMap {
     reads this, if n == 0 then {} else ReprFamily(n-1)
   {
     if (n==0) then Repr0()
-    else Repr0()+tree.Repr()
+    else Repr1()
   }
   
 
@@ -700,7 +730,8 @@ class OrderedMapImpl extends OrderedMap {
   predicate Valid()
     reads this, Repr()
   {
-   tree.Valid() && tree.SearchTree()
+   tree.Valid() && tree.SearchTree()&&
+   forall it | it in iters :: it.parent==this && {it}!!{this}
   }  
 
   function Model(): map<K,V>
@@ -733,12 +764,13 @@ function method Empty(): bool
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
     ensures forall it | it in Iterators() :: it is OrderedMapIterator
-  { {} }
+  { iters }
 
 method First() returns (it: UnorderedMapIterator)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
+
     ensures Valid()
     ensures Model() == old(Model())
 
@@ -746,15 +778,23 @@ method First() returns (it: UnorderedMapIterator)
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
+
     ensures it is OrderedMapIterator
     ensures fresh(it)
-    ensures Iterators() == {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
     ensures it.Traversed()=={} 
     ensures Model()!=map[] ==> it.HasNext() && key(it.Peek())==elemth(Model().Keys,0)
+    ensures Iterators() == {it} + old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
+    {
+     var  iter:=new OrderedMapIteratorImpl(this);
+       iters:=iters+{iter};
+      it :=iter;
+      assume false;
+     }
+
 
   method Last() returns (it: OrderedMapIterator)//iterator to the last element
     modifies this, Repr()
