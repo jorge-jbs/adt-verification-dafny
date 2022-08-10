@@ -48,6 +48,7 @@ class SearchTree {
 
   constructor()
     ensures Valid()
+    ensures tree.RedBlackTree()
     ensures Model() == map[]
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() :: fresh(x)
     ensures fresh(Repr())
@@ -56,7 +57,7 @@ class SearchTree {
     tree := new Tree();
   }
 
-  static method {:verify true} FindRec(node: TNode?, ghost sk: tree<TNode>, k: K) returns (found: TNode?)
+  static method {:verify false} FindRec(node: TNode?, ghost sk: tree<TNode>, k: K) returns (found: TNode?)
     requires Tree.ValidRec(node, sk)
     requires Tree.SearchTreeRec(sk)
 
@@ -144,7 +145,7 @@ class SearchTree {
     }
   }
 
-  method {:verify true} Find(k: K) returns (found: TNode?)
+  method {:verify false} Find(k: K) returns (found: TNode?)
     requires Valid()
     ensures found == null <==> k !in Model()
     ensures found != null ==>
@@ -158,7 +159,7 @@ class SearchTree {
     found := FindRec(tree.root, tree.skeleton, k);
   }
 
-  method {:verify true} Search(k: K) returns (b: bool)
+  method {:verify false} Search(k: K) returns (b: bool)
     requires Valid()
     ensures b == (k in Model())
 
@@ -168,7 +169,7 @@ class SearchTree {
     return found != null;
   }
 
-  method {:verify true} Get(k: K) returns (v: V)
+  method {:verify false} Get(k: K) returns (v: V)
     requires Valid()
     requires k in Model()
     ensures Model()[k] == v
@@ -179,7 +180,7 @@ class SearchTree {
     return found.value;
   }
 
-  static method {:verify true} InsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
+  static method {:verify false} InsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
       returns (newNode: TNode, ghost newSk: tree<TNode>, ghost insertedNode: TNode)
     modifies set x | x in elems(sk) :: x`left
     modifies set x | x in elems(sk) :: x`right
@@ -253,7 +254,7 @@ class SearchTree {
     }
   }
 
-  method {:verify true} Insert(k: K, v: V)
+  method {:verify false} Insert(k: K, v: V)
     modifies this, tree, Repr()
     requires Valid()
     ensures Valid()
@@ -268,7 +269,7 @@ class SearchTree {
     tree.root, tree.skeleton, z := InsertRec(tree.root, tree.skeleton, k, v);
   }
 
-  static method {:verify true} RemoveMinRec(node: TNode, ghost sk: tree<TNode>)
+  static method {:verify false} RemoveMinRec(node: TNode, ghost sk: tree<TNode>)
       returns (newNode: TNode?, ghost newSk: tree<TNode>, removedNode: TNode)
     //decreases size(sk)
     modifies elems(sk)
@@ -358,7 +359,7 @@ class SearchTree {
     }
   }
 
-  static method {:verify true} RemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K)
+  static method {:verify false} RemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K)
       returns (newNode: TNode?, ghost newSk: tree<TNode>, ghost removedNode: TNode?)
     modifies elems(sk)
     requires Tree.ValidRec(node, sk)
@@ -556,7 +557,7 @@ class SearchTree {
     }
   }
 
-  method {:verify true} Remove(k: K)
+  method {:verify false} Remove(k: K)
     modifies this, tree, Repr()
     requires Valid()
     ensures Valid()

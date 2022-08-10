@@ -152,6 +152,7 @@ class Tree {
     ensures Valid()
     ensures Model() == map[]
     ensures SearchTree()
+    ensures RedBlackTree()
 
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() :: fresh(x)
     ensures fresh(Repr())
@@ -299,36 +300,6 @@ class Tree {
     reads this, Repr()
     requires Valid()
     ensures Size() == |Model()|
-
-  static method {:verify false} GetRec(n: TNode, ghost sk: tree<TNode>, k: K) returns (v: V)
-    requires ValidRec(n, sk)
-    requires SearchTreeRec(sk)
-    //requires exists n | n in elems(sk) :: n.key == k
-    requires k in ModelRec(sk)
-
-    ensures ValidRec(n, sk)
-    ensures SearchTreeRec(sk)
-    ensures exists n | n in elems(sk) :: n.key == k && n.value == v
-    ensures ModelRec(sk)==old(ModelRec(sk))
-    ensures ModelRec(sk)[k]==v
-
-    requires forall x | x in elems(sk) :: allocated(x)
-    ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
-    ensures fresh(elems(sk)-old(elems(sk)))
-    ensures forall x | x in elems(sk) :: allocated(x)
-
-  static method {:verify false} SearchRec(n: TNode, ghost sk: tree<TNode>, k: K) returns (b:bool, ghost z:TNode)
-    requires ValidRec(n, sk)
-    requires SearchTreeRec(sk)
-    ensures ValidRec(n, sk)
-    ensures SearchTreeRec(sk)
-    ensures b == exists n | n in elems(sk) :: n.key == k
-    ensures b ==> z in elems(sk) && z.key==k
-
-    requires forall x | x in elems(sk) :: allocated(x)
-    ensures forall x {:trigger x in elems(sk), x in old(elems(sk))} | x in elems(sk) - old(elems(sk)) :: fresh(x)
-    ensures fresh(elems(sk)-old(elems(sk)))
-    ensures forall x | x in elems(sk) :: allocated(x)
 
 static lemma {:verify false}  pushUpMapL(ml:map<K,V>, mr:map<K,V>, k:K, v:V)
   requires k !in mr
@@ -999,7 +970,7 @@ static lemma {:verify false} oldNewModelRecRemoveRMin(newSk:tree<TNode>, moSk:ma
     requires ValidRec(node, sk)
     requires SearchTreeRec(sk)
     requires
-    || (
+      || (
         && isBlack(node)
         && isRed(node.left)
         && isRed(node.right)
