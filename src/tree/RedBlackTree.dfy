@@ -178,6 +178,22 @@ class RedBlackTree {
     assert Tree.ModelRec(newSk) == old(Tree.ModelRec(sk))[k := v];
   }
 
+  method {:verify false} Insert(k: K, v: V)
+    modifies this, tree, tree.tree, Repr()
+    requires Valid()
+    ensures Valid()
+    ensures Model() == old(Model())[k := v]
+
+    requires forall x | x in Repr() :: allocated(x)
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+  {
+    ghost var z;
+    tree.tree.root, tree.tree.skeleton, z := InsertRec(tree.tree.root, tree.tree.skeleton, k, v);
+    tree.tree.root.color := Black;
+  }
+
   static method {:verify false} FlipColors(node: TNode, ghost sk: tree<TNode>)
     modifies node`color, node.left`color, node.right`color
 
