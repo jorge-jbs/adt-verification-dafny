@@ -788,7 +788,7 @@ class RedBlackTree {
   }
 
   // 2'20"
-  static method {:verify true} RemoveMinRec(node: TNode, ghost sk: tree<TNode>)
+  static method {:verify false} RemoveMinRec(node: TNode, ghost sk: tree<TNode>)
       returns (newNode: TNode?, ghost newSk: tree<TNode>, removedNode: TNode)
     decreases size(sk)
     modifies elems(sk)
@@ -950,6 +950,7 @@ class RedBlackTree {
     }
   }
 
+  // 1h9min
   static method {:verify false} RemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K)
       returns (newNode: TNode?, ghost newSk: tree<TNode>, ghost removedNode: TNode?)
     decreases size(sk)
@@ -971,8 +972,8 @@ class RedBlackTree {
     ensures Tree.SearchTreeRec(newSk)
     ensures Tree.RedBlackTreeRec(newSk)
     ensures Tree.BlackHeight(newSk) == old(Tree.BlackHeight(sk))
-    ensures old(Tree.isBlack(node)) && Tree.isRed(newNode) ==>
-      !Tree.isRed(newNode.left)
+    ensures Tree.isRed(newNode) ==> !Tree.isRed(newNode.left)
+    ensures old(!Tree.isRed(node)) ==> !Tree.isRed(newNode)
 
     ensures forall n | n in elems(sk) ::
       n.key == old(n.key) && n.value == old(n.value)
@@ -994,7 +995,7 @@ class RedBlackTree {
       newSk := sk;
       removedNode := null;
     } else {
-      if node.key > k {
+      if node.key > k { // 3'50"
         //assume false;
         newNode := node;
         newSk := sk;
@@ -1008,12 +1009,17 @@ class RedBlackTree {
             }
           }
         }
+        var newNodeLeft;
         ghost var newSkLeft;
         label PreRec:
-        newNode.left, newSkLeft, removedNode := RemoveRec(newNode.left, newSk.left, k);
+        newNodeLeft, newSkLeft, removedNode := RemoveRec(newNode.left, newSk.left, k);
+        assert Tree.isRed(newNodeLeft) ==> !Tree.isRed(newNodeLeft.left);
+        assert old@PreRec(!Tree.isRed(newNode.left)) ==> !Tree.isRed(newNodeLeft);
+        assert Tree.ValidRec(newNode.right, newSk.right);
+        assert Tree.SearchTreeRec(newSk.right);
+        assert Tree.RedBlackTreeRec(newSk.right);
+        newNode.left := newNodeLeft;
         newSk := Node(newSkLeft, newNode, newSk.right);
-        //assume false;
-        assert Tree.ValidRec(newNode, newSk);
         assert !(
           && Tree.isRed(newNode.right)
           && Tree.isRed(newNode.right.left)
@@ -1051,92 +1057,62 @@ class RedBlackTree {
           assert Tree.isRed(newNode.right) || Tree.isRed(newNode.right.left);
           assert !(Tree.isRed(newNode.right) && Tree.isRed(newNode.right.left));
         }
+        assert !Tree.isRed(newNode.left);
 
         if k == newNode.key && newNode.right == null {
           label A:
           assert elems(sk) == elems(newSk) == elems(newSk.left) + {newNode};
           assert elems(sk) - {newNode} == elems(newSk) - {newNode} == elems(newSk.left);
+          removedNode := newNode;
           newNode := newNode.left;
           newSk := newSk.left;
-          removedNode := newNode;
-          assume elems(newSk) == elems(sk) - {removedNode};
-          assert elems(newSk) == old@A(elems(newSk) - {newNode}) == old@A(elems(sk)) - {removedNode};
+          assert elems(newSk) == elems(sk) - {removedNode};
           return;
         }
 
         if Tree.isBlack(newNode.right) && !Tree.isRed(newNode.right.left) {
           newNode, newSk := MoveRedRight(newNode, newSk);
           assert !(Tree.isRed(newNode.right) && Tree.isRed(newNode.right.left));
+          assert Tree.isBlack(newNode) ==> Tree.isRed(newNode.left);
         } else {
           assert
             || newNode.right == null
             || Tree.isRed(newNode.right)
             || Tree.isRed(newNode.right.left);
           assert !(Tree.isRed(newNode.right) && Tree.isRed(newNode.right.left));
+          assert !Tree.isRed(newNode.left);
+          assert !Tree.isBlack(newNode.right) || Tree.isRed(newNode.right.left);
+          //assert Tree.isBlack(newNode) ==> Tree.isRed(newNode.left);
         }
         assert !(Tree.isRed(newNode.right) && Tree.isRed(newNode.right.left));
-        if k == newNode.key {
+        if k != newNode.key {  // 12'20" (8'40" if uncommented assumes)
           //assume false;
           label PreRec:
+          var newNodeRight;
           ghost var newSkRight;
-          newNode.right, newSkRight, removedNode := RemoveRec(newNode.right, newSk.right, k);
-          newSk := Node(newSk.left, newNode, newSkRight);
-          assert Tree.BlackHeight(newSk.left) == Tree.BlackHeight(newSk.right);
-          assert Tree.RedBlackTreeRec(newSk.right);
-          assert unchanged@PreRec(elems(newSk.left));
-          assert Tree.RedBlackTreeRec(newSk.left);
+          assert Tree.ValidRec(newNode.left, newSk.left);
           assert Tree.ValidRec(newNode, newSk);
-          assert || (
-              && Tree.isBlack(newNode)
-              && Tree.isRed(newNode.left)
-              && Tree.isRed(newNode.right)
-              && Tree.isRed(newNode.right.left)
-          ) || !(
-              && Tree.isRed(newNode.right)
-              && Tree.isRed(newNode.right.left)
-          ) by {
-            if Tree.isRed(newNode.right) {
-              if old@PreRec(Tree.isBlack(newNode.right)) {
-                assert !Tree.isRed(newNode.right.left);
-                assert !(
-                  && Tree.isRed(newNode.right)
-                  && Tree.isRed(newNode.right.left)
-                );
-              } else if Tree.isRed(newNode.right.left) && old@PreRec(newNode.right != null) {
-                assert Tree.isBlack(newNode);
-                assert Tree.isRed(newNode.left);
-                assert Tree.isRed(newNode.right);
-                assert Tree.isRed(newNode.right.left);
-              }
-            }
-            /*
-            if old@PreRec(isBlack(newNode.right)) && Tree.isRed(newNode.right) {
-              assert !Tree.isRed(newNode.right.left);
-              assert !(
-                && Tree.isRed(newNode.right)
-                && Tree.isRed(newNode.right.left)
-              );
-            } else if !Tree.isRed(newNode.right) {
-              assert !(
-                && Tree.isRed(newNode.right)
-                && Tree.isRed(newNode.right.left)
-              );
-            } else if old@PreRec(newNode.right == null) {
-              assert !(
-                && Tree.isRed(newNode.right)
-                && Tree.isRed(newNode.right.left)
-              );
-            } else if Tree.isRed(newNode.right.left) {
-              assert old@PreRec(Tree.isRed(newNode.right)) && Tree.isRed(newNode.right);
-              //assert Tree.isRed(newNode.left);
-              assert isBlack(newNode);
-              assert Tree.isRed(newNode.left);
-              assert Tree.isRed(newNode.right);
-              assert Tree.isRed(newNode.right.left);
-            } else {
-            }
-            */
+          newNodeRight, newSkRight, removedNode := RemoveRec(newNode.right, newSk.right, k);
+          assert Tree.isRed(newNodeRight) ==> !Tree.isRed(newNodeRight.left);
+          assert old@PreRec(!Tree.isRed(newNode.right)) ==> !Tree.isRed(newNodeRight);
+          newNode.right := newNodeRight;
+          newSk := Node(newSk.left, newNode, newSkRight);
+          assert
+            && Tree.ValidRec(newNode.right, newSk.right)
+            && Tree.SearchTreeRec(newSk.right)
+            && Tree.RedBlackTreeRec(newSk.right)
+          by {
+            //assume false;  // uncomment to fasten verification
           }
+          assert
+            && Tree.ValidRec(newNode.left, newSk.left)
+            && Tree.SearchTreeRec(newSk.left)
+            && Tree.RedBlackTreeRec(newSk.left)
+          by {
+            //assume false;  // uncomment to fasten verification
+          }
+          assert Tree.isRed(newNode.right) && Tree.isRed(newNode.right.left) ==>
+              Tree.isBlack(newNode) && Tree.isRed(newNode.left);
           assert !(
             && Tree.isRed(newNode)
             && Tree.isRed(newNode.left)
@@ -1152,117 +1128,56 @@ class RedBlackTree {
               assert Tree.ValidRec(newNode.left.left, newSk.left.left);
             }
           }
-        } else {
+        } else {  // 25' (11'30" if uncommented assumes)
           //assume false;
-          if newNode.right == null {
-            assume false;
-            return;
-          }
+          assert newNode.right != null;
           removedNode := newNode;
           ghost var oldNewSkLeft := newSk.left;
           var oldNewNodeLeft := newNode.left;
           var oldNewNodeColor := newNode.color;
-          assert Tree.RedBlackTreeRec(newSk.left);
-          assert !(
-            && Tree.isRed(newNode)
-            && Tree.isRed(newNode.left)
-          );
           label PreRec:
           ghost var newSkRight;
           var newNodeRight;
           var minNode;
           newNodeRight, newSkRight, minNode := RemoveMinRec(newNode.right, newSk.right);
-          /*
           label PostRec:
-          assert old@PreRec(isBlack(newNode.right)) && Tree.isRed(newNodeRight)
-            ==> !Tree.isRed(newNodeRight.left);
-          assert newNode !in elems(newSkRight);
-          assert newNode != newNodeRight;
-          assert newNodeRight != null ==> newNode != newNodeRight.left;
-          assert minNode !in elems(newSkRight);
-          assert minNode != newNodeRight;
-          assert newNodeRight != null ==> minNode != newNodeRight.left;
-          */
+          assert
+            && Tree.ValidRec(newNodeRight, newSkRight)
+            && Tree.SearchTreeRec(newSkRight)
+            && Tree.RedBlackTreeRec(newSkRight);
           newNode := minNode;
-          /*
-          // Somehow Dafny cannot prove the following:
-          assume old@PreRec(isBlack(newNode.right)) && old@PostRec(Tree.isRed(newNodeRight))
-            ==> old@PostRec(!Tree.isRed(newNodeRight.left));
-          assert old@PreRec(isBlack(newNode.right)) && Tree.isRed(newNodeRight)
-            ==> !Tree.isRed(newNodeRight.left);
-          */
-          /*
-          assert Tree.isRed(newNodeRight) <==> old@PostRec(Tree.isRed(newNodeRight));
-          if newNodeRight != null {
-            assert unchanged@PostRec(newNodeRight);
-            assert old@PostRec(newNodeRight.color) == newNodeRight.color;
-            assert Tree.isRed(newNodeRight.left) <==> old@PostRec(Tree.isRed(newNodeRight.left));
-            if newNodeRight.left != null {
-              assert unchanged@PostRec(newNodeRight.left);
-            }
-          }
-          */
           newNode.left := oldNewNodeLeft;
           newNode.right := newNodeRight;
           newNode.color := oldNewNodeColor;
           ghost var goodSk := Node(oldNewSkLeft, newNode, newSkRight);
           newSk := goodSk;
           //newSk := Node(oldNewSkLeft, newNode, newSkRight);
-          assert || (
-              && Tree.isBlack(newNode)
-              && Tree.isRed(newNode.left)
-              && Tree.isRed(newNode.right)
-              && Tree.isRed(newNode.right.left)
-          ) || !(
-              && Tree.isRed(newNode.right)
-              && Tree.isRed(newNode.right.left)
-          ) by {
-            assume false;
-            /*
-            assert old@PreRec(isBlack(newNode.right)) && Tree.isRed(newNode.right)
-              ==> !Tree.isRed(newNode.right.left);
-            if old@PreRec(isBlack(newNode.right)) && Tree.isRed(newNode.right) {
-              assert !Tree.isRed(newNode.right.left);
-              assert !(
-                && Tree.isRed(newNode.right)
-                && Tree.isRed(newNode.right.left)
-              );
-            } else if !Tree.isRed(newNode.right) {
-              assert !(
-                && Tree.isRed(newNode.right)
-                && Tree.isRed(newNode.right.left)
-              );
-            } else if old@PreRec(newNode.right == null) {
-              // The proof would be something like this but Dafny cannot even
-              // prove that newNode.right was valid before the call.
-              /*
-              assert Tree.isRed(newNode.right);
-              assert newNode.right != null;
-              assert old@PreRec(Tree.ValidRec(newNode.right, newSk.right));
-              assert old@PreRec(newSk.right.Empty?);
-              assert old@PreRec(elems(newSk.right)) == {};
-              assert elems(newSk.right) <= old@PreRec(elems(newSk.right));
-              assert elems(newSk.right) == {};
-              assert newNode.right in elems(newSk.right);
-              assert newNode.right in {};
-              assert false;
-              */
-              assume false;
-            } else if Tree.isRed(newNode.right.left) {
-              assert old@PreRec(Tree.isRed(newNode.right)) && Tree.isRed(newNode.right);
-              //assert Tree.isRed(newNode.left);
-              assert isBlack(newNode);
-              assert Tree.isRed(newNode.right);
-              assume false;
-              assert Tree.isRed(newNode.left);
-              assert Tree.isRed(newNode.right.left);
-            } else {
-              assume false;
-            }
-            */
+
+          assert newSk.right == newSkRight;
+          assert newNode.right == newNodeRight;
+          assert unchanged@PostRec(elems(newSk.right));
+          assert
+            && Tree.ValidRec(newNode.right, newSk.right)
+            && Tree.SearchTreeRec(newSk.right)
+            && Tree.RedBlackTreeRec(newSk.right)
+          by {
+            //assume false;  // uncomment to fasten verification
           }
-          assert unchanged@PreRec(elems(newSk.left));
-          assert newNode.left != null ==> unchanged@PreRec(newNode.left);
+          assert
+            && Tree.ValidRec(newNode.left, newSk.left)
+            && Tree.SearchTreeRec(newSk.left)
+            && Tree.RedBlackTreeRec(newSk.left)
+          by {
+            //assume false;  // uncomment to fasten verification
+          }
+          // 5'45"
+          assert Tree.isRed(newNode.right) && Tree.isRed(newNode.right.left) ==>
+              Tree.isBlack(newNode) && Tree.isRed(newNode.left);
+          assert !(
+            && Tree.isRed(newNode)
+            && Tree.isRed(newNode.left)
+            && Tree.isRed(newNode.right)
+          );
           assert !(
             && Tree.isRed(newNode)
             && Tree.isRed(newNode.left)
@@ -1273,38 +1188,10 @@ class RedBlackTree {
               assert Tree.ValidRec(newNode.left.left, newSk.left.left);
             }
           }
-          assert !(
-            && Tree.isRed(newNode)
-            && Tree.isRed(newNode.left)
-            && Tree.isRed(newNode.right)
-          );
-          assert Tree.RedBlackTreeRec(newSk.right);
-          assert Tree.RedBlackTreeRec(newSk.left);
-          assert Tree.BlackHeight(newSk.left) == Tree.BlackHeight(newSk.right);
-          assert Tree.ValidRec(newNode, newSk);
-          assert Tree.SearchTreeRec(newSk);
-          assert forall n | n in elems(sk) ::
-            n.key == old(n.key) && n.value == old(n.value);
-          assert elems(newSk) == elems(sk) - {removedNode};
-          assert removedNode != null ==>
-            && removedNode in elems(sk)
-            && removedNode !in elems(newSk)
-            && removedNode.key == k by {
-            assume false;
-          }
         }
-        /*
-        assume false;
-        assert Tree.ValidRec(newNode, newSk);
-        assert !(
-          && Tree.isRed(newNode)
-          && Tree.isRed(newNode.left)
-          && Tree.isRed(newNode.right)
-        );
-        */
       }
 
-      assert || (
+      assert || (  // this is an old precondition of Restore that probably should be removed
           && Tree.isBlack(newNode)
           && Tree.isRed(newNode.left)
           && Tree.isRed(newNode.right)
@@ -1329,17 +1216,6 @@ class RedBlackTree {
       assert Tree.ValidRec(newNode, newSk);
       assert Tree.SearchTreeRec(newSk);
       newNode, newSk := Restore(newNode, newSk);
-/*
-      assert Tree.ValidRec(node, newSk);
-      assert Tree.SearchTreeRec(newSk);
-      assume forall n | n in elems(sk) ::
-        n.key == old(n.key) && n.value == old(n.value);
-      assume elems(newSk) == elems(sk) - {removedNode};
-      assume removedNode != null ==>
-        && removedNode in elems(sk)
-        && removedNode !in elems(newSk)
-        && removedNode.key == k;
-*/
     }
     assert Tree.BlackHeight(newSk) == old(Tree.BlackHeight(sk));
     assert Tree.RedBlackTreeRec(newSk);
