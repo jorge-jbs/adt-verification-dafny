@@ -830,6 +830,11 @@ class RedBlackTree {
     ensures forall x | x in elems(newSk) :: allocated(x)
   {
     if node.left == null {
+      calc == {
+        Tree.BlackHeight(sk);
+        max(Tree.BlackHeight(sk.left), Tree.BlackHeight(sk.right));
+        Tree.BlackHeight(sk.right);
+      }
       newNode := node.right;
       newSk := sk.right;
       removedNode := node;
