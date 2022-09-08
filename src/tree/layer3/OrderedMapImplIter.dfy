@@ -1,4 +1,4 @@
-include "../../../src/tree/BinTreeIntClara.dfy"
+include "../../../src/tree/old/BinTreeIntClara.dfy"
 include "../../../src/tree/layer1/OrderedMap.dfy"
 
 

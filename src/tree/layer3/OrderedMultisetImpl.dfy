@@ -1,6 +1,6 @@
 include "../../../src/tree/layer1/OrderedMultiset.dfy"
 include "../../../src/tree/layer1/OrderedMultisetUtils.dfy"
-include "../../../src/tree/BinTreeIntClara.dfy"
+include "../../../src/tree/old/BinTreeIntClara.dfy"
 
 function mapToMultiset(s:set<(K,V)>):multiset<K>  
   ensures forall k | k in mapToMultiset(s):: (exists p | p in s ::p.0==k && p.1>0)

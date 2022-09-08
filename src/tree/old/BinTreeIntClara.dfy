@@ -1,4 +1,4 @@
-include "layer1/KeyValue.dfy"
+include "../../../src/tree/layer1/KeyValue.dfy"
 
 
 datatype tree<A> = Empty | Node(left: tree<A>, data: A, right: tree<A>)
