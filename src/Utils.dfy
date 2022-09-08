@@ -24,13 +24,13 @@ lemma reprProgression<A>(s1: set<A>, s2: set<A>, s3: set<A>)
 }
 
 module Array {
-  function method elems<A>(l: array<A>): set<A>
+  function method Aelems<A>(l: array<A>): set<A>
     reads l
   {
     set x | x in l[..]
   }
 
-  function method melems<A>(l: array<A>): multiset<A>
+  function method mAelems<A>(l: array<A>): multiset<A>
     reads l
   {
     multiset(l[..])
@@ -145,4 +145,6 @@ module Seq {
   {
     xs[..i] + xs[i+1..]
   }
+
+
 }

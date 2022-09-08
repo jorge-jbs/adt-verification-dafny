@@ -24,8 +24,8 @@ trait ArrayList extends List {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in old(Iterators()) :: old(it.Valid())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
+    ensures forall it | it in old(Iterators()) && old(it.Valid())
+      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
 
   method PopFront() returns (x: int)
@@ -42,8 +42,8 @@ trait ArrayList extends List {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in old(Iterators()) :: old(it.Valid()) && old(it.HasNext())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext())
+      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
   function method Back(): int
     reads this, Repr()
@@ -67,8 +67,8 @@ trait ArrayList extends List {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in old(Iterators()) :: old(it.Valid()) && old(it.HasNext())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext())
+      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
   method PushBack(x: int)
     modifies this, Repr()
@@ -83,8 +83,8 @@ trait ArrayList extends List {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in old(Iterators()) :: old(it.Valid())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
+    ensures forall it | it in old(Iterators()) && old(it.Valid())
+      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
   method Begin() returns (it: ListIterator)
     modifies this, Repr()
@@ -103,8 +103,8 @@ trait ArrayList extends List {
     ensures it.Parent() == this
     ensures it.Index() == 0
     ensures Iterators() == {it} + old(Iterators())
-    ensures forall it | it in old(Iterators()) :: old(it.Valid())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
+    ensures forall it | it in old(Iterators()) && old(it.Valid())
+      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
   // Insertion of x before mid, newt points to x
   method Insert(mid: ListIterator, x: int) returns (newt:ListIterator)
@@ -126,8 +126,8 @@ trait ArrayList extends List {
     ensures Iterators() == {newt}+old(Iterators())
     ensures newt.Valid() && newt.Parent()==this && newt.Index()==old(mid.Index())
  
-    ensures forall it | it in old(Iterators()) :: old(it.Valid())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
+    ensures forall it | it in old(Iterators()) && old(it.Valid())
+      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
   // Deletion of mid, next points to the next element (or past-the-end)
   method Erase(mid: ListIterator) returns (next: ListIterator)
@@ -148,8 +148,8 @@ trait ArrayList extends List {
 
     ensures fresh(next)
     ensures Iterators() == {next} + old(Iterators())
-    ensures forall it | it in old(Iterators()) :: old(it.Valid()) && old(it.HasNext())
-      ==> it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index()
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext())
+      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index()
     ensures next.Valid() && next.Parent() == this && next.Index() == mid.Index()
 
 }

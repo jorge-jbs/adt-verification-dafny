@@ -38,5 +38,5 @@ predicate Ordered<A>(xs: seq<A>, le: (A, A) -> bool)
 
 predicate OrderedInt(xs: seq<int>)
 {
-  forall i | 0 <= i < |xs|-1 :: xs[i] < xs[i+1]
+  forall i, j | 0 <= i < j < |xs| :: xs[i] < xs[j]
 }

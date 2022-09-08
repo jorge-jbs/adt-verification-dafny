@@ -126,7 +126,7 @@ trait LinkedList extends List {
     ensures Iterators() == {newt} + old(Iterators())
     ensures newt.Valid()
     ensures newt.Parent() == this
-    ensures newt.Index() == 1 + old(mid.Index())
+    ensures newt.Index() == old(mid.Index())
 
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() &&
@@ -157,12 +157,12 @@ trait LinkedList extends List {
     ensures next.Parent() == this
     ensures next.Index()==old(mid.Index())
     ensures forall it |
-    && it in old(Iterators())
-    && old(it.Valid())
-    && old(it.Index()) != old(mid.Index()) ::
-    it.Valid() &&
-    if old(it.Index()) < old(mid.Index())  then
-    it.Index() == old(it.Index())
-    else
-      it.Index() == old(it.Index()) - 1
+       && it in old(Iterators())
+       && old(it.Valid())
+       && old(it.Index()) != old(mid.Index()) ::
+         it.Valid() &&
+         if old(it.Index()) < old(mid.Index())  then
+           it.Index() == old(it.Index())
+         else
+           it.Index() == old(it.Index()) - 1
 }

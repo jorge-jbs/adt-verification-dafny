@@ -300,6 +300,9 @@ ensures forall x | x in l.Repr() :: allocated(x)
        assert GSorted(omodel2,c.Index(),c.Index()+nL);
        assert forall z | c.Index()+nL <= z <q.Index() ::omodel2[z]==omodel2[c.Index()+nL];
 
+
+       assert omodel2[..c.Index()] == omodel[..c.Index()] && omodel2[c.Index()+n..] == omodel[c.Index()+n..]; 
+
     quicksort(l,q,nG);
     
       assert multiset(l.Model()[q.Index()..q.Index()+nG])== multiset(omodel2[q.Index()..q.Index()+nG]);
