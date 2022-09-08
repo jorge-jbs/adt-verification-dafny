@@ -1,12 +1,12 @@
 include "../../src/tree/Tree.dfy"
 include "../../src/tree/TreeData.dfy"
 
-lemma {:verify true} idem(m:map<K,V>,k:K,v:V)
+lemma {:verify true} mapIdem(m:map<K,V>,k:K,v:V)
   requires k in m && m[k]==v
   ensures (m-{k})[k:=v]==m
 {}
 
-lemma {:verify true} idem2(m:map<K,V>,k:K,v:V)
+lemma {:verify true} mapIdem2(m:map<K,V>,k:K,v:V)
   requires k !in m
   ensures (m[k:=v])-{k}==m
 {}
@@ -51,6 +51,7 @@ class SearchTree {
     ensures tree.RedBlackTree()
     ensures Model() == map[]
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() :: fresh(x)
+    ensures fresh(tree)
     ensures fresh(Repr())
     ensures forall x | x in Repr() :: allocated(x)
   {
@@ -260,6 +261,7 @@ class SearchTree {
     ensures Valid()
     ensures Model() == old(Model())[k := v]
 
+    ensures tree == old(tree)
     requires forall x | x in Repr() :: allocated(x)
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr()-old(Repr()))
@@ -541,13 +543,13 @@ class SearchTree {
               Tree.ModelRec(newSk);
               Tree.ModelRec(newSk.left) + Tree.ModelRec(newSk.right) + map[newNode.key := newNode.value];
               Tree.ModelRec(newSk.left) + old(Tree.ModelRec(sk.right)) - {minNode.key} + map[minNode.key := minNode.value];
-              { idem(old(Tree.ModelRec(sk.right)), minNode.key, minNode.value); }
+              { mapIdem(old(Tree.ModelRec(sk.right)), minNode.key, minNode.value); }
               Tree.ModelRec(newSk.left) + old(Tree.ModelRec(sk.right));
               old(Tree.ModelRec(sk.left)) + old(Tree.ModelRec(sk.right));
               old(Tree.ModelRec(sk.left)) + old(Tree.ModelRec(sk.right)) + map[];
               { assert map[removedNode.key := removedNode.value] - {removedNode.key} == map[]; }
               old(Tree.ModelRec(sk.left)) + old(Tree.ModelRec(sk.right)) + (map[removedNode.key := removedNode.value] - {removedNode.key});
-              { idem2(old(Tree.ModelRec(sk.left)) + old(Tree.ModelRec(sk.right)), removedNode.key, removedNode.value); }
+              { mapIdem2(old(Tree.ModelRec(sk.left)) + old(Tree.ModelRec(sk.right)), removedNode.key, removedNode.value); }
               old(Tree.ModelRec(sk.left)) + old(Tree.ModelRec(sk.right)) + map[removedNode.key := removedNode.value] - {removedNode.key};
               old(Tree.ModelRec(sk)) - {removedNode.key};
             }
@@ -563,6 +565,7 @@ class SearchTree {
     ensures Valid()
     ensures Model() == old(Model()) - {k}
 
+    ensures tree == old(tree)
     requires forall x | x in Repr() :: allocated(x)
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr()-old(Repr()))

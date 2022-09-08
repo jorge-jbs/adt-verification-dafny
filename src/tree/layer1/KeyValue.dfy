@@ -1,9 +1,13 @@
 type K = int
 type V = int
-type pairKV = (K,V)
+type pairKV = (K, V)
 
-function key(p:pairKV):K
-{p.0}
+function key(p: pairKV): K
+{
+  p.0
+}
 
-function value(p:pairKV):V
-{p.1}
+function value(p: pairKV): V
+{
+  p.1
+}
