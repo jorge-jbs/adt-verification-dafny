@@ -29,6 +29,9 @@ jobs:
 
       - name: Check library
         run: |
+          echo $PATH
+          ls
+          ls dafny
           PATH=$PATH:$PWD/dafny/
           cd $GITHUB_WORKSPACE
           ./check.sh
