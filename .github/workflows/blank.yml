@@ -24,9 +24,9 @@ jobs:
           unzip dafny-3.9.1-x64-ubuntu-16.04.zip
           PATH=$PATH:$PWD/dafny/
           dafny --version
-          echo DAFNY=$PWD/dafny/ >> $GITHUB_ENV
+          echo dafny=$PWD/dafny/ >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
 
       - name: Check library
-        run: PATH=$PATH:$DAFNY ./check.sh
+        run: PATH=$PATH:${{ env.dafny }} ./check.sh
