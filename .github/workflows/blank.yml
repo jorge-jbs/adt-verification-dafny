@@ -23,6 +23,7 @@ jobs:
           wget https://github.com/dafny-lang/dafny/releases/download/v3.9.1/dafny-3.9.1-x64-ubuntu-16.04.zip
           unzip dafny-3.9.1-x64-ubuntu-16.04.zip
           cp dafny/dafny $HOME/bin
+          dafny --version
 
       - uses: actions/checkout@v3
 
