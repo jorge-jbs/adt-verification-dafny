@@ -10,15 +10,18 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-16.04
+    runs-on: ubuntu-22.04
 
     steps:
+      - uses: actions/checkout@v3
+
       - name: Install .NET
         run: |
-          wget https://packages.microsoft.com/config/ubuntu/16.04/packages-microsoft-prod.deb -O packages-microsoft-prod.deb
-          sudo dpkg -i packages-microsoft-prod.deb
-          rm packages-microsoft-prod.deb
           sudo apt-get update
-          sudo apt-get install -y dotnet-sdk-6.0
+          sudo apt-get install -y dotnet6
 
-      - uses: actions/checkout@v3
+      - name: Install Dafny
+        run: |
+          wget https://github.com/dafny-lang/dafny/releases/download/v3.9.1/dafny-3.9.1-x64-ubuntu-16.04.zip
+          unzip dafny-3.9.1-x64-ubuntu-16.04.zip
+          cp dafny/dafny $HOME/bin
