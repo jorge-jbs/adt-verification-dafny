@@ -13,6 +13,8 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+      - uses: actions/checkout@v3
+
       - name: Install .NET
         run: |
           sudo apt-get update
@@ -25,10 +27,5 @@ jobs:
           echo $PWD/dafny/ >> $GITHUB_PATH
           PATH=$PATH:$PWD/dafny/ dafny --version
 
-      - uses: actions/checkout@v3
-
       - name: Check library
-        run: |
-          echo $PATH
-          ls ${PATH%%:*}
-          ./check.sh
+        run: ./check.sh
