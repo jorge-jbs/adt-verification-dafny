@@ -29,6 +29,6 @@ jobs:
 
       - name: Check library
         run: |
-          echo $GITHUB_PATH
-          ls $GITHUB_PATH[0]
+          echo $PATH
+          ls $PATH[0]
           ./check.sh
