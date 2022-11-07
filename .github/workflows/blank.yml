@@ -22,16 +22,10 @@ jobs:
         run: |
           wget https://github.com/dafny-lang/dafny/releases/download/v3.9.1/dafny-3.9.1-x64-ubuntu-16.04.zip
           unzip dafny-3.9.1-x64-ubuntu-16.04.zip
-          PATH=$PATH:$PWD/dafny/
+          echo $PWD/dafny/ >> $GITHUB_PATH
           dafny --version
-          echo dafny=$PWD/dafny/
-          echo dafny=$PWD/dafny/ >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
 
       - name: Check library
-        run: |
-          echo ${{ env.dafny }}
-          ls ${{ env.dafny }}
-          PATH=$PATH:${{ env.dafny }} dafny --version
-          PATH=$PATH:${{ env.dafny }} ./check.sh
+        run: ./check.sh
