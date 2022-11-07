@@ -24,7 +24,7 @@ jobs:
           unzip dafny-3.9.1-x64-ubuntu-16.04.zip
           PATH=$PATH:$PWD/dafny/
           dafny --version
-          export DAFNY=$PWD/dafny/
+          echo DAFNY=$PWD/dafny/ >> $GITHUB_ENV
 
       - uses: actions/checkout@v3
 
