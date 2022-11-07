@@ -32,4 +32,5 @@ jobs:
       - name: Check library
         run: |
           echo ${{ env.dafny }}
+          PATH=$PATH:${{ env.dafny }} dafny --version
           PATH=$PATH:${{ env.dafny }} ./check.sh
