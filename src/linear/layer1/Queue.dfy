@@ -1,4 +1,4 @@
-trait Queue {
+trait Queue<A> {
   function ReprDepth(): nat
     ensures ReprDepth() > 0
 
@@ -20,7 +20,7 @@ trait Queue {
   predicate Valid()
     reads this, Repr()
 
-  function Model(): seq<int>
+  function Model(): seq<A>
     reads this, Repr()
     requires Valid()
 
@@ -29,14 +29,14 @@ trait Queue {
     requires Valid()
     ensures Empty() <==> Model() == []
 
-  function method Front(): int
+  function method Front(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
     ensures Front() == Model()[0]
 
-  method Enqueue(x: int)
+  method Enqueue(x: A)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -46,7 +46,7 @@ trait Queue {
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
-  method Dequeue() returns (x: int)
+  method Dequeue() returns (x: A)
     modifies Repr()
     requires Valid()
     requires Model() != []

@@ -1,8 +1,8 @@
 include "../../../src/linear/layer1/Deque.dfy"
 include "../../../src/linear/layer4/DoublyLinkedListWithLast.dfy"
 
-class Dequeue1 extends Dequeue {
-  var list: DoublyLinkedListWithLast;
+class Dequeue1<A> extends Dequeue<A> {
+  var list: DoublyLinkedListWithLast<A>;
 
   function ReprDepth(): nat
     ensures ReprDepth() > 0
@@ -55,7 +55,7 @@ class Dequeue1 extends Dequeue {
     list.Valid()
   }
 
-  function Model(): seq<int>
+  function Model(): seq<A>
     reads this, Repr()
     requires Valid()
   {
@@ -78,7 +78,7 @@ class Dequeue1 extends Dequeue {
     list := new DoublyLinkedListWithLast();
   }
 
-  function method Front(): int
+  function method Front(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -88,7 +88,7 @@ class Dequeue1 extends Dequeue {
     list.Front()
   }
 
-  method PushFront(x: int)
+  method PushFront(x: A)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -99,7 +99,7 @@ class Dequeue1 extends Dequeue {
     list.PushFront(x);
   }
 
-  method PopFront() returns (x: int)
+  method PopFront() returns (x: A)
     modifies Repr()
     requires Valid()
     requires Model() != []
@@ -110,7 +110,7 @@ class Dequeue1 extends Dequeue {
     x := list.PopFront();
   }
 
-  function method Back(): int
+  function method Back(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -120,7 +120,7 @@ class Dequeue1 extends Dequeue {
     list.Back()
   }
 
-  method PushBack(x: int)
+  method PushBack(x: A)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -131,7 +131,7 @@ class Dequeue1 extends Dequeue {
     list.PushBack(x);
   }
 
-  method PopBack() returns (x: int)
+  method PopBack() returns (x: A)
     modifies Repr()
     requires Valid()
     requires Model() != []

@@ -2,7 +2,7 @@ include "../../../src/linear/layer2/ArrayList.dfy"
 include "../../../src/Utils.dfy"
 
 
-class ArrayListIteratorImpl extends ListIterator {
+class ArrayListIteratorImpl extends ListIterator<int> {
   var parent: ArrayListImpl
   var index: nat
 
@@ -13,7 +13,7 @@ class ArrayListIteratorImpl extends ListIterator {
     && 0 <= index <= parent.size
   }
 
-  function Parent(): List
+  function Parent(): List<int>
     reads this
   {
     parent
@@ -84,7 +84,7 @@ class ArrayListIteratorImpl extends ListIterator {
       return elem;
     }
 
-  method Copy() returns (it: ListIterator)
+  method Copy() returns (it: ListIterator<int>)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -142,7 +142,7 @@ class ArrayListIteratorImpl extends ListIterator {
 }
 
 
-class ArrayListImpl extends ArrayList {
+class ArrayListImpl extends ArrayList<int> {
   var elements: array<int>;
   var size: nat;
   ghost var iterators: set<ArrayListIteratorImpl>
@@ -188,7 +188,7 @@ class ArrayListImpl extends ArrayList {
     elements[..size]
   }
 
-  function Iterators(): set<ListIterator>
+  function Iterators(): set<ListIterator<int>>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
@@ -343,7 +343,7 @@ class ArrayListImpl extends ArrayList {
     size := size + 1;
   }
 
-  method Begin() returns (it: ListIterator)
+  method Begin() returns (it: ListIterator<int>)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr()::allocated(x)
@@ -368,7 +368,7 @@ class ArrayListImpl extends ArrayList {
   }
 
   // Deletion of mid, next points to the next element (or past-the-end)
-  method Insert(mid: ListIterator, x: int) returns (newt:ListIterator)
+  method Insert(mid: ListIterator<int>, x: int) returns (newt:ListIterator<int>)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -407,7 +407,7 @@ class ArrayListImpl extends ArrayList {
   }
 
   // Deletion of mid, next points to the next element (or past-the-end)
-  method Erase(mid: ListIterator) returns (next: ListIterator)
+  method Erase(mid: ListIterator<int>) returns (next: ListIterator<int>)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()

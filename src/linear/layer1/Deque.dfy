@@ -1,4 +1,4 @@
-trait Dequeue {
+trait Dequeue<A> {
   function ReprDepth(): nat
     ensures ReprDepth() > 0
 
@@ -20,7 +20,7 @@ trait Dequeue {
   predicate Valid()
     reads this, Repr()
 
-  function Model(): seq<int>
+  function Model(): seq<A>
     reads this, Repr()
     requires Valid()
 
@@ -29,14 +29,14 @@ trait Dequeue {
     requires Valid()
     ensures Empty() <==> Model() == []
 
-  function method Front(): int
+  function method Front(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
     ensures Front() == Model()[0]
 
-  method PushFront(x: int)
+  method PushFront(x: A)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -46,7 +46,7 @@ trait Dequeue {
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
-  method PopFront() returns (x: int)
+  method PopFront() returns (x: A)
     modifies Repr()
     requires Valid()
     requires Model() != []
@@ -57,14 +57,14 @@ trait Dequeue {
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
-  function method Back(): int
+  function method Back(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
     ensures Back() == Model()[|Model()|-1]
 
-  method PushBack(x: int)
+  method PushBack(x: A)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -74,7 +74,7 @@ trait Dequeue {
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
-  method PopBack() returns (x: int)
+  method PopBack() returns (x: A)
     modifies Repr()
     requires Valid()
     requires Model() != []

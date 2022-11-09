@@ -1,9 +1,8 @@
 include "../../../src/Utils.dfy"
 include "../layer1/List.dfy"
 
-trait LinkedList extends List {
-
-  method Begin() returns (it: ListIterator)
+trait LinkedList<A> extends List<A> {
+  method Begin() returns (it: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr()::allocated(x)
@@ -22,14 +21,14 @@ trait LinkedList extends List {
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index())
 
-  function method Front(): int
+  function method Front(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
     ensures Front() == Model()[0]
 
-  method PushFront(x: int)
+  method PushFront(x: A)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -44,7 +43,7 @@ trait LinkedList extends List {
     ensures forall it | it in Iterators() && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index()) + 1
 
-  method PopFront() returns (x: int)
+  method PopFront() returns (x: A)
     modifies this, Repr()
     requires Valid()
     requires Model() != []
@@ -60,14 +59,14 @@ trait LinkedList extends List {
     ensures forall it | it in Iterators() && old(it.Valid()) && old(it.Index()) != 0 ::
       it.Valid() && it.Index() + 1 == old(it.Index())
 
-  function method Back(): int
+  function method Back(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
     ensures Back() == Model()[|Model()|-1]
 
-  method PushBack(x: int)
+  method PushBack(x: A)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -86,7 +85,7 @@ trait LinkedList extends List {
         else
           it.Index()== old(it.Index())
 
-  method PopBack() returns (x: int)
+  method PopBack() returns (x: A)
     modifies this, Repr()
     requires Valid()
     requires Model() != []
@@ -108,7 +107,7 @@ trait LinkedList extends List {
             it.Index() == old(it.Index())
 
   // Insertion of x before mid, newt points to x
-  method Insert(mid: ListIterator, x: int) returns (newt: ListIterator)
+  method Insert(mid: ListIterator<A>, x: A) returns (newt: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -136,7 +135,7 @@ trait LinkedList extends List {
         it.Index() == old(it.Index()) + 1
 
   // Deletion of mid, next points to the next element (or past-the-end)
-  method Erase(mid: ListIterator) returns (next: ListIterator)
+  method Erase(mid: ListIterator<A>) returns (next: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()

@@ -1,6 +1,6 @@
 include "../../../src/linear/layer1/Queue.dfy"
 
-class ArrayQueueImpl extends Queue {
+class ArrayQueueImpl extends Queue<int> {
   var list: array<int>;
   var c: nat;
   var nelems: nat;

@@ -1,7 +1,7 @@
 include "../../../src/linear/layer1/Stack.dfy"
 include "../../../src/Utils.dfy"
 
-class ArrayStackImpl extends Stack {
+class ArrayStackImpl extends Stack<int> {
   var list: array<int>;
   var size:nat;
 

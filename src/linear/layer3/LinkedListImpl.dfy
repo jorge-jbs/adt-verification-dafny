@@ -1,9 +1,9 @@
 include "../../../src/linear/layer2/LinkedList.dfy"
 include "../../../src/linear/layer4/DoublyLinkedListWithLast.dfy"
 
-class LinkedListIteratorImpl extends ListIterator {
-  ghost var parent: LinkedListImpl
-  var node: DNode?
+class LinkedListIteratorImpl<A> extends ListIterator<A> {
+  ghost var parent: LinkedListImpl<A>
+  var node: DNode?<A>
 
   predicate Valid()
     reads this, parent, parent.Repr()
@@ -12,7 +12,7 @@ class LinkedListIteratorImpl extends ListIterator {
     && (node != null ==> node in parent.list.list.spine)
   }
 
-  function Parent(): List
+  function Parent(): List<A>
     reads this
   {
     parent
@@ -28,11 +28,10 @@ class LinkedListIteratorImpl extends ListIterator {
     if node != null then
       parent.list.list.GetIndex(node)
     else
-      parent.list.list.ModelRelationWithSpine();
       |parent.list.list.spine|
   }
 
-  constructor(l: LinkedListImpl, n: DNode?)
+  constructor(l: LinkedListImpl<A>, n: DNode?<A>)
     requires l.Valid() && n in l.list.list.spine
     ensures Valid()
     ensures parent == l
@@ -43,7 +42,7 @@ class LinkedListIteratorImpl extends ListIterator {
     node := n;
   }
 
-  constructor Begin(l: LinkedListImpl)
+  constructor Begin(l: LinkedListImpl<A>)
     requires l.Valid()
     ensures Valid()
     ensures parent == l
@@ -54,7 +53,7 @@ class LinkedListIteratorImpl extends ListIterator {
     node := l.list.list.head;
   }
 
-  constructor CopyCtr(it: LinkedListIteratorImpl)
+  constructor CopyCtr(it: LinkedListIteratorImpl<A>)
     requires it.Valid()
     ensures Valid()
     ensures parent == it.parent
@@ -64,17 +63,16 @@ class LinkedListIteratorImpl extends ListIterator {
     node := it.node;
   }
 
-  function method HasNext(): bool
+  function method {:verify false} HasNext(): bool
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
     ensures HasNext() <==> Index() < |Parent().Model()|
   {
-    parent.list.list.ModelRelationWithSpine();
     node != null
   }
 
-  method  Next() returns (x: int)
+  method {:verify false}  Next() returns (x: A)
     modifies this
     requires Valid()
     requires Parent().Valid()
@@ -102,7 +100,6 @@ class LinkedListIteratorImpl extends ListIterator {
     assert |parent.Model()| > 0;
     assert Index() < |parent.Model()|;
     { // GHOST
-      parent.list.list.ModelRelationWithSpine();
       if Index() < |parent.list.list.spine|-1 {
         assert parent.list.list.spine[Index()+1]
           == parent.list.list.spine[Index()].next;
@@ -112,18 +109,17 @@ class LinkedListIteratorImpl extends ListIterator {
     node := node.next;
   }
 
-  function method Peek(): int
+  function method {:verify false} Peek(): A
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
     requires HasNext()
     ensures Peek() == Parent().Model()[Index()]
   {
-    parent.list.list.ModelRelationWithSpine();
     node.data
   }
 
-  method  Copy() returns (it: ListIterator)
+  method {:verify false}  Copy() returns (it: ListIterator<A>)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -153,7 +149,7 @@ class LinkedListIteratorImpl extends ListIterator {
     parent.iters := {it} + parent.iters;
   }
 
-  method Set(x: int)
+  method {:verify false} Set(x: A)
     modifies node
     requires Valid()
     requires Parent().Valid()
@@ -178,16 +174,14 @@ class LinkedListIteratorImpl extends ListIterator {
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index())
     {
-    parent.list.list.ModelRelationWithSpine();
     node.data := x;
-    parent.list.list.ModelRelationWithSpine();
   }
 }
 
-class LinkedListImpl extends LinkedList {
-  var list: DoublyLinkedListWithLast;
+class LinkedListImpl<A> extends LinkedList<A> {
+  var list: DoublyLinkedListWithLast<A>;
   var size: nat;
-  ghost var iters: set<LinkedListIteratorImpl>;
+  ghost var iters: set<LinkedListIteratorImpl<A>>;
 
   function ReprDepth(): nat
     ensures ReprDepth() > 0
@@ -242,14 +236,14 @@ class LinkedListImpl extends LinkedList {
     && forall it | it in iters :: it.parent == this && {it} !! {this}
   }
 
-  function Model(): seq<int>
+  function Model(): seq<A>
     reads this, Repr()
     requires Valid()
   {
     list.Model()
   }
 
-  function method  Empty(): bool
+  function method {:verify false}  Empty(): bool
     reads this, Repr()
     requires Valid()
     ensures Empty() <==> Model() == []
@@ -257,18 +251,17 @@ class LinkedListImpl extends LinkedList {
     list.list.head == null
   }
 
-  function method Size(): nat
+  function method {:verify false} Size(): nat
     reads this, Repr()
     requires Valid()
     ensures Size() == |Model()|
   {
-    list.list.ModelRelationWithSpine();
     assert Valid();
     assert size == |list.list.spine| == |list.list.Model()| == |list.Model()| == |Model()|;
     size
   }
 
-  function Iterators(): set<ListIterator>
+  function Iterators(): set<ListIterator<A>>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
@@ -276,7 +269,7 @@ class LinkedListImpl extends LinkedList {
     iters
   }
 
-  method  Begin() returns (it: ListIterator)
+  method {:verify false}  Begin() returns (it: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -315,7 +308,7 @@ class LinkedListImpl extends LinkedList {
     iters := {};
   }
 
-  function method Front(): int
+  function method {:verify false} Front(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -325,7 +318,7 @@ class LinkedListImpl extends LinkedList {
     list.Front()
   }
 
-  method PushFront(x: int)
+  method {:verify false} PushFront(x: A)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -343,10 +336,9 @@ class LinkedListImpl extends LinkedList {
   {
     list.PushFront(x);
     /*GHOST*/ size := size + 1;
-    /*GHOST*/ list.list.ModelRelationWithSpine();
   }
 
-  method PopFront() returns (x: int)
+  method {:verify false} PopFront() returns (x: A)
     modifies this, Repr()
     requires Valid()
     requires Model() != []
@@ -365,10 +357,9 @@ class LinkedListImpl extends LinkedList {
   {
     x := list.PopFront();
     /*GHOST*/ size := size - 1;
-    /*GHOST*/ list.list.ModelRelationWithSpine();
   }
 
-  function method Back(): int
+  function method {:verify false} Back(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -379,7 +370,7 @@ class LinkedListImpl extends LinkedList {
     list.Back()
   }
 
-  method PushBack(x: int)
+  method {:verify false} PushBack(x: A)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -406,10 +397,9 @@ class LinkedListImpl extends LinkedList {
   {
     list.PushBack(x);
     /*GHOST*/ size := size + 1;
-    /*GHOST*/ list.list.ModelRelationWithSpine();
   }
 
-  method PopBack() returns (x: int)
+  method {:verify false} PopBack() returns (x: A)
     modifies this, Repr()
     requires Valid()
     requires Model() != []
@@ -434,10 +424,9 @@ class LinkedListImpl extends LinkedList {
   {
     x := list.PopBack();
     /*GHOST*/ size := size - 1;
-    /*GHOST*/ list.list.ModelRelationWithSpine();
   }
 
-  function method CoerceIter(it: ListIterator): LinkedListIteratorImpl
+  function method {:verify false} CoerceIter(it: ListIterator<A>): LinkedListIteratorImpl<A>
     reads this, Repr()
     requires Valid()
     requires it in Iterators()
@@ -447,7 +436,7 @@ class LinkedListImpl extends LinkedList {
   }
 
   // Insertion after mid
-  method {:verify false} InsertAfter(mid: ListIterator, x: int)
+  method {:verify false} {:verify false} InsertAfter(mid: ListIterator<A>, x: A)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -472,16 +461,16 @@ class LinkedListImpl extends LinkedList {
   }
 
   // Insertion before mid
-  method Insert(mid: ListIterator, x: int) returns (newt: ListIterator)
+  method {:verify true} Insert(mid: ListIterator<A>, x: A) returns (newt: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
     requires mid in Iterators()
     requires mid.Parent() == this
-    requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
 
+    requires forall x | x in Repr() :: allocated(x)
     // ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr()-old(Repr()))
@@ -502,7 +491,6 @@ class LinkedListImpl extends LinkedList {
   {
     if CoerceIter(mid).node == null {
       assert mid.Index() == |list.list.spine|;
-      /*GHOST*/ list.list.ModelRelationWithSpine();
       PushBack(x);
       newt := new LinkedListIteratorImpl(this, list.last);
 
@@ -532,7 +520,7 @@ class LinkedListImpl extends LinkedList {
   }
 
   // Deletion of mid
-  method Erase(mid: ListIterator) returns (next: ListIterator)
+  method {:verify false} Erase(mid: ListIterator<A>) returns (next: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()

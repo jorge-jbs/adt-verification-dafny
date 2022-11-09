@@ -1,9 +1,9 @@
 include "../../../src/Utils.dfy"
 include "../../../src/linear/layer1/List.dfy"
 
-trait ArrayList extends List {
+trait ArrayList<A> extends List<A> {
 
-  function method Front(): int
+  function method Front(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -11,7 +11,7 @@ trait ArrayList extends List {
     ensures Valid()
     ensures Front() == Model()[0]
 
-  method PushFront(x: int)
+  method PushFront(x: A)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -28,7 +28,7 @@ trait ArrayList extends List {
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
 
-  method PopFront() returns (x: int)
+  method PopFront() returns (x: A)
     modifies this, Repr()
     requires Valid()
     requires Model() != []
@@ -45,7 +45,7 @@ trait ArrayList extends List {
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext())
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
-  function method Back(): int
+  function method Back(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -53,7 +53,7 @@ trait ArrayList extends List {
     ensures Valid()
     ensures Back() == Model()[|Model()|-1]
 
-  method PopBack() returns (x: int)
+  method PopBack() returns (x: A)
     modifies this, Repr()
     requires Valid()
     requires Model() != []
@@ -70,7 +70,7 @@ trait ArrayList extends List {
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext())
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
-  method PushBack(x: int)
+  method PushBack(x: A)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -86,7 +86,7 @@ trait ArrayList extends List {
     ensures forall it | it in old(Iterators()) && old(it.Valid())
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
-  method Begin() returns (it: ListIterator)
+  method Begin() returns (it: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr()::allocated(x)
@@ -107,7 +107,7 @@ trait ArrayList extends List {
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
   // Insertion of x before mid, newt points to x
-  method Insert(mid: ListIterator, x: int) returns (newt:ListIterator)
+  method Insert(mid: ListIterator<A>, x: A) returns (newt:ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -130,7 +130,7 @@ trait ArrayList extends List {
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
   // Deletion of mid, next points to the next element (or past-the-end)
-  method Erase(mid: ListIterator) returns (next: ListIterator)
+  method Erase(mid: ListIterator<A>) returns (next: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -155,7 +155,7 @@ trait ArrayList extends List {
 }
 
 
-method Test(l: ArrayList)
+method Test(l: ArrayList<int>)
   requires l.Valid() && l.Model() == []
   requires forall x | x in l.Repr() :: allocated(x)
   modifies l, l.Repr()
@@ -181,7 +181,7 @@ method Test(l: ArrayList)
 }
 
 
-method Test2(l1: ArrayList, l2: ArrayList)
+method Test2(l1: ArrayList<int>, l2: ArrayList<int>)
   requires l1.Valid() && l2.Valid()
   requires forall x | x in l1.Repr() :: allocated(x)
   requires forall x | x in l2.Repr() :: allocated(x)

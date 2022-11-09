@@ -1,4 +1,4 @@
-trait Stack {
+trait Stack<A> {
   function ReprDepth(): nat
     ensures ReprDepth() > 0
 
@@ -20,7 +20,7 @@ trait Stack {
   predicate Valid()
     reads this, Repr()
 
-  function Model(): seq<int>
+  function Model(): seq<A>
     reads this, Repr()
     requires Valid()
 
@@ -29,14 +29,14 @@ trait Stack {
     requires Valid()
     ensures Empty() <==> Model() == []
 
-  function method Top(): int
+  function method Top(): A
     reads this, Repr()
     requires Valid()
     requires !Empty()
     ensures Valid()
     ensures Top() == Model()[0]
 
-  method Push(x: int)
+  method Push(x: A)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -46,7 +46,7 @@ trait Stack {
     ensures fresh(Repr()-old(Repr()))
     ensures forall x | x in Repr() :: allocated(x)
 
-  method Pop() returns (x: int)
+  method Pop() returns (x: A)
     modifies Repr()
     requires Valid()
     requires !Empty()

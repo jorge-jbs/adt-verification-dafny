@@ -1,8 +1,8 @@
 include "../../../src/linear/layer1/Stack.dfy"
 include "../../../src/linear/layer4/SinglyLinkedListWithSpine.dfy"
 
-class LinkedStack extends Stack {
-  var list: List<int>;
+class LinkedStack<A> extends Stack<A> {
+  var list: List<A>;
 
   function ReprDepth(): nat
   {
@@ -46,7 +46,7 @@ class LinkedStack extends Stack {
     list.Valid()
   }
 
-  function Model(): seq<int>
+  function Model(): seq<A>
     reads this, list, list.spine
     requires Valid()
   {
@@ -71,7 +71,7 @@ class LinkedStack extends Stack {
   }
 
   // O(1)
-  function method Top(): int
+  function method Top(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -81,7 +81,7 @@ class LinkedStack extends Stack {
   }
 
   // O(1)
-  method Push(x: int)
+  method Push(x: A)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -95,7 +95,7 @@ class LinkedStack extends Stack {
   }
 
   // O(1)
-  method Pop() returns (x: int)
+  method Pop() returns (x: A)
     modifies Repr()
     requires forall x | x in Repr()::allocated(x)
     requires Valid()
@@ -229,7 +229,7 @@ method PopTwice(s: Stack)
   x := s.Pop();
 }
 
-method PopToArray(s: Stack, init: nat, n: nat, v: array<int>)
+method PopToArray(s: Stack<int>, init: nat, n: nat, v: array<int>)
   modifies v, s.Repr()
   requires s.Valid()
   requires n <= |s.Model()|
@@ -265,7 +265,7 @@ method PopToArray(s: Stack, init: nat, n: nat, v: array<int>)
   }
 }
 
-method PushFromArray(s: Stack, a: array<int>)
+method PushFromArray(s: Stack<int>, a: array<int>)
   modifies s.Repr()
   requires s.Valid()
   requires {a} !! {s} + s.Repr()
@@ -358,7 +358,7 @@ method Clear(s: Stack)
   }
 }
 
-method FromStackToArray(s: Stack, a: array<int>, n: nat)
+method FromStackToArray(s: Stack<int>, a: array<int>, n: nat)
   modifies a, s.Repr()
   requires s.Valid()
   requires {a} !! {s} + s.Repr()
@@ -556,7 +556,7 @@ function InitInCommon<A>(xs: seq<A>, ys: seq<A>): nat
     0
 }
 
-method {:timeLimitMultiplier 8} areEqual(s: Stack, r: Stack)
+method {:timeLimitMultiplier 8} areEqual(s: Stack<int>, r: Stack<int>)
   returns (b: bool)
   modifies s.Repr(), r.Repr()
   requires s.Valid() && r.Valid()
@@ -609,7 +609,7 @@ method {:timeLimitMultiplier 8} areEqual(s: Stack, r: Stack)
   b := s.Empty() && r.Empty();
 }
 
-method FromArrayToStack(a: array<int>) returns (s: LinkedStack)
+method FromArrayToStack(a: array<int>) returns (s: LinkedStack<int>)
   ensures s.Valid()
   ensures s.Model() == Seq.Rev(a[..])
   ensures forall u | u in s.Repr() :: fresh(u)

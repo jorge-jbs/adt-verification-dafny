@@ -1,6 +1,6 @@
 include "../../../src/linear/layer1/Deque.dfy"
 
-class ArrayDequeImpl extends Dequeue {
+class ArrayDequeImpl extends Dequeue<int> {
   var list: array<int>;
   var c: nat;
   var nelems: nat;

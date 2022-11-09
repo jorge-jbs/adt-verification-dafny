@@ -1,8 +1,8 @@
 include "../../../src/linear/layer1/Queue.dfy"
 include "../../../src/linear/layer4/SinglyLinkedListWithLast.dfy"
 
-class SinglyLinkedQueue extends Queue {
-  var list: SinglyLinkedListWithLast<int>;
+class SinglyLinkedQueue<A> extends Queue<A> {
+  var list: SinglyLinkedListWithLast<A>;
 
   function ReprDepth(): nat
     ensures ReprDepth() > 0
@@ -55,7 +55,7 @@ class SinglyLinkedQueue extends Queue {
     list.Valid()
   }
 
-  function Model(): seq<int>
+  function Model(): seq<A>
     reads this, Repr()
     requires Valid()
   {
@@ -78,7 +78,7 @@ class SinglyLinkedQueue extends Queue {
     list := new SinglyLinkedListWithLast();
   }
 
-  function method Front(): int
+  function method Front(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -88,7 +88,7 @@ class SinglyLinkedQueue extends Queue {
     list.Front()
   }
 
-  method Enqueue(x: int)
+  method Enqueue(x: A)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -99,7 +99,7 @@ class SinglyLinkedQueue extends Queue {
     list.PushBack(x);
   }
 
-  method Dequeue() returns (x: int)
+  method Dequeue() returns (x: A)
     modifies Repr()
     requires Valid()
     requires Model() != []

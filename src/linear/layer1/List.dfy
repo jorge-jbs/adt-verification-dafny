@@ -1,7 +1,7 @@
 include "../../../src/Utils.dfy"
 
-trait ListIterator {
-  function Parent(): List
+trait ListIterator<A> {
+  function Parent(): List<A>
     reads this
 
   predicate Valid()
@@ -19,7 +19,7 @@ trait ListIterator {
     requires Parent().Valid()
     ensures HasNext() <==> Index() < |Parent().Model()|
 
-  method Next() returns (x: int)
+  method Next() returns (x: A)
     modifies this
     requires Valid()
     requires Parent().Valid()
@@ -41,14 +41,14 @@ trait ListIterator {
     ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
       it.Valid() && (it != this ==> it.Index() == old(it.Index()))
 
-  function method Peek(): int
+  function method Peek(): A
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
     requires HasNext()
     ensures Peek() == Parent().Model()[Index()]
 
-  method Copy() returns (it: ListIterator)
+  method Copy() returns (it: ListIterator<A>)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -71,7 +71,7 @@ trait ListIterator {
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index())
 
-  method Set(x: int)
+  method Set(x: A)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -96,7 +96,7 @@ trait ListIterator {
       it.Valid() && it.Index() == old(it.Index())
 }
 
-trait List {
+trait List<A> {
   function ReprDepth(): nat
     ensures ReprDepth() > 0
 
@@ -118,7 +118,7 @@ trait List {
   predicate Valid()
     reads this, Repr()
 
-  function Model(): seq<int>
+  function Model(): seq<A>
     reads this, Repr()
     requires Valid()
 
@@ -132,12 +132,12 @@ trait List {
     requires Valid()
     ensures Size() == |Model()|
 
-  function Iterators(): set<ListIterator>
+  function Iterators(): set<ListIterator<A>>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
 
-  method Begin() returns (it: ListIterator)
+  method Begin() returns (it: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -156,14 +156,14 @@ trait List {
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index())
 
-  function method Front(): int
+  function method Front(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
     ensures Front() == Model()[0]
 
-  method PushFront(x: int)
+  method PushFront(x: A)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -176,7 +176,7 @@ trait List {
 
     ensures Iterators() == old(Iterators())
 
-  method PopFront() returns (x: int)
+  method PopFront() returns (x: A)
     modifies this, Repr()
     requires Valid()
     requires Model() != []
@@ -190,14 +190,14 @@ trait List {
 
     ensures Iterators() == old(Iterators())
 
-  function method Back(): int
+  function method Back(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
     ensures Back() == Model()[|Model()|-1]
 
-  method PushBack(x: int)
+  method PushBack(x: A)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -210,7 +210,7 @@ trait List {
 
     ensures Iterators() == old(Iterators())
 
-  method PopBack() returns (x: int)
+  method PopBack() returns (x: A)
     modifies this, Repr()
     requires Valid()
     requires Model() != []
@@ -225,7 +225,7 @@ trait List {
     ensures Iterators() == old(Iterators())
 
   // Insertion of x before mid, newt points to x
-  method Insert(mid: ListIterator, x: int) returns (newt:ListIterator)
+  method Insert(mid: ListIterator<A>, x: A) returns (newt: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -245,7 +245,7 @@ trait List {
  
 
   // Deletion of mid, next points to the next element (or past-the-end)
-  method Erase(mid: ListIterator) returns (next: ListIterator)
+  method Erase(mid: ListIterator<A>) returns (next: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()

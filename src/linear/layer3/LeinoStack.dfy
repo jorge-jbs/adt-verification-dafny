@@ -1,8 +1,8 @@
 include "../../../src/linear/layer1/Stack.dfy"
   include "../../../src/linear/layer4/LeinoList.dfy"
 
-class LeinoStack extends Stack {
-  var head: LNode?<int>;
+class LeinoStack<A> extends Stack<A> {
+  var head: LNode?<A>;
 
   function ReprDepth(): nat
     ensures ReprDepth() > 0
@@ -61,7 +61,7 @@ class LeinoStack extends Stack {
     ensures Repr() == ReprFamily(ReprDepth());
   {}
 
-  function Model(): seq<int>
+  function Model(): seq<A>
     reads this, Repr()
     requires Valid()
   {
@@ -85,7 +85,7 @@ class LeinoStack extends Stack {
     head == null
   }
 
-  function method Top(): int
+  function method Top(): A
     reads this, Repr()
     requires Valid()
     requires !Empty()
@@ -95,7 +95,7 @@ class LeinoStack extends Stack {
     head.data
   }
 
-  method Pop() returns (x: int)
+  method Pop() returns (x: A)
     modifies Repr()
     requires Valid()
     requires !Empty()
@@ -109,7 +109,7 @@ class LeinoStack extends Stack {
     head := head.next;
   }
 
-  method Push(x: int)
+  method Push(x: A)
     modifies Repr()
     requires Valid()
     ensures Valid()
