@@ -2,7 +2,7 @@ include "../../src/linear/layer1/List.dfy"
 include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
 
-method FindMax(l: LinkedList) returns (max: ListIterator)
+method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []
@@ -57,7 +57,7 @@ method FindMax(l: LinkedList) returns (max: ListIterator)
   }
 }
 
-method FindMaxAL(l: ArrayList) returns (max: ListIterator)
+method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []

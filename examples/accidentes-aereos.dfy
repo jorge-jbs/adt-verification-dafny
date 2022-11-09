@@ -56,7 +56,7 @@ lemma TransitiveSeqSeq(v: seq<int>, idcs: seq<nat>)
   }
 }
 
-method RemoveLess(st: Stack, v: array<nat>, i: nat) returns (ghost n: nat)
+method RemoveLess(st: Stack<int>, v: array<nat>, i: nat) returns (ghost n: nat)
   modifies st, st.Repr()
   requires st.Valid()
   requires {v} !! {st} + st.Repr()
@@ -108,7 +108,7 @@ method RemoveLess(st: Stack, v: array<nat>, i: nat) returns (ghost n: nat)
   TransitiveSeqSeq(v[..], st.Model());
 }
 
-method FindSummits(v: array<nat>, st: Stack) returns (r: array<int>)
+method FindSummits(v: array<nat>, st: Stack<int>) returns (r: array<int>)
   modifies st, st.Repr()
 
   requires st.Valid() && st.Empty()

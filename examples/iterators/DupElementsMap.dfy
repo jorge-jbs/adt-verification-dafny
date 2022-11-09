@@ -140,7 +140,7 @@ function fdupInvariant(j:int):(int -> int)
 function dupMap(xs:seq<int>,i:int):map<int,int>
 {map it | 0<=it<=|xs| :: if (it<i) then 2*it+1 else i+it}
 
-method {:verify false} DupElements(l: LinkedList) returns (ghost mit:map<int,int>)
+method {:verify false} DupElements(l: LinkedList<int>) returns (ghost mit:map<int,int>)
   modifies l, l.Repr()
   requires l.Valid()
   requires forall x | x in l.Repr() :: allocated(x)
@@ -246,7 +246,7 @@ method {:verify false} DupElements(l: LinkedList) returns (ghost mit:map<int,int
 
 
 
-method DupElementsAL(l: ArrayList) returns (ghost mit:map<int,int>)
+method DupElementsAL(l: ArrayList<int>) returns (ghost mit:map<int,int>)
 
   modifies l, l.Repr()
   requires l.Valid()
@@ -339,7 +339,7 @@ method DupElementsAL(l: ArrayList) returns (ghost mit:map<int,int>)
 
 }
 
-method dupDup(l:LinkedList)returns (ghost mit:map<int,int>)
+method dupDup(l:LinkedList<int>)returns (ghost mit:map<int,int>)
 modifies l, l.Repr()
   requires l.Valid()
   requires forall x | x in l.Repr() :: allocated(x)
@@ -356,7 +356,7 @@ modifies l, l.Repr()
     assert forall it | it in validSet :: it.Valid() && mit[old(it.Index())] == 4*old(it.Index())+3;
   }
 
-  method DupElementsList(l: List) 
+  method DupElementsList(l: List<int>) 
 
   modifies l, l.Repr()
   requires l.Valid()

@@ -20,7 +20,7 @@ lemma TransitiveLemma(v: array<int>, i: int)
   }
 }
 
-method Split(v: array<int>, neg: Stack, pos: Queue)
+method Split(v: array<int>, neg: Stack<int>, pos: Queue<int>)
   modifies pos, pos.Repr(), neg, neg.Repr()
 
   requires v !in neg.Repr() && v !in pos.Repr()
@@ -112,7 +112,7 @@ method Split(v: array<int>, neg: Stack, pos: Queue)
   assert v[..i] == v[..];
 }
 
-method FillFromStack(r: array<int>, i: nat, st: Stack) returns (l: nat)
+method FillFromStack(r: array<int>, i: nat, st: Stack<int>) returns (l: nat)
   modifies r, st, st.Repr()
   requires st.Valid()
   // we have to say that r is not equal to st even though they are not of the same type:
@@ -158,7 +158,7 @@ method FillFromStack(r: array<int>, i: nat, st: Stack) returns (l: nat)
   l := l + i;
 }
 
-method FillFromQueue(r: array<int>, i: nat, q: Queue) returns (l: nat)
+method FillFromQueue(r: array<int>, i: nat, q: Queue<int>) returns (l: nat)
   modifies r, q, q.Repr()
   requires q.Valid()
   // we have to say that r is not equal to q even though they are not of the same type:
@@ -229,7 +229,7 @@ lemma LastLemma(neg: seq<int>, pos: seq<int>, s: seq<int>)
   }
 }
 
-method Reorder(neg: Stack, pos: Queue, v: array<int>)
+method Reorder(neg: Stack<int>, pos: Queue<int>, v: array<int>)
   modifies v
   modifies neg, neg.Repr()
   modifies pos, pos.Repr()

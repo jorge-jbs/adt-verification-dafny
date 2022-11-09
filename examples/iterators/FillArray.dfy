@@ -2,7 +2,7 @@ include "../../src/linear/layer1/List.dfy"
 include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
 
-method  FillArray(l: List, v: array<int>)
+method FillArray<A>(l: List<A>, v: array<A>)
   modifies l,l.Repr(), v
   requires {v} !! {l}+l.Repr()
   requires l.Valid()
@@ -49,7 +49,7 @@ method  FillArray(l: List, v: array<int>)
   }
 }
 
-method  FillArrayLL(l: LinkedList, v: array<int>)
+method FillArrayLL<A>(l: LinkedList<A>, v: array<A>)
   modifies l, l.Repr(), v
   requires {v} !! {l}
   requires {v} !! l.Repr()
@@ -101,7 +101,7 @@ method  FillArrayLL(l: LinkedList, v: array<int>)
   }
 }
 
-method  FillArrayAL(l: ArrayList, v: array<int>)
+method FillArrayAL<A>(l: ArrayList<A>, v: array<A>)
   modifies l, l.Repr(), v
   requires {v} !! {l}
   requires {v} !! l.Repr()

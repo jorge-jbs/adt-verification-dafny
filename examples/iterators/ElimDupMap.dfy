@@ -117,7 +117,7 @@ ensures it in delMap(xs,its,j+1) && delMap(xs,its,j+1)[it]==delMap(xs,its,j)[it]
 }
 }
 
-method {:verify true} {:timeLimitMultiplier 100} elimDup(l:LinkedList) returns (ghost mit:map<int,int>)
+method {:verify true} {:timeLimitMultiplier 100} elimDup(l:LinkedList<int>) returns (ghost mit:map<int,int>)
 //method {:verify true} elimDupA(l:ArrayList) //NO CHANGES
 
  modifies l, l.Repr()

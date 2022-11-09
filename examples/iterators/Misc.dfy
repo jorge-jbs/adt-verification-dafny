@@ -2,7 +2,7 @@ include "../../src/linear/layer1/List.dfy"
 include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
 
-method  allPositive(l: List) returns (b:bool)
+method AllPositive(l: List<int>) returns (b:bool)
   modifies l,l.Repr()
   requires l.Valid()
   requires forall x | x in l.Repr() :: allocated(x)
@@ -14,9 +14,9 @@ method  allPositive(l: List) returns (b:bool)
   ensures forall x | x in l.Repr() :: allocated(x)
 {
  var elem,elem2;
-  var it1 := l.Begin(); 
+  var it1 := l.Begin();
   var it2:=l.Begin(); if (it2.HasNext()) {elem2:=it2.Next();}
-  b:=true; 
+  b:=true;
   while (it1.HasNext() && b )
   decreases |l.Model()|-it1.Index()
   invariant l.Valid() && it1.Valid() && it1.Parent()==l && it1 in l.Iterators()
@@ -26,13 +26,13 @@ method  allPositive(l: List) returns (b:bool)
   invariant forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
   invariant fresh(l.Repr()-old(l.Repr()))
   invariant forall x | x in l.Repr() :: allocated(x)
-   { elem:=it1.Next(); 
+   { elem:=it1.Next();
      b:=elem>=0;
    }
 }
 
 
-method  allEqual(l: List) returns (b:bool)
+method AllEqual<A(==)>(l: List<A>) returns (b:bool)
   modifies l,l.Repr()
   requires l.Valid()
   requires forall x | x in l.Repr() :: allocated(x)
@@ -43,30 +43,33 @@ method  allEqual(l: List) returns (b:bool)
   ensures fresh(l.Repr()-old(l.Repr()))
   ensures forall x | x in l.Repr() :: allocated(x)
 {
- var elem,elem2;
-  var it1 := l.Begin(); 
-  var it2:=l.Begin(); if (it1.HasNext()) {elem:=it1.Next();}
-  b:=true; 
-  while (it1.HasNext() && b )
-  decreases |l.Model()|-it1.Index()
-  invariant l.Valid() && it1.Valid() && it1.Parent()==l && it1 in l.Iterators()
-  invariant it2.Valid() && it2.Parent()==l && it2 in l.Iterators()
-  invariant l.Model()==old(l.Model())
-  invariant 0<=it1.Index()<=|old(l.Model())| 
-  invariant it2.HasNext() ==> it2.Index()==it1.Index()-1
-  invariant it1.HasNext()==>it2.HasNext()
-  invariant b==forall i | 0<=i<it1.Index()-1:: old(l.Model())[i]==old(l.Model())[i+1]
-  invariant forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
-  invariant fresh(l.Repr()-old(l.Repr()))
-  invariant forall x | x in l.Repr() :: allocated(x)
-   {  
-     elem2:=it2.Next();
-     elem:=it1.Next();
-     b:=elem==elem2;
-   }
-   
+  var elem, elem2;
+  var it1 := l.Begin();
+  var it2 := l.Begin();
+  if it1.HasNext() {
+    elem := it1.Next();
+  }
+  b := true;
+  while it1.HasNext() && b
+    decreases |l.Model()|-it1.Index()
+    invariant l.Valid() && it1.Valid() && it1.Parent()==l && it1 in l.Iterators()
+    invariant it2.Valid() && it2.Parent()==l && it2 in l.Iterators()
+    invariant l.Model()==old(l.Model())
+    invariant 0<=it1.Index()<=|old(l.Model())|
+    invariant it2.HasNext() ==> it2.Index()==it1.Index()-1
+    invariant it1.HasNext()==>it2.HasNext()
+    invariant b==forall i | 0 <= i < it1.Index()-1:: old(l.Model())[i]==old(l.Model())[i+1]
+    invariant forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
+    invariant fresh(l.Repr()-old(l.Repr()))
+    invariant forall x | x in l.Repr() :: allocated(x)
+  {
+    elem2 := it2.Next();
+    elem := it1.Next();
+    b := elem == elem2;
+  }
 }
-method IteratorExample2(l: List)
+
+method IteratorExample2(l: List<int>)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []
@@ -82,7 +85,7 @@ method IteratorExample2(l: List)
   var it2 := l.Begin();
 }
 
-method  IteratorExample3(l: LinkedList)
+method IteratorExample3(l: LinkedList<int>)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []
@@ -100,20 +103,18 @@ method  IteratorExample3(l: LinkedList)
   //assert !it1.Valid();  // we cannot prove nor disprove this assertion
   assert it2.Valid();
 }
-method  IteratorExample4(l: List)
+method  teratorExample4(l: List<int>)
 modifies l, l.Repr()
   requires l.Valid()
-    requires forall x | x in l.Repr() :: allocated(x)
+  requires forall x | x in l.Repr() :: allocated(x)
   ensures l.Valid()
   ensures forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
   ensures fresh(l.Repr()-old(l.Repr()))
   ensures forall x | x in l.Repr() :: allocated(x)
-
 {
   var it1 := l.Begin();
   var it2 := l.Begin();
   it1:=l.Insert(it1,2);it1:=l.Insert(it1,2);
   var b:=it1.HasNext();
   if (it1.HasNext()) {it1:=l.Erase(it1);it1:=l.Insert(it1,4);}
-
 }

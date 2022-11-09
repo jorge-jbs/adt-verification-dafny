@@ -202,7 +202,7 @@ ensures forall i::0<=i<|xs|==> multiset(xs)[xs[i]]==multiset(oxs)[xs[i]]
   PropInFilter(oxs,f);
   PropmultiFilter(oxs,f);}
 
-method {:verify true} {:timeLimitMultiplier 100} filterEven(l:LinkedList) 
+method {:verify true} {:timeLimitMultiplier 100} filterEven(l:LinkedList<int>) 
   modifies l, l.Repr()
   requires l.Valid()
   requires forall x | x in l.Repr() :: allocated(x)

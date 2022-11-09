@@ -97,7 +97,7 @@ ensures xs[c..f]==ys[c..f] && xs[c..]==ys[c..]&&xs[..f]==ys[..f]
 {}
 
 //Additional ghost results to know additional information 
-method swapG(l:LinkedList,p:ListIterator,q:ListIterator, ghost c:ListIterator, ghost n:int)
+method swapG(l:LinkedList<int>,p:ListIterator<int>,q:ListIterator<int>, ghost c:ListIterator<int>, ghost n:int)
 modifies l, l.Repr(),p,q
 requires forall x | x in l.Repr() :: allocated(x)
 requires l.Valid() && p.Valid() && q.Valid()
@@ -148,7 +148,7 @@ ensures multiset(l.Model()[c.Index()..c.Index()+n])== multiset(old(l.Model()[c.I
 
 
 
-method  {:verify false} partitionG(l:LinkedList,c:ListIterator,n:int, x:int) returns (p:ListIterator,nL:int,q:ListIterator,nG:int)
+method  {:verify false} partitionG(l:LinkedList<int>,c:ListIterator<int>,n:int, x:int) returns (p:ListIterator<int>,nL:int,q:ListIterator<int>,nG:int)
 modifies l, l.Repr()
 requires l.Valid() && c.Valid() 
 requires c.Parent()==l && c in l.Iterators() 
@@ -236,7 +236,7 @@ assert r.Index()==c.Index()+n;
 
 }
 
-method {:verify true} {:timeLimitMultiplier 6} quicksort(l:LinkedList,c:ListIterator,n:int)
+method {:verify true} {:timeLimitMultiplier 6} quicksort(l:LinkedList<int>,c:ListIterator<int>,n:int)
 decreases n
 modifies l, l.Repr()
 requires l.Valid() && c in l.Iterators() && c.Valid() && c.Parent()==l 
@@ -258,7 +258,7 @@ ensures forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() &&
 ensures fresh(l.Repr()-old(l.Repr()))
 ensures forall x | x in l.Repr() :: allocated(x)
 {
-  var p,q:ListIterator;var nL,nG:int;
+  var p,q:ListIterator<int>;var nL,nG:int;
   if (n>1)
   {
       var omodel:=l.Model();

@@ -3,8 +3,8 @@ include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
 include "../../src/UtilsAux.dfy"
 
-method elimDup(l:LinkedList)
-//method {:verify true} elimDupA(l:ArrayList) //NO CHANGES
+method elimDup(l:LinkedList<int>)
+//method {:verify true} elimDupA(l:ArrayList<int>) //NO CHANGES
 
  modifies l, l.Repr()
  requires l.Valid() && Sorted(l.Model())

@@ -6,7 +6,7 @@ include "../../src/Iterators_Utils.dfy"
 function idMap(xs:seq<int>):map<int,int>
 {map i | 0<=i<=|xs| :: i}
 
-method FindMax(l: LinkedList) returns (max: ListIterator,ghost mit:map<int,int>)
+method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:map<int,int>)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []
@@ -67,7 +67,7 @@ method FindMax(l: LinkedList) returns (max: ListIterator,ghost mit:map<int,int>)
 }
 
 
-method FindMaxAL(l: ArrayList) returns (max: ListIterator, ghost mit:map<int,int>)
+method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>, ghost mit:map<int,int>)
   modifies l, l.Repr()
   requires l.Valid()
   requires l.Model() != []

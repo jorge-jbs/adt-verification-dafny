@@ -1,4 +1,4 @@
 #!/bin/sh
-for f in $(find src/linear examples/iterators | grep .dfy$ | grep -v DupElementsMap | grep -v Merge); do
+for f in $(find src/linear examples/iterators examples/*.dfy | grep .dfy$ | grep -v DupElementsMap | grep -v Merge | grep -v Quicksort); do
     time dafny $f /compile:0 || exit 1
 done

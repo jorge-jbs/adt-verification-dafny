@@ -47,7 +47,7 @@ requires  xs==delDup(oxs,|oxs|) && Sorted(oxs)
  ensures (set x | x in oxs) == (set x | x in xs)
  ensures StrictSorted(xs[..|delDup(oxs,|oxs|)|])
 
-method {:verify true} elimDup(l:LinkedList)  
+method {:verify true} elimDup(l:LinkedList<int>)  
 
  modifies l, l.Repr()
  requires l.Valid() && Sorted(l.Model())

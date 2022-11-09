@@ -242,6 +242,7 @@ class DoublyLinkedList<A> {
       n.next.prev := n;
     }
     mid.next := n;
+    assert spine[i+1].prev == spine[i];
     assert Valid();
   }
 

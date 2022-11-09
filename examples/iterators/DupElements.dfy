@@ -101,7 +101,7 @@ lemma {:induction xs} dupEls<A>(xs: seq<A>)
 }
 
 
-method DupElements(l: LinkedList)
+method DupElements<A(!new)>(l: LinkedList<A>)
   modifies l, l.Repr()
   requires l.Valid()
   requires forall x | x in l.Repr() :: allocated(x)
@@ -189,7 +189,7 @@ method DupElements(l: LinkedList)
   setDup(old(l.Model())); // 0->0,1 1-> 2,3 ...
 }
 
-method DupElementsAL(l: ArrayList)
+method DupElementsAL<A(!new)>(l: ArrayList<A>)
   modifies l, l.Repr()
   requires l.Valid()
   requires forall x | x in l.Repr() :: allocated(x)
@@ -268,18 +268,18 @@ method DupElementsAL(l: ArrayList)
   setDup(old(l.Model())); // 0->0,1 1-> 2,3 ...
 }
 
-method dupDup(l:LinkedList) 
-modifies l, l.Repr()
+method dupDup<A(!new)>(l:LinkedList<A>) 
+  modifies l, l.Repr()
   requires l.Valid()
   requires forall x | x in l.Repr() :: allocated(x)
 
   ensures l.Valid()
   ensures l.Model() == Dup(Dup(old(l.Model())))
-  {
-    ghost var validSet:=(set it |it in old(l.Iterators()) && old(it.Valid())&& old(it.Index())<|old(l.Model())|);
+{
+  ghost var validSet:=(set it |it in old(l.Iterators()) && old(it.Valid())&& old(it.Index())<|old(l.Model())|);
 
-    DupElements(l);
-    DupElements(l);
+  DupElements(l);
+  DupElements(l);
 
-    assert forall it | it in validSet :: it.Valid() && it.Index() == 4*old(it.Index())+3;
-  }
+  assert forall it | it in validSet :: it.Valid() && it.Index() == 4*old(it.Index())+3;
+}

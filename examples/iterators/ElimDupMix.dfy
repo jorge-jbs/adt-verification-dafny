@@ -42,8 +42,8 @@ function elimDupMap(xs:seq<int>,its:set<int>):map<int,int>
 }
 lemma elimMapAux(xs:seq<int>,its:set<int>,i:int)
 requires 0<=i<=|xs| 
-ensures forall it | it in elimDupMapAux(xs,its,i) :: it in its && 0<=it<i && 0<=elimDupMapAux(xs,its,i)[it]<|delDup(xs,i)|
-ensures forall it | it in elimDupMapAux(xs,its,i) :: (it==0) || (1<=it<i && xs[it]!=xs[it-1])
+ensures forall it | it in elimDupMapAux(xs,its,i) :: it in its && 0 <= it < i && 0<=elimDupMapAux(xs,its,i)[it]<|delDup(xs,i)|
+ensures forall it | it in elimDupMapAux(xs,its,i) :: (it==0) || (1 <= it < i && xs[it]!=xs[it-1])
 {}
 
 lemma elimMap(xs:seq<int>,its:set<int>)
@@ -53,7 +53,7 @@ ensures forall it | it in elimDupMap(xs,its) :: (it==0) || (it==|xs|) || (1<=it<
 
 {elimMapAux(xs,its,|xs|);}
 
-method {:verify true} elimDup(l:LinkedList) returns (ghost mit:map<int,int>)
+method {:verify true} elimDup(l:LinkedList<int>) returns (ghost mit:map<int,int>)
 //method {:verify true} elimDupA(l:ArrayList) //NO CHANGES
 
  modifies l, l.Repr()
