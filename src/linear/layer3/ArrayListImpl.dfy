@@ -141,7 +141,6 @@ class ArrayListIteratorImpl extends ListIterator<int> {
   }
 }
 
-
 class ArrayListImpl extends ArrayList<int> {
   var elements: array<int>;
   var size: nat;
@@ -167,7 +166,7 @@ class ArrayListImpl extends ArrayList<int> {
   predicate Valid()
     reads this, Repr()
   {
-    && ReprDepth == 1
+    && ReprDepth == 0
     && 0 <= size <= elements.Length
     && elements.Length >= 1
     && forall it | it in iterators :: it.parent == this
@@ -194,7 +193,7 @@ class ArrayListImpl extends ArrayList<int> {
     ensures fresh(Repr())
     ensures forall x | x in Repr() :: fresh(x)
   {
-    ReprDepth := 1;
+    ReprDepth := 0;
     elements := new int[1];
     size := 0;
     iterators := {};
@@ -391,7 +390,11 @@ class ArrayListImpl extends ArrayList<int> {
     ShiftRight(midImpl.index);
     elements[midImpl.index] := x;
     size := size + 1;
-    assert Model() == Seq.Insert(x, old(Model()), old(mid.Index()));
+    calc == {
+      Model();
+      old(Model()[..midImpl.index]) + [x] + old(Model()[midImpl.index..]);
+      Seq.Insert(x, old(Model()), old(mid.Index()));
+    }
 
     newt := midImpl.Copy();
     iterators := iterators + { newt };
