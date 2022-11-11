@@ -23,8 +23,8 @@ lemma TransitiveLemma(v: array<int>, i: int)
 method Split(v: array<int>, neg: Stack<int>, pos: Queue<int>)
   modifies pos, pos.Repr(), neg, neg.Repr()
 
-  requires v !in neg.Repr() && v !in pos.Repr()
-  ensures v !in neg.Repr() && v !in pos.Repr()
+  requires v !in {neg} + neg.Repr() && v !in {pos} + pos.Repr()
+  ensures v !in {neg} + neg.Repr() && v !in {pos} + pos.Repr()
   // ensures v[..] == old(v[..])
 
   requires {pos} + pos.Repr() !! {neg} + neg.Repr()
@@ -64,11 +64,11 @@ method Split(v: array<int>, neg: Stack<int>, pos: Queue<int>)
 
     invariant forall i | 0 <= i < v.Length - 1 :: abs(v[i]) <= abs(v[i+1])
 
-    invariant forall x | x in neg.Repr() - old(neg.Repr()) :: fresh(x)
-    invariant forall x | x in pos.Repr() - old(pos.Repr()) :: fresh(x)
     invariant {pos} + pos.Repr() !! {neg} + neg.Repr()
     invariant neg.Valid()
     invariant pos.Valid()
+    invariant v !in {pos} + pos.Repr()
+    invariant v !in {neg} + neg.Repr()
 
     invariant forall x | x in neg.Model() :: x < 0
     invariant forall i | 0 <= i < |neg.Model()| - 1 :: abs(neg.Model()[i]) >= abs(neg.Model()[i+1])
