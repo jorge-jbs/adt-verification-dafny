@@ -209,7 +209,7 @@ method Print(st: Stack)
 }
 
 method PopTwice(s: Stack)
-  modifies s.Repr()
+  modifies s, s.Repr()
   requires s.Valid() && |s.Model()| >= 2
   requires forall x | x in s.Repr() :: allocated(x)
   ensures forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
@@ -221,7 +221,7 @@ method PopTwice(s: Stack)
 }
 
 method PopToArray(s: Stack<int>, init: nat, n: nat, v: array<int>)
-  modifies v, s.Repr()
+  modifies v, s, s.Repr()
   requires s.Valid()
   requires n <= |s.Model()|
   requires init <= n
@@ -257,7 +257,7 @@ method PopToArray(s: Stack<int>, init: nat, n: nat, v: array<int>)
 }
 
 method PushFromArray(s: Stack<int>, a: array<int>)
-  modifies s.Repr()
+  modifies s, s.Repr()
   requires s.Valid()
   requires {a} !! {s} + s.Repr()
 
@@ -297,7 +297,7 @@ method PushFromArray(s: Stack<int>, a: array<int>)
 }
 
 method DoNothingNTimes(s: Stack, n: nat)
-  modifies s.Repr()
+  modifies s, s.Repr()
   requires s.Valid()
   requires !s.Empty()
 
@@ -328,7 +328,7 @@ method DoNothingNTimes(s: Stack, n: nat)
 }
 
 method Clear(s: Stack)
-  modifies s.Repr()
+  modifies s, s.Repr()
   requires s.Valid()
   ensures s.Valid()
   ensures s.Empty()
@@ -350,7 +350,7 @@ method Clear(s: Stack)
 }
 
 method FromStackToArray(s: Stack<int>, a: array<int>, n: nat)
-  modifies a, s.Repr()
+  modifies a, s, s.Repr()
   requires s.Valid()
   requires {a} !! {s} + s.Repr()
   requires a.Length - n >= |s.Model()|
@@ -385,7 +385,7 @@ method FromStackToArray(s: Stack<int>, a: array<int>, n: nat)
 }
 
 method {:timeLimitMultiplier 4} PopPush(s: Stack, t: Stack)
-  modifies s.Repr(), t.Repr()
+  modifies s, s.Repr(), t, t.Repr()
   requires s.Valid() && !s.Empty()
   requires t.Valid()
   requires {s} + s.Repr() !! {t} + t.Repr()
@@ -412,7 +412,7 @@ method {:timeLimitMultiplier 4} PopPush(s: Stack, t: Stack)
 }
 
 method {:timeLimitMultiplier 2} Extract(s: Stack, t: Stack)
-  modifies s.Repr(), t.Repr()
+  modifies s, s.Repr(), t, t.Repr()
   requires s.Valid() && !s.Empty()
   requires t.Valid()
   requires {s} + s.Repr() !! {t} + t.Repr()
@@ -549,7 +549,7 @@ function InitInCommon<A>(xs: seq<A>, ys: seq<A>): nat
 
 method {:timeLimitMultiplier 8} areEqual(s: Stack<int>, r: Stack<int>)
   returns (b: bool)
-  modifies s.Repr(), r.Repr()
+  modifies s, s.Repr(), r, r.Repr()
   requires s.Valid() && r.Valid()
   requires {s} + s.Repr() !! {r} + r.Repr()
 
