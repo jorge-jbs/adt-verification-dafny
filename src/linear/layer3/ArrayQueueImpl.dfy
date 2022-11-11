@@ -25,7 +25,7 @@ class ArrayQueueImpl extends Queue<int> {
   predicate Valid()
     reads this, Repr()
   {
-    && ReprDepth == 0
+    && ReprDepth == 1
     && 0 <= c < list.Length && 0 <= nelems <= list.Length
   }
 
@@ -87,7 +87,7 @@ class ArrayQueueImpl extends Queue<int> {
     ensures Model() == []
     ensures fresh(Repr())
   {
-    ReprDepth := 0;
+    ReprDepth := 1;
     list := new int[10];
     c:=0;
     nelems:=0;

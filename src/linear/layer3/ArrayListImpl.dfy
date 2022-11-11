@@ -166,7 +166,7 @@ class ArrayListImpl extends ArrayList<int> {
   predicate Valid()
     reads this, Repr()
   {
-    && ReprDepth == 0
+    && ReprDepth == 1
     && 0 <= size <= elements.Length
     && elements.Length >= 1
     && forall it | it in iterators :: it.parent == this
@@ -193,7 +193,7 @@ class ArrayListImpl extends ArrayList<int> {
     ensures fresh(Repr())
     ensures forall x | x in Repr() :: fresh(x)
   {
-    ReprDepth := 0;
+    ReprDepth := 1;
     elements := new int[1];
     size := 0;
     iterators := {};
