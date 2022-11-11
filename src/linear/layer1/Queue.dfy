@@ -1,29 +1,6 @@
-trait Queue<A> {
-  function ReprDepth(): nat
-    ensures ReprDepth() > 0
+include "../../../src/linear/layer1/ADT.dfy"
 
-  function ReprFamily(n: nat): set<object>
-    decreases n
-    requires n <= ReprDepth()
-    ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
-    reads this, if n == 0 then {} else ReprFamily(n-1)
-
-  function Repr(): set<object>
-    reads this, ReprFamily(ReprDepth()-1)
-  {
-    ReprFamily(ReprDepth())
-  }
-
-  lemma UselessLemma()
-    ensures Repr() == ReprFamily(ReprDepth());
-
-  predicate Valid()
-    reads this, Repr()
-
-  function Model(): seq<A>
-    reads this, Repr()
-    requires Valid()
-
+trait Queue<A> extends ADT<seq<A>> {
   function method Empty(): bool
     reads this, Repr()
     requires Valid()
