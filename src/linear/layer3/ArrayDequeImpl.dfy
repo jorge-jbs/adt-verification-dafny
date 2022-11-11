@@ -5,12 +5,6 @@ class ArrayDequeImpl extends Dequeue<int> {
   var c: nat;
   var nelems: nat;
 
-  function ReprDepth(): nat
-    ensures ReprDepth() > 0
-  {
-    1
-  }
-
   function Repr0(): set<object>
     reads this
   {
@@ -19,7 +13,6 @@ class ArrayDequeImpl extends Dequeue<int> {
 
   function ReprFamily(n: nat): set<object>
     decreases n
-    requires n <= ReprDepth()
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
   {
@@ -29,14 +22,12 @@ class ArrayDequeImpl extends Dequeue<int> {
       ReprFamily(n-1)
   }
 
-  lemma UselessLemma()
-    ensures Repr() == ReprFamily(ReprDepth());
-  {}
-
   predicate Valid()
     reads this, Repr()
   {
-    0 <= c < list.Length && 0 <= nelems <= list.Length
+    && ReprDepth == 1
+    && 0 <= c < list.Length
+    && 0 <= nelems <= list.Length
   }
 
   function Model(): seq<int> // Los elementos estan en [c..(c+nelems)%Length) circularmente
@@ -51,13 +42,21 @@ class ArrayDequeImpl extends Dequeue<int> {
     requires 0 <= c < a.Length && 0 <= nelems <= a.Length
     ensures |ModelAux(a,c,nelems)|==nelems
   {
-
-    if nelems == 0 then
-      []
-    else if c + nelems <= a.Length then
+    if c + nelems <= a.Length then
       a[c..c+nelems]
     else
       a[c..a.Length] + a[0..(c+nelems)%a.Length]
+  }
+
+  constructor()
+    ensures Valid()
+    ensures Model() == []
+    ensures fresh(Repr())
+  {
+    ReprDepth := 1;
+    list := new int[10];
+    c := 0;
+    nelems := 0;
   }
 
   lemma incDeque(a:array<int>,c:nat,nelems:nat)
@@ -93,16 +92,6 @@ class ArrayDequeImpl extends Dequeue<int> {
     nelems == 0
   }
 
-  constructor()
-    ensures Valid()
-    ensures Model() == []
-    ensures fresh(Repr())
-  {
-    list := new int[10];
-    c:=0;
-    nelems:=0;
-  }
-
   // Auxiliary method to duplicate space
   method grow()
     modifies Repr()
@@ -111,7 +100,7 @@ class ArrayDequeImpl extends Dequeue<int> {
     ensures nelems==old(nelems)
     ensures Model()==old(Model())
     ensures list.Length>old(list.Length)
-    ensures c+nelems<list.Length
+    ensures c+nelems < list.Length
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(list)
   {
@@ -129,7 +118,7 @@ class ArrayDequeImpl extends Dequeue<int> {
       aux[i] := list[(c+i)%list.Length];
       i := i+1;
       assert aux[i-1] == list[(c+i-1)%list.Length];
-      incEnque(aux, 0, old(i));
+      incEnque(aux, 0, i);
       incEnque(list, c, i-1);
     }
     assert ModelAux(aux, 0, nelems) == ModelAux(list, c, nelems) == oldList;
@@ -144,14 +133,7 @@ class ArrayDequeImpl extends Dequeue<int> {
     ensures Valid()
     ensures Back() == Model()[|Model()|-1]
   {
-    /*
-    if (c+nelems) == 0 then
-      list[list.Length-1]
-    else
-      list[(c+nelems-1)%list.Length]
-     */
-    assert (c+nelems)==0 ==> (c+nelems-1)%list.Length==list.Length-1;
-    assert list[(c+nelems-1)%list.Length]==Model()[|Model()|-1];
+    assert list[(c+nelems-1)%list.Length] == Model()[|Model()|-1];
     list[(c+nelems-1)%list.Length]
   }
 

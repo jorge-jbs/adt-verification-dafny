@@ -183,12 +183,6 @@ class LinkedListImpl<A> extends LinkedList<A> {
   var size: nat;
   ghost var iters: set<LinkedListIteratorImpl<A>>;
 
-  function ReprDepth(): nat
-    ensures ReprDepth() > 0
-  {
-    2
-  }
-
   function Repr0(): set<object>
     reads this
   {
@@ -209,7 +203,6 @@ class LinkedListImpl<A> extends LinkedList<A> {
 
   function ReprFamily(n: nat): set<object>
     decreases n
-    requires n <= ReprDepth()
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
   {
@@ -220,20 +213,16 @@ class LinkedListImpl<A> extends LinkedList<A> {
     else if n == 2 then
       Repr2()
     else
-      assert false;
-      {}
+      ReprFamily(n-1)
   }
-
-  lemma UselessLemma()
-    ensures Repr() == ReprFamily(ReprDepth());
-  {}
 
   predicate Valid()
     reads this, Repr()
   {
+    && ReprDepth == 2
     && size == |list.list.spine|
     && list.Valid()
-    && forall it | it in iters :: it.parent == this && {it} !! {this}
+    && (forall it | it in iters :: it.parent == this && {it} !! {this})
   }
 
   function Model(): seq<A>
@@ -269,7 +258,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
     iters
   }
 
-  method {:verify false}  Begin() returns (it: ListIterator<A>)
+  method {:verify false} Begin() returns (it: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -303,6 +292,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
     ensures fresh(Repr())
     ensures forall x | x in Repr() :: allocated(x)
   {
+    ReprDepth := 2;
     list := new DoublyLinkedListWithLast();
     size := 0;
     iters := {};

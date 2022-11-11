@@ -147,14 +147,6 @@ class ArrayListImpl extends ArrayList<int> {
   var size: nat;
   ghost var iterators: set<ArrayListIteratorImpl>
 
-  lemma UselessLemma()
-    ensures Repr() == ReprFamily(ReprDepth());
-
-  function ReprDepth(): nat
-  {
-    1
-  }
-
   function Repr0(): set<object>
     reads this
   {
@@ -163,7 +155,6 @@ class ArrayListImpl extends ArrayList<int> {
 
   function ReprFamily(n: nat): set<object>
     decreases n
-    requires n <= ReprDepth()
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
   {
@@ -176,9 +167,10 @@ class ArrayListImpl extends ArrayList<int> {
   predicate Valid()
     reads this, Repr()
   {
-    0 <= size <= elements.Length
-      && elements.Length >= 1
-      && forall it | it in iterators :: it.parent == this
+    && ReprDepth == 1
+    && 0 <= size <= elements.Length
+    && elements.Length >= 1
+    && forall it | it in iterators :: it.parent == this
   }
 
   function Model(): seq<int>
@@ -196,13 +188,13 @@ class ArrayListImpl extends ArrayList<int> {
     iterators
   }
 
-
   constructor()
     ensures Valid()
     ensures Model() == []
     ensures fresh(Repr())
     ensures forall x | x in Repr() :: fresh(x)
   {
+    ReprDepth := 1;
     elements := new int[1];
     size := 0;
     iterators := {};
@@ -283,7 +275,6 @@ class ArrayListImpl extends ArrayList<int> {
     ShiftLeft(0);
     size := size - 1;
   }
-
 
   function method Back(): int
     reads this, Repr()

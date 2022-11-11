@@ -14,7 +14,7 @@ trait Queue<A> extends ADT<seq<A>> {
     ensures Front() == Model()[0]
 
   method Enqueue(x: A)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + [x]
@@ -24,7 +24,7 @@ trait Queue<A> extends ADT<seq<A>> {
     ensures forall x | x in Repr() :: allocated(x)
 
   method Dequeue() returns (x: A)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()

@@ -4,12 +4,6 @@ include "../../../src/linear/layer4/DoublyLinkedListWithLast.dfy"
 class Dequeue1<A> extends Dequeue<A> {
   var list: DoublyLinkedListWithLast<A>;
 
-  function ReprDepth(): nat
-    ensures ReprDepth() > 0
-  {
-    2
-  }
-
   function Repr0(): set<object>
     reads this
   {
@@ -30,7 +24,6 @@ class Dequeue1<A> extends Dequeue<A> {
 
   function ReprFamily(n: nat): set<object>
     decreases n
-    requires n <= ReprDepth()
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
   {
@@ -41,18 +34,14 @@ class Dequeue1<A> extends Dequeue<A> {
     else if n == 2 then
       Repr2()
     else
-      assert false;
-      {}
+      ReprFamily(n-1)
   }
-
-  lemma UselessLemma()
-    ensures Repr() == ReprFamily(ReprDepth());
-  {}
 
   predicate Valid()
     reads this, Repr()
   {
-    list.Valid()
+    && ReprDepth == 2
+    && list.Valid()
   }
 
   function Model(): seq<A>
@@ -75,6 +64,7 @@ class Dequeue1<A> extends Dequeue<A> {
     ensures Model() == []
     ensures fresh(Repr())
   {
+    ReprDepth := 2;
     list := new DoublyLinkedListWithLast();
   }
 

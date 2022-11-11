@@ -4,11 +4,6 @@ include "../../../src/linear/layer4/SinglyLinkedListWithSpine.dfy"
 class LinkedStack<A> extends Stack<A> {
   var list: List<A>;
 
-  function ReprDepth(): nat
-  {
-    1
-  }
-
   function Repr0(): set<object>
     reads this
   {
@@ -23,7 +18,6 @@ class LinkedStack<A> extends Stack<A> {
 
   function ReprFamily(n: nat): set<object>
     decreases n
-    requires n <= ReprDepth()
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
   {
@@ -32,18 +26,14 @@ class LinkedStack<A> extends Stack<A> {
     else if n == 1 then
       Repr1()
     else
-      assert false;
-      {}
+      ReprFamily(n-1)
   }
-
-  lemma UselessLemma()
-    ensures Repr() == ReprFamily(1);
-  {}
 
   predicate Valid()
     reads this, Repr()
   {
-    list.Valid()
+    && ReprDepth == 1
+    && list.Valid()
   }
 
   function Model(): seq<A>
@@ -59,6 +49,7 @@ class LinkedStack<A> extends Stack<A> {
     ensures forall x | x in Repr() :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
   {
+    ReprDepth := 1;
     list := new List();
   }
 

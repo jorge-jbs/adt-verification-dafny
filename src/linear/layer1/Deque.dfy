@@ -14,7 +14,7 @@ trait Dequeue<A> extends ADT<seq<A>> {
     ensures Front() == Model()[0]
 
   method PushFront(x: A)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
@@ -24,7 +24,7 @@ trait Dequeue<A> extends ADT<seq<A>> {
     ensures forall x | x in Repr() :: allocated(x)
 
   method PopFront() returns (x: A)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
@@ -42,7 +42,7 @@ trait Dequeue<A> extends ADT<seq<A>> {
     ensures Back() == Model()[|Model()|-1]
 
   method PushBack(x: A)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + [x]
@@ -52,7 +52,7 @@ trait Dequeue<A> extends ADT<seq<A>> {
     ensures forall x | x in Repr() :: allocated(x)
 
   method PopBack() returns (x: A)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()

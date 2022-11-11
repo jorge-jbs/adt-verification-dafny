@@ -4,12 +4,6 @@ include "../../../src/linear/layer1/Stack.dfy"
 class LeinoStack<A> extends Stack<A> {
   var head: LNode?<A>;
 
-  function ReprDepth(): nat
-    ensures ReprDepth() > 0
-  {
-    1
-  }
-
   function Repr0(): set<object>
     reads this
   {
@@ -28,15 +22,8 @@ class LeinoStack<A> extends Stack<A> {
       Repr0() + head.repr
   }
 
-  function Repr2(): set<object>
-    reads this, Repr1()
-  {
-    Repr1()
-  }
-
   function ReprFamily(n: nat): set<object>
     decreases n
-    requires n <= ReprDepth()
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
   {
@@ -44,22 +31,16 @@ class LeinoStack<A> extends Stack<A> {
       Repr0()
     else if n == 1 then
       Repr1()
-    else if n == 2 then
-      Repr2()
     else
-      assert false;
-    {}
+      ReprFamily(n-1)
   }
 
   predicate Valid()
     reads this, Repr()
   {
-    head != null ==> head.Valid()
+    && ReprDepth == 1
+    && (head != null ==> head.Valid())
   }
-
-  lemma UselessLemma()
-    ensures Repr() == ReprFamily(ReprDepth());
-  {}
 
   function Model(): seq<A>
     reads this, Repr()
@@ -74,6 +55,7 @@ class LeinoStack<A> extends Stack<A> {
   constructor()
     ensures Valid()
   {
+    ReprDepth := 1;
     head := null;
   }
 

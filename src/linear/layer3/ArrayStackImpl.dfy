@@ -3,17 +3,12 @@ include "../../../src/Utils.dfy"
 
 class ArrayStackImpl extends Stack<int> {
   var list: array<int>;
-  var size:nat;
-
-  function ReprDepth(): nat
-  {
-    0
-  }
+  var size: nat;
 
   function Repr0(): set<object>
     reads this
   {
-    {this, list}
+    {list}
   }
 
   function ReprFamily(n: nat): set<object>
@@ -27,14 +22,11 @@ class ArrayStackImpl extends Stack<int> {
       ReprFamily(n-1)
   }
 
-  lemma UselessLemma()
-    ensures Repr() == ReprFamily(1);
-  {}
-
   predicate Valid()
     reads this, Repr()
   {
-    0 <= size <= list.Length
+    && ReprDepth == 1
+    && 0 <= size <= list.Length
   }
 
   function Model(): seq<int>
@@ -52,6 +44,7 @@ class ArrayStackImpl extends Stack<int> {
     ensures forall x | x in Repr() :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
   {
+    ReprDepth := 1;
     list := new int[10];
     size := 0;
   }
@@ -76,14 +69,15 @@ class ArrayStackImpl extends Stack<int> {
     list[size-1]
   }
 
-  method grow()//auxiliary method to duplicate space
-    modifies Repr()
+  method Grow()//auxiliary method to duplicate space
+    modifies this, Repr()
     requires Valid()
     ensures Valid()
     ensures size==old(size)
     ensures list[0..size]==old(list[0..size])
     ensures Model()==old(Model())
     ensures list.Length>old(list.Length)
+    ensures fresh(list)
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
   {
     //allocate new memory
@@ -92,7 +86,7 @@ class ArrayStackImpl extends Stack<int> {
     var i := 0;
     while i < size
       decreases size-i
-      invariant 0 <= i <= size <= list.Length<aux.Length && size==old(size)
+      invariant 0 <= i <= size <= list.Length < aux.Length && size==old(size)
       invariant aux[0..i] == list[0..i]
       invariant list[0..size] == old(list[0..size])
     {
@@ -107,7 +101,7 @@ class ArrayStackImpl extends Stack<int> {
 
   // O(1) amortized
   method Push(x: int)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
@@ -115,7 +109,7 @@ class ArrayStackImpl extends Stack<int> {
     ensures forall x | x in Repr() :: allocated(x)
   {
     if size == list.Length {
-      grow();
+      Grow();
     }
     list[size]:=x;
     size:=size+1;
@@ -127,7 +121,7 @@ class ArrayStackImpl extends Stack<int> {
 
   // O(1)
   method Pop() returns (x: int)
-    modifies Repr()
+    modifies this, Repr()
     requires size>0
     requires Valid()
     ensures Valid()

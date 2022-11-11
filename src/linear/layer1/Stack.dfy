@@ -14,7 +14,7 @@ trait Stack<A> extends ADT<seq<A>> {
     ensures Top() == Model()[0]
 
   method Push(x: A)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
@@ -24,7 +24,7 @@ trait Stack<A> extends ADT<seq<A>> {
     ensures forall x | x in Repr() :: allocated(x)
 
   method Pop() returns (x: A)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     requires !Empty()
     ensures Valid()

@@ -5,12 +5,6 @@ class ArrayQueueImpl extends Queue<int> {
   var c: nat;
   var nelems: nat;
 
-  function ReprDepth(): nat
-    ensures ReprDepth() > 0
-  {
-    1
-  }
-
   function Repr0(): set<object>
     reads this
   {
@@ -19,7 +13,6 @@ class ArrayQueueImpl extends Queue<int> {
 
   function ReprFamily(n: nat): set<object>
     decreases n
-    requires n <= ReprDepth()
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
   {
@@ -29,14 +22,11 @@ class ArrayQueueImpl extends Queue<int> {
       ReprFamily(n-1)
   }
 
-  lemma UselessLemma()
-    ensures Repr() == ReprFamily(ReprDepth());
-  {}
-
   predicate Valid()
     reads this, Repr()
   {
-    0 <= c < list.Length && 0 <= nelems <= list.Length
+    && ReprDepth == 0
+    && 0 <= c < list.Length && 0 <= nelems <= list.Length
   }
 
   function Model(): seq<int> // Los elementos estan en [c..(c+nelems)%Length) circularmente
@@ -52,10 +42,7 @@ class ArrayQueueImpl extends Queue<int> {
     ensures |ModelAux(a,c,nelems)|==nelems
 
   {
-
-    if nelems == 0 then
-      []
-    else if c + nelems <= a.Length then
+    if c + nelems <= a.Length then
       a[c..c+nelems]
     else
       a[c..a.Length] + a[0..(c+nelems)%a.Length]
@@ -100,6 +87,7 @@ class ArrayQueueImpl extends Queue<int> {
     ensures Model() == []
     ensures fresh(Repr())
   {
+    ReprDepth := 0;
     list := new int[10];
     c:=0;
     nelems:=0;
@@ -116,37 +104,38 @@ class ArrayQueueImpl extends Queue<int> {
   }
 
   // Auxiliary method to duplicate space
-  method grow()
+  method Grow()
     modifies Repr()
     requires Valid()
     ensures Valid()
     ensures nelems==old(nelems)
     ensures Model()==old(Model())
     ensures list.Length>old(list.Length)
-    ensures c+nelems<list.Length
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures c+nelems < list.Length
     ensures fresh(list)
+    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x | x in Repr() :: allocated(x)
   {
-      ghost var oldList := ModelAux(list,c,nelems);
-      var aux: array<int> := new int[2*list.Length+1];
-      var i := 0;
-      while i < nelems
-        decreases nelems-i
-        invariant 0 <= i <= nelems <= list.Length < aux.Length
-        invariant nelems == old(nelems)
-        invariant 0 <= c < list.Length == old(list.Length)
-        invariant ModelAux(aux, 0, i) == ModelAux(list, c, i)
-        invariant ModelAux(list, c, nelems) == oldList
-      {
-        aux[i] := list[(c+i)%list.Length];
-        i := i+1;
-        assert aux[i-1] == list[(c+i-1)%list.Length];
-        incEnque(aux, 0, old(i));
-        incEnque(list, c, i-1);
-      }
-      assert ModelAux(aux, 0, nelems) == ModelAux(list, c, nelems) == oldList;
-      list := aux;
-      c := 0;
+    ghost var oldList := ModelAux(list,c,nelems);
+    var aux: array<int> := new int[2*list.Length+1];
+    var i := 0;
+    while i < nelems
+      decreases nelems-i
+      invariant 0 <= i <= nelems <= list.Length < aux.Length
+      invariant nelems == old(nelems)
+      invariant 0 <= c < list.Length == old(list.Length)
+      invariant ModelAux(aux, 0, i) == ModelAux(list, c, i)
+      invariant ModelAux(list, c, nelems) == oldList
+    {
+      aux[i] := list[(c+i)%list.Length];
+      i := i+1;
+      assert aux[i-1] == list[(c+i-1)%list.Length];
+      incEnque(aux, 0, i);
+      incEnque(list, c, i-1);
+    }
+    assert ModelAux(aux, 0, nelems) == ModelAux(list, c, nelems) == oldList;
+    list := aux;
+    c := 0;
   }
 
   method Enqueue(x: int)
@@ -159,16 +148,22 @@ class ArrayQueueImpl extends Queue<int> {
   {
     ghost var oldList := ModelAux(list,c,nelems);
     if nelems == list.Length {
-      grow();
+      Grow();
     }
     assert ModelAux(list, c, nelems) == oldList;
     list[(c+nelems)%list.Length] := x;
+    modulo(c+nelems,list.Length);
     //assert 0<=(c+nelems)<list.Length ==> (c+nelems)%list.Length==c+nelems;
     assert c+nelems<list.Length ==> list[c..c+nelems]==oldList;
     assert c+nelems>list.Length ==> list[c..list.Length]+list[0..(c+nelems)%list.Length]==oldList;
     nelems := nelems + 1;
     incEnque(list, c, nelems-1);
   }
+
+  lemma modulo(a:int,b:int)
+    requires b != 0
+    ensures 0 <= a < b ==> a / b == 0 && a % b == a
+  {}
 
   method Dequeue() returns (x: int)
     modifies Repr()
