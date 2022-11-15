@@ -1,6 +1,6 @@
 type pos = n: int | n > 0 witness 1
 
-trait ADT<M> {
+trait ADT<M(!new)> {
   ghost const ReprDepth: pos
 
   function ReprFamily(n: nat): set<object>
