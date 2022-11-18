@@ -1,6 +1,6 @@
 include "../../../src/linear/layer1/ADT.dfy"
 
-trait Dequeue<A> extends ADT<seq<A>> {
+trait Deque<A> extends ADT<seq<A>> {
   function method Empty(): bool
     reads this, Repr()
     requires Valid()

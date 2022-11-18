@@ -1,7 +1,7 @@
 include "../../../src/linear/layer1/Deque.dfy"
 include "../../../src/linear/layer4/DoublyLinkedListWithLast.dfy"
 
-class Dequeue1<A> extends Dequeue<A> {
+class LinkedDequeImpl<A> extends Deque<A> {
   var list: DoublyLinkedListWithLast<A>;
 
   function Repr0(): set<object>
