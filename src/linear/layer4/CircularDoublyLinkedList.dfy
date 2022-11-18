@@ -1,11 +1,9 @@
 include "../../../src/Utils.dfy"
 
-type A = int
-
-class CNode {
-  var prev: CNode;
+class CNode<A(0)> {
+  var prev: CNode<A>;
   var data: A;
-  var next: CNode;
+  var next: CNode<A>;
 
   constructor Phantom()
     ensures prev == this
@@ -15,7 +13,7 @@ class CNode {
     next := this;
   }
 
-  constructor(prev: CNode, data: A, next: CNode)
+  constructor(prev: CNode<A>, data: A, next: CNode<A>)
     ensures this.prev == prev
     ensures this.data == data
     ensures this.next == next
@@ -25,22 +23,22 @@ class CNode {
     this.next := next;
   }
 
-  predicate IsPrevOf(n: CNode)
+  predicate IsPrevOf(n: CNode<A>)
     reads this
   {
     next == n
   }
 
-  predicate IsNextOf(n: CNode)
+  predicate IsNextOf(n: CNode<A>)
     reads this
   {
     prev == n
   }
 }
 
-class CircularDoublyLinkedList {
-  var phantom: CNode;
-  ghost var spine: seq<CNode>;
+class CircularDoublyLinkedList<A(0)> {
+  var phantom: CNode<A>;
+  ghost var spine: seq<CNode<A>>;
 
   function Repr(): set<object>
     reads this
@@ -102,7 +100,7 @@ class CircularDoublyLinkedList {
     DistinctSpineAux(0);
   }
 
-  static function ModelAux(xs: seq<CNode>): seq<A>
+  static function ModelAux(xs: seq<CNode<A>>): seq<A>
     reads set x | x in xs :: x`data
   {
     if xs == [] then
@@ -144,7 +142,7 @@ class CircularDoublyLinkedList {
     /*GHOST*/ spine := [phantom];
   }
 
-  static lemma ModelRelationWithSpineAux(spine: seq<CNode>, model: seq<A>)
+  static lemma ModelRelationWithSpineAux(spine: seq<CNode<A>>, model: seq<A>)
     requires ModelAux(spine) == model
     ensures |spine| == |model|
     ensures forall i | 0 <= i < |spine| :: spine[i].data == model[i]
@@ -163,7 +161,7 @@ class CircularDoublyLinkedList {
     ModelRelationWithSpineAux(spine[..|spine|-1], Model());
   }
 
-  function GetIndex(n: CNode): nat
+  function GetIndex(n: CNode<A>): nat
     reads this, Repr()
     requires Valid()
     requires n in Repr()
@@ -178,7 +176,7 @@ class CircularDoublyLinkedList {
     i
   }
 
-  lemma NextPrevIn(n: CNode)
+  lemma NextPrevIn(n: CNode<A>)
     requires Valid()
     requires n in Repr()
     ensures n.next in Repr()
@@ -194,7 +192,7 @@ class CircularDoublyLinkedList {
     }
   }
 
-  method Insert(mid: CNode, x: A)
+  method Insert(mid: CNode<A>, x: A)
     modifies this, mid, mid.prev
     requires Valid()
     requires mid in Repr()
@@ -227,7 +225,7 @@ class CircularDoublyLinkedList {
     }
   }
 
-  method Remove(mid: CNode)
+  method Remove(mid: CNode<A>)
     modifies this, mid.prev, mid.next
     requires Valid()
     requires mid in Repr()
