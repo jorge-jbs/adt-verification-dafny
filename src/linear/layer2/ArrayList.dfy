@@ -2,15 +2,6 @@ include "../../../src/Utils.dfy"
 include "../../../src/linear/layer1/List.dfy"
 
 trait ArrayList<A> extends List<A> {
-
-  function method Front(): A
-    reads this, Repr()
-    requires Valid()
-    requires Model() != []
-    
-    ensures Valid()
-    ensures Front() == Model()[0]
-
   method PushFront(x: A)
     modifies this, Repr()
     requires Valid()
@@ -26,7 +17,6 @@ trait ArrayList<A> extends List<A> {
     ensures Iterators() == old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid())
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
-
 
   method PopFront() returns (x: A)
     modifies this, Repr()
@@ -44,14 +34,6 @@ trait ArrayList<A> extends List<A> {
     ensures Iterators() == old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext())
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
-
-  function method Back(): A
-    reads this, Repr()
-    requires Valid()
-    requires Model() != []
-    
-    ensures Valid()
-    ensures Back() == Model()[|Model()|-1]
 
   method PopBack() returns (x: A)
     modifies this, Repr()
@@ -114,7 +96,6 @@ trait ArrayList<A> extends List<A> {
     requires mid.Parent() == this
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
-
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
 
@@ -151,7 +132,6 @@ trait ArrayList<A> extends List<A> {
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext())
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index()
     ensures next.Valid() && next.Parent() == this && next.Index() == mid.Index()
-
 }
 
 
