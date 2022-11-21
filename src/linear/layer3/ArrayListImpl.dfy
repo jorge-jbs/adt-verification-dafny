@@ -2,8 +2,8 @@ include "../../../src/linear/layer2/ArrayList.dfy"
 include "../../../src/Utils.dfy"
 
 
-class ArrayListIteratorImpl extends ListIterator<int> {
-  var parent: ArrayListImpl
+class ArrayListIteratorImpl<T> extends ListIterator<T> {
+  var parent: ArrayListImpl<T>
   var index: nat
 
   predicate Valid()
@@ -13,7 +13,7 @@ class ArrayListIteratorImpl extends ListIterator<int> {
     && 0 <= index <= parent.size
   }
 
-  function Parent(): List<int>
+  function Parent(): List<T>
     reads this
   {
     parent
@@ -28,7 +28,7 @@ class ArrayListIteratorImpl extends ListIterator<int> {
     index
   }
 
-  constructor(vector: ArrayListImpl)
+  constructor(vector: ArrayListImpl<T>)
     requires vector.Valid()
     ensures Valid()
     ensures Parent() == vector
@@ -47,7 +47,7 @@ class ArrayListIteratorImpl extends ListIterator<int> {
     index < parent.size
   }
 
-  function method Peek(): int
+  function method Peek(): T
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -57,7 +57,7 @@ class ArrayListIteratorImpl extends ListIterator<int> {
     parent.elements[index]
   }
 
-  method Next() returns (x: int)
+  method Next() returns (x: T)
     modifies this
     requires Valid()
     requires Parent().Valid()
@@ -84,7 +84,7 @@ class ArrayListIteratorImpl extends ListIterator<int> {
       return elem;
     }
 
-  method Copy() returns (it: ListIterator<int>)
+  method Copy() returns (it: ListIterator<T>)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -113,7 +113,7 @@ class ArrayListIteratorImpl extends ListIterator<int> {
       parent.iterators := parent.iterators + { itImpl };
     }
 
-  method Set(x: int)
+  method Set(x: T)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -141,10 +141,10 @@ class ArrayListIteratorImpl extends ListIterator<int> {
   }
 }
 
-class ArrayListImpl extends ArrayList<int> {
-  var elements: array<int>;
+class ArrayListImpl<T> extends ArrayList<T> {
+  var elements: array<T>;
   var size: nat;
-  ghost var iterators: set<ArrayListIteratorImpl>
+  ghost var iterators: set<ArrayListIteratorImpl<T>>
 
   function Repr0(): set<object>
     reads this
@@ -168,18 +168,18 @@ class ArrayListImpl extends ArrayList<int> {
   {
     && ReprDepth == 1
     && 0 <= size <= elements.Length
-    && elements.Length >= 1
+    && elements.Length >= 0
     && forall it | it in iterators :: it.parent == this
   }
 
-  function Model(): seq<int>
+  function Model(): seq<T>
     reads this, Repr()
     requires Valid()
   {
     elements[..size]
   }
 
-  function Iterators(): set<ListIterator<int>>
+  function Iterators(): set<ListIterator<T>>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
@@ -194,7 +194,7 @@ class ArrayListImpl extends ArrayList<int> {
     ensures forall x | x in Repr() :: fresh(x)
   {
     ReprDepth := 1;
-    elements := new int[1];
+    elements := new T[0];
     size := 0;
     iterators := {};
   }
@@ -217,7 +217,7 @@ class ArrayListImpl extends ArrayList<int> {
   }
 
 
-  function method Front(): int
+  function method Front(): T
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -228,7 +228,7 @@ class ArrayListImpl extends ArrayList<int> {
     elements[0]
   }
 
-  method PushFront(x: int)
+  method PushFront(x: T)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -245,7 +245,7 @@ class ArrayListImpl extends ArrayList<int> {
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
   {      
     if (size == elements.Length) {
-      Grow(elements.Length * 2);
+      Grow(elements.Length * 2 + 1, x);
     }
     assert size < elements.Length;
     ShiftRight(0);
@@ -253,7 +253,7 @@ class ArrayListImpl extends ArrayList<int> {
     size := size + 1;
   }
 
-  method PopFront() returns (x: int)
+  method PopFront() returns (x: T)
     modifies this, Repr()
     requires Valid()
     requires Model() != []
@@ -275,7 +275,7 @@ class ArrayListImpl extends ArrayList<int> {
     size := size - 1;
   }
 
-  function method Back(): int
+  function method Back(): T
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -286,7 +286,7 @@ class ArrayListImpl extends ArrayList<int> {
     elements[size - 1]
   }
 
-  method PopBack() returns (x: int)
+  method PopBack() returns (x: T)
     modifies this, Repr()
     requires Valid()
     requires Model() != []
@@ -309,7 +309,7 @@ class ArrayListImpl extends ArrayList<int> {
   }
 
 
-  method PushBack(x: int)
+  method PushBack(x: T)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -326,14 +326,14 @@ class ArrayListImpl extends ArrayList<int> {
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
   {
     if (size == elements.Length) {
-      Grow(elements.Length * 2);
+      Grow(elements.Length * 2 + 1, x);
     }
     assert size < elements.Length;
     elements[size] := x;
     size := size + 1;
   }
 
-  method Begin() returns (it: ListIterator<int>)
+  method Begin() returns (it: ListIterator<T>)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr()::allocated(x)
@@ -358,7 +358,7 @@ class ArrayListImpl extends ArrayList<int> {
   }
 
   // Deletion of mid, next points to the next element (or past-the-end)
-  method Insert(mid: ListIterator<int>, x: int) returns (newt:ListIterator<int>)
+  method Insert(mid: ListIterator<T>, x: T) returns (newt: ListIterator<T>)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -383,7 +383,7 @@ class ArrayListImpl extends ArrayList<int> {
     var midImpl := mid as ArrayListIteratorImpl;
    
     if (size == elements.Length) {
-      Grow(elements.Length * 2);
+      Grow(elements.Length * 2 + 1, x);
     }
     assert size < elements.Length;
     assert Model() == old(Model());
@@ -401,7 +401,7 @@ class ArrayListImpl extends ArrayList<int> {
   }
 
   // Deletion of mid, next points to the next element (or past-the-end)
-  method Erase(mid: ListIterator<int>) returns (next: ListIterator<int>)
+  method Erase(mid: ListIterator<T>) returns (next: ListIterator<T>)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -447,7 +447,7 @@ class ArrayListImpl extends ArrayList<int> {
   }
 
 
-  method Grow(newCapacity: nat)
+  method Grow(newCapacity: nat, elem: T)
     requires newCapacity >= elements.Length
     requires Valid()
     
@@ -461,7 +461,7 @@ class ArrayListImpl extends ArrayList<int> {
     ensures Iterators() == old(Iterators())
     modifies this
   {
-    var newElements := new int[newCapacity];
+    var newElements := new T[newCapacity] (_ => elem);
     var i := 0;
     while (i < size)
       invariant elements == old(elements)
