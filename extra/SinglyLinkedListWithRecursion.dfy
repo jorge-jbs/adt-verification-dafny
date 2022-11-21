@@ -1,4 +1,4 @@
-include "../../../src/Utils.dfy"
+include "../src/Utils.dfy"
 
 class Node<A> {
   ghost var repr: set<object>;
