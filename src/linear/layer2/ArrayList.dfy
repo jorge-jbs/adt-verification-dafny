@@ -2,9 +2,6 @@ include "../../../src/Utils.dfy"
 include "../../../src/linear/layer1/List.dfy"
 
 trait ArrayList<A> extends List<A> {
-
-
-
   method PushFront(x: A)
     modifies this, Repr()
     requires Valid()
@@ -20,7 +17,6 @@ trait ArrayList<A> extends List<A> {
     ensures Iterators() == old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid())
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
-
 
   method PopFront() returns (x: A)
     modifies this, Repr()
@@ -38,8 +34,6 @@ trait ArrayList<A> extends List<A> {
     ensures Iterators() == old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNextF())
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
-
-  
 
   method PopBack() returns (x: A)
     modifies this, Repr()
@@ -74,26 +68,6 @@ trait ArrayList<A> extends List<A> {
     ensures forall it | it in old(Iterators()) && old(it.Valid())
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
-  method Begin() returns (it: ListIterator<A>)
-    modifies this, Repr()
-    requires Valid()
-    requires forall x | x in Repr()::allocated(x)
-    
-    ensures Valid()
-    ensures Model() == old(Model())
-
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr() - old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-
-    ensures fresh(it)
-    ensures it.Valid()
-    ensures it.Parent() == this
-    ensures it.Index() == 0
-    ensures Iterators() == {it} + old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid())
-      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
-
   // Insertion of x before mid, newt points to x
   method Insert(mid: ListIterator<A>, x: A) returns (newt:ListIterator<A>)
     modifies this, Repr()
@@ -102,7 +76,6 @@ trait ArrayList<A> extends List<A> {
     requires mid.Parent() == this
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
-
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
 
@@ -139,7 +112,6 @@ trait ArrayList<A> extends List<A> {
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNextF())
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index()
     ensures next.Valid() && next.Parent() == this && next.Index() == mid.Index()
-
 }
 
 

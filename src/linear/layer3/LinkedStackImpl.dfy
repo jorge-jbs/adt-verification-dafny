@@ -1,8 +1,8 @@
 include "../../../src/linear/layer1/Stack.dfy"
-include "../../../src/linear/layer4/SinglyLinkedListWithSpine.dfy"
+include "../../../src/linear/layer4/SinglyLinkedList.dfy"
 
 class LinkedStack<A> extends Stack<A> {
-  var list: List<A>;
+  var list: SinglyLinkedList<A>;
 
   function Repr0(): set<object>
     reads this
@@ -50,7 +50,7 @@ class LinkedStack<A> extends Stack<A> {
     ensures forall x | x in Repr() :: allocated(x)
   {
     ReprDepth := 1;
-    list := new List();
+    list := new SinglyLinkedList();
   }
 
   function method Empty(): bool

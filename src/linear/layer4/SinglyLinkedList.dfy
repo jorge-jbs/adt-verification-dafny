@@ -19,7 +19,7 @@ class SNode<A> {
   }
 }
 
-class List<A> {
+class SinglyLinkedList<A> {
   var head: SNode?<A>;
   ghost var spine: seq<SNode<A>>;
 
@@ -317,7 +317,7 @@ class List<A> {
     PushNode(n);
   }
 
-  method Append(other: List<A>)
+  method Append(other: SinglyLinkedList<A>)
     modifies this, Repr(), other
     requires Valid()
     requires other.Valid()
@@ -354,7 +354,7 @@ class List<A> {
     /*GHOST*/ other.spine := [];
   }
 
-  method PopPush(other: List<A>)
+  method PopPush(other: SinglyLinkedList<A>)
     modifies this, other, Repr(), other.Repr()
     requires head != null
     requires Valid()
@@ -381,7 +381,7 @@ class List<A> {
     ensures Model() == Seq.Rev(old(Model()))
     ensures Repr() == old(Repr())
   {
-    var aux := new List();
+    var aux := new SinglyLinkedList();
     aux.head := head;
     /*GHOST*/ aux.spine := spine;
     head := null;
@@ -474,5 +474,30 @@ class List<A> {
       prev := prev.next;
       /*GHOST*/ i := i + 1;
     }
+  }
+}
+
+// `Append` operation implemented externally.
+method Append<A>(self: SinglyLinkedList<A>, other: SinglyLinkedList<A>)
+  decreases self.Repr()
+  modifies self
+  requires self.Valid()
+  requires other.Valid()
+  // At first I didn't add the next precondition. In a language without
+  // verification like C maybe I would have forgotten about it, but the function
+  // doesn't work the way you expect it to if you don't keep this precondition
+  // in mind. This could have resulted in segmentation faults or buggy code.
+  // Another win for formal verification!
+  requires self != other
+  ensures self.Valid()
+  ensures self.Model() == old(self.Model()) + other.Model()
+{
+  if self.head == null {
+    self.head := other.head;
+    /*GHOST*/ self.spine := other.spine;
+  } else {
+    var x := self.Pop();
+    Append(self, other);
+    self.Push(x);
   }
 }

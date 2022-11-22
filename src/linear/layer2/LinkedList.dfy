@@ -2,26 +2,6 @@ include "../../../src/Utils.dfy"
 include "../layer1/List.dfy"
 
 trait LinkedList<A> extends List<A> {
-  method Begin() returns (it: ListIterator<A>)
-    modifies this, Repr()
-    requires Valid()
-    requires forall x | x in Repr()::allocated(x)
-    ensures Valid()
-    ensures Model() == old(Model())
-
-    ensures forall x {:trigger x in Repr(), x in old(Repr())}| x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-
-    ensures fresh(it)
-    ensures Iterators() == {it} + old(Iterators())
-    ensures it.Valid()
-    ensures it.Index() == 0
-    ensures it.Parent() == this
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Index() == old(it.Index())
-
-
   method PushFront(x: A)
     modifies this, Repr()
     requires Valid()

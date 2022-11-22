@@ -1,8 +1,8 @@
 include "../../../src/linear/layer1/Stack.dfy"
 include "../../../src/Utils.dfy"
 
-class ArrayStackImpl extends Stack<int> {
-  var list: array<int>;
+class ArrayStackImpl<A> extends Stack<A> {
+  var list: array<A>;
   var size: nat;
 
   function Repr0(): set<object>
@@ -29,11 +29,11 @@ class ArrayStackImpl extends Stack<int> {
     && 0 <= size <= list.Length
   }
 
-  function Model(): seq<int>
+  function Model(): seq<A>
     reads this, list
     requires Valid()
-    ensures Model()==Seq.Rev(list[0..size])
-    ensures |Model()|==size
+    ensures Model() == Seq.Rev(list[0..size])
+    ensures |Model()| == size
   {
     Seq.Rev(list[0..size])
   }
@@ -45,7 +45,7 @@ class ArrayStackImpl extends Stack<int> {
     ensures forall x | x in Repr() :: allocated(x)
   {
     ReprDepth := 1;
-    list := new int[10];
+    list := new A[0];
     size := 0;
   }
 
@@ -58,31 +58,32 @@ class ArrayStackImpl extends Stack<int> {
   }
 
   // O(1)
-  function method Top(): int
+  function method Top(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
     ensures Top() == Model()[0]
-  { assert Model()==Seq.Rev(list[0..size]);
+  { 
+    assert Model() == Seq.Rev(list[0..size]);
     Seq.LastRev(list[0..size]);
-    assert list[size-1]==Seq.Rev(list[0..size])[0];
-    list[size-1]
+    assert list[size - 1] == Seq.Rev(list[0..size])[0];
+    list[size - 1]
   }
 
-  method Grow()//auxiliary method to duplicate space
+  method Grow(x: A)//auxiliary method to duplicate space
     modifies this, Repr()
     requires Valid()
     ensures Valid()
-    ensures size==old(size)
-    ensures list[0..size]==old(list[0..size])
-    ensures Model()==old(Model())
-    ensures list.Length>old(list.Length)
+    ensures size == old(size)
+    ensures list[0..size] == old(list[0..size])
+    ensures Model() == old(Model())
+    ensures list.Length > old(list.Length)
     ensures fresh(list)
     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
   {
     //allocate new memory
     ghost var oldList := list[0..size];
-    var aux: array<int> := new int[2*list.Length+1];
+    var aux: array<A> := new A[2 * list.Length + 1] (_ => x);
     var i := 0;
     while i < size
       decreases size-i
@@ -91,16 +92,16 @@ class ArrayStackImpl extends Stack<int> {
       invariant list[0..size] == old(list[0..size])
     {
       aux[i] := list[i];
-      i := i+1;
+      i := i + 1;
     }
-    assert aux[0..size]==list[0..size]==old(list[0..size]);
-    assert Seq.Rev(aux[0..size])==Seq.Rev(list[0..size])==Seq.Rev(old(list[0..size]));
+    assert aux[0..size] == list[0..size] == old(list[0..size]);
+    assert Seq.Rev(aux[0..size]) == Seq.Rev(list[0..size]) == Seq.Rev(old(list[0..size]));
     list := aux;
     assert Model() == Seq.Rev(aux[0..size]);
   }
 
   // O(1) amortized
-  method Push(x: int)
+  method Push(x: A)
     modifies this, Repr()
     requires Valid()
     ensures Valid()
@@ -109,31 +110,31 @@ class ArrayStackImpl extends Stack<int> {
     ensures forall x | x in Repr() :: allocated(x)
   {
     if size == list.Length {
-      Grow();
+      Grow(x);
     }
-    list[size]:=x;
-    size:=size+1;
-    assert size==old(size)+1;
-    assert list[0..size]==old(list[0..size])+[x];
+    list[size] := x;
+    size := size + 1;
+    assert size == old(size) + 1;
+    assert list[0..size] == old(list[0..size]) + [x];
     Seq.LastRev(list[0..size]);
-    assert list[size-1]==x;
+    assert list[size - 1] == x;
   }
 
   // O(1)
-  method Pop() returns (x: int)
+  method Pop() returns (x: A)
     modifies this, Repr()
-    requires size>0
+    requires size > 0
     requires Valid()
     ensures Valid()
     ensures [x] + Model() == old(Model())
-     ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
+    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
     ensures forall x | x in Repr() :: allocated(x)
   {
-    x:=list[size-1];
-    size:=size-1;
-    assert list[0..size]+[x]==old(list[0..size]);
-    assert size==old(size)-1;
-    assert |Model()|==|old(Model())|-1;
+    x := list[size - 1];
+    size := size - 1;
+    assert list[0..size] + [x] == old(list[0..size]);
+    assert size == old(size) - 1;
+    assert |Model()| == |old(Model())| - 1;
     Seq.LastRev(list[0..old(size)]);
   }
 }

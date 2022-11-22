@@ -1,7 +1,7 @@
-include "../../../src/linear/layer4/SinglyLinkedListWithSpine.dfy"
+include "../../../src/linear/layer4/SinglyLinkedList.dfy"
 
 class SinglyLinkedListWithLast<A> {
-  var list: List<A>;
+  var list: SinglyLinkedList<A>;
   var last: SNode?<A>;
 
   function Repr(): set<object>
@@ -35,7 +35,7 @@ class SinglyLinkedListWithLast<A> {
     ensures fresh(list)
     ensures last == null
   {
-    list := new List();
+    list := new SinglyLinkedList();
     last := null;
   }
 
