@@ -1,7 +1,7 @@
 include "../../../src/linear/layer1/Deque.dfy"
 
-class ArrayDequeImpl<T> extends Deque<T> {
-  var list: array<T>;
+class ArrayDequeImpl<A> extends Deque<A> {
+  var list: array<A>;
   var c: nat;
   var nelems: nat;
 
@@ -31,14 +31,14 @@ class ArrayDequeImpl<T> extends Deque<T> {
     && 0 <= nelems <= list.Length
   }
 
-  function Model(): seq<T> // Los elementos estan en [c..(c+nelems)%Length) circularmente
+  function Model(): seq<A> // Los elementos estan en [c..(c+nelems)%Length) circularmente
     reads this, Repr()
     requires Valid()
   {
     ModelAux(list, c, nelems)
   }
 
-  static function ModelAux(a: array<T>, c: nat, nelems: nat): seq<T>
+  static function ModelAux(a: array<A>, c: nat, nelems: nat): seq<A>
     reads a
     requires a.Length != 0 ==> 0 <= c < a.Length
     requires 0 <= nelems <= a.Length
@@ -57,12 +57,12 @@ class ArrayDequeImpl<T> extends Deque<T> {
     ensures fresh(Repr())
   {
     ReprDepth := 1;
-    list := new T[0];
+    list := new A[0];
     c := 0;
     nelems := 0;
   }
 
-  lemma IncDeque(a: array<T>, c: nat, nelems: nat)
+  lemma IncDeque(a: array<A>, c: nat, nelems: nat)
     requires 0 <= c < a.Length && 0 < nelems <= a.Length
     ensures ModelAux(a, c, nelems) == [a[c]] + ModelAux(a, (c + 1) % a.Length, nelems - 1)
   {
@@ -72,7 +72,7 @@ class ArrayDequeImpl<T> extends Deque<T> {
     }
   }
 
-  static lemma IncEnque(a: array<T>, c: nat, nelems: nat)
+  static lemma IncEnque(a: array<A>, c: nat, nelems: nat)
     requires a.Length > 0
     requires 0 <= c < a.Length && 0 <= nelems < a.Length
     ensures ModelAux(a, c, nelems + 1) == ModelAux(a, c, nelems) + [a[(c + nelems) % a.Length]]
@@ -97,7 +97,7 @@ class ArrayDequeImpl<T> extends Deque<T> {
   }
 
   // Auxiliary method to duplicate space
-  method Grow(x: T)
+  method Grow(x: A)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -109,7 +109,7 @@ class ArrayDequeImpl<T> extends Deque<T> {
     ensures fresh(list)
   {
     ghost var oldList := ModelAux(list, c, nelems);
-    var aux: array<T> := new T[2 * list.Length + 1] (_ => x);
+    var aux: array<A> := new A[2 * list.Length + 1] (_ => x);
     var i := 0;
     while i < nelems
       decreases nelems-i
@@ -132,7 +132,7 @@ class ArrayDequeImpl<T> extends Deque<T> {
     c := 0;
   }
 
-  function method Back(): T
+  function method Back(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -143,7 +143,7 @@ class ArrayDequeImpl<T> extends Deque<T> {
     list[(c + nelems - 1) % list.Length]
   }
 
-  method PushBack(x: T)
+  method PushBack(x: A)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -175,7 +175,7 @@ class ArrayDequeImpl<T> extends Deque<T> {
     ensures 0 <= a < b ==> a / b == 0 && a % b == a
   {}
 
-  method PopBack() returns (x: T)
+  method PopBack() returns (x: A)
     modifies Repr()
     requires Valid()
     requires Model() != []
@@ -190,7 +190,7 @@ class ArrayDequeImpl<T> extends Deque<T> {
     //assert c+nelems==0 ==> (c+nelems-1)%list.Length==list.Length-1;
   }
 
-  function method Front(): T
+  function method Front(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -200,7 +200,7 @@ class ArrayDequeImpl<T> extends Deque<T> {
     list[c]
   }
 
-  method PushFront(x: T)
+  method PushFront(x: A)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -225,7 +225,7 @@ class ArrayDequeImpl<T> extends Deque<T> {
     //IncEnque(list, c, nelems-1);
   }
 
-  method PopFront() returns (x: T)
+  method PopFront() returns (x: A)
     modifies Repr()
     requires Valid()
     requires Model() != []

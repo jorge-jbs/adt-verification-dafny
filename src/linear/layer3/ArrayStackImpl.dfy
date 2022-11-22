@@ -1,8 +1,8 @@
 include "../../../src/linear/layer1/Stack.dfy"
 include "../../../src/Utils.dfy"
 
-class ArrayStackImpl<T> extends Stack<T> {
-  var list: array<T>;
+class ArrayStackImpl<A> extends Stack<A> {
+  var list: array<A>;
   var size: nat;
 
   function Repr0(): set<object>
@@ -29,7 +29,7 @@ class ArrayStackImpl<T> extends Stack<T> {
     && 0 <= size <= list.Length
   }
 
-  function Model(): seq<T>
+  function Model(): seq<A>
     reads this, list
     requires Valid()
     ensures Model() == Seq.Rev(list[0..size])
@@ -45,7 +45,7 @@ class ArrayStackImpl<T> extends Stack<T> {
     ensures forall x | x in Repr() :: allocated(x)
   {
     ReprDepth := 1;
-    list := new T[0];
+    list := new A[0];
     size := 0;
   }
 
@@ -58,7 +58,7 @@ class ArrayStackImpl<T> extends Stack<T> {
   }
 
   // O(1)
-  function method Top(): T
+  function method Top(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -70,7 +70,7 @@ class ArrayStackImpl<T> extends Stack<T> {
     list[size - 1]
   }
 
-  method Grow(x: T)//auxiliary method to duplicate space
+  method Grow(x: A)//auxiliary method to duplicate space
     modifies this, Repr()
     requires Valid()
     ensures Valid()
@@ -83,7 +83,7 @@ class ArrayStackImpl<T> extends Stack<T> {
   {
     //allocate new memory
     ghost var oldList := list[0..size];
-    var aux: array<T> := new T[2 * list.Length + 1] (_ => x);
+    var aux: array<A> := new A[2 * list.Length + 1] (_ => x);
     var i := 0;
     while i < size
       decreases size-i
@@ -101,7 +101,7 @@ class ArrayStackImpl<T> extends Stack<T> {
   }
 
   // O(1) amortized
-  method Push(x: T)
+  method Push(x: A)
     modifies this, Repr()
     requires Valid()
     ensures Valid()
@@ -121,7 +121,7 @@ class ArrayStackImpl<T> extends Stack<T> {
   }
 
   // O(1)
-  method Pop() returns (x: T)
+  method Pop() returns (x: A)
     modifies this, Repr()
     requires size > 0
     requires Valid()
