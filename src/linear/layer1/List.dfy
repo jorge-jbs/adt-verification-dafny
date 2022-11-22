@@ -14,21 +14,43 @@ trait ListIterator<A> {
     requires Parent().Valid()
     ensures Index() <= |Parent().Model()|
 
-  function method HasNext(): bool
+  function HasNextF(): bool //Antiguo FM HasNext
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
-    ensures HasNext() <==> Index() < |Parent().Model()|
+    ensures HasNextF() <==> Index() < |Parent().Model()|
 
-  method Next() returns (x: A)
-    modifies this
+  method HasNext() returns (b:bool) //Nuevo metodo
+    modifies this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
-    requires HasNext()
+    requires allocated(Parent())
+    requires forall it | it in Parent().Repr() :: allocated(it) //duda con el nombre it
+    ensures Valid()
+    ensures Parent().Valid()
+    ensures old(Parent()) == Parent()
+    ensures old(Parent().Model()) == Parent().Model()
+    ensures Index()==old(Index())//DUDA: redundante en este caso
+    ensures b == HasNextF()//(Index() < |Parent().Model()|) ¿que queda mejor?
+
+    ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
+    ensures fresh(Parent().Repr()-old(Parent().Repr()))
+    ensures forall x | x in Parent().Repr() :: allocated(x)
+
+    ensures Parent().Iterators() == old(Parent().Iterators())
+    ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
+      it.Valid() && it.Index() == old(it.Index())
+
+
+  method Next() returns (x: A) //Añado Parent() y Parent().Repr()
+    modifies this, Parent(), Parent().Repr()
+    requires Valid()
+    requires Parent().Valid()
     requires allocated(Parent())
     requires forall it | it in Parent().Repr() :: allocated(it)
-    ensures Parent().Valid()
+    requires HasNextF()
     ensures Valid()
+    ensures Parent().Valid()
     ensures old(Parent()) == Parent()
     ensures old(Parent().Model()) == Parent().Model()
 
@@ -42,24 +64,50 @@ trait ListIterator<A> {
     ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
       it.Valid() && (it != this ==> it.Index() == old(it.Index()))
 
-  function method Peek(): A
+  function  PeekF(): A //Antiguo FM Peek()
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
-    requires HasNext()
-    ensures Peek() == Parent().Model()[Index()]
+    requires HasNextF()
+    ensures PeekF() == Parent().Model()[Index()]
 
-  method Copy() returns (it: ListIterator<A>)
-    modifies Parent(), Parent().Repr()
+  method Peek() returns (p:A)//nuevo metodo
+    modifies this, Parent(), Parent().Repr()
+    requires Valid()
+    requires Parent().Valid()
+    requires allocated(Parent())
+    requires forall it | it in Parent().Repr() :: allocated(it)
+    requires HasNextF()
+    ensures Valid()
+    ensures Parent().Valid()
+    ensures old(Parent()) == Parent()
+    ensures old(Parent().Model()) == Parent().Model()
+    ensures old(Index())==Index() //A pesar de la ultima postcondicion hace falta, así que no es tan redundante
+    ensures p==PeekF()//Parent().Model()[Index()] ¿que queda mejor?
+
+    ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
+    ensures fresh(Parent().Repr()-old(Parent().Repr()))
+    ensures forall x | x in Parent().Repr() :: allocated(x)
+
+    ensures Parent().Iterators() == old(Parent().Iterators())
+    ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
+      it.Valid() && it.Index() == old(it.Index())
+    //ensures this in Parent().Iterators() && p==FPeek()//Parent().Model()[Index()] ¿que queda mejor?
+    //Interesante, con esto si funciona, el iterador no sabe que esta en los iteradores de su padre
+
+
+  method Copy() returns (it: ListIterator<A>)//Añado this a la clausula modifies
+    modifies this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
     requires allocated(Parent())
     requires forall it | it in Parent().Iterators() :: allocated(it)
     ensures fresh(it)
     ensures Valid()
-    ensures Parent() == old(Parent())
     ensures Parent().Valid()
+    ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
+    ensures Index()==old(Index())//Añadido
 
     ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
     ensures fresh(Parent().Repr()-old(Parent().Repr()))
@@ -72,13 +120,13 @@ trait ListIterator<A> {
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index())
 
-  method Set(x: A)
-    modifies Parent(), Parent().Repr()
+  method Set(x: A) //Añado Parent() y Parent().Repr()
+    modifies this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
     requires allocated(Parent())
     requires forall it | it in Parent().Repr() :: allocated(it)
-    requires HasNext()
+    requires HasNextF()
     ensures Valid()
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
@@ -86,27 +134,57 @@ trait ListIterator<A> {
     ensures Parent().Model()[old(Index())] == x
     ensures forall i | 0 <= i < |Parent().Model()| && i != old(Index()) ::
       Parent().Model()[i] == old(Parent().Model()[i])
+    ensures Index() == old(Index()) //Añadido
+
 
     ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
     ensures fresh(Parent().Repr()-old(Parent().Repr()))
     ensures forall x | x in Parent().Repr() :: allocated(x)
 
-    //ensures Index() == old(Index())
     ensures Parent().Iterators() == old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index())
 }
 
 trait List<A> extends ADT<seq<A>> {
-  function method Empty(): bool
+  function EmptyF(): bool //Antiguo FM Empty
     reads this, Repr()
     requires Valid()
-    ensures Empty() <==> Model() == []
+    ensures EmptyF() <==> Model() == []
 
-  function method Size(): nat
+  method Empty() returns (b:bool)//Nuevo metodo
+    modifies this, Repr()
+    requires Valid()
+    requires forall x | x in Repr() :: allocated(x)
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures b==EmptyF() // Model() == [] ¿cual es mas bonita?
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+ 
+    ensures Iterators() == old(Iterators())
+
+
+  function SizeF(): nat //Antiguo FM Size
     reads this, Repr()
     requires Valid()
-    ensures Size() == |Model()|
+    ensures SizeF() == |Model()|
+
+  method Size() returns (s:int)//Nuevo metodo
+    modifies this, Repr()
+    requires Valid()
+    requires forall x | x in Repr() :: allocated(x)
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures s==SizeF() //  |Model()| ¿cual es mas bonita?
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+ 
+    ensures Iterators() == old(Iterators())
 
   function Iterators(): set<ListIterator<A>>
     reads this, Repr()
@@ -132,12 +210,28 @@ trait List<A> extends ADT<seq<A>> {
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index())
 
-  function method Front(): A
+  function FrontF(): A //Antiguo FM Front
     reads this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
-    ensures Front() == Model()[0]
+    ensures FrontF() == Model()[0]
+
+  method Front() returns (s:A)//Nuevo metodo
+    modifies this, Repr()
+    requires Valid()
+    requires forall x | x in Repr() :: allocated(x)
+    requires !EmptyF()
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures s==FrontF() //  Model()[0] ¿cual es mas bonita?
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+ 
+    ensures Iterators() == old(Iterators())
+  
 
   method PushFront(x: A)
     modifies this, Repr()
@@ -166,12 +260,28 @@ trait List<A> extends ADT<seq<A>> {
 
     ensures Iterators() == old(Iterators())
 
-  function method Back(): A
+  function BackF(): A //Antiguo FM Back
     reads this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
-    ensures Back() == Model()[|Model()|-1]
+    ensures BackF() == Model()[|Model()|-1]
+
+  method Back() returns (s:A)//Nuevo metodo
+    modifies this, Repr()
+    requires Valid()
+    requires forall x | x in Repr() :: allocated(x)
+    requires !EmptyF()
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures s==BackF() //  Model()[|Model()|-1] ¿cual es mas bonita?
+
+    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+    ensures fresh(Repr()-old(Repr()))
+    ensures forall x | x in Repr() :: allocated(x)
+ 
+    ensures Iterators() == old(Iterators())
+  
 
   method PushBack(x: A)
     modifies this, Repr()
@@ -226,7 +336,7 @@ trait List<A> extends ADT<seq<A>> {
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
-    requires mid.HasNext()
+    requires mid.HasNextF()
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()

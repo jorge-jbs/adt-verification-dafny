@@ -3,13 +3,7 @@ include "../../../src/linear/layer1/List.dfy"
 
 trait ArrayList<A> extends List<A> {
 
-  function method Front(): A
-    reads this, Repr()
-    requires Valid()
-    requires Model() != []
-    
-    ensures Valid()
-    ensures Front() == Model()[0]
+
 
   method PushFront(x: A)
     modifies this, Repr()
@@ -42,16 +36,10 @@ trait ArrayList<A> extends List<A> {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNextF())
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
-  function method Back(): A
-    reads this, Repr()
-    requires Valid()
-    requires Model() != []
-    
-    ensures Valid()
-    ensures Back() == Model()[|Model()|-1]
+  
 
   method PopBack() returns (x: A)
     modifies this, Repr()
@@ -67,7 +55,7 @@ trait ArrayList<A> extends List<A> {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNextF())
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
 
   method PushBack(x: A)
@@ -135,7 +123,7 @@ trait ArrayList<A> extends List<A> {
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
-    requires mid.HasNext()
+    requires mid.HasNextF()
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
     
@@ -148,7 +136,7 @@ trait ArrayList<A> extends List<A> {
 
     ensures fresh(next)
     ensures Iterators() == {next} + old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNextF())
       :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index()
     ensures next.Valid() && next.Parent() == this && next.Index() == mid.Index()
 
@@ -167,15 +155,15 @@ method Test(l: ArrayList<int>)
   assert l.Model() == model;
 
   var it := l.Begin();
-  assert it.Peek() == 10;
+  assert it.PeekF() == 10;
   var _ := l.PopFront();
   assert l.Model() == model[1..];
-  assert it.Peek() == 20;
+  assert it.PeekF() == 20;
   var _ := l.PopFront();
   assert l.Model() == model[2..];
-  assert it.Peek() == 30;
+  assert it.PeekF() == 30;
   var _ := it.Next();
-  assert !it.HasNext();
+  assert !it.HasNextF();
   var _ := l.PopFront();
   // assert it.Valid();    // assertion violation
 }
@@ -192,10 +180,10 @@ method Test2(l1: ArrayList<int>, l2: ArrayList<int>)
   var model2 := l2.Model();
   var it1 := l1.Begin();
   var it2 := l2.Begin();
-  assert it1.Peek() == 1 && it2.Peek() == 4;
+  assert it1.PeekF() == 1 && it2.PeekF() == 4;
   var _ := it1.Next();
-  assert it1.Peek() == 2 && it2.Peek() == 4;
+  assert it1.PeekF() == 2 && it2.PeekF() == 4;
   var _ := l2.PopFront();
   assert l2.Model() == model2[1..];
-  assert it1.Peek() == 2 && it2.Peek() == 5;
+  assert it1.PeekF() == 2 && it2.PeekF() == 5;
 }

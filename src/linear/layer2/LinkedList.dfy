@@ -21,12 +21,6 @@ trait LinkedList<A> extends List<A> {
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Index() == old(it.Index())
 
-  function method Front(): A
-    reads this, Repr()
-    requires Valid()
-    requires Model() != []
-    ensures Valid()
-    ensures Front() == Model()[0]
 
   method PushFront(x: A)
     modifies this, Repr()
@@ -58,13 +52,6 @@ trait LinkedList<A> extends List<A> {
     ensures Iterators() == old(Iterators())
     ensures forall it | it in Iterators() && old(it.Valid()) && old(it.Index()) != 0 ::
       it.Valid() && it.Index() + 1 == old(it.Index())
-
-  function method Back(): A
-    reads this, Repr()
-    requires Valid()
-    requires Model() != []
-    ensures Valid()
-    ensures Back() == Model()[|Model()|-1]
 
   method PushBack(x: A)
     modifies this, Repr()
@@ -140,7 +127,7 @@ trait LinkedList<A> extends List<A> {
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
-    requires mid.HasNext()
+    requires mid.HasNextF()
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
