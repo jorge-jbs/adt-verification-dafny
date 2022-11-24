@@ -2,8 +2,8 @@ include "../../../src/linear/layer2/ArrayList.dfy"
 include "../../../src/Utils.dfy"
 
 
-class ArrayListIteratorImpl<T> extends ListIterator<T> {
-  var parent: ArrayListImpl<T>
+class ArrayListIteratorImpl<A> extends ListIterator<A> {
+  var parent: ArrayListImpl<A>
   var index: nat
 
   predicate Valid()
@@ -13,7 +13,7 @@ class ArrayListIteratorImpl<T> extends ListIterator<T> {
     && 0 <= index <= parent.size
   }
 
-  function Parent(): List<T>
+  function Parent(): List<A>
     reads this
   {
     parent
@@ -28,7 +28,7 @@ class ArrayListIteratorImpl<T> extends ListIterator<T> {
     index
   }
 
-  constructor(vector: ArrayListImpl<T>)
+  constructor(vector: ArrayListImpl<A>)
     requires vector.Valid()
     ensures Valid()
     ensures Parent() == vector
@@ -47,7 +47,7 @@ class ArrayListIteratorImpl<T> extends ListIterator<T> {
     index < parent.size
   }
 
-  function method Peek(): T
+  function method Peek(): A
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -57,7 +57,7 @@ class ArrayListIteratorImpl<T> extends ListIterator<T> {
     parent.elements[index]
   }
 
-  method Next() returns (x: T)
+  method Next() returns (x: A)
     modifies this
     requires Valid()
     requires Parent().Valid()
@@ -84,7 +84,7 @@ class ArrayListIteratorImpl<T> extends ListIterator<T> {
       return elem;
     }
 
-  method Copy() returns (it: ListIterator<T>)
+  method Copy() returns (it: ListIterator<A>)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -113,7 +113,7 @@ class ArrayListIteratorImpl<T> extends ListIterator<T> {
       parent.iterators := parent.iterators + { itImpl };
     }
 
-  method Set(x: T)
+  method Set(x: A)
     modifies Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -141,10 +141,10 @@ class ArrayListIteratorImpl<T> extends ListIterator<T> {
   }
 }
 
-class ArrayListImpl<T> extends ArrayList<T> {
-  var elements: array<T>;
+class ArrayListImpl<A> extends ArrayList<A> {
+  var elements: array<A>;
   var size: nat;
-  ghost var iterators: set<ArrayListIteratorImpl<T>>
+  ghost var iterators: set<ArrayListIteratorImpl<A>>
 
   function Repr0(): set<object>
     reads this
@@ -172,14 +172,14 @@ class ArrayListImpl<T> extends ArrayList<T> {
     && forall it | it in iterators :: it.parent == this
   }
 
-  function Model(): seq<T>
+  function Model(): seq<A>
     reads this, Repr()
     requires Valid()
   {
     elements[..size]
   }
 
-  function Iterators(): set<ListIterator<T>>
+  function Iterators(): set<ListIterator<A>>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
@@ -194,7 +194,7 @@ class ArrayListImpl<T> extends ArrayList<T> {
     ensures forall x | x in Repr() :: fresh(x)
   {
     ReprDepth := 1;
-    elements := new T[0];
+    elements := new A[0];
     size := 0;
     iterators := {};
   }
@@ -217,7 +217,7 @@ class ArrayListImpl<T> extends ArrayList<T> {
   }
 
 
-  function method Front(): T
+  function method Front(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -228,7 +228,7 @@ class ArrayListImpl<T> extends ArrayList<T> {
     elements[0]
   }
 
-  method PushFront(x: T)
+  method PushFront(x: A)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -253,7 +253,7 @@ class ArrayListImpl<T> extends ArrayList<T> {
     size := size + 1;
   }
 
-  method PopFront() returns (x: T)
+  method PopFront() returns (x: A)
     modifies this, Repr()
     requires Valid()
     requires Model() != []
@@ -275,7 +275,7 @@ class ArrayListImpl<T> extends ArrayList<T> {
     size := size - 1;
   }
 
-  function method Back(): T
+  function method Back(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -286,7 +286,7 @@ class ArrayListImpl<T> extends ArrayList<T> {
     elements[size - 1]
   }
 
-  method PopBack() returns (x: T)
+  method PopBack() returns (x: A)
     modifies this, Repr()
     requires Valid()
     requires Model() != []
@@ -309,7 +309,7 @@ class ArrayListImpl<T> extends ArrayList<T> {
   }
 
 
-  method PushBack(x: T)
+  method PushBack(x: A)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr() :: allocated(x)
@@ -333,7 +333,7 @@ class ArrayListImpl<T> extends ArrayList<T> {
     size := size + 1;
   }
 
-  method Begin() returns (it: ListIterator<T>)
+  method Begin() returns (it: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires forall x | x in Repr()::allocated(x)
@@ -358,7 +358,7 @@ class ArrayListImpl<T> extends ArrayList<T> {
   }
 
   // Deletion of mid, next points to the next element (or past-the-end)
-  method Insert(mid: ListIterator<T>, x: T) returns (newt: ListIterator<T>)
+  method Insert(mid: ListIterator<A>, x: A) returns (newt: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -401,7 +401,7 @@ class ArrayListImpl<T> extends ArrayList<T> {
   }
 
   // Deletion of mid, next points to the next element (or past-the-end)
-  method Erase(mid: ListIterator<T>) returns (next: ListIterator<T>)
+  method Erase(mid: ListIterator<A>) returns (next: ListIterator<A>)
     modifies this, Repr()
     requires Valid()
     requires mid.Valid()
@@ -447,7 +447,7 @@ class ArrayListImpl<T> extends ArrayList<T> {
   }
 
 
-  method Grow(newCapacity: nat, elem: T)
+  method Grow(newCapacity: nat, elem: A)
     requires newCapacity >= elements.Length
     requires Valid()
     
@@ -461,7 +461,7 @@ class ArrayListImpl<T> extends ArrayList<T> {
     ensures Iterators() == old(Iterators())
     modifies this
   {
-    var newElements := new T[newCapacity] (_ => elem);
+    var newElements := new A[newCapacity] (_ => elem);
     var i := 0;
     while (i < size)
       invariant elements == old(elements)

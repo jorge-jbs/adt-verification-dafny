@@ -1,7 +1,7 @@
 include "../../../src/linear/layer1/Queue.dfy"
 
-class ArrayQueueImpl<T> extends Queue<T> {
-  var list: array<T>;
+class ArrayQueueImpl<A> extends Queue<A> {
+  var list: array<A>;
   var c: nat;
   var nelems: nat;
 
@@ -31,14 +31,14 @@ class ArrayQueueImpl<T> extends Queue<T> {
     && 0 <= nelems <= list.Length
   }
 
-  function Model(): seq<T> // Los elementos estan en [c..(c+nelems)%Length) circularmente
+  function Model(): seq<A> // Los elementos estan en [c..(c+nelems)%Length) circularmente
     reads this, Repr()
     requires Valid()
   {
     ModelAux(list, c, nelems)
   }
 
-  static function ModelAux(a: array<T>, c: nat, nelems: nat): seq<T>
+  static function ModelAux(a: array<A>, c: nat, nelems: nat): seq<A>
     reads a
     requires a.Length != 0 ==> 0 <= c < a.Length
     requires a.Length == 0 ==> c == 0
@@ -53,7 +53,7 @@ class ArrayQueueImpl<T> extends Queue<T> {
   }
 
 
-  lemma IncDeque(a: array<T>, c: nat, nelems: nat)
+  lemma IncDeque(a: array<A>, c: nat, nelems: nat)
     requires 0 <= c < a.Length && 0 < nelems <= a.Length
     ensures ModelAux(a, c, nelems) == [a[c]] + ModelAux(a, (c + 1) % a.Length, nelems - 1)
   {
@@ -63,7 +63,7 @@ class ArrayQueueImpl<T> extends Queue<T> {
     }
   }
 
-  lemma IncEnque(a:array<T>,c:nat,nelems:nat)
+  lemma IncEnque(a:array<A>,c:nat,nelems:nat)
     requires 0 <= c < a.Length && 0 <= nelems < a.Length
     ensures ModelAux(a, c, nelems+1) == ModelAux(a, c, nelems) + [a[(c + nelems) % a.Length]]
   {
@@ -92,12 +92,12 @@ class ArrayQueueImpl<T> extends Queue<T> {
     ensures fresh(Repr())
   {
     ReprDepth := 1;
-    list := new T[0];
+    list := new A[0];
     c := 0;
     nelems := 0;
   }
 
-  function method Front(): T
+  function method Front(): A
     reads this, Repr()
     requires Valid()
     requires Model() != []
@@ -108,7 +108,7 @@ class ArrayQueueImpl<T> extends Queue<T> {
   }
 
   // Auxiliary method to duplicate space
-  method Grow(x: T)
+  method Grow(x: A)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -121,7 +121,7 @@ class ArrayQueueImpl<T> extends Queue<T> {
     ensures forall x | x in Repr() :: allocated(x)
   {
     ghost var oldList := ModelAux(list,c,nelems);
-    var aux: array<T> := new T[2 * list.Length + 1] (_ => x);
+    var aux: array<A> := new A[2 * list.Length + 1] (_ => x);
     var i := 0;
     while i < nelems
       decreases nelems - i
@@ -144,7 +144,7 @@ class ArrayQueueImpl<T> extends Queue<T> {
     c := 0;
   }
 
-  method Enqueue(x: T)
+  method Enqueue(x: A)
     modifies Repr()
     requires Valid()
     ensures Valid()
@@ -171,7 +171,7 @@ class ArrayQueueImpl<T> extends Queue<T> {
     ensures 0 <= a < b ==> a / b == 0 && a % b == a
   {}
 
-  method Dequeue() returns (x: T)
+  method Dequeue() returns (x: A)
     modifies Repr()
     requires Valid()
     requires Model() != []
