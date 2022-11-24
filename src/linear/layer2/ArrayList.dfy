@@ -10,12 +10,12 @@ trait ArrayList<A> extends List<A> {
     ensures Valid()
     ensures Model() == [x] + old(Model())
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
   method PopFront() returns (x: A)
     modifies this, Repr()
@@ -26,12 +26,12 @@ trait ArrayList<A> extends List<A> {
     ensures Valid()
     ensures [x] + Model() == old(Model())
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext?())
-      :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
   method PushBack(x: A)
     modifies this, Repr()
@@ -41,12 +41,12 @@ trait ArrayList<A> extends List<A> {
     ensures Valid()
     ensures Model() == old(Model()) + [x]
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid())
-      :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
   method PopBack() returns (x: A)
     modifies this, Repr()
@@ -57,15 +57,15 @@ trait ArrayList<A> extends List<A> {
     ensures Valid()
     ensures Model() + [x] == old(Model())
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext?())
-      :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
  
   // Insertion of x before mid, newt points to x
-  method Insert(mid: ListIterator<A>, x: A) returns (newt:ListIterator<A>)
+  method Insert(mid: ListIterator<A>, x: A) returns (newt: ListIterator<A>)
     modifies this, Repr()
     requires allocated(Repr())
 
@@ -76,15 +76,15 @@ trait ArrayList<A> extends List<A> {
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures fresh(newt)
-    ensures Iterators() >= {newt}+old(Iterators())
-    ensures newt.Valid() && newt.Parent()==this && newt.Index()==old(mid.Index())
+    ensures Iterators() >= {newt} + old(Iterators())
+    ensures newt.Valid() && newt.Parent() == this && newt.Index() == old(mid.Index())
  
     ensures forall it | it in old(Iterators()) && old(it.Valid())
-      :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
 
   // Deletion of mid, next points to the next element (or past-the-end)
@@ -100,14 +100,14 @@ trait ArrayList<A> extends List<A> {
     ensures Valid()
     ensures Model() == Seq.Remove(old(Model()), old(mid.Index()))
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures fresh(next)
-    ensures Iterators() >= {next}+old(Iterators())
-    ensures next.Valid() && next.Parent()==this && next.Index()==old(mid.Index())
+    ensures Iterators() >= {next} + old(Iterators())
+    ensures next.Valid() && next.Parent() == this && next.Index() == old(mid.Index())
      ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext?())
-      :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 }
 
 

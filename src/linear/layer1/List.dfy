@@ -21,7 +21,7 @@ trait ListIterator<A> {
     requires Parent().Valid()
   {  Index() < |Parent().Model()| }
 
-  method HasNext() returns (b:bool) 
+  method HasNext() returns (b: bool) 
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
@@ -32,10 +32,10 @@ trait ListIterator<A> {
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model()) 
-    ensures Index()==old(Index())
+    ensures Index() == old(Index())
     ensures b == HasNext?()
 
-    ensures fresh(Parent().Repr()-old(Parent().Repr()))
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
     ensures allocated(Parent().Repr())
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
@@ -55,17 +55,17 @@ trait ListIterator<A> {
     ensures Parent() == old(Parent())  
     ensures Parent().Model() == old(Parent().Model())  
 
-    ensures fresh(Parent().Repr()-old(Parent().Repr()))
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
     ensures allocated(Parent().Repr())
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures x == Parent().Model()[old(Index())]
     ensures Index() == 1 + old(Index())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent()==old(it.Parent()) && (it != this ==> it.Index() == old(it.Index()))
+      it.Valid() && it.Parent() == old(it.Parent()) && (it != this ==> it.Index() == old(it.Index()))
 
   
-  method Peek() returns (p:A)//nuevo metodo
+  method Peek() returns (p: A)//nuevo metodo
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
@@ -78,14 +78,14 @@ trait ListIterator<A> {
     ensures Parent() == old(Parent())  
     ensures Parent().Model() == old(Parent().Model())  
     ensures Index() == old(Index())
-    ensures p==Parent().Model()[Index()] 
+    ensures p == Parent().Model()[Index()] 
     
-    ensures fresh(Parent().Repr()-old(Parent().Repr()))
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
     ensures allocated(Parent().Repr())
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
 
   method Copy() returns (it: ListIterator<A>)
@@ -100,9 +100,9 @@ trait ListIterator<A> {
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
-    ensures Index()==old(Index())
+    ensures Index() == old(Index())
 
-    ensures fresh(Parent().Repr()-old(Parent().Repr()))
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
     ensures allocated(Parent().Repr())
     
     ensures it.Valid()
@@ -110,7 +110,7 @@ trait ListIterator<A> {
     ensures Parent() == it.Parent()
     ensures Index() == it.Index()
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
   method Set(x: A) 
     modifies this, Parent(), Parent().Repr()
@@ -125,46 +125,46 @@ trait ListIterator<A> {
     ensures Parent() == old(Parent())
     ensures |Parent().Model()| == old(|Parent().Model()|)
     ensures Index() == old(Index()) 
-    ensures Parent().Model()==old(Parent().Model()[Index():=x])
+    ensures Parent().Model() == old(Parent().Model()[Index():=x])
     
-    ensures fresh(Parent().Repr()-old(Parent().Repr()))
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
     ensures allocated(Parent().Repr())
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 }
 
 trait List<A> extends ADT<seq<A>> {
   predicate Empty?()
     reads this, Repr()
     requires Valid()
-  { Model() == []}
+  { Model() == [] }
 
-  method Empty() returns (b:bool)
+  method Empty() returns (b: bool)
     modifies this, Repr()
     requires allocated(Repr())
     
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
-    ensures b==Empty?() 
+    ensures b == Empty?() 
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
  
     ensures Iterators() >= old(Iterators())
 
-  method Size() returns (s:int)
+  method Size() returns (s: int)
     modifies this, Repr()
     requires allocated(Repr())
     
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
-    ensures s==|Model()| 
+    ensures s == |Model()| 
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
@@ -182,7 +182,7 @@ trait List<A> extends ADT<seq<A>> {
     ensures Valid()
     ensures Model() == old(Model())
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures fresh(it)
@@ -191,9 +191,9 @@ trait List<A> extends ADT<seq<A>> {
     ensures it.Index() == 0
     ensures it.Parent() == this
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
-  method Front() returns (x:A)
+  method Front() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
     
@@ -203,7 +203,7 @@ trait List<A> extends ADT<seq<A>> {
     ensures Model() == old(Model())
     ensures x == Model()[0]
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
  
     ensures Iterators() >= old(Iterators())
@@ -216,7 +216,7 @@ trait List<A> extends ADT<seq<A>> {
     ensures Valid()
     ensures Model() == [x] + old(Model())
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
@@ -230,12 +230,12 @@ trait List<A> extends ADT<seq<A>> {
     ensures Valid()
     ensures [x] + Model() == old(Model())
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
 
-  method Back() returns (x:A)//Nuevo metodo
+  method Back() returns (x: A)//Nuevo metodo
     modifies this, Repr()
     requires allocated(Repr())
     
@@ -245,7 +245,7 @@ trait List<A> extends ADT<seq<A>> {
     ensures Model() == old(Model())
     ensures x == Model()[|Model()|-1]
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
  
     ensures Iterators() >= old(Iterators())
@@ -258,7 +258,7 @@ trait List<A> extends ADT<seq<A>> {
     ensures Valid()
     ensures Model() == old(Model()) + [x]
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
@@ -272,7 +272,7 @@ trait List<A> extends ADT<seq<A>> {
     ensures Valid()
     ensures Model() + [x] == old(Model())
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
@@ -289,12 +289,12 @@ trait List<A> extends ADT<seq<A>> {
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures fresh(newt)
-    ensures Iterators() >= {newt}+old(Iterators())
-    ensures newt.Valid() && newt.Parent()==this && newt.Index()==old(mid.Index())
+    ensures Iterators() >= {newt} + old(Iterators())
+    ensures newt.Valid() && newt.Parent() == this && newt.Index() == old(mid.Index())
  
 
   // Deletion of mid, next points to the next element (or past-the-end)
@@ -310,10 +310,10 @@ trait List<A> extends ADT<seq<A>> {
     ensures Valid()
     ensures Model() == Seq.Remove(old(Model()), old(mid.Index()))
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures fresh(next)
-    ensures Iterators() >= {next}+old(Iterators())
-    ensures next.Valid() && next.Parent()==this && next.Index()==old(mid.Index())
+    ensures Iterators() >= {next} + old(Iterators())
+    ensures next.Valid() && next.Parent() == this && next.Index() == old(mid.Index())
 }

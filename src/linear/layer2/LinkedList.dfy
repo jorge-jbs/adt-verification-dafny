@@ -10,12 +10,12 @@ trait LinkedList<A> extends List<A> {
     ensures Valid()
     ensures Model() == [x] + old(Model())
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index()) + 1
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index()) + 1
 
   method PopFront() returns (x: A)
     modifies this, Repr()
@@ -26,12 +26,12 @@ trait LinkedList<A> extends List<A> {
     ensures Valid()
     ensures [x] + Model() == old(Model())
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.Index()) != 0 ::
-      it.Valid() && it.Parent()==old(it.Parent()) && it.Index() + 1 == old(it.Index())
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() + 1 == old(it.Index())
 
   method PushBack(x: A)
       modifies this, Repr()
@@ -41,17 +41,17 @@ trait LinkedList<A> extends List<A> {
     ensures Valid()
     ensures Model() == old(Model()) + [x]
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid()
-      && it.Parent()==old(it.Parent())
+      && it.Parent() == old(it.Parent())
       && if old(it.Index()) == old(|Model()|) then
           it.Index() == 1 + old(it.Index())
         else
-          it.Index()== old(it.Index())
+          it.Index() == old(it.Index())
 
   method PopBack() returns (x: A)
     modifies this, Repr()
@@ -62,14 +62,14 @@ trait LinkedList<A> extends List<A> {
     ensures Valid()
     ensures Model() + [x] == old(Model())
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
     ensures
-      forall it | it in old(Iterators()) && old(it.Valid()) && old(it.Index()) != old(|Model()|-1) ::
+      forall it | it in old(Iterators()) && old(it.Valid()) && old(it.Index()) != old(|Model()| - 1) ::
         && it.Valid()
-        && it.Parent()==old(it.Parent())
+        && it.Parent() == old(it.Parent())
         && if old(it.Index()) == old(|Model()|) then
             it.Index() + 1 == old(it.Index())
            else
@@ -87,16 +87,16 @@ trait LinkedList<A> extends List<A> {
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures fresh(newt)
-    ensures Iterators() >= {newt}+old(Iterators())
-    ensures newt.Valid() && newt.Parent()==this && newt.Index()==old(mid.Index())
+    ensures Iterators() >= {newt} + old(Iterators())
+    ensures newt.Valid() && newt.Parent() == this && newt.Index() == old(mid.Index())
  
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid()
-      && it.Parent()==old(it.Parent())
+      && it.Parent() == old(it.Parent())
       && if old(it.Index()) < old(mid.Index())  then
           it.Index() == old(it.Index())
          else
@@ -115,18 +115,18 @@ trait LinkedList<A> extends List<A> {
     ensures Valid()
     ensures Model() == Seq.Remove(old(Model()), old(mid.Index()))
 
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     ensures fresh(next)
-    ensures Iterators() >= {next}+old(Iterators())
-    ensures next.Valid() && next.Parent()==this && next.Index()==old(mid.Index())
+    ensures Iterators() >= {next} + old(Iterators())
+    ensures next.Valid() && next.Parent() == this && next.Index() == old(mid.Index())
     ensures forall it |
        && it in old(Iterators())
        && old(it.Valid())
        && old(it.Index()) != old(mid.Index()) ::
          && it.Valid() 
-         && it.Parent()==old(it.Parent())
+         && it.Parent() == old(it.Parent())
          && if old(it.Index()) < old(mid.Index())  then
              it.Index() == old(it.Index())
             else
