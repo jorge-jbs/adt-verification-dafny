@@ -124,10 +124,11 @@ method DupElements<A(!new)>(l: LinkedList<A>)
 {
 
   var it := l.Begin();
+  var b := it.HasNext();
 
     ghost var i := 0;
 
-  while it.HasNext()
+  while b
     decreases |l.Model()| - it.Index()
     invariant l.Valid()
     invariant 2*i <= |l.Model()|
@@ -139,6 +140,7 @@ method DupElements<A(!new)>(l: LinkedList<A>)
     invariant {it} !! {l}
     invariant it.Index() == 2*i
     invariant it in l.Iterators()
+    invariant b == it.HasNext?()
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall iter | iter in old(l.Iterators()) && old(iter.Valid())::
@@ -178,6 +180,7 @@ method DupElements<A(!new)>(l: LinkedList<A>)
     assert model == old(DupRev(l.Model()[..i+1])) + omodel[2*i+1..];
 
     x := it.Next();
+    b := it.HasNext();
     i := i + 1;
   }
 
@@ -189,7 +192,7 @@ method DupElements<A(!new)>(l: LinkedList<A>)
   setDup(old(l.Model())); // 0->0,1 1-> 2,3 ...
 }
 
-method DupElementsAL<A(!new)>(l: ArrayList<A>)
+/*method DupElementsAL<A(!new)>(l: ArrayList<A>)
   modifies l, l.Repr()
   requires l.Valid()
   requires forall x | x in l.Repr() :: allocated(x)
@@ -282,4 +285,4 @@ method dupDup<A(!new)>(l:LinkedList<A>)
   DupElements(l);
 
   assert forall it | it in validSet :: it.Valid() && it.Index() == 4*old(it.Index())+3;
-}
+}*/

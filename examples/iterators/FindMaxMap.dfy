@@ -8,9 +8,10 @@ function idMap(xs:seq<int>):map<int,int>
 
 method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:map<int,int>)
   modifies l, l.Repr()
+  requires allocated(l.Repr())
+
   requires l.Valid()
   requires l.Model() != []
-  requires forall x | x in l.Repr() :: allocated(x)
   ensures l.Valid()
   ensures l.Model() == old(l.Model())
   ensures fresh(max) && max in l.Iterators()
@@ -74,10 +75,10 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:ma
 
 method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>, ghost mit:map<int,int>)
   modifies l, l.Repr()
+  requires allocated(l.Repr())
+
   requires l.Valid()
   requires l.Model() != []
-  requires forall x | x in l.Repr() :: allocated(x)
-
   ensures l.Valid()
   ensures l.Model() == old(l.Model())
   ensures fresh(max) && max in l.Iterators()
