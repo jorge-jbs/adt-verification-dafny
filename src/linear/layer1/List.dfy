@@ -7,7 +7,7 @@ trait ListIterator<A> {
 
   predicate Valid()
     reads this, Parent(), Parent().Repr()
-    ensures Parent().Valid() && this in Parent().Iterators()
+    ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
 
   function Index(): nat
     reads this, Parent(), Parent().Repr()
@@ -65,7 +65,7 @@ trait ListIterator<A> {
       it.Valid() && it.Parent() == old(it.Parent()) && (it != this ==> it.Index() == old(it.Index()))
 
   
-  method Peek() returns (p: A)//nuevo metodo
+  method Peek() returns (p: A)
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
@@ -155,7 +155,7 @@ trait List<A> extends ADT<seq<A>> {
  
     ensures Iterators() >= old(Iterators())
 
-  method Size() returns (s: int)
+  method Size() returns (s: nat)
     modifies this, Repr()
     requires allocated(Repr())
     
