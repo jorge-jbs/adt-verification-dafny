@@ -1,7 +1,6 @@
 include "../../../src/linear/layer2/ArrayList.dfy"
 include "../../../src/Utils.dfy"
 
-
 class ArrayListIteratorImpl<A> extends ListIterator<A> {
   var parent: ArrayListImpl<A>
   var index: nat
@@ -249,8 +248,7 @@ class ArrayListImpl<A> extends ArrayList<A> {
     b := size == 0;
   }
 
-
-  method Size() returns (s: int)
+  method Size() returns (s: nat)
     modifies this, Repr()
     requires allocated(Repr())
     
@@ -266,7 +264,6 @@ class ArrayListImpl<A> extends ArrayList<A> {
   {
     s := size;
   }
-
 
   method Front() returns (x: A)
     modifies this, Repr()
@@ -369,7 +366,6 @@ class ArrayListImpl<A> extends ArrayList<A> {
     x := elements[size - 1];
     size := size - 1;
   }
-
 
   method PushBack(x: A)
     modifies this, Repr()
@@ -504,7 +500,6 @@ class ArrayListImpl<A> extends ArrayList<A> {
     iterators := iterators + { next };
   }
 
-
   method Grow(newCapacity: nat, elem: A)
     requires newCapacity >= elements.Length
     requires Valid()
@@ -583,5 +578,4 @@ class ArrayListImpl<A> extends ArrayList<A> {
     }
     assert i == size - 1;
   }
-
 }
