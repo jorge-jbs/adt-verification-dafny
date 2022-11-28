@@ -101,7 +101,7 @@ lemma {:induction xs} dupEls<A>(xs: seq<A>)
 }
 
 
-method DupElements<A(!new)>(l: LinkedList<A>)
+method DupElements<A>(l: LinkedList<A>)
   modifies l, l.Repr()
   requires allocated(l.Repr())
   ensures fresh(l.Repr()-old(l.Repr()))
@@ -109,7 +109,7 @@ method DupElements<A(!new)>(l: LinkedList<A>)
 
   requires l.Valid()
   ensures l.Valid()
-  ensures l.Model() == old(Dup(l.Model()))
+  ensures l.Model() == Dup(old(l.Model()))
   ensures |l.Model()| == 2* |old(l.Model())|
   ensures forall i | 0<=i<|old(l.Model())| :: old(l.Model())[i] == l.Model()[2*i]==l.Model()[2*i+1]
  
@@ -138,7 +138,7 @@ method DupElements<A(!new)>(l: LinkedList<A>)
     invariant {it} !! {l}
     invariant it.Index() == 2*i <= |l.Model()|
     invariant i <= old(|l.Model()|)
-    invariant l.Model()[..2*i] == old(DupRev(l.Model()[..i]))
+    invariant l.Model()[..2*i] == DupRev(old(l.Model()[..i]))
     invariant l.Model()[2*i..] == old(l.Model()[i..])
     invariant b == it.HasNext?()
 
@@ -150,9 +150,9 @@ method DupElements<A(!new)>(l: LinkedList<A>)
        else
            iter.Index()==i + old(iter.Index()))
   {
-     ghost var omodel := l.Model();
-     assert omodel[..2*i] == old(DupRev(l.Model()[..i]));
-     assert omodel[2*i]==old(l.Model()[i]);
+    ghost var omodel := l.Model();
+    assert omodel[..2*i] == DupRev(old(l.Model()[..i]));
+    assert omodel[2*i]==old(l.Model()[i]);
 
     var x := it.Peek();
     var it1:=l.Insert(it, x);
@@ -164,12 +164,12 @@ method DupElements<A(!new)>(l: LinkedList<A>)
       omodel[..it.Index()] + [x] + omodel[it.Index()..];
       omodel[..2*i+1] + [x] + omodel[2*i+1..];
       omodel[..2*i] + [x] + [x] + omodel[2*i+1..];
-      old(DupRev(l.Model()[..i])) + [x] + [x] + omodel[2*i+1..];
-      old(DupRev(l.Model()[..i])) + [old(l.Model()[i])] + [old(l.Model()[i])] + omodel[2*i+1..];
+      DupRev(old(l.Model()[..i])) + [x] + [x] + omodel[2*i+1..];
+      DupRev(old(l.Model()[..i])) + [old(l.Model()[i])] + [old(l.Model()[i])] + omodel[2*i+1..];
       { assert old(l.Model()[..i+1][..|l.Model()[..i+1]|-1]) == old(l.Model()[..i]); }
-      old(DupRev(l.Model()[..i+1])) + omodel[2*i+1..];
-    }
-    assert model == old(DupRev(l.Model()[..i+1])) + omodel[2*i+1..];
+      DupRev(old(l.Model()[..i+1])) + omodel[2*i+1..];
+     }
+    assert model == DupRev(old(l.Model()[..i+1])) + omodel[2*i+1..];
 
     var _ := it.Next();
     b := it.HasNext();
@@ -183,7 +183,7 @@ method DupElements<A(!new)>(l: LinkedList<A>)
   setDup(old(l.Model())); // 0->0,1 1-> 2,3 ...
 }
 
-method DupElementsAL<A(!new)>(l: ArrayList<A>)
+method DupElementsAL<A>(l: ArrayList<A>)
   modifies l, l.Repr()
   requires allocated(l.Repr())
   ensures fresh(l.Repr()-old(l.Repr()))
@@ -191,7 +191,7 @@ method DupElementsAL<A(!new)>(l: ArrayList<A>)
 
   requires l.Valid()
   ensures l.Valid()
-  ensures l.Model() == old(Dup(l.Model()))
+  ensures l.Model() == Dup(old(l.Model()))
   ensures |l.Model()| == 2* |old(l.Model())|
   ensures forall i | 0<=i<|old(l.Model())| :: old(l.Model())[i] == l.Model()[2*i]==l.Model()[2*i+1]
 
@@ -216,7 +216,7 @@ method DupElementsAL<A(!new)>(l: ArrayList<A>)
     invariant {it} !! {l}
     invariant it.Index() == 2*i <= |l.Model()|
     invariant i <= old(|l.Model()|)
-    invariant l.Model()[..2*i] == old(DupRev(l.Model()[..i]))
+    invariant l.Model()[..2*i] == DupRev(old(l.Model()[..i]))
     invariant l.Model()[2*i..] == old(l.Model()[i..])
     invariant b == it.HasNext?()
 
@@ -226,7 +226,7 @@ method DupElementsAL<A(!new)>(l: ArrayList<A>)
   {
     assert i < old(|l.Model()|);
     ghost var omodel := l.Model();
-    assert omodel[..2*i] == old(DupRev(l.Model()[..i]));
+    assert omodel[..2*i] == DupRev(old(l.Model()[..i]));
 
     var x := it.Peek();
     
@@ -241,12 +241,12 @@ method DupElementsAL<A(!new)>(l: ArrayList<A>)
       omodel[..it.Index()] + [x] + omodel[it.Index()..];
       omodel[..2*i+1] + [x] + omodel[2*i+1..];
       omodel[..2*i] + [x] + [x] + omodel[2*i+1..];
-      old(DupRev(l.Model()[..i])) + [x] + [x] + omodel[2*i+1..];
-      old(DupRev(l.Model()[..i])) + [old(l.Model()[i])] + [old(l.Model()[i])] + omodel[2*i+1..];
+      DupRev(old(l.Model()[..i])) + [x] + [x] + omodel[2*i+1..];
+      DupRev(old(l.Model()[..i])) + [old(l.Model()[i])] + [old(l.Model()[i])] + omodel[2*i+1..];
       { assert old(l.Model()[..i+1][..|l.Model()[..i+1]|-1]) == old(l.Model()[..i]); }
-      old(DupRev(l.Model()[..i+1])) + omodel[2*i+1..];
+      DupRev(old(l.Model()[..i+1])) + omodel[2*i+1..];
     }
-    assert model == old(DupRev(l.Model()[..i+1])) + omodel[2*i+1..];
+    assert model == DupRev(old(l.Model()[..i+1])) + omodel[2*i+1..];
 
     var _ := it.Next();
     var _ := it.Next(); //In ArrayList index mid remains, so we jump over two elements to reach the following one
@@ -258,11 +258,11 @@ method DupElementsAL<A(!new)>(l: ArrayList<A>)
   DupDupRev(old(l.Model()[..i]));
   assert old(l.Model()[..i]) == old(l.Model());
 
-  assert l.Model() == old(Dup(l.Model()));
+  assert l.Model() == Dup(old(l.Model()));
   setDup(old(l.Model())); // 0->0,1 1-> 2,3 ...
 }
 
-method dupDup<A(!new)>(l:LinkedList<A>) 
+method dupDup<A>(l:LinkedList<A>) 
   modifies l, l.Repr()
   requires allocated(l.Repr())
   ensures fresh(l.Repr()-old(l.Repr()))
