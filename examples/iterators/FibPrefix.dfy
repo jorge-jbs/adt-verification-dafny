@@ -162,7 +162,6 @@ method FibPrefixes(n: nat) returns (pres: List<List<nat>>)
     invariant forall i | 0 <= i < |pres.Model()| ::
       pres.Model()[i].Model() == Fib(i+1)
   {
-    assume false;
     assert pres.Model()[|pres.Model()|-1] in pres.Model();
     label init:
     var lpre := pres.Back();
