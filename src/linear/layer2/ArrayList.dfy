@@ -5,13 +5,12 @@ trait ArrayList<A> extends List<A> {
   method PushFront(x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
-
-    ensures fresh(Repr()-old(Repr()))
-    ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
@@ -20,14 +19,13 @@ trait ArrayList<A> extends List<A> {
   method PopFront() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
-   
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     requires !Empty?()
     ensures Valid()
     ensures [x] + Model() == old(Model())
-
-    ensures fresh(Repr()-old(Repr()))
-    ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext?())
@@ -36,13 +34,12 @@ trait ArrayList<A> extends List<A> {
   method PushBack(x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + [x]
-
-    ensures fresh(Repr()-old(Repr()))
-    ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid())
@@ -51,14 +48,13 @@ trait ArrayList<A> extends List<A> {
   method PopBack() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     requires !Empty?()
     ensures Valid()
     ensures Model() + [x] == old(Model())
-
-    ensures fresh(Repr()-old(Repr()))
-    ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext?())
@@ -68,6 +64,8 @@ trait ArrayList<A> extends List<A> {
   method Insert(mid: ListIterator<A>, x: A) returns (newt:ListIterator<A>)
     modifies this, Repr()
     requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
 
     requires Valid()
     requires mid.Valid()
@@ -76,9 +74,6 @@ trait ArrayList<A> extends List<A> {
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
 
-    ensures fresh(Repr()-old(Repr()))
-    ensures allocated(Repr())
-
     ensures fresh(newt)
     ensures Iterators() >= {newt}+old(Iterators())
     ensures newt.Valid() && newt.Parent()==this && newt.Index()==old(mid.Index())
@@ -86,11 +81,12 @@ trait ArrayList<A> extends List<A> {
     ensures forall it | it in old(Iterators()) && old(it.Valid())
       :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
 
-
   // Deletion of mid, next points to the next element (or past-the-end)
   method Erase(mid: ListIterator<A>) returns (next: ListIterator<A>)
     modifies this, Repr()
     requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
 
     requires Valid()
     requires mid.Valid()
@@ -99,9 +95,6 @@ trait ArrayList<A> extends List<A> {
     requires mid in Iterators()
     ensures Valid()
     ensures Model() == Seq.Remove(old(Model()), old(mid.Index()))
-
-    ensures fresh(Repr()-old(Repr()))
-    ensures allocated(Repr())
 
     ensures fresh(next)
     ensures Iterators() >= {next}+old(Iterators())
