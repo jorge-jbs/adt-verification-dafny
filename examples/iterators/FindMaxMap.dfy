@@ -89,7 +89,7 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>, ghost mit:m
   ensures forall x | x in l.Model() :: l.Model()[max.Index()] >= x
   
   ensures l.Iterators() >= old(l.Iterators())
-  ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && mit[old(it.Index())]==it.Index()
+  ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
   ensures mit==buildMap((set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),identity)
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: old(it.Index()) in mit //domain
   ensures forall i | i in mit :: mit[i]==identity(i) //range
