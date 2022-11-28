@@ -104,6 +104,8 @@ lemma {:induction xs} dupEls<A>(xs: seq<A>)
 method DupElements<A(!new)>(l: LinkedList<A>)
   modifies l, l.Repr()
   requires allocated(l.Repr())
+  ensures fresh(l.Repr()-old(l.Repr()))
+  ensures allocated(l.Repr())
 
   requires l.Valid()
   ensures l.Valid()
@@ -111,9 +113,6 @@ method DupElements<A(!new)>(l: LinkedList<A>)
   ensures |l.Model()| == 2* |old(l.Model())|
   ensures forall i | 0<=i<|old(l.Model())| :: old(l.Model())[i] == l.Model()[2*i]==l.Model()[2*i+1]
  
-  ensures fresh(l.Repr()-old(l.Repr()))
-  ensures allocated(l.Repr())
-
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid())::
       it.Valid() && it.Parent()==old(it.Parent()) &&
@@ -129,6 +128,9 @@ method DupElements<A(!new)>(l: LinkedList<A>)
 
   while b
     decreases |l.Model()| - it.Index()
+    invariant allocated(l.Repr())
+    invariant fresh(l.Repr()-old(l.Repr()))
+
     invariant l.Valid()
     invariant it in l.Iterators()
     invariant it.Parent() == l
@@ -139,9 +141,6 @@ method DupElements<A(!new)>(l: LinkedList<A>)
     invariant l.Model()[..2*i] == old(DupRev(l.Model()[..i]))
     invariant l.Model()[2*i..] == old(l.Model()[i..])
     invariant b == it.HasNext?()
-
-    invariant allocated(l.Repr())
-    invariant fresh(l.Repr()-old(l.Repr()))
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall iter | iter in old(l.Iterators()) && old(iter.Valid())::
@@ -156,9 +155,6 @@ method DupElements<A(!new)>(l: LinkedList<A>)
      assert omodel[2*i]==old(l.Model()[i]);
 
     var x := it.Peek();
-      
-     // assert x==l.Model()[2*i]==old(l.Model()[i]);
-
     var it1:=l.Insert(it, x);
 
     ghost var model := l.Model();
@@ -184,22 +180,20 @@ method DupElements<A(!new)>(l: LinkedList<A>)
   DupDupRev(old(l.Model()[..i]));
   assert old(l.Model()[..i]) == old(l.Model());
   //assert l.Model() == old(Dup(l.Model()));
-
   setDup(old(l.Model())); // 0->0,1 1-> 2,3 ...
 }
 
 method DupElementsAL<A(!new)>(l: ArrayList<A>)
   modifies l, l.Repr()
   requires allocated(l.Repr())
+  ensures fresh(l.Repr()-old(l.Repr()))
+  ensures allocated(l.Repr())
 
   requires l.Valid()
   ensures l.Valid()
   ensures l.Model() == old(Dup(l.Model()))
   ensures |l.Model()| == 2* |old(l.Model())|
   ensures forall i | 0<=i<|old(l.Model())| :: old(l.Model())[i] == l.Model()[2*i]==l.Model()[2*i+1]
-
-  ensures fresh(l.Repr()-old(l.Repr()))
-  ensures allocated(l.Repr())
 
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid())::
@@ -212,6 +206,9 @@ method DupElementsAL<A(!new)>(l: ArrayList<A>)
 
   while b
     decreases |l.Model()| - it.Index()
+    invariant allocated(l.Repr())
+    invariant fresh(l.Repr()-old(l.Repr()))
+
     invariant l.Valid()
     invariant it in l.Iterators()
     invariant it.Parent() == l
@@ -222,9 +219,6 @@ method DupElementsAL<A(!new)>(l: ArrayList<A>)
     invariant l.Model()[..2*i] == old(DupRev(l.Model()[..i]))
     invariant l.Model()[2*i..] == old(l.Model()[i..])
     invariant b == it.HasNext?()
-
-    invariant allocated(l.Repr())
-    invariant fresh(l.Repr()-old(l.Repr()))
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant  forall it | it in old(l.Iterators()) && old(it.Valid())::
@@ -263,7 +257,6 @@ method DupElementsAL<A(!new)>(l: ArrayList<A>)
   assert i==|old(l.Model())|;
   DupDupRev(old(l.Model()[..i]));
   assert old(l.Model()[..i]) == old(l.Model());
-  //assert l.Model() == old(Dup(l.Model()));
 
   assert l.Model() == old(Dup(l.Model()));
   setDup(old(l.Model())); // 0->0,1 1-> 2,3 ...
@@ -271,9 +264,11 @@ method DupElementsAL<A(!new)>(l: ArrayList<A>)
 
 method dupDup<A(!new)>(l:LinkedList<A>) 
   modifies l, l.Repr()
-  requires l.Valid()
-  requires forall x | x in l.Repr() :: allocated(x)
+  requires allocated(l.Repr())
+  ensures fresh(l.Repr()-old(l.Repr()))
+  ensures allocated(l.Repr())
 
+  requires l.Valid()
   ensures l.Valid()
   ensures l.Model() == Dup(Dup(old(l.Model())))
 {

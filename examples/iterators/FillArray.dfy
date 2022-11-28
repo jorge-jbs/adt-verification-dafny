@@ -34,7 +34,7 @@ method FillArray<A>(l: List<A>, v: array<A>)
     invariant it.Parent() == l
     invariant it.Valid()
     //invariant {it} !! {l}
-    invariant {v}!! {l}
+    invariant {v} !! {l}
     invariant {v} !! l.Repr()
     //invariant {v} !! {it}
     invariant it.Index() == i
@@ -85,7 +85,7 @@ method FillArrayLL<A>(l: LinkedList<A>, v: array<A>)
     invariant it.Parent() == l
     invariant it.Valid()
     //invariant {it} !! {l}
-    invariant {v}!! {l}
+    invariant {v} !! {l}
     invariant {v} !! l.Repr()
     //invariant {v} !! {it}
     invariant it.Index() == i

@@ -43,7 +43,7 @@ method FillArrayLL<A>(l: LinkedList<A>, v: array<A>) returns (ghost mit:map<int,
     invariant it.Parent() == l
     invariant it.Valid()
     invariant {it} !! {l}
-    invariant {v}!! {l}
+    invariant {v} !! {l}
     invariant {v} !! l.Repr()
     invariant {v} !! {it}
     invariant it.Index() == i
@@ -102,7 +102,7 @@ method FillArrayAL<A>(l: ArrayList<A>, v: array<A>)returns (ghost mit:map<int,in
     invariant it.Parent() == l
     invariant it.Valid()
     invariant {it} !! {l}
-    invariant {v}!! {l}
+    invariant {v} !! {l}
     invariant {v} !! l.Repr()
     invariant {v} !! {it}
     invariant it.Index() == i
