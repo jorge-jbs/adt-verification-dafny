@@ -1,64 +1,96 @@
 include "../../../src/linear/layer1/ADT.dfy"
 
 trait Deque<A> extends ADT<seq<A>> {
-  function method Empty(): bool
+  predicate Empty?()
     reads this, Repr()
     requires Valid()
-    ensures Empty() <==> Model() == []
+  { Model() == []}
 
-  function method Front(): A
-    reads this, Repr()
+  method Empty() returns (b:bool)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
-    requires Model() != []
     ensures Valid()
-    ensures Front() == Model()[0]
+    ensures Model() == old(Model())
+    ensures b==Empty?() 
 
+  method Size() returns (s:nat)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
+    requires Valid()
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures s==|Model()| 
+
+  method Front() returns (x:A)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
+    requires Valid()
+    requires !Empty?()
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures x == Model()[0]
+ 
   method PushFront(x: A)
     modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
 
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-
   method PopFront() returns (x: A)
     modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+    
     requires Valid()
     requires Model() != []
     ensures Valid()
     ensures [x] + Model() == old(Model())
 
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+  method Back() returns (x:A)
+    modifies this, Repr()
+    requires allocated(Repr())
     ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
+    ensures allocated(Repr())
 
-  function method Back(): A
-    reads this, Repr()
     requires Valid()
-    requires Model() != []
+    requires !Empty?()
     ensures Valid()
-    ensures Back() == Model()[|Model()|-1]
+    ensures Model() == old(Model())
+    ensures x == Model()[|Model()|-1]
 
   method PushBack(x: A)
     modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + [x]
 
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-
   method PopBack() returns (x: A)
     modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
-    requires Model() != []
+    requires !Empty?()
     ensures Valid()
     ensures Model() + [x] == old(Model())
-
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
 }
