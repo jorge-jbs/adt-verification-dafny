@@ -53,12 +53,14 @@ ensures forall it | it in elimDupMap(xs,its) :: (it==0) || (it==|xs|) || (1<=it<
 
 {elimMapAux(xs,its,|xs|);}
 
-method {:verify true} elimDup(l:LinkedList<int>) returns (ghost mit:map<int,int>)
+method elimDup(l:LinkedList<int>) returns (ghost mit:map<int,int>)
 //method {:verify true} elimDupA(l:ArrayList) //NO CHANGES
-
  modifies l, l.Repr()
+  requires allocated(l.Repr())
+ ensures fresh(l.Repr()-old(l.Repr()))
+ ensures allocated(l.Repr())
+
  requires l.Valid() && Sorted(l.Model())
- requires forall x | x in l.Repr() :: allocated(x)
  ensures l.Valid()
 
  ensures l.Model()==delDup(old(l.Model()),|old(l.Model())|)
@@ -66,128 +68,123 @@ method {:verify true} elimDup(l:LinkedList<int>) returns (ghost mit:map<int,int>
  ensures StrictSorted(l.Model())
 
  ensures l.Iterators() >= old(l.Iterators())
- ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && mit[old(it.Index())]==it.Index()
+ ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
  ensures mit==elimDupMap(old(l.Model()),(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())))
  ensures forall it | it in mit :: (it==0) || (it==|old(l.Model())|) || (1<=it<|old(l.Model())| && old(l.Model())[it]!=old(l.Model())[it-1])
-
-
- ensures forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
- ensures fresh(l.Repr()-old(l.Repr()))
- ensures forall x | x in l.Repr() :: allocated(x)
 {
-    ghost var validSet:=(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index()));
-    ghost var omodel:=l.Model();
+  ghost var validSet:=(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index()));
+  ghost var omodel:=l.Model();
 
+  var aux;
+  var it2:=l.Begin(); 
+  var it1:=it2.Copy();
+  var b := it1.HasNext();
 
-   var aux;
-   var it2:=l.Begin(); 
-   var it1:=it2.Copy();
-   if (it1.HasNext()) 
-   { 
-     
-     
-     aux:=it2.Next();
-     ghost var j:=1; //to traverse old(l.Model())
-     ghost var p:=0;//first occurrence in old(l.Model()) of current element it1
+  if (b) 
+  {    
+    aux:=it2.Next();
+    ghost var j:=1; //to traverse old(l.Model())
+    ghost var p:=0;//first occurrence in old(l.Model()) of current element it1
 
-     assert it2.HasNext() ==> it1.HasNext() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()];
-     assert it2.Index()==1 && it1.Index()==0;
+    assert it2.HasNext?() ==> it1.HasNext?() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()];
+    assert it2.Index()==1 && it1.Index()==0;
   
-     if (0 in validSet) {mit:=map[0:=0];}
-     else {mit:=map[];}
+    if (0 in validSet) {mit:=map[0:=0];}
+    else {mit:=map[];}
   
 
+    b := it2.HasNext();
 
-   while (it2.HasNext())
-    decreases |l.Model()| - it2.Index()
-    invariant l.Valid()
-    invariant it2 in l.Iterators() && it1 in l.Iterators()
-    invariant it1.Parent() == l && it2.Parent()==l
-    invariant it1.Valid() && it2.Valid()
-    invariant it2.Index()==it1.Index()+1 
-    invariant it2.HasNext() ==> it1.HasNext() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()]
-    invariant j+(|l.Model()| - it2.Index())==|omodel| && 1<=j<=|old(l.Model())| 
+    while b
+     decreases |l.Model()| - it2.Index()
+     invariant allocated(l.Repr())
+     invariant fresh(l.Repr()-old(l.Repr()))
 
-    invariant l.Model()[..it2.Index()]==delDup(old(l.Model()),j)    
-    invariant old(l.Model())[j-1]==l.Model()[it1.Index()]
-    invariant l.Model()[it2.Index()..]==old(l.Model())[j..]
+     invariant l.Valid()
+     invariant it2 in l.Iterators() && it1 in l.Iterators()
+     invariant it1.Parent() == l && it2.Parent()==l
+     invariant it1.Valid() && it2.Valid()
+     invariant it2.Index()==it1.Index()+1 
+     invariant it2.HasNext?() ==> it1.HasNext?() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()]
+     invariant j+(|l.Model()| - it2.Index())==|omodel| && 1<=j<=|old(l.Model())| 
+
+     invariant l.Model()[..it2.Index()]==delDup(old(l.Model()),j)    
+     invariant old(l.Model())[j-1]==l.Model()[it1.Index()]
+     invariant l.Model()[it2.Index()..]==old(l.Model())[j..]
         
-    invariant forall k | p<=k<j ::old(l.Model())[k]==old(l.Model())[j-1]==l.Model()[it1.Index()]
+     invariant forall k | p<=k<j ::old(l.Model())[k]==old(l.Model())[j-1]==l.Model()[it1.Index()]
 
-    invariant (set x | x in old(l.Model())) == (set x | x in l.Model())
-    invariant Sorted(l.Model()) && StrictSorted(l.Model()[..it2.Index()])
+     invariant (set x | x in old(l.Model())) == (set x | x in l.Model())
+     invariant Sorted(l.Model()) && StrictSorted(l.Model()[..it2.Index()])
+     invariant b == it2.HasNext?()
 
-    invariant l.Iterators() >= old(l.Iterators())
-    invariant it1 !in old(l.Iterators()) && it2 !in old(l.Iterators())
-    invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && mit[old(it.Index())]==it.Index()
-    invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index())>=j::it.Valid() && it.Index()==old(it.Index())-(j-|delDup(old(l.Model()),j)|)
-    invariant mit==elimDupMapAux(old(l.Model()),validSet,j)
+     invariant l.Iterators() >= old(l.Iterators())
+     invariant it1 !in old(l.Iterators()) && it2 !in old(l.Iterators())
+     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
+     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index())>=j::it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())-(j-|delDup(old(l.Model()),j)|)
+    { ghost var pmodel:=l.Model();
 
-
-    invariant forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
-    //forall x | x in l.Repr() - old(l.Repr()) :: fresh(x)
-    invariant forall x | x in l.Repr() :: allocated(x)
-
-   { ghost var pmodel:=l.Model();
-
-     if (it1.Peek()==it2.Peek()) 
-      {   assert old(l.Model())[j..]==l.Model()[it2.Index()..];
-          assert old(l.Model())[j..][0]==l.Model()[it2.Index()..][0];
-          assert old(l.Model())[j]==l.Model()[it2.Index()];
-          assert l.Model()[it1.Index()]==old(l.Model())[j-1];
-          ghost var oit2:=it2.Index();
+     var it1Peek := it1.Peek();
+     var it2Peek := it2.Peek();
+     if (it1Peek == it2Peek) 
+      { assert old(l.Model())[j..]==l.Model()[it2.Index()..];
+        assert old(l.Model())[j..][0]==l.Model()[it2.Index()..][0];
+        assert old(l.Model())[j]==l.Model()[it2.Index()];
+        assert l.Model()[it1.Index()]==old(l.Model())[j-1];
+        ghost var oit2:=it2.Index();
 
         it2 := l.Erase(it2); j:=j+1; 
           
-          assert l.Model()==pmodel[..oit2]+pmodel[oit2+1..];
-          assert l.Model()[..it2.Index()]==delDup(old(l.Model()),j);    
+        assert l.Model()==pmodel[..oit2]+pmodel[oit2+1..];
+        assert l.Model()[..it2.Index()]==delDup(old(l.Model()),j);    
 
-          assert mit==elimDupMapAux(old(l.Model()),validSet,j);
-          elimMapAux(old(l.Model()),validSet,j);
-          forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit
-          ensures it.Valid() && it.Index()==mit[old(it.Index())]{}
-
+        assert mit==elimDupMapAux(old(l.Model()),validSet,j);
+        elimMapAux(old(l.Model()),validSet,j);
+        forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit
+        ensures it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==mit[old(it.Index())]{}
       }
      else 
-       {   
-         assert  old(l.Model())[j]==l.Model()[it2.Index()]!=l.Model()[it1.Index()]==old(l.Model())[j-1];
-         assert l.Model()[it2.Index()..]==[l.Model()[it2.Index()]]+l.Model()[it2.Index()+1..];
+      {   
+        assert  old(l.Model())[j]==l.Model()[it2.Index()]!=l.Model()[it1.Index()]==old(l.Model())[j-1];
+        assert l.Model()[it2.Index()..]==[l.Model()[it2.Index()]]+l.Model()[it2.Index()+1..];
          
-          if (j in validSet)
-           {mit:=mit[j:=it2.Index()];}
+        if (j in validSet)
+          {mit:=mit[j:=it2.Index()];}
 
-          forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index())==j
-          ensures it.Valid() && it.Index()==it2.Index()==mit[j]{}
-          forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit
-          ensures it.Valid() && it.Index()==mit[old(it.Index())]{}
+        forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index())==j
+        ensures it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==it2.Index()==mit[j]{}
+        forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit
+        ensures it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==mit[old(it.Index())]{}
          
-         aux:=it2.Next(); 
-         aux:=it1.Next();
+        var _ := it2.Next(); 
+        var _ := it1.Next();
            
-           p:=j;
-           j:=j+1;
-           assert l.Model()[it2.Index()..]==old(l.Model())[j..];
-           assert l.Model()[..it2.Index()]==delDup(old(l.Model()),j);    
+        p:=j;
+        j:=j+1;
+        assert l.Model()[it2.Index()..]==old(l.Model())[j..];
+        assert l.Model()[..it2.Index()]==delDup(old(l.Model()),j);    
 
-           assert mit==elimDupMapAux(old(l.Model()),validSet,j);
-           elimMapAux(old(l.Model()),validSet,j);
-          }
-         
+        assert mit==elimDupMapAux(old(l.Model()),validSet,j);
+        elimMapAux(old(l.Model()),validSet,j);
       }
-   
-    assert j==|old(l.Model())| && it2.Index()==|l.Model()|;
-    assert l.Model()==delDup(old(l.Model()),|old(l.Model())|);
+      b:=it2.HasNext();  
 
-    if (|omodel| in validSet) {mit:=mit[|omodel|:=|l.Model()|];}
-    elimMap(old(l.Model()),validSet);
+     }
 
-    //assert forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && mit[old(it.Index())]==it.Index();
-   }
-   else {
-       mit:=map[];
-       if (|omodel| in validSet) {mit:=mit[|omodel|:=|l.Model()|];
-       }
+     assert j==|old(l.Model())| && it2.Index()==|l.Model()|;
+     assert l.Model()==delDup(old(l.Model()),|old(l.Model())|);
 
-   }
+     if (|omodel| in validSet) {mit:=mit[|omodel|:=|l.Model()|];}
+     elimMap(old(l.Model()),validSet);
 
-  }
+     //assert forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && mit[old(it.Index())]==it.Index();
+    }
+  else 
+    {
+     mit:=map[];
+     if (|omodel| in validSet) {mit:=mit[|omodel|:=|l.Model()|];
+    }
+
+}
+
+}

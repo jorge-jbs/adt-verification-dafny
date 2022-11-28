@@ -2,12 +2,12 @@ include "../../src/linear/layer1/List.dfy"
 include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
 
-  predicate Sorted(xs:seq<int>)
-  { forall i,j | 0<=i<=j<|xs| :: xs[i]<=xs[j]}
+predicate Sorted(xs:seq<int>)
+{ forall i,j | 0<=i<=j<|xs| :: xs[i]<=xs[j]}
 
 
-  predicate StrictSorted(xs:seq<int>)
-  { forall i,j | 0<=i<j<|xs| :: xs[i]<xs[j]}
+predicate StrictSorted(xs:seq<int>)
+{ forall i,j | 0<=i<j<|xs| :: xs[i]<xs[j]}
  
 function validIt(xs:seq<int>,i:int):bool
 requires 0<=i<=|xs|
@@ -47,11 +47,13 @@ requires  xs==delDup(oxs,|oxs|) && Sorted(oxs)
  ensures (set x | x in oxs) == (set x | x in xs)
  ensures StrictSorted(xs[..|delDup(oxs,|oxs|)|])
 
-method {:verify true} elimDup(l:LinkedList<int>)  
-
+method elimDup(l:LinkedList<int>)  
  modifies l, l.Repr()
+ requires allocated(l.Repr())
+ ensures fresh(l.Repr()-old(l.Repr()))
+ ensures allocated(l.Repr())
+
  requires l.Valid() && Sorted(l.Model())
- requires forall x | x in l.Repr() :: allocated(x)
  ensures l.Valid()
 
  ensures l.Model()==delDup(old(l.Model()),|old(l.Model())|)
@@ -60,52 +62,51 @@ method {:verify true} elimDup(l:LinkedList<int>)
 
  ensures l.Iterators() >= old(l.Iterators())
  ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && validIt(old(l.Model()),old(it.Index()))
-      ::it.Valid() && it.Index()==|delDup(old(l.Model()),old(it.Index()))|
-
-
- ensures forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
- ensures fresh(l.Repr()-old(l.Repr()))
- ensures forall x | x in l.Repr() :: allocated(x)
+      ::it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==|delDup(old(l.Model()),old(it.Index()))|
 {
     ghost var validSet:=(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index()));
     ghost var omodel:=l.Model();
 
 
-   var aux;
    var it2:=l.Begin(); 
    var it1:=it2.Copy();
-   if (it1.HasNext()) 
+   var b := it1.HasNext();
+
+   if (b) 
    { 
      
      
-     aux:=it2.Next();
-     ghost var j:=1; //to traverse old(l.Model())
-     ghost var p:=0;//first occurrence in old(l.Model()) of current element it1
+    var _ := it2.Next();
+    ghost var j:=1; //to traverse old(l.Model())
+    ghost var p:=0;//first occurrence in old(l.Model()) of current element it1
 
-     assert it2.HasNext() ==> it1.HasNext() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()];
-     assert it2.Index()==1 && it1.Index()==0;
+    assert it2.HasNext?() ==> it1.HasNext?() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()];
+    assert it2.Index()==1 && it1.Index()==0;
   
     
 
+    b := it2.HasNext();
+    while b
+     decreases |l.Model()| - it2.Index()
+     invariant allocated(l.Repr())
+     invariant fresh(l.Repr()-old(l.Repr()))
 
-   while (it2.HasNext())
-    decreases |l.Model()| - it2.Index()
-    invariant l.Valid()
-    invariant it2 in l.Iterators() && it1 in l.Iterators()
-    invariant it1.Parent() == l && it2.Parent()==l
-    invariant it1.Valid() && it2.Valid()
-    invariant it2.Index()==it1.Index()+1 
-    invariant it2.HasNext() ==> it1.HasNext() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()]
-    invariant j+(|l.Model()| - it2.Index())==|omodel| && 1<=j<=|old(l.Model())| 
+     invariant l.Valid()
+     invariant it2 in l.Iterators() && it1 in l.Iterators()
+     invariant it1.Parent() == l && it2.Parent()==l
+     invariant it1.Valid() && it2.Valid()
+     invariant it2.Index()==it1.Index()+1 
+     invariant it2.HasNext?() ==> it1.HasNext?() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()]
+     invariant j+(|l.Model()| - it2.Index())==|omodel| && 1<=j<=|old(l.Model())| 
 
     invariant l.Model()[..it2.Index()]==delDup(old(l.Model()),j)    
     invariant old(l.Model())[j-1]==l.Model()[it1.Index()]
     invariant l.Model()[it2.Index()..]==old(l.Model())[j..]
-        
-    invariant forall k | p<=k<j ::old(l.Model())[k]==old(l.Model())[j-1]==l.Model()[it1.Index()]
-
-   // invariant (set x | x in old(l.Model())) == (set x | x in l.Model())
-   // invariant Sorted(l.Model()) && StrictSorted(l.Model()[..it2.Index()])
+    
+    invariant forall k | p <= k < j ::old(l.Model())[k]==old(l.Model())[j-1]==l.Model()[it1.Index()]
+    invariant b == it2.HasNext?()
+    // invariant (set x | x in old(l.Model())) == (set x | x in l.Model())
+    // invariant Sorted(l.Model()) && StrictSorted(l.Model()[..it2.Index()])
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant it1 !in old(l.Iterators()) && it2 !in old(l.Iterators())
@@ -114,15 +115,11 @@ method {:verify true} elimDup(l:LinkedList<int>)
          ::it.Valid() && it.Index()==|delDup(old(l.Model()),old(it.Index()))|<it2.Index()
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index())>=j
          ::it.Valid() && it.Index()==old(it.Index())-(j-|delDup(old(l.Model()),j)|)
-
-
-    invariant forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
-    //forall x | x in l.Repr() - old(l.Repr()) :: fresh(x)
-    invariant forall x | x in l.Repr() :: allocated(x)
-
    { ghost var pmodel:=l.Model();
 
-     if (it1.Peek()==it2.Peek()) 
+     var it1Peek := it1.Peek();
+     var it2Peek := it2.Peek();
+     if (it1Peek == it2Peek) 
       {   assert old(l.Model())[j..]==l.Model()[it2.Index()..];
           assert old(l.Model())[j..][0]==l.Model()[it2.Index()..][0];
           assert old(l.Model())[j]==old(l.Model())[j..][0]==l.Model()[it2.Index()..][0]==l.Model()[it2.Index()];
@@ -144,18 +141,19 @@ method {:verify true} elimDup(l:LinkedList<int>)
        {   
          assert  old(l.Model())[j]==l.Model()[it2.Index()]!=l.Model()[it1.Index()]==old(l.Model())[j-1];
          assert l.Model()[it2.Index()..]==[l.Model()[it2.Index()]]+l.Model()[it2.Index()+1..];
-          assert validIt(old(l.Model()),j);
+         assert validIt(old(l.Model()),j);
 
-         aux:=it2.Next(); 
-         aux:=it1.Next();
+         var _ :=it2.Next(); 
+         var _ :=it1.Next();
            
            p:=j;
            j:=j+1;
            assert l.Model()[it2.Index()..]==old(l.Model())[j..];
            assert l.Model()[..it2.Index()]==delDup(old(l.Model()),j);    
           }
+     b:=it2.HasNext();  
          
-      }
+    }
    
     assert j==|old(l.Model())| && it2.Index()==|l.Model()|;
     assert l.Model()==delDup(old(l.Model()),|old(l.Model())|);
