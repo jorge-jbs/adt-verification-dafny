@@ -5,6 +5,8 @@ include "../../src/linear/layer2/ArrayList.dfy"
 method FillArray<A>(l: List<A>, v: array<A>)
   modifies l,l.Repr(), v
   requires allocated(l.Repr())
+  ensures fresh(l.Repr()-old(l.Repr()))
+  ensures allocated(l.Repr())
 
   requires l.Valid()
   requires {v} !! {l}+l.Repr()
@@ -13,10 +15,6 @@ method FillArray<A>(l: List<A>, v: array<A>)
   ensures l.Valid()
   ensures l.Model() == old(l.Model())
   ensures v[..] == l.Model()
-
-
-  ensures fresh(l.Repr()-old(l.Repr()))
-  ensures allocated(l.Repr())
   ensures {v} !! {l} + l.Repr()
 
   ensures l.Iterators() >= old(l.Iterators())
@@ -28,6 +26,9 @@ method FillArray<A>(l: List<A>, v: array<A>)
   var i := 0;
   while b
     decreases |l.Model()| - it.Index()
+    invariant fresh(l.Repr()-old(l.Repr()))
+    invariant allocated(l.Repr())
+
     invariant l.Valid()
     invariant l.Model() == old(l.Model())
     invariant it.Parent() == l
@@ -40,9 +41,6 @@ method FillArray<A>(l: List<A>, v: array<A>)
     invariant i <= |l.Model()|
     invariant v[..i] == l.Model()[..i]
     invariant b == it.HasNext?()
-
-    invariant fresh(l.Repr()-old(l.Repr()))
-    invariant allocated(l.Repr())
 
     invariant l.Iterators() >= old(l.Iterators())
   {
@@ -56,6 +54,8 @@ method FillArray<A>(l: List<A>, v: array<A>)
 method FillArrayLL<A>(l: LinkedList<A>, v: array<A>)
   modifies l, l.Repr(), v
   requires allocated(l.Repr())
+  ensures fresh(l.Repr()-old(l.Repr()))
+  ensures allocated(l.Repr())
 
   requires {v} !! {l}
   requires {v} !! l.Repr()
@@ -65,11 +65,7 @@ method FillArrayLL<A>(l: LinkedList<A>, v: array<A>)
   ensures l.Valid()
   ensures l.Model() == old(l.Model())
   ensures v[..] == l.Model()
-
-  ensures fresh(l.Repr()-old(l.Repr()))
-  ensures allocated(l.Repr())
   ensures {v} !! {l} + l.Repr()
-
 
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
@@ -81,6 +77,9 @@ method FillArrayLL<A>(l: LinkedList<A>, v: array<A>)
   var i := 0;
   while b
     decreases |l.Model()| - it.Index()
+    invariant fresh(l.Repr()-old(l.Repr()))
+    invariant allocated(l.Repr())
+
     invariant l.Valid()
     invariant l.Model() == old(l.Model())
     invariant it.Parent() == l
@@ -94,16 +93,8 @@ method FillArrayLL<A>(l: LinkedList<A>, v: array<A>)
     invariant v[..i] == l.Model()[..i]
     invariant b == it.HasNext?()
 
-    invariant fresh(l.Repr()-old(l.Repr()))
-    invariant allocated(l.Repr())
-
-
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
-
-    invariant forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() - old(l.Repr()) :: fresh(x)
-    invariant fresh(l.Repr()-old(l.Repr()))
-    invariant forall x | x in l.Repr() :: allocated(x)
   {
 
     var x := it.Next();
@@ -116,6 +107,8 @@ method FillArrayLL<A>(l: LinkedList<A>, v: array<A>)
 method FillArrayAL<A>(l: ArrayList<A>, v: array<A>)
   modifies l, l.Repr(), v
   requires allocated(l.Repr())
+  ensures fresh(l.Repr()-old(l.Repr()))
+  ensures allocated(l.Repr())
 
   requires l.Valid()
   requires {v} !! {l}
@@ -125,14 +118,10 @@ method FillArrayAL<A>(l: ArrayList<A>, v: array<A>)
   ensures l.Valid()
   ensures l.Model() == old(l.Model())
   ensures v[..] == l.Model()
-
-  ensures fresh(l.Repr()-old(l.Repr()))
-  ensures allocated(l.Repr())
   ensures {v} !! {l} + l.Repr()
 
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
-
 {
   ghost var iters := l.Iterators();
   var it := l.Begin();
@@ -141,6 +130,9 @@ method FillArrayAL<A>(l: ArrayList<A>, v: array<A>)
   var i := 0;
   while b
     decreases |l.Model()| - it.Index()
+    invariant fresh(l.Repr()-old(l.Repr()))
+    invariant allocated(l.Repr())
+
     invariant l.Valid()
     invariant l.Model() == old(l.Model())
     invariant it.Parent() == l
@@ -153,9 +145,6 @@ method FillArrayAL<A>(l: ArrayList<A>, v: array<A>)
     invariant i <= |l.Model()|
     invariant v[..i] == l.Model()[..i]
     invariant b == it.HasNext?()
-
-    invariant fresh(l.Repr()-old(l.Repr()))
-    invariant allocated(l.Repr())
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
