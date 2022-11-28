@@ -292,7 +292,7 @@ method {:timeLimitMultiplier 100} filterEven(l:LinkedList<int>)
           :: iter.Valid() && iter.Parent()==old(iter.Parent()) && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<oit+1;
       
      
-      var x := it.Next(); i:=i+1;
+      var _ := it.Next(); i:=i+1;
       
       assert it.Index()==oit+1;
 
