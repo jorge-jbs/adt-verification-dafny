@@ -22,9 +22,7 @@ class Person{
   }
 }
 
-type IPerson = (int,string)
-
-method Test(l:LinkedList<IPerson>,persons:array<IPerson>)
+method Test(l:LinkedList<Person>,persons:array<Person>)
 modifies l, l.Repr(),persons
 requires allocated(l.Repr())
 requires l.Valid()
@@ -33,7 +31,7 @@ requires {persons} !! {l}+l.Repr()
 requires persons.Length == |l.Model()|
 
 ensures l.Valid()
-//ensures persons[..] == l.Model()
+ensures Dup(persons[..]) == l.Model()
 
 {
   FillArray(l,persons);
