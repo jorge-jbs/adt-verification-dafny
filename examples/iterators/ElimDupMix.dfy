@@ -56,7 +56,7 @@ ensures forall it | it in elimDupMap(xs,its) :: (it==0) || (it==|xs|) || (1<=it<
 method elimDup(l:LinkedList<int>) returns (ghost mit:map<int,int>)
 //method {:verify true} elimDupA(l:ArrayList) //NO CHANGES
  modifies l, l.Repr()
-  requires allocated(l.Repr())
+ requires allocated(l.Repr())
  ensures fresh(l.Repr()-old(l.Repr()))
  ensures allocated(l.Repr())
 

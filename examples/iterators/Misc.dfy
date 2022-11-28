@@ -16,10 +16,10 @@ method AllPositive(l: List<int>) returns (b:bool)
   ensures l.Iterators() >= old(l.Iterators())
 {
   var it := l.Begin();
-  var bnext := it.HasNext();
+  var itHasNext := it.HasNext();
   b:=true; 
 
-  while (bnext && b)
+  while (itHasNext && b)
   decreases |l.Model()|-it.Index()
   invariant allocated(l.Repr())
   invariant fresh(l.Repr()-old(l.Repr()))
@@ -28,12 +28,12 @@ method AllPositive(l: List<int>) returns (b:bool)
   invariant l.Model()==old(l.Model())
   invariant 0 <= it.Index() <= |old(l.Model())|
   invariant b == (forall i | 0 <= i < it.Index() :: old(l.Model())[i]>=0)
-  invariant bnext == it.HasNext?()
+  invariant itHasNext == it.HasNext?()
 
   invariant  l.Iterators() >= old(l.Iterators())
-  {  var elem:=it.Next();
-     b := elem>=0;
-     bnext := it.HasNext();
+  {  var itPeek := it.Next();
+     b := itPeek >= 0;
+     itHasNext := it.HasNext();
   }
 }
 
@@ -51,17 +51,16 @@ method AllEqual<A(==)>(l: List<A>) returns (b:bool)
   
   ensures l.Iterators() >= old(l.Iterators())
 {
-  var elem, elem2;
   var it1 := l.Begin();
   var it2 := l.Begin();
-  var bnext := it1.HasNext();
-  if bnext {
-    elem := it1.Next();
+  var it1HasNext := it1.HasNext();
+  if it1HasNext {
+    var _ := it1.Next();
   }
-  bnext := it1.HasNext();
+  it1HasNext := it1.HasNext();
   b:=true;
 
-  while (bnext && b)
+  while (it1HasNext && b)
     decreases |l.Model()|-it1.Index()
     invariant allocated(l.Repr())
     invariant fresh(l.Repr()-old(l.Repr()))
@@ -73,14 +72,14 @@ method AllEqual<A(==)>(l: List<A>) returns (b:bool)
     invariant it2.HasNext?() ==> it2.Index()==it1.Index()-1
     invariant it1.HasNext?() ==> it2.HasNext?()
     invariant b == (forall i | 0 <= i < it1.Index()-1:: old(l.Model())[i]==old(l.Model())[i+1])
-    invariant bnext == it1.HasNext?()
+    invariant it1HasNext == it1.HasNext?()
 
     invariant l.Iterators() >= old(l.Iterators())
   {
-    elem2 := it2.Next();
-    elem := it1.Next();
-    b := elem == elem2;
-    bnext := it1.HasNext();
+    var it2Peek := it2.Next();
+    var it1Peek := it1.Next();
+    b := it1Peek == it2Peek;
+    it1HasNext := it1.HasNext();
   }
 }
 
