@@ -22,6 +22,12 @@ lemma TransitiveLemma(v: array<int>, i: int)
 
 method Split(v: array<int>, neg: Stack<int>, pos: Queue<int>)
   modifies pos, pos.Repr(), neg, neg.Repr()
+  requires allocated(neg.Repr())
+  requires allocated(pos.Repr())
+  ensures fresh(neg.Repr()-old(neg.Repr()))
+  ensures allocated(neg.Repr())
+  ensures fresh(pos.Repr()-old(pos.Repr()))
+  ensures allocated(pos.Repr())
 
   requires v !in {neg} + neg.Repr() && v !in {pos} + pos.Repr()
   ensures v !in {neg} + neg.Repr() && v !in {pos} + pos.Repr()
@@ -39,27 +45,20 @@ method Split(v: array<int>, neg: Stack<int>, pos: Queue<int>)
   ensures pos.Valid()
   ensures neg.Valid()
 
-  ensures forall x | x in neg.Repr() - old(neg.Repr()) :: fresh(x)
   ensures forall x | x in neg.Model() :: x < 0
   ensures forall i | 0 <= i < |neg.Model()| - 1 :: abs(neg.Model()[i]) >= abs(neg.Model()[i+1])
-
-  ensures forall x | x in pos.Repr() - old(pos.Repr()) :: fresh(x)
   ensures forall x | x in pos.Model() :: x >= 0
   ensures forall i | 0 <= i < |pos.Model()| - 1 :: abs(pos.Model()[i]) <= abs(pos.Model()[i+1])
 
   ensures Seq.MElems(neg.Model()) + Seq.MElems(pos.Model()) == Seq.MElems(v[..])
-
-  requires forall x | x in neg.Repr() :: allocated(x)
-  requires forall x | x in pos.Repr() :: allocated(x)
-  ensures forall x {:trigger x in neg.Repr(), x in old(neg.Repr())} | x in neg.Repr() && x !in old(neg.Repr()) :: fresh(x)
-  ensures fresh(neg.Repr()-old(neg.Repr()))
-  ensures forall x | x in neg.Repr() :: allocated(x)
-  ensures forall x {:trigger x in pos.Repr(), x in old(pos.Repr())} | x in pos.Repr() && x !in old(pos.Repr()) :: fresh(x)
-  ensures fresh(pos.Repr()-old(pos.Repr()))
-  ensures forall x | x in pos.Repr() :: allocated(x)
 {
   var i := 0;
   while i < v.Length
+    invariant fresh(neg.Repr()-old(neg.Repr()))
+    invariant allocated(neg.Repr())
+    invariant fresh(pos.Repr()-old(pos.Repr()))
+    invariant allocated(pos.Repr())
+
     invariant i <= v.Length
 
     invariant forall i | 0 <= i < v.Length - 1 :: abs(v[i]) <= abs(v[i+1])
@@ -72,19 +71,11 @@ method Split(v: array<int>, neg: Stack<int>, pos: Queue<int>)
 
     invariant forall x | x in neg.Model() :: x < 0
     invariant forall i | 0 <= i < |neg.Model()| - 1 :: abs(neg.Model()[i]) >= abs(neg.Model()[i+1])
-
     invariant forall x | x in pos.Model() :: x >= 0
     invariant forall i | 0 <= i < |pos.Model()| - 1 :: abs(pos.Model()[i]) <= abs(pos.Model()[i+1])
 
     invariant Seq.MElems(neg.Model()) + Seq.MElems(pos.Model())
       == Seq.MElems(v[..i])
-
-    invariant forall x {:trigger x in neg.Repr(), x in old(neg.Repr())} | x in neg.Repr() && x !in old(neg.Repr()) :: fresh(x)
-    invariant fresh(neg.Repr()-old(neg.Repr()))
-    invariant forall x | x in neg.Repr() :: allocated(x)
-    invariant forall x {:trigger x in pos.Repr(), x in old(pos.Repr())} | x in pos.Repr() && x !in old(pos.Repr()) :: fresh(x)
-    invariant fresh(pos.Repr()-old(pos.Repr()))
-    invariant forall x | x in pos.Repr() :: allocated(x)
   {
     TransitiveLemma(v, i+1);
     assert forall j | 0 <= j < i :: abs(v[j]) <= abs(v[i]);
@@ -115,6 +106,8 @@ method Split(v: array<int>, neg: Stack<int>, pos: Queue<int>)
 method FillFromStack(r: array<int>, i: nat, st: Stack<int>) returns (l: nat)
   modifies r, st, st.Repr()
   requires allocated(st.Repr())
+  ensures fresh(st.Repr()-old(st.Repr()))
+  ensures allocated(st.Repr())
 
   requires st.Valid()
   // we have to say that r is not equal to st even though they are not of the same type:
@@ -129,17 +122,14 @@ method FillFromStack(r: array<int>, i: nat, st: Stack<int>) returns (l: nat)
   ensures r[i+old(|st.Model()|)..] == old(r[i+|st.Model()|..])
   // ensures Seq.MElems(r[i..i+old(|st.Model()|)]) == Seq.MElems(old(st.Model()))
   ensures l == i + old(|st.Model()|)
-
-  ensures fresh(st.Repr()-old(st.Repr()))
-  ensures allocated(st.Repr())
-
-
 {
   l := 0;
   var b := st.Empty();
 
   while !b
     decreases |st.Model()|
+    invariant fresh(st.Repr()-old(st.Repr()))
+    invariant allocated(st.Repr())
 
     invariant st.Valid()
     invariant {r} !! {st} + st.Repr()
@@ -152,10 +142,6 @@ method FillFromStack(r: array<int>, i: nat, st: Stack<int>) returns (l: nat)
     invariant r[i..i+l] == old(st.Model()[..l])
     invariant r[i+old(|st.Model()|)..] == old(r[i+|st.Model()|..])
     invariant b == st.Empty?()
-    
-    invariant fresh(st.Repr()-old(st.Repr()))
-    invariant allocated(st.Repr())
-
   {
     r[i+l] := st.Pop();
     b := st.Empty();
@@ -167,6 +153,8 @@ method FillFromStack(r: array<int>, i: nat, st: Stack<int>) returns (l: nat)
 method FillFromQueue(r: array<int>, i: nat, q: Queue<int>) returns (l: nat)
   modifies r, q, q.Repr()
   requires allocated(q.Repr())
+  ensures fresh(q.Repr()-old(q.Repr()))
+  ensures allocated(q.Repr())
 
   requires q.Valid()
   // we have to say that r is not equal to q even though they are not of the same type:
@@ -181,15 +169,14 @@ method FillFromQueue(r: array<int>, i: nat, q: Queue<int>) returns (l: nat)
   ensures r[i+old(|q.Model()|)..] == old(r[i+|q.Model()|..])
   // ensures Seq.MElems(r[i..i+old(|q.Model()|)]) == Seq.MElems(old(q.Model()))
   ensures l == i + old(|q.Model()|)
-
-  ensures fresh(q.Repr()-old(q.Repr()))
-  ensures allocated(q.Repr())
 {
   l := 0;
   var b := q.Empty();
 
   while !b
     decreases |q.Model()|
+    invariant fresh(q.Repr()-old(q.Repr()))
+    invariant allocated(q.Repr())
 
     invariant q.Valid()
     invariant {r} !! {q} + q.Repr()
@@ -202,10 +189,6 @@ method FillFromQueue(r: array<int>, i: nat, q: Queue<int>) returns (l: nat)
     invariant r[i..i+l] == old(q.Model()[..l])
     invariant r[i+old(|q.Model()|)..] == old(r[i+|q.Model()|..])
     invariant b == q.Empty?()
-
-    invariant fresh(q.Repr()-old(q.Repr()))
-    invariant allocated(q.Repr())
-
   {
     r[i+l] := q.Dequeue();
     b := q.Empty();
@@ -245,6 +228,10 @@ method Reorder(neg: Stack<int>, pos: Queue<int>, v: array<int>)
   modifies pos, pos.Repr()
   requires allocated(neg.Repr())
   requires allocated(pos.Repr())
+  ensures fresh(neg.Repr()-old(neg.Repr()))
+  ensures allocated(neg.Repr())
+  ensures fresh(pos.Repr()-old(pos.Repr()))
+  ensures allocated(pos.Repr())
 
   requires {v} !! {neg} + neg.Repr()
   requires {v} !! {pos} + pos.Repr()
@@ -256,10 +243,6 @@ method Reorder(neg: Stack<int>, pos: Queue<int>, v: array<int>)
   ensures neg.Valid()
   ensures pos.Valid()
   
-  ensures fresh(neg.Repr()-old(neg.Repr()))
-  ensures allocated(neg.Repr())
-  ensures fresh(pos.Repr()-old(pos.Repr()))
-  ensures allocated(pos.Repr())
   ensures {v} !! {neg} + neg.Repr()
   ensures {v} !! {pos} + pos.Repr()
   ensures {pos} + pos.Repr() !! {neg} + neg.Repr()
