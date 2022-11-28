@@ -34,6 +34,6 @@ ensures persons[..] == l.Model()
 {
   FillArray(l,persons);
   var clara := new Person(1,48,"Clara");
-  l.PushBack(clara);
-  var _ := l.PopBack();
+ // l.PushBack(clara);
+ // var _ := l.PopBack();
 }
