@@ -26,19 +26,29 @@ method Test(l:LinkedList<Person>,persons:array<Person>)
 modifies l, l.Repr(),persons
 requires allocated(l.Repr())
 requires l.Valid()
+requires !l.Empty?()
 
 requires {persons} !! {l}+l.Repr()
 requires persons.Length == |l.Model()|
 
 ensures l.Valid()
-ensures Dup(persons[..]) == l.Model()
-
 {
   FillArray(l,persons);
   var clara := new Person(1,48,"Clara");
  // l.PushBack(clara);
  // var _ := l.PopBack();
+ 
+ assert forall i | 0<=i<|l.Model()| :: persons[i]==l.Model()[i];
+
+ var it := l.Begin();
+ it.Set(clara);
+ assert forall i | 1<=i<|l.Model()| :: persons[i]==l.Model()[i];
+ assert l.Model()[0]==clara;
+ assert persons[0]==old(l.Model()[0]);
+ 
  DupElements(l);
+ assert l.Model()[0]==l.Model()[1]==clara;
+
 }
 
 method Test2(l:List<Person>,persons:array<Person>)
