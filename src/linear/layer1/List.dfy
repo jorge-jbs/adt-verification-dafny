@@ -204,6 +204,8 @@ trait List<A> extends ADT<seq<A>> {
     ensures s==|Model()| 
 
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
 
   function Iterators(): set<ListIterator<A>>
     reads this, Repr()
@@ -241,7 +243,7 @@ trait List<A> extends ADT<seq<A>> {
     ensures fresh(it)
     ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
-    ensures it.Index() == |Model()| - 1
+    ensures it.Index() == |old(Model())| - 1
     ensures it.Parent() == this
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
