@@ -228,6 +228,24 @@ trait List<A> extends ADT<seq<A>> {
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
 
+  method End() returns (it: ListIterator<A>)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+ 
+    requires Valid()
+    ensures Valid()
+    ensures Model() == old(Model())
+
+    ensures fresh(it)
+    ensures Iterators() >= {it} + old(Iterators())
+    ensures it.Valid()
+    ensures it.Index() == |Model()| - 1
+    ensures it.Parent() == this
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+
   method Front() returns (x:A)
     modifies this, Repr()
     requires allocated(Repr())
