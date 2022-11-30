@@ -26,8 +26,8 @@ method FillArrayLL<A>(l: LinkedList<A>, v: array<A>) returns (ghost mit:map<int,
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: old(it.Index()) in mit //domain
   ensures forall i | i in mit :: mit[i]==identity(i) //range
 {
-  var validSet:=set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index());
-  mit:=identityMap(validSet);
+  var validSet := set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index());
+  mit := identityMap(validSet);
 
   var it := l.First();
   var b := it.HasPeek();
