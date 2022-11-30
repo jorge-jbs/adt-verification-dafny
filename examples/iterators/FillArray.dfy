@@ -69,7 +69,6 @@ method FillArrayBack<A>(l: List<A>, v: array<A>)
 
 {
   var it := l.Last();
-  assert it.Index()==|l.Model()|-1;
   var b := it.HasPeek();
 
   var i := l.Size();

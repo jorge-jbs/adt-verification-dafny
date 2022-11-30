@@ -218,7 +218,7 @@ trait List<A> extends ADT<seq<A>> {
     ensures fresh(it)
     ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
-    ensures it.Index() == |old(Model())| - 1
+    ensures it.Index() == |old(Model())| - 1 == |Model()| - 1 //no es capaz de deducirlo si no lo ponemos
     ensures it.Parent() == this
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
