@@ -20,7 +20,7 @@ method FillArray<A>(l: List<A>, v: array<A>)
   ensures l.Iterators() >= old(l.Iterators())
 
 {
-  var it := l.Begin();
+  var it := l.First();
   var b := it.HasPeek();
 
   var i := 0;
@@ -70,7 +70,7 @@ method FillArrayBack<A>(l: List<A>, v: array<A>)
   ensures l.Iterators() >= old(l.Iterators())
 
 {
-  var it := l.End();
+  var it := l.Last();
   assert it.Index()==|l.Model()|-1;
   var b := it.HasPeek();
 

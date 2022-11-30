@@ -187,7 +187,7 @@ trait List<A> extends ADT<seq<A>> {
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
 
-  method Begin() returns (it: ListIterator<A>)
+  method First() returns (it: ListIterator<A>)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr()-old(Repr()))
@@ -205,7 +205,7 @@ trait List<A> extends ADT<seq<A>> {
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
 
-  method End() returns (it: ListIterator<A>)
+  method Last() returns (it: ListIterator<A>)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr()-old(Repr()))
