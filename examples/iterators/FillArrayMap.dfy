@@ -42,10 +42,7 @@ method FillArrayLL<A>(l: LinkedList<A>, v: array<A>) returns (ghost mit:map<int,
     invariant l.Model() == old(l.Model())
     invariant it.Parent() == l
     invariant it.Valid()
-    invariant {it} !! {l}
-    invariant {v} !! {l}
-    invariant {v} !! l.Repr()
-    invariant {v} !! {it}
+    invariant {v} !! {l} + l.Repr()
     invariant it.Index() == i
     invariant i <= |l.Model()|
     invariant v[..i] == l.Model()[..i]
