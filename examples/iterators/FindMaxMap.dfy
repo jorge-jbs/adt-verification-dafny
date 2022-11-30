@@ -9,6 +9,8 @@ function idMap(xs:seq<int>):map<int,int>
 method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:map<int,int>)
   modifies l, l.Repr()
   requires allocated(l.Repr())
+  ensures fresh(l.Repr()-old(l.Repr()))
+  ensures allocated(l.Repr())
 
   requires l.Valid()
   requires l.Model() != []
@@ -20,9 +22,6 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:ma
   ensures max.HasNext?()
   ensures forall x | x in l.Model() :: l.Model()[max.Index()] >= x
   
-  ensures fresh(l.Repr()-old(l.Repr()))
-  ensures allocated(l.Repr())
-
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
       it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
@@ -39,6 +38,9 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:ma
 
   while b
     decreases |l.Model()| - it.Index()
+    invariant allocated(l.Repr())
+    invariant fresh(l.Repr()-old(l.Repr()))
+
     invariant l.Valid()
     invariant l.Model() == old(l.Model())
     invariant it.Valid()
@@ -54,9 +56,6 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:ma
     invariant forall k | 0 <= k < it.Index() :: l.Model()[max.Index()] >= l.Model()[k]
     invariant b == it.HasNext?()
     
-    invariant allocated(l.Repr())
-    invariant fresh(l.Repr()-old(l.Repr()))
-
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
        it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index() 
@@ -76,6 +75,8 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:ma
 method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>, ghost mit:map<int,int>)
   modifies l, l.Repr()
   requires allocated(l.Repr())
+  ensures fresh(l.Repr()-old(l.Repr()))
+  ensures allocated(l.Repr())
 
   requires l.Valid()
   requires l.Model() != []
@@ -87,11 +88,8 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>, ghost mit:m
   ensures max.HasNext?()
   ensures forall x | x in l.Model() :: l.Model()[max.Index()] >= x
   
-  ensures fresh(l.Repr()-old(l.Repr()))
-  ensures allocated(l.Repr())
-
   ensures l.Iterators() >= old(l.Iterators())
-  ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && mit[old(it.Index())]==it.Index()
+  ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
   ensures mit==buildMap((set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),identity)
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: old(it.Index()) in mit //domain
   ensures forall i | i in mit :: mit[i]==identity(i) //range
@@ -106,6 +104,9 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>, ghost mit:m
 
   while b
     decreases |l.Model()| - it.Index()
+    invariant allocated(l.Repr())
+    invariant fresh(l.Repr()-old(l.Repr()))
+
     invariant l.Valid()
     invariant l.Model() == old(l.Model())
     invariant it.Valid()
@@ -120,9 +121,6 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>, ghost mit:m
     invariant it.Index() <= |l.Model()|
     invariant forall k | 0 <= k < it.Index() :: l.Model()[max.Index()] >= l.Model()[k]
     invariant b == it.HasNext?()
-
-    invariant allocated(l.Repr())
-    invariant fresh(l.Repr()-old(l.Repr()))
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::

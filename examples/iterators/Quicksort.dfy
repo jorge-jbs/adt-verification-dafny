@@ -2,7 +2,7 @@ include "../../src/linear/layer1/List.dfy"
 include "../../src/linear/layer2/LinkedList.dfy"
 
 predicate GSorted(xs:seq<int>,c:int,f:int)
-  { forall i,j | 0<=c<=i<=j<f<=|xs| :: xs[i]<=xs[j]}
+  { forall i,j | 0 <= c <= i <= j < f <= |xs| :: xs[i] <= xs[j]}
 
 lemma  swapMultisetAux(xs:seq<int>,ys:seq<int>, i:int, j:int)
 requires 0<=i<|xs| && 0<=j<|ys| && i<=j && |xs|==|ys|
@@ -44,16 +44,14 @@ ensures multiset(xs)==multiset(ys)
 {
   if (i<=j) {swapMultisetAux(xs,ys,i,j);}
   else {swapMultisetAux(xs,ys,j,i);}
-
-
 }
 
 
 lemma multisetPreservesStrictSmaller (a:seq<int>, b:seq<int>, c:int, f:int, x:int)
 requires |a|==|b| && 0 <= c <= f + 1 <= |b| 
-requires (forall j :: c <= j <= f ==> a[j] < x)
+requires (forall j | c <= j <= f :: a[j] < x)
 requires multiset(a[c..f+1]) == multiset(b[c..f+1])
-ensures (forall j :: c <= j <= f ==> b[j] < x)
+ensures (forall j | c <= j <= f :: b[j] < x)
 {if (c<=f){ 
  forall j | c<=j<=f 
    ensures b[j]<x
@@ -66,9 +64,9 @@ ensures (forall j :: c <= j <= f ==> b[j] < x)
 
 lemma multisetPreservesStrictGreater (a:seq<int>, b:seq<int>, c:int, f:int, x:int)
 requires |a|==|b| && 0 <= c <= f + 1 <= |b| 
-requires (forall j :: c <= j <= f ==> a[j] > x)
+requires (forall j | c <= j <= f :: a[j] > x)
 requires multiset(a[c..f+1]) == multiset(b[c..f+1])
-ensures (forall j :: c <= j <= f ==> b[j] > x)
+ensures (forall j | c <= j <= f :: b[j] > x)
 {if (c<=f){ 
  forall j | c<=j<=f 
    ensures b[j]>x
@@ -82,12 +80,12 @@ lemma seqSplit(s:seq<int>, c:int, p:int, f:int)
 requires 0<=c<=p<=f+1<=|s|
 ensures multiset(s[c..f+1])==multiset(s[c..p])+multiset(s[p..f+1])
 {
-    calc=={
+ calc=={
   multiset(s[c..f+1]);
   {assert s[c..f+1]==s[c..p]+s[p..f+1];}
   multiset(s[c..p]+s[p..f+1]);
   multiset(s[c..p])+multiset(s[p..f+1]);
-}
+ }
 }
 
 lemma subsecEq(xs:seq<int>,ys:seq<int>,c:int,f:int)
@@ -99,17 +97,18 @@ ensures xs[c..f]==ys[c..f] && xs[c..]==ys[c..]&&xs[..f]==ys[..f]
 //Additional ghost results to know additional information 
 method swapG(l:LinkedList<int>,p:ListIterator<int>,q:ListIterator<int>, ghost c:ListIterator<int>, ghost n:int)
 modifies l, l.Repr(),p,q
-requires forall x | x in l.Repr() :: allocated(x)
+requires allocated(l.Repr())
+ensures fresh(l.Repr()-old(l.Repr()))
+ensures allocated(l.Repr())
+
 requires l.Valid() && p.Valid() && q.Valid()
 requires p in l.Iterators() && q in l.Iterators() 
 requires p.Parent()==l && q.Parent()==l
-requires p.HasNext() && q.HasNext()
+requires p.HasNext?() && q.HasNext?()
 
 requires c in l.Iterators() && c.Valid() && c.Parent()==l
 requires 0<=c.Index()<|l.Model()| && 0<=n<=|l.Model()| && c.Index()+n<=|l.Model()|
 requires c.Index()<=p.Index()<c.Index()+n && c.Index()<=q.Index()<c.Index()+n
-
-
 
 ensures l.Valid() && p.Valid() && q.Valid()
 ensures p.Parent()==l && q.Parent()==l
@@ -122,11 +121,7 @@ ensures multiset(l.Model())==multiset(old(l.Model()))
 
 ensures l.Iterators()>=old(l.Iterators())
 ensures p in l.Iterators() && q in l.Iterators() && p.Index()==old(p.Index()) && q.Index()==old(q.Index())
-ensures forall it | it in old(l.Iterators()) && old(it.Valid())::it.Valid() && it.Index()==old(it.Index())
-
-ensures forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
-ensures fresh(l.Repr()-old(l.Repr()))
-ensures forall x | x in l.Repr() :: allocated(x)
+ensures forall it | it in old(l.Iterators()) && old(it.Valid())::it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
 
 //ADDITIONAL GHOST INFO
 ensures c in l.Iterators() && c.Valid() && c.Parent()==l && c.Index()==old(c.Index())
@@ -135,25 +130,28 @@ ensures multiset(l.Model()[c.Index()..c.Index()+n])== multiset(old(l.Model()[c.I
 //ensures l.Model()[..c.Index()] == old(l.Model()[..c.Index()]) && l.Model()[c.Index()+n..] == old(l.Model()[c.Index()+n..]) 
 
 {
-     var auxq :=q.Peek();
-     var auxp:= p.Peek();
-     p.Set(auxq);
-     q.Set(auxp);
+    var auxq :=q.Peek();
+    var auxp:= p.Peek();
+    p.Set(auxq);
+    q.Set(auxp);
      
-      swapMultiset(l.Model(),old(l.Model()),p.Index(),q.Index());
-      assert 0<=c.Index()<=c.Index()+n<=|l.Model()|;
-      swapMultiset(l.Model()[c.Index()..c.Index()+n],old(l.Model()[c.Index()..c.Index()+n]),p.Index()-c.Index(),q.Index()-c.Index());
+    swapMultiset(l.Model(),old(l.Model()),p.Index(),q.Index());
+    assert 0<=c.Index()<=c.Index()+n<=|l.Model()|;
+    swapMultiset(l.Model()[c.Index()..c.Index()+n],old(l.Model()[c.Index()..c.Index()+n]),p.Index()-c.Index(),q.Index()-c.Index());
      
 }
 
 
 
-method  {:verify false} partitionG(l:LinkedList<int>,c:ListIterator<int>,n:int, x:int) returns (p:ListIterator<int>,nL:int,q:ListIterator<int>,nG:int)
+method partitionG(l:LinkedList<int>,c:ListIterator<int>,n:int, x:int) returns (p:ListIterator<int>,nL:int,q:ListIterator<int>,nG:int)
 modifies l, l.Repr()
+requires allocated(l.Repr())
+ensures fresh(l.Repr()-old(l.Repr()))
+ensures allocated(l.Repr())
+
 requires l.Valid() && c.Valid() 
 requires c.Parent()==l && c in l.Iterators() 
 requires 0<=n<= |l.Model()| && 0<=c.Index()<=c.Index()+n<=|l.Model()|
-requires forall x | x in l.Repr() :: allocated(x)
 
 ensures l.Valid()
 ensures p.Valid() && q.Valid()
@@ -163,30 +161,27 @@ ensures 0<=c.Index()<=p.Index()<=q.Index()<=c.Index()+n<=|l.Model()|
 ensures |l.Model()|==|old(l.Model())|
 
 ensures l.Iterators() >= {p,q}+old(l.Iterators())
-ensures forall it | it in old(l.Iterators()) && old(it.Valid()) :: it.Valid() && it.Index()==old(it.Index())
+ensures forall it | it in old(l.Iterators()) && old(it.Valid()) :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
 
-
-ensures multiset(l.Model()[c.Index()..c.Index()+n])== multiset(old(l.Model()[c.Index()..c.Index()+n]))
+ensures multiset(l.Model()[c.Index()..c.Index()+n]) == multiset(old(l.Model()[c.Index()..c.Index()+n]))
 ensures l.Model()[..c.Index()] == old(l.Model()[..c.Index()]) && l.Model()[c.Index()+n..] == old(l.Model()[c.Index()+n..]) 
-ensures forall z | c.Index()<=z<p.Index() :: l.Model()[z]<x
-ensures forall z | p.Index()<=z<q.Index() :: l.Model()[z]==x
-ensures forall z | q.Index()<=z<c.Index()+n:: l.Model()[z]>x
+ensures forall z | c.Index() <= z < p.Index() :: l.Model()[z] < x
+ensures forall z | p.Index() <= z < q.Index() :: l.Model()[z] == x
+ensures forall z | q.Index() <= z < c.Index()+n:: l.Model()[z] > x
 ensures nL==p.Index()-c.Index() && nG == c.Index()+n-q.Index()
 ensures x in multiset(old(l.Model()[c.Index()..c.Index()+n])) ==> p.Index()<q.Index()
-
-ensures forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
-ensures fresh(l.Repr()-old(l.Repr()))
-ensures forall x | x in l.Repr() :: allocated(x)
 {
-  var aux;
-  p:=c.Copy();
-  q:=c.Copy();
-  var r:=c.Copy();
+  p := c.Copy();
+  q := c.Copy();
+  var r := c.Copy();
 
-   var i:=0;nL:=0;nG:=0;
+   var i := 0; nL := 0; nG := 0;
 
-   while (i<n)
+   while (i < n)
     decreases n-i
+    invariant allocated(l.Repr())
+    invariant fresh(l.Repr()-old(l.Repr()))
+
     invariant 0<=i<=n
     invariant l.Valid() && c.Valid() && c.Parent()==l 
     invariant p.Valid() && q.Valid() && r.Valid()
@@ -197,50 +192,49 @@ ensures forall x | x in l.Repr() :: allocated(x)
     invariant nL==p.Index()-c.Index() && nG == r.Index()-q.Index()
     invariant x in multiset(l.Model()[c.Index()..r.Index()]) ==> p.Index()<q.Index()
     
-    invariant forall z | c.Index()<=z<p.Index() :: l.Model()[z]<x
-    invariant forall z | p.Index()<=z<q.Index() :: l.Model()[z]==x
-    invariant forall z | q.Index()<=z<r.Index() :: l.Model()[z]>x
+    invariant forall z | c.Index() <= z < p.Index() :: l.Model()[z]<x
+    invariant forall z | p.Index() <= z < q.Index() :: l.Model()[z]==x
+    invariant forall z | q.Index() <= z < r.Index() :: l.Model()[z]>x
 
     invariant multiset(l.Model()[c.Index()..c.Index()+n])== multiset(old(l.Model()[c.Index()..c.Index()+n]))
     invariant l.Model()[..c.Index()] == old(l.Model()[..c.Index()]) && l.Model()[c.Index()+n..] == old(l.Model()[c.Index()+n..]) 
 
     invariant l.Iterators() >= {p,q,r}+old(l.Iterators())
-    invariant forall it | it in old(l.Iterators()) && old(it.Valid()) :: it.Valid() && it.Index()==old(it.Index())
-
-
-    invariant forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
-    invariant fresh(l.Repr()-old(l.Repr()))
-    invariant forall x | x in l.Repr() :: allocated(x)
+    invariant forall it | it in old(l.Iterators()) && old(it.Valid()) :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
   {
-   if (r.Peek()>x)
-    {  nG:=nG+1; }
-   else if (r.Peek()==x)
+   var rPeek := r.Peek(); 
+   if (rPeek > x)
+    {  nG := nG + 1; }
+   else if (rPeek==x)
     { 
      swapG(l,q,r,c,n);
-     aux:=q.Next();
+     var _ := q.Next();
     }  
    else {
    
      swapG(l,q,r,c,n);
      swapG(l,p,q,c,n);
-     aux:=p.Next();
-     aux:=q.Next();
+     var _ := p.Next();
+     var _ := q.Next();
      nL:=nL+1;
      
   }
-  aux:= r.Next();
-  i:=i+1;
+  var _ := r.Next();
+  i := i + 1;
     
 }
 assert r.Index()==c.Index()+n;
 
 }
 
-method {:verify true} {:timeLimitMultiplier 6} quicksort(l:LinkedList<int>,c:ListIterator<int>,n:int)
+method {:timeLimitMultiplier 6} quicksort(l:LinkedList<int>,c:ListIterator<int>,n:int)
 decreases n
 modifies l, l.Repr()
+requires allocated(l.Repr())
+ensures fresh(l.Repr()-old(l.Repr()))
+ensures allocated(l.Repr())
+
 requires l.Valid() && c in l.Iterators() && c.Valid() && c.Parent()==l 
-requires forall x | x in l.Repr() :: allocated(x)
 requires 0<=c.Index()<=|l.Model()| && 0<=n<=|l.Model()| && c.Index()+n<=|l.Model()|
 
 ensures l.Valid() && c in l.Iterators() && c.Valid() && c.Parent()==l 
@@ -252,40 +246,39 @@ ensures l.Model()[..c.Index()] == old(l.Model()[..c.Index()]) && l.Model()[c.Ind
 
 
 ensures l.Iterators() >= old(l.Iterators())
-ensures forall it | it in old(l.Iterators()) && old(it.Valid()) ::it.Valid() && it.Index()==old(it.Index())
-
-ensures forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
-ensures fresh(l.Repr()-old(l.Repr()))
-ensures forall x | x in l.Repr() :: allocated(x)
+ensures forall it | it in old(l.Iterators()) && old(it.Valid()) ::it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
 {
   var p,q:ListIterator<int>;var nL,nG:int;
   if (n>1)
   {
-      var omodel:=l.Model();
-   
-   p,nL,q,nG:=partitionG(l,c,n,c.Peek());
+    var omodel:=l.Model();
+    var cPeek := c.Peek();
+    
      
-      assert q.Index()+nG==c.Index()+n;
+    p,nL,q,nG:=partitionG(l,c,n,cPeek);
+     
+    assert q.Index()+nG==c.Index()+n;
    
-      var omodel1:=l.Model();
-      assert multiset(omodel1[c.Index()..c.Index()+n])== multiset(omodel[c.Index()..c.Index()+n]);
-      assert forall z | c.Index()+nL <= z <q.Index() ::omodel1[z]==omodel1[c.Index()+nL];
+    var omodel1:=l.Model();
+    assert omodel1[p.Index()]==cPeek;
+    assert multiset(omodel1[c.Index()..c.Index()+n])== multiset(omodel[c.Index()..c.Index()+n]);
+    assert forall z | c.Index()+nL <= z <q.Index() ::omodel1[z]==omodel1[c.Index()+nL];
 
    
-   quicksort(l,c,nL);
+    quicksort(l,c,nL);
     
 
-      var omodel2:=l.Model();
+    var omodel2:=l.Model();
 
-      assert multiset(omodel2[c.Index()..c.Index()+nL])== multiset(omodel1[c.Index()..c.Index()+nL]);
-      assert omodel2[..c.Index()] == omodel1[..c.Index()] && omodel2[c.Index()+nL..] == omodel1[c.Index()+nL..]; 
+    assert multiset(omodel2[c.Index()..c.Index()+nL])== multiset(omodel1[c.Index()..c.Index()+nL]);
+    assert omodel2[..c.Index()] == omodel1[..c.Index()] && omodel2[c.Index()+nL..] == omodel1[c.Index()+nL..]; 
       
-      seqSplit(omodel2,c.Index(),c.Index()+nL,c.Index()+n-1);
+    seqSplit(omodel2,c.Index(),c.Index()+nL,c.Index()+n-1);
       
-      assert 0<=c.Index()<=c.Index()+nL<=c.Index()+n<=|omodel1|;
-      seqSplit(omodel1,c.Index(),c.Index()+nL,c.Index()+n-1);
+    assert 0<=c.Index()<=c.Index()+nL<=c.Index()+n<=|omodel1|;
+    seqSplit(omodel1,c.Index(),c.Index()+nL,c.Index()+n-1);
     
-      calc =={
+    calc =={
         multiset(omodel2[c.Index()..c.Index()+n]);
         multiset(omodel2[c.Index()..c.Index()+nL])+multiset(omodel2[c.Index()+nL..c.Index()+n]);
         {assert omodel2[c.Index()+nL..] == omodel1[c.Index()+nL..];
@@ -293,42 +286,42 @@ ensures forall x | x in l.Repr() :: allocated(x)
          assert omodel2[c.Index()+nL..c.Index()+n] == omodel1[c.Index()+nL..c.Index()+n]; }
         multiset(omodel1[c.Index()..c.Index()+nL])+multiset(omodel1[c.Index()+nL..c.Index()+n]);
         multiset(omodel1[c.Index()..c.Index()+n]);
-      }
+    }
    
+    assert forall j | c.Index() <= j <= c.Index()+nL-1 :: omodel1[j] < cPeek;
+    multisetPreservesStrictSmaller(omodel1,omodel2,c.Index(),c.Index()+nL-1,omodel2[c.Index()+nL]);
+    assert GSorted(omodel2,c.Index(),c.Index()+nL);
+    assert forall z | c.Index()+nL <= z <q.Index() ::omodel2[z]==omodel2[c.Index()+nL];
 
-       multisetPreservesStrictSmaller(omodel1,omodel2,c.Index(),c.Index()+nL-1,omodel2[c.Index()+nL]);
-       assert GSorted(omodel2,c.Index(),c.Index()+nL);
-       assert forall z | c.Index()+nL <= z <q.Index() ::omodel2[z]==omodel2[c.Index()+nL];
 
-
-       assert omodel2[..c.Index()] == omodel[..c.Index()] && omodel2[c.Index()+n..] == omodel[c.Index()+n..]; 
+    assert omodel2[..c.Index()] == omodel[..c.Index()] && omodel2[c.Index()+n..] == omodel[c.Index()+n..]; 
 
     quicksort(l,q,nG);
     
-      assert multiset(l.Model()[q.Index()..q.Index()+nG])== multiset(omodel2[q.Index()..q.Index()+nG]);
-      assert l.Model()[..q.Index()] == omodel2[..q.Index()] && l.Model()[q.Index()+nG..] == omodel2[q.Index()+nG..]; 
-      assert c.Index()+nL<=q.Index();
-      seqSplit(l.Model(),c.Index(),q.Index(),c.Index()+n-1);
-      seqSplit(omodel2,c.Index(),q.Index(),c.Index()+n-1);
-      calc =={
+    assert multiset(l.Model()[q.Index()..q.Index()+nG])== multiset(omodel2[q.Index()..q.Index()+nG]);
+    assert l.Model()[..q.Index()] == omodel2[..q.Index()] && l.Model()[q.Index()+nG..] == omodel2[q.Index()+nG..]; 
+    assert c.Index()+nL<=q.Index();
+    seqSplit(l.Model(),c.Index(),q.Index(),c.Index()+n-1);
+    seqSplit(omodel2,c.Index(),q.Index(),c.Index()+n-1);
+    calc =={
         multiset(l.Model()[c.Index()..c.Index()+n]);
         multiset(l.Model()[c.Index()..q.Index()])+multiset(l.Model()[q.Index()..c.Index()+n]);
         {assert l.Model()[c.Index()..q.Index()] == omodel2[c.Index()..q.Index()]; }
         multiset(omodel2[c.Index()..q.Index()])+multiset(omodel2[q.Index()..c.Index()+n]);
         multiset(omodel2[c.Index()..c.Index()+n]);
-      }
+    }
 
-      assert multiset(l.Model()[c.Index()..c.Index()+n])== multiset(old(l.Model())[c.Index()..c.Index()+n]);
+    assert multiset(l.Model()[c.Index()..c.Index()+n])== multiset(old(l.Model())[c.Index()..c.Index()+n]);
 
-      multisetPreservesStrictGreater(omodel2,l.Model(),q.Index(),c.Index()+n-1,omodel2[c.Index()+nL]);
-      assert GSorted(l.Model(),q.Index(),c.Index()+n);
-      assert GSorted(l.Model(),c.Index(),c.Index()+nL);
+    multisetPreservesStrictGreater(omodel2,l.Model(),q.Index(),c.Index()+n-1,omodel2[c.Index()+nL]);
+    assert GSorted(l.Model(),q.Index(),c.Index()+n);
+    assert GSorted(l.Model(),c.Index(),c.Index()+nL);
 
-      assert l.Model()[c.Index()+nL..q.Index()]==omodel1[c.Index()+nL..q.Index()];
-      assert forall z | c.Index()<=z<c.Index()+nL :: l.Model()[z]<l.Model()[c.Index()+nL];
-      assert forall z | c.Index()+nL <= z <q.Index() :: l.Model()[z]==l.Model()[c.Index()+nL];
-      assert forall z | q.Index()<=z<c.Index()+n:: l.Model()[z]>l.Model()[c.Index()+nL];
-      assert GSorted(l.Model(),c.Index(),c.Index()+n);
+    assert l.Model()[c.Index()+nL..q.Index()]==omodel1[c.Index()+nL..q.Index()];
+    assert forall z | c.Index() <= z < c.Index()+nL :: l.Model()[z] < l.Model()[c.Index()+nL];
+    assert forall z | c.Index()+nL <= z < q.Index() :: l.Model()[z] == l.Model()[c.Index()+nL];
+    assert forall z | q.Index() <= z < c.Index()+n:: l.Model()[z] > l.Model()[c.Index()+nL];
+    assert GSorted(l.Model(),c.Index(),c.Index()+n);
   }
 }
 

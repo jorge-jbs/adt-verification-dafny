@@ -1,3 +1,5 @@
+include "../../../src/Utils.dfy"
+
 type pos = n: int | n > 0 witness 1
 
 trait ADT<M> {
@@ -20,4 +22,13 @@ trait ADT<M> {
   function Model(): M
     reads this, Repr()
     requires Valid()
+
+  predicate ValidDistinct(adts: seq<ADT>)
+  reads set r | r in adts :: r
+  reads BigUnion(set r | r in adts :: r.Repr())
+{
+  && (forall r | r in adts :: r.Valid())
+  && (forall r, s | r in adts && s in adts && [r, s] <= adts ::
+        {r} + r.Repr() !! {s} + s.Repr())
+}
 }

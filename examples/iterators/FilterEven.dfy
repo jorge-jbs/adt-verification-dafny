@@ -8,13 +8,13 @@ predicate subSec<A>(xs1:seq<A>,xs2:seq<A>,f:map<int,int>)
   {
    forall i :: (0<=i<|xs1| <==> i in f) &&
    forall i | i in f :: 0<=i<|xs1| && 0<=f[i]<|xs2| && xs2[f[i]]==xs1[i] &&
-   forall i,j | i in f && j in f && i<j :: f[i]<f[j]   
+   forall i,j | i in f && j in f && i < j :: f[i] < f[j]   
   }
 
   predicate isSubSec<A>(xs1:seq<A>,xs2:seq<A>)
   {exists f:map<int,int> :: subSec(xs1,xs2,f)}
 
- lemma {:verify false} multiSeq<A>(xs:seq<A>)
+ lemma multiSeq<A>(xs:seq<A>)
   requires xs!=[]
   ensures  multiset(xs)[xs[|xs|-1]]==multiset(xs[..|xs|-1])[xs[|xs|-1]]+1
   ensures forall x | x in xs && x!=xs[|xs|-1] :: multiset(xs)[x] == multiset(xs[..|xs|-1])[x]
@@ -46,7 +46,7 @@ ensures xs!=[] && !f(xs[|xs|-1]) ==> FilterRMap(xs,f)==FilterRMap(xs[..|xs|-1],f
 
 }
   
-  lemma {:verify false} subSecFilter<A>(xs: seq<A>,f: A -> bool)
+  lemma {:timeLimitMultiplier 100} subSecFilter<A>(xs: seq<A>,f: A -> bool)
   ensures subSec(FilterR(xs,f),xs,FilterRMap(xs,f))
   {
     if xs==[] {}
@@ -73,12 +73,12 @@ ensures xs!=[] && !f(xs[|xs|-1]) ==> FilterRMap(xs,f)==FilterRMap(xs[..|xs|-1],f
     }
   }
 
-lemma {:verify false} PropinMultiFilter<A>(xs: seq<A>, x: A, f: A -> bool)
+lemma PropinMultiFilter<A>(xs: seq<A>, x: A, f: A -> bool)
 ensures x in multiset(FilterR(xs,f)) ==> x in multiset(xs)
 {}
 
 
-lemma {:verify false}  multiFilter<A>(xs: seq<A>,x:A,f: A -> bool)
+lemma multiFilter<A>(xs: seq<A>,x:A,f: A -> bool)
 requires xs!=[] && x in xs && x in FilterR(xs,f)
 ensures multiset(FilterR(xs,f))[x]==multiset(xs)[x]
 {
@@ -133,14 +133,14 @@ ensures multiset(FilterR(xs,f))[x]==multiset(xs)[x]
   
 }
 
-lemma {:verify false} PropInFilter<A>(xs: seq<A>,f: A -> bool)
+lemma PropInFilter<A>(xs: seq<A>,f: A -> bool)
   ensures forall i::0<=i< |xs| && f(xs[i]) ==> xs[i] in  FilterR(xs,f)
   {}
-lemma {:verify false} PropSubSecFilter<A>(xs: seq<A>,f: A -> bool)
+lemma PropSubSecFilter<A>(xs: seq<A>,f: A -> bool)
 ensures isSubSec(FilterR(xs,f),xs)
 {subSecFilter(xs,f);}
 
-lemma {:verify false} PropmultiFilter<A>(xs: seq<A>,f: A -> bool)
+lemma PropmultiFilter<A>(xs: seq<A>,f: A -> bool)
 ensures forall x:: x in multiset(FilterR(xs,f)) ==> multiset(FilterR(xs,f))[x]==multiset(xs)[x]
 {
   forall x | x in multiset(FilterR(xs,f))
@@ -148,7 +148,7 @@ ensures forall x:: x in multiset(FilterR(xs,f)) ==> multiset(FilterR(xs,f))[x]==
   { multiFilter(xs,x,f);}
 }
 
-lemma {:verify false} PropAtiFilter<A>(xs: seq<A>,f: A -> bool,i:int)
+lemma PropAtiFilter<A>(xs: seq<A>,f: A -> bool,i:int)
 requires 0<=i<|xs|
 ensures !f(xs[i]) ==> FilterR(xs[..i+1],f)==FilterR(xs[..i],f)
 ensures f(xs[i]) ==> FilterR(xs[..i+1],f)==FilterR(xs[..i],f)+[xs[i]]
@@ -172,13 +172,13 @@ ensures f(xs[i]) ==> FilterR(xs[..i+1],f)==FilterR(xs[..i],f)+[xs[i]]
 
 }
 
-lemma {:verify false} FilterLength<A>(xs: seq<A>,f: A -> bool,i:int)
+lemma FilterLength<A>(xs: seq<A>,f: A -> bool,i:int)
 requires 0<=i<|xs|
 ensures !f(xs[i]) ==> |FilterR(xs[..i+1],f)|==|FilterR(xs[..i],f)|
 ensures f(xs[i]) ==> |FilterR(xs[..i+1],f)|==|FilterR(xs[..i],f)|+1
 {PropAtiFilter(xs,f,i);}
 
-lemma {:verify false} {:induction i} FilterLength2<A>(xs: seq<A>,f: A -> bool,i:int)
+lemma {:induction i} FilterLength2<A>(xs: seq<A>,f: A -> bool,i:int)
 requires 0<=i<=|xs|
 ensures |FilterR(xs[..i],f)|<=i
 {if (i==0) {assert xs[..i]==[];}
@@ -202,10 +202,13 @@ ensures forall i::0<=i<|xs|==> multiset(xs)[xs[i]]==multiset(oxs)[xs[i]]
   PropInFilter(oxs,f);
   PropmultiFilter(oxs,f);}
 
-method {:verify true} {:timeLimitMultiplier 100} filterEven(l:LinkedList<int>) 
+method {:timeLimitMultiplier 100} filterEven(l:LinkedList<int>) 
   modifies l, l.Repr()
+  requires allocated(l.Repr())
+  ensures fresh(l.Repr()-old(l.Repr()))
+  ensures allocated(l.Repr())
+
   requires l.Valid()
-  requires forall x | x in l.Repr() :: allocated(x)
   ensures l.Valid()
   
   ensures l.Model() == FilterR(old(l.Model()), x => x%2==0 )
@@ -216,19 +219,17 @@ method {:verify true} {:timeLimitMultiplier 100} filterEven(l:LinkedList<int>)
   
   ensures l.Iterators()>=old(l.Iterators())
   ensures forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) 
-         ::iter.Valid() && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)| 
-
-  ensures forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
-  ensures fresh(l.Repr()-old(l.Repr()))
-  ensures forall x | x in l.Repr() :: allocated(x)
-
+         ::iter.Valid() && iter.Parent()==old(iter.Parent()) && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)| 
 {
-   var it := l.Begin();
-      ghost var i:=0; //index on old(Model())
-
+  var it := l.Begin();
+  ghost var i := 0; //index on old(Model())
+  var b := it.HasNext();
   
-  while it.HasNext()
+  while b
     decreases |l.Model()| - it.Index()
+    invariant allocated(l.Repr())
+    invariant fresh(l.Repr()-old(l.Repr()))
+
     invariant l.Valid()
     invariant it in l.Iterators()
     invariant it.Parent() == l
@@ -236,20 +237,15 @@ method {:verify true} {:timeLimitMultiplier 100} filterEven(l:LinkedList<int>)
     invariant 0<=i<=|old(l.Model())| && |l.Model()|-it.Index() == |old(l.Model())| -i
     invariant l.Model()[it.Index()..]==old(l.Model())[i..]
     invariant l.Model()[..it.Index()]==FilterR(old(l.Model())[..i],x => x%2==0)
-
+    invariant b == it.HasNext?()
+    
     invariant l.Iterators()>=old(l.Iterators())
     invariant it !in old(l.Iterators())
     invariant it.Index()==|FilterR(old(l.Model())[..i],x => x%2==0)|<=i
     invariant forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) && old(iter.Index())<i
-         ::iter.Valid() && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<it.Index()
+         ::iter.Valid() &&  iter.Parent()==old(iter.Parent()) && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<it.Index()
     invariant forall iter  | iter in old(l.Iterators()) && old(iter.Valid()) && old(iter.Index())>=i
-        ::iter.Valid() && iter.Index()==old(iter.Index())-(i-|FilterR(old(l.Model())[..i],x => x%2==0)|)
-
-
-    invariant forall x {:trigger x in l.Repr(), x in old(l.Repr())} | x in l.Repr() && x !in old(l.Repr()) :: fresh(x)
-    //forall x | x in l.Repr() - old(l.Repr()) :: fresh(x)
-    invariant forall x | x in l.Repr() :: allocated(x)
- 
+        ::iter.Valid() && iter.Parent()==old(iter.Parent()) && iter.Index()==old(iter.Index())-(i-|FilterR(old(l.Model())[..i],x => x%2==0)|) 
   { 
     ghost var model:=old(l.Model());
     PropAtiFilter(old(l.Model()),x => x%2==0,i);
@@ -257,71 +253,73 @@ method {:verify true} {:timeLimitMultiplier 100} filterEven(l:LinkedList<int>)
     FilterLength2(old(l.Model()),x=>x%2==0,i);
    
     ghost var pmodel:=l.Model();
-    if (it.Peek() % 2!=0) 
+    var itPeek := it.Peek();
+
+    if (itPeek % 2!=0) 
     {  
-        ghost var oit:=it.Index();
-        assert forall iter  | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) && old(iter.Index())<i
-        :: iter.Valid() && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<oit;
+      ghost var oit:=it.Index();
+      assert forall iter  | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) && old(iter.Index())<i
+       :: iter.Valid() && iter.Parent()==old(iter.Parent()) && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<oit;
        
-        assert old(l.Model())[i]%2!=0; assert !validIt(old(l.Model()),i,x => x%2==0);
-        FilterLength2(old(l.Model()),x=>x%2==0,i);
-        assert |FilterR(old(l.Model())[..i+1],x => x%2==0)|==|FilterR(old(l.Model())[..i],x => x%2==0)|;
+      assert old(l.Model())[i]%2!=0; assert !validIt(old(l.Model()),i,x => x%2==0);
+      FilterLength2(old(l.Model()),x=>x%2==0,i);
+      assert |FilterR(old(l.Model())[..i+1],x => x%2==0)|==|FilterR(old(l.Model())[..i],x => x%2==0)|;
 
       it := l.Erase(it); i:=i+1;
 
-        assert it.Index()==oit;
-        assert l.Model()==pmodel[..oit]+pmodel[oit+1..];
-        assert l.Model()[..it.Index()]==FilterR(old(l.Model())[..i],x => x%2==0);   
-        assert it !in old(l.Iterators());
+      assert it.Index()==oit;
+      assert l.Model()==pmodel[..oit]+pmodel[oit+1..];
+      assert l.Model()[..it.Index()]==FilterR(old(l.Model())[..i],x => x%2==0);   
+      assert it !in old(l.Iterators());
           
-        assert forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) && old(iter.Index())<i
-          :: iter.Valid() && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<it.Index();
+      assert forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) && old(iter.Index())<i
+          :: iter.Valid() && iter.Parent()==old(iter.Parent()) && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<it.Index();
 
-        assert forall iter  | iter in old(l.Iterators()) && old(iter.Valid()) && old(iter.Index())>=i
-          ::iter.Valid() && iter.Index()==old(iter.Index())-(i-|FilterR(old(l.Model())[..i],x => x%2==0)|);
+      assert forall iter  | iter in old(l.Iterators()) && old(iter.Valid()) && old(iter.Index())>=i
+          ::iter.Valid() && iter.Parent()==old(iter.Parent()) && iter.Index()==old(iter.Index())-(i-|FilterR(old(l.Model())[..i],x => x%2==0)|);
 
     }
     else 
     {   
-        assert validIt(old(l.Model()),i,x => x%2==0);
-        ghost var oit:=it.Index();
+      assert validIt(old(l.Model()),i,x => x%2==0);
+      ghost var oit:=it.Index();
        
-        assert forall iter  | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) && old(iter.Index())<i
-          :: iter.Valid() && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<oit;
-        assert forall iter | iter  in old(l.Iterators()) && old(iter.Valid()) && old(iter.Index())==i
+      assert forall iter  | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) && old(iter.Index())<i
+          :: iter.Valid() && iter.Parent()==old(iter.Parent()) && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<oit;
+      assert forall iter | iter  in old(l.Iterators()) && old(iter.Valid()) && old(iter.Index())==i
           ::iter.Index()==|FilterR(old(l.Model())[..i],x => x%2==0)|<=i;
-        assert forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) && old(iter.Index())<i+1
-          :: iter.Valid() && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<oit+1;
+      assert forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) && old(iter.Index())<i+1
+          :: iter.Valid() && iter.Parent()==old(iter.Parent()) && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<oit+1;
       
      
-      var x := it.Next(); i:=i+1;
+      var _ := it.Next(); i:=i+1;
       
-        assert it.Index()==oit+1;
+      assert it.Index()==oit+1;
 
-        assert forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) && old(iter.Index())<i
-          ::iter.Valid() && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<it.Index();
-        assert forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && old(iter.Index())>=i
-          ::iter.Valid() && iter.Index()==old(iter.Index())-(i-|FilterR(old(l.Model())[..i],x => x%2==0)|);
+      assert forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) && old(iter.Index())<i
+          ::iter.Valid() && iter.Parent()==old(iter.Parent()) && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<it.Index();
+      assert forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && old(iter.Index())>=i
+          ::iter.Valid() && iter.Parent()==old(iter.Parent()) && iter.Index()==old(iter.Index())-(i-|FilterR(old(l.Model())[..i],x => x%2==0)|);
       
     }   
-
+    b := it.HasNext();
   
   }
-    assert forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) && old(iter.Index())<i
-      ::iter.Valid() && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<it.Index();
+  assert forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) && old(iter.Index())<i
+      ::iter.Valid() && iter.Parent()==old(iter.Parent()) && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|<it.Index();
  
   
-    assert it.Index()==|l.Model()| && i==|old(l.Model())|;
-    assert l.Model()==l.Model()[..|l.Model()|];
-    assert old(l.Model())==old(l.Model())[..|old(l.Model())|];
-    assert l.Model()==FilterR(old(l.Model()),x=>x%2==0);
+  assert it.Index()==|l.Model()| && i==|old(l.Model())|;
+  assert l.Model()==l.Model()[..|l.Model()|];
+  assert old(l.Model())==old(l.Model())[..|old(l.Model())|];
+  assert l.Model()==FilterR(old(l.Model()),x=>x%2==0);
 
-    assert it.Index()==|FilterR(old(l.Model())[..|old(l.Model())|],x => x%2==0)|==|FilterR(old(l.Model()),x => x%2==0)|;
+  assert it.Index()==|FilterR(old(l.Model())[..|old(l.Model())|],x => x%2==0)|==|FilterR(old(l.Model()),x => x%2==0)|;
 
-    //allProps(old(l.Model()),l.Model(),x=>x%2==0);
+  //allProps(old(l.Model()),l.Model(),x=>x%2==0);
 
-    assert validIt(old(l.Model()),|old(l.Model())|,x=>x%2==0);
-    assert forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) 
-         ::iter.Valid() && iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|;
+  assert validIt(old(l.Model()),|old(l.Model())|,x=>x%2==0);
+  assert forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && validIt(old(l.Model()),old(iter.Index()),x => x%2==0) 
+         ::iter.Valid() && iter.Parent()==old(iter.Parent()) &&iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|;
 
 }

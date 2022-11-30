@@ -58,16 +58,19 @@ lemma TransitiveSeqSeq(v: seq<int>, idcs: seq<nat>)
 
 method RemoveLess(st: Stack<int>, v: array<nat>, i: nat) returns (ghost n: nat)
   modifies st, st.Repr()
+  requires allocated(st.Repr())
+  ensures fresh(st.Repr()-old(st.Repr()))
+  ensures allocated(st.Repr())
+
   requires st.Valid()
   requires {v} !! {st} + st.Repr()
-  requires forall x | x in st.Repr() :: allocated(x)
 
   requires i < v.Length
-  requires forall j | 0 <= j < |st.Model()| :: 0 <= st.Model()[j] < i
+  requires forall j | 0 <= j < |st.Model()| :: 0 <= st.Model()[j] < i 
   requires forall j | 0 <= j < |st.Model()|-1 :: st.Model()[j+1] < st.Model()[j]
   requires forall j | 0 <= j < |st.Model()|-1 :: AdjacentSummits(v[..], st.Model()[j+1], st.Model()[j])
   requires forall j | 0 <= j < |st.Model()|-1 :: v[st.Model()[j+1]] > v[st.Model()[j]]
-  requires !st.Empty() ==> st.Top() == i-1
+  requires !st.Empty?() ==> st.Model()[0] == i-1
 
   ensures {v} !! {st} + st.Repr()
   ensures st.Valid()
@@ -76,42 +79,57 @@ method RemoveLess(st: Stack<int>, v: array<nat>, i: nat) returns (ghost n: nat)
   ensures forall j | j in old(st.Model()[..n]) :: v[j] <= v[i]
   ensures forall j | j in old(st.Model()[n..]) :: v[j] > v[i]
   ensures st.Model() == old(st.Model()[n..])
-  ensures !st.Empty() ==> forall j | st.Top() < j < i :: v[j] <= v[i]
-
-  requires forall x | x in st.Repr() :: allocated(x)
-  ensures forall x {:trigger x in st.Repr(), x in old(st.Repr())} | x in st.Repr() && x !in old(st.Repr()) :: fresh(x)
-  ensures fresh(st.Repr()-old(st.Repr()))
-  ensures forall x | x in st.Repr() :: allocated(x)
+  ensures !st.Empty?() ==> forall j | st.Model()[0] < j < i :: v[j] <= v[i]
 {
   n := 0;
-  while !st.Empty() && v[st.Top()] <= v[i]
+  var top;
+  var b := st.Empty();
+  b := !b;
+  if b 
+  { top := st.Top();
+    b := v[top] <= v[i];
+  }
+
+  while b
     decreases old(|st.Model()|) - n
+    invariant fresh(st.Repr()-old(st.Repr()))
+    invariant allocated(st.Repr())
+    
     invariant st.Valid()
     invariant {v} !! {st} + st.Repr()
 
-    invariant n <= old(|st.Model()|)
+    invariant 0 <= n <= old(|st.Model()|)
     invariant st.Model() == old(st.Model()[n..])
-    invariant forall j | 0 <= j < |st.Model()| :: 0 <= st.Model()[j] < i;
+    invariant !st.Empty?() ==> top == st.Model()[0] == old(st.Model()[n])< v.Length
+    invariant forall j | 0 <= j < |st.Model()| :: 0 <= st.Model()[j] < i < v.Length
     invariant forall j | j in old(st.Model()[..n]) :: v[j] <= v[i]
     invariant forall j | 0 <= j < |st.Model()|-1 :: AdjacentSummits(v[..], st.Model()[j+1], st.Model()[j])
     invariant forall j | 0 <= j < |st.Model()|-1 :: st.Model()[j+1] < st.Model()[j]
     invariant forall j | 0 <= j < |st.Model()|-1 :: v[st.Model()[j+1]] > v[st.Model()[j]]
-    invariant !st.Empty() ==> forall j | st.Top() < j < i :: v[j] < v[st.Top()] && v[j] <= v[i]
-
-    invariant forall x {:trigger x in st.Repr(), x in old(st.Repr())} | x in st.Repr() && x !in old(st.Repr()) :: fresh(x)
-    invariant fresh(st.Repr()-old(st.Repr()))
-    invariant forall x | x in st.Repr() :: allocated(x)
+    invariant !st.Empty?() ==> forall j | st.Model()[0] < j < i :: v[j] < v[st.Model()[0]] && v[j] <= v[i]
+    invariant b == (!st.Empty?() && v[st.Model()[0]] <= v[i])
   {
-    var T := st.Pop();
+    var _ := st.Pop();
     n := n + 1;
+    
+    b := st.Empty();
+    b := !b;
+    if b 
+    { assert st.Model()[0] == old(st.Model()[n])< v.Length;
+      top := st.Top();
+      b := v[top] <= v[i];
+    }    
   }
   TransitiveSeqSeq(v[..], st.Model());
 }
 
 method FindSummits(v: array<nat>, st: Stack<int>) returns (r: array<int>)
   modifies st, st.Repr()
+  requires allocated(st.Repr())
+  ensures fresh(st.Repr()-old(st.Repr()))
+  ensures allocated(st.Repr())
 
-  requires st.Valid() && st.Empty()
+  requires st.Valid() && st.Empty?()
 
   ensures v.Length == r.Length
   ensures forall i | 0 <= i < r.Length :: -1 <= r[i] < i
@@ -121,11 +139,6 @@ method FindSummits(v: array<nat>, st: Stack<int>) returns (r: array<int>)
   requires {v} !! {st} + st.Repr()
   ensures {v} !! {st} + st.Repr()
   ensures {r} !! {st} + st.Repr()
-
-  requires forall x | x in st.Repr() :: allocated(x)
-  ensures forall x {:trigger x in st.Repr(), x in old(st.Repr())} | x in st.Repr() && x !in old(st.Repr()) :: fresh(x)
-  ensures fresh(st.Repr()-old(st.Repr()))
-  ensures forall x | x in st.Repr() :: allocated(x)
 {
   r := new int[v.Length];
   var i := 0;
@@ -137,11 +150,15 @@ method FindSummits(v: array<nat>, st: Stack<int>) returns (r: array<int>)
     return;
   }
   while i < v.Length
+    invariant fresh(st.Repr()-old(st.Repr()))
+    invariant allocated(st.Repr())
+    invariant fresh(st.Repr()-old(st.Repr()))
+
     invariant 0 <= i <= v.Length
     invariant st.Valid()
 
-    invariant !st.Empty()
-    invariant st.Top() == i-1
+    invariant !st.Empty?()
+    invariant st.Model()[0] == i-1
     invariant forall j | 0 <= j < |st.Model()| :: 0 <= st.Model()[j] < i
     invariant forall j | 0 <= j < |st.Model()|-1 :: st.Model()[j+1] < st.Model()[j]
     invariant forall j | 0 <= j < |st.Model()|-1 :: AdjacentSummits(v[..], st.Model()[j+1], st.Model()[j])
@@ -153,26 +170,26 @@ method FindSummits(v: array<nat>, st: Stack<int>) returns (r: array<int>)
 
     invariant {v} !! {st} + st.Repr()
     invariant {r} !! {st} + st.Repr()
-
-    invariant forall x {:trigger x in st.Repr(), x in old(st.Repr())} | x in st.Repr() && x !in old(st.Repr()) :: fresh(x)
-    invariant fresh(st.Repr()-old(st.Repr()))
-    invariant forall x | x in st.Repr() :: allocated(x)
   {
     ghost var max := v[st.Model()[|st.Model()|-1]];
     ghost var k := RemoveLess(st, v, i);
     assert forall x | x in v[..i] :: max >= x;
-    if st.Empty() {
+    var b := st.Empty();
+    
+    if b {
       r[i] := -1;
+      assert st.Empty?();//Curioso que hace falta
+    
       assert v[i] >= max;
       assert forall x | x in v[..i] :: v[i] >= x;
       assert forall j | 0 <= j < i :: v[j] in v[..i] && v[i] >= v[j];
       assert forall j | 0 <= j < i :: !AdjacentSummits(v[..], j, i);
     } else {
       r[i] := st.Top();
-      assert st.Top() < i;
-      assert v[st.Top()] > v[i];
-      assert forall j | st.Top() < j < i :: v[i] >= v[j];
-      assert AdjacentSummits(v[..], st.Top(), i);
+      assert st.Model()[0] < i;
+      assert v[st.Model()[0]] > v[i];
+      assert forall j | st.Model()[0] < j < i :: v[i] >= v[j];
+      assert AdjacentSummits(v[..], st.Model()[0], i);
     }
     st.Push(i);
     i := i + 1;
