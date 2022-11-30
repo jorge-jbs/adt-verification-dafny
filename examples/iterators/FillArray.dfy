@@ -2,20 +2,19 @@ include "../../src/linear/layer1/List.dfy"
 //include "../../src/linear/layer2/LinkedList.dfy"
 //include "../../src/linear/layer2/ArrayList.dfy"
 
+
 method FillArray<A>(l: List<A>, v: array<A>)
   modifies l,l.Repr(), v
   requires allocated(l.Repr())
   ensures fresh(l.Repr()-old(l.Repr()))
   ensures allocated(l.Repr())
 
-  requires l.Valid()
-  requires {v} !! {l}+l.Repr()
+  requires ValidDistinct([l],[v])
   requires v.Length == |l.Model()|
 
-  ensures l.Valid()
+  ensures ValidDistinct([l],[v])
   ensures l.Model() == old(l.Model())
   ensures v[..] == l.Model()
-  ensures {v} !! {l} + l.Repr()
 
   ensures l.Iterators() >= old(l.Iterators())
 
@@ -33,10 +32,8 @@ method FillArray<A>(l: List<A>, v: array<A>)
     invariant l.Model() == old(l.Model())
     invariant it.Parent() == l
     invariant it.Valid()
-    //invariant {it} !! {l}
-    invariant {v} !! {l}
-    invariant {v} !! l.Repr()
-    //invariant {v} !! {it}
+    invariant  ValidDistinct([l],[v])
+    invariant {v} !! {it}
     invariant it.Index() == i
     invariant i <= |l.Model()|
     invariant v[..i] == l.Model()[..i]
