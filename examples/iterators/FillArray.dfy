@@ -128,10 +128,10 @@ method FillArrayLL<A>(l: LinkedList<A>, v: array<A>)
     invariant allocated(l.Repr())
 
     invariant l.Valid()
+    invariant {v} !! {l} + l.Repr()
     invariant l.Model() == old(l.Model())
     invariant it.Parent() == l
     invariant it.Valid()
-    invariant {v} !! {l} + l.Repr()
     invariant it.Index() == i
     invariant i <= |l.Model()|
     invariant v[..i] == l.Model()[..i]
@@ -179,10 +179,10 @@ method FillArrayAL<A>(l: ArrayList<A>, v: array<A>)
     invariant allocated(l.Repr())
 
     invariant l.Valid()
+    invariant {v} !! {l} + l.Repr()
     invariant l.Model() == old(l.Model())
     invariant it.Parent() == l
     invariant it.Valid()
-    invariant {v} !! {l} + l.Repr()
     invariant it.Index() == i
     invariant i <= |l.Model()|
     invariant v[..i] == l.Model()[..i]
