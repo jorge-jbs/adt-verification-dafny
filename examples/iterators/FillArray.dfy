@@ -101,7 +101,7 @@ method FillArrayBack<A>(l: List<A>, v: array<A>)
     i := i - 1;
   }
 }
-/*method FillArrayLL<A>(l: LinkedList<A>, v: array<A>)
+method FillArrayLL<A>(l: LinkedList<A>, v: array<A>)
   modifies l, l.Repr(), v
   requires allocated(l.Repr())
   ensures fresh(l.Repr()-old(l.Repr()))
@@ -147,8 +147,9 @@ method FillArrayBack<A>(l: List<A>, v: array<A>)
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
   {
 
-    var x := it.Next();
+    var x := it.Peek();
     v[i] := x;
+    it.Next();
     b := it.HasNext();
     i := i + 1;
   }
@@ -199,10 +200,10 @@ method FillArrayAL<A>(l: ArrayList<A>, v: array<A>)
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
   {
-    var x := it.Next();
+    var x := it.Peek();
     v[i] := x;
+    it.Next();
     b := it.HasNext();
     i := i + 1;
   }
 }
-*/
