@@ -1,6 +1,6 @@
 include "../../src/linear/layer1/List.dfy"
-include "../../src/linear/layer2/LinkedList.dfy"
-include "../../src/linear/layer2/ArrayList.dfy"
+//include "../../src/linear/layer2/LinkedList.dfy"
+//include "../../src/linear/layer2/ArrayList.dfy"
 
 method FillArray<A>(l: List<A>, v: array<A>)
   modifies l,l.Repr(), v
@@ -21,7 +21,7 @@ method FillArray<A>(l: List<A>, v: array<A>)
 
 {
   var it := l.Begin();
-  var b := it.HasNext();
+  var b := it.HasPeek();
 
   var i := 0;
   while b
@@ -40,13 +40,13 @@ method FillArray<A>(l: List<A>, v: array<A>)
     invariant it.Index() == i
     invariant i <= |l.Model()|
     invariant v[..i] == l.Model()[..i]
-    invariant b == it.HasNext?()
+    invariant b == it.HasPeek?()
 
     invariant l.Iterators() >= old(l.Iterators())
   {
     v[i] := it.Peek();
     it.Next();
-    b := it.HasNext();
+    b := it.HasPeek();
     i := i + 1;
   }
 }
@@ -72,7 +72,7 @@ method FillArrayBack<A>(l: List<A>, v: array<A>)
 {
   var it := l.End();
   assert it.Index()==|l.Model()|-1;
-  var b := it.HasPrev();
+  var b := it.HasPeek();
 
   var i := l.Size();
   i:= i - 1;
@@ -91,17 +91,17 @@ method FillArrayBack<A>(l: List<A>, v: array<A>)
     invariant it.Index() == i
     invariant -1 <= i < |l.Model()|
     invariant v[i+1..] == l.Model()[i+1..]
-    invariant b == it.HasPrev?()
+    invariant b == it.HasPeek?()
 
     invariant l.Iterators() >= old(l.Iterators())
   {
     v[i] := it.Peek();
     it.Prev();
-    b := it.HasPrev();
+    b := it.HasPeek();
     i := i - 1;
   }
 }
-method FillArrayLL<A>(l: LinkedList<A>, v: array<A>)
+/*method FillArrayLL<A>(l: LinkedList<A>, v: array<A>)
   modifies l, l.Repr(), v
   requires allocated(l.Repr())
   ensures fresh(l.Repr()-old(l.Repr()))
@@ -206,4 +206,4 @@ method FillArrayAL<A>(l: ArrayList<A>, v: array<A>)
     b := it.HasNext();
     i := i + 1;
   }
-}
+}*/

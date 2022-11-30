@@ -15,13 +15,13 @@ trait ListIterator<A> {
     requires Parent().Valid()
     ensures -1 <= Index() <= |Parent().Model()|
 
-  predicate HasNext?() 
+  predicate HasPeek?() 
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
-  {  Index() < |Parent().Model()| }
+  {  0 <= Index() < |Parent().Model()| }
 
-  method HasNext() returns (b:bool) 
+  method HasPeek() returns (b:bool) 
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
@@ -35,38 +35,13 @@ trait ListIterator<A> {
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model()) 
     ensures Index()==old(Index())
-    ensures b == HasNext?()
+    ensures b == HasPeek?()
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
-  predicate HasPrev?() 
-    reads this, Parent(), Parent().Repr()
-    requires Valid()
-    requires Parent().Valid()
-  {  0 <= Index() }
-
-  method HasPrev() returns (b:bool) 
-    modifies this, Parent(), Parent().Repr()
-    requires allocated(Parent())
-    requires allocated(Parent().Repr())
-    ensures fresh(Parent().Repr()-old(Parent().Repr()))
-    ensures allocated(Parent().Repr())
-
-    requires Valid()
-    requires Parent().Valid()
-    ensures Valid()
-    ensures Parent().Valid()
-    ensures Parent() == old(Parent())
-    ensures Parent().Model() == old(Parent().Model()) 
-    ensures Index()==old(Index())
-    ensures b == HasPrev?()
-
-    ensures Parent().Iterators() >= old(Parent().Iterators())
-    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
-
+  
   method Next() 
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
@@ -76,7 +51,7 @@ trait ListIterator<A> {
 
     requires Valid()
     requires Parent().Valid()
-    requires HasNext?()
+    requires HasPeek?()
     ensures Valid()
     ensures Parent().Valid()
     ensures Parent() == old(Parent())  
@@ -96,7 +71,7 @@ trait ListIterator<A> {
 
     requires Valid()
     requires Parent().Valid()
-    requires HasPrev?()
+    requires HasPeek?()
     ensures Valid()
     ensures Parent().Valid()
     ensures Parent() == old(Parent())  
@@ -116,7 +91,7 @@ trait ListIterator<A> {
 
     requires Valid()
     requires Parent().Valid()
-    requires HasNext?() && HasPrev?()
+    requires HasPeek?() 
     ensures Valid()
     ensures Parent().Valid()
     ensures Parent() == old(Parent())  
@@ -160,7 +135,7 @@ trait ListIterator<A> {
 
     requires Valid()
     requires Parent().Valid()
-    requires HasNext?() && HasPrev?()
+    requires HasPeek?()
     ensures Valid()
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
@@ -337,7 +312,7 @@ trait List<A> extends ADT<seq<A>> {
     requires mid.Valid()
     requires mid.Parent() == this
     requires mid in Iterators()
-    requires mid.HasPrev?()
+    requires mid.HasPeek?()
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
 
@@ -356,7 +331,7 @@ trait List<A> extends ADT<seq<A>> {
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
-    requires mid.HasNext?() && mid.HasPrev?()
+    requires mid.HasPeek?() 
     requires mid in Iterators()
     ensures Valid()
     ensures Model() == Seq.Remove(old(Model()), old(mid.Index()))
