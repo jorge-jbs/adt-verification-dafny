@@ -28,7 +28,7 @@ trait ArrayList<A> extends List<A> {
     ensures [x] + Model() == old(Model())
 
     ensures Iterators() >= old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext?())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
       :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
 
   method PushBack(x: A)
@@ -57,7 +57,7 @@ trait ArrayList<A> extends List<A> {
     ensures Model() + [x] == old(Model())
 
     ensures Iterators() >= old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext?())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
       :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
  
   // Insertion of x before mid, newt points to x
@@ -71,7 +71,7 @@ trait ArrayList<A> extends List<A> {
     requires mid.Valid()
     requires mid.Parent() == this
     requires mid in Iterators()
-    requires mid.HasPrev?()
+    requires mid.HasPeek?()
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
 
@@ -92,7 +92,7 @@ trait ArrayList<A> extends List<A> {
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
-    requires mid.HasNext?() && mid.HasPrev?()
+    requires mid.HasPeek?()
     requires mid in Iterators()
     ensures Valid()
     ensures Model() == Seq.Remove(old(Model()), old(mid.Index()))
@@ -100,7 +100,7 @@ trait ArrayList<A> extends List<A> {
     ensures fresh(next)
     ensures Iterators() >= {next}+old(Iterators())
     ensures next.Valid() && next.Parent()==this && next.Index()==old(mid.Index())
-     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext?())
+     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
       :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
 }
 

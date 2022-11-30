@@ -82,7 +82,7 @@ trait LinkedList<A> extends List<A> {
     requires mid.Valid()
     requires mid.Parent() == this
     requires mid in Iterators()
-    requires mid.HasPrev?()
+    requires mid.HasPeek?()
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
 
@@ -108,7 +108,7 @@ trait LinkedList<A> extends List<A> {
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
-    requires mid.HasNext?() && mid.HasPrev?()
+    requires mid.HasPeek?() 
     requires mid in Iterators()
     ensures Valid()
     ensures Model() == Seq.Remove(old(Model()), old(mid.Index()))
