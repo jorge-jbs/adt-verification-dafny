@@ -28,7 +28,7 @@ trait Stack<A> extends ADT<seq<A>> {
     ensures Model() == old(Model())
     ensures s == |Model()| 
 
-  method Top()returns (x: A)
+  method Top() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
