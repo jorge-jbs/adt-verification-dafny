@@ -88,13 +88,34 @@ class ArrayDequeImpl<A> extends Deque<A> {
     }
   }
 
-  function method Empty(): bool
-    reads this, Repr()
+  method Empty() returns (b: bool)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
-    ensures Empty() <==> Model() == []
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures b == Empty?() 
   {
-    nelems == 0
+    b := nelems == 0;
   }
+
+  method Size() returns (s: nat)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
+    requires Valid()
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures s == |Model()| 
+  {
+    s := nelems;
+  }
+
 
   // Auxiliary method to duplicate space
   method Grow(x: A)
@@ -132,24 +153,31 @@ class ArrayDequeImpl<A> extends Deque<A> {
     c := 0;
   }
 
-  function method Back(): A
-    reads this, Repr()
+  method Back() returns (x: A)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
-    requires Model() != []
+    requires !Empty?()
     ensures Valid()
-    ensures Back() == Model()[|Model()| - 1]
+    ensures Model() == old(Model())
+    ensures x == Model()[|Model()| - 1]
   {
     assert list[(c + nelems - 1) % list.Length] == Model()[|Model()| - 1];
-    list[(c + nelems - 1) % list.Length]
+    x := list[(c + nelems - 1) % list.Length];
   }
 
   method PushBack(x: A)
-    modifies Repr()
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + [x]
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
-    ensures forall x | x in Repr() :: allocated(x)
   {
     ghost var oldList := ModelAux(list,c,nelems);
     if nelems == list.Length {
@@ -176,38 +204,45 @@ class ArrayDequeImpl<A> extends Deque<A> {
   {}
 
   method PopBack() returns (x: A)
-    modifies Repr()
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
-    requires Model() != []
+    requires !Empty?()
     ensures Valid()
     ensures Model() + [x] == old(Model())
-
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
-    ensures forall x | x in Repr() :: allocated(x)
   {
     x := list[(c + nelems - 1) % list.Length];
     nelems := nelems - 1;
     //assert c+nelems==0 ==> (c+nelems-1)%list.Length==list.Length-1;
   }
 
-  function method Front(): A
-    reads this, Repr()
+  method Front() returns (x: A)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
-    requires Model() != []
+    requires !Empty?()
     ensures Valid()
-    ensures Front() == Model()[0]
+    ensures Model() == old(Model())
+    ensures x == Model()[0]
   {
-    list[c]
+    x := list[c];
   }
 
   method PushFront(x: A)
-    modifies Repr()
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
-
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
-    ensures forall x | x in Repr() :: allocated(x)
   {
     ghost var oldList := ModelAux(list,c,nelems);
     if nelems == list.Length {
@@ -226,13 +261,15 @@ class ArrayDequeImpl<A> extends Deque<A> {
   }
 
   method PopFront() returns (x: A)
-    modifies Repr()
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+    
     requires Valid()
     requires Model() != []
     ensures Valid()
     ensures [x] + Model() == old(Model())
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
-    ensures forall x | x in Repr() :: allocated(x)
   {
     x := list[c];
     c := (c+1) % list.Length;

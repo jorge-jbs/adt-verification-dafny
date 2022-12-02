@@ -3,7 +3,7 @@ include "../../../src/Utils.dfy"
 
 class ArrayListIteratorImpl<A> extends ListIterator<A> {
   var parent: ArrayListImpl<A>
-  var index: nat
+  var index: int
 
   function Parent(): List<A>
     reads this
@@ -15,37 +15,40 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
   {
     Parent().Valid()
     && this in Parent().Iterators()
-    && 0 <= index <= parent.size
+    && -1 <= index <= parent.size
   }
 
-  function Index() : nat
+  function Index(): int
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
-    ensures Index() <= |Parent().Model()|
+    ensures -1 <= Index() <= |Parent().Model()|
   { index }
 
-  constructor(parent: ArrayListImpl<A>)
+  constructor(parent: ArrayListImpl<A>, index: int)
     modifies parent
     requires parent.Valid()
+    requires -1 <= index <= |parent.Model()|
     ensures Valid()
     ensures Parent() == parent
-    ensures Index() == 0
+    ensures Index() == index
     ensures parent.iterators == old(parent.iterators) + { this }
     ensures parent.Model() == old(parent.Model())
     ensures fresh(parent.Repr() - old(parent.Repr()))
   {
     this.parent := parent;
-    this.index := 0;
+    this.index := index;
     new;
     this.parent.iterators := this.parent.iterators + { this };
   }
 
-  method HasNext() returns (b: bool) 
+  method HasPeek() returns (b: bool) 
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
-    
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
+    ensures allocated(Parent().Repr())
+
     requires Valid()
     requires Parent().Valid()
     ensures Valid()
@@ -53,36 +56,33 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model()) 
     ensures Index() == old(Index())
-    ensures b == HasNext?()
-
-    ensures fresh(Parent().Repr() - old(Parent().Repr()))
-    ensures allocated(Parent().Repr())
+    ensures b == HasPeek?()
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
-    b := index < parent.size;
+    b := 0 <= index < parent.size;
   }
+
 
   method Peek() returns (p: A)
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
-    
-    requires Valid()
-    requires Parent().Valid()
-    requires HasNext?()
-    ensures Valid()
-    ensures Parent().Valid()
-    ensures Parent() == old(Parent())  
-    ensures Parent().Model() == old(Parent().Model())  
-    ensures Index() == old(Index())
-    ensures p == Parent().Model()[Index()] 
-    
     ensures fresh(Parent().Repr() - old(Parent().Repr()))
     ensures allocated(Parent().Repr())
 
+    requires Valid()
+    requires Parent().Valid()
+    requires HasPeek?() 
+    ensures Valid()
+    ensures Parent().Valid()
+    ensures Parent() == old(Parent())
+    ensures Parent().Model() == old(Parent().Model())
+    ensures Index() == old(Index())
+    ensures p == Parent().Model()[Index()] 
+    
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
@@ -90,38 +90,59 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
     p := parent.elements[index];
   }
 
-  method Next() returns (x: A)
+  method Next() 
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
-    
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
+    ensures allocated(Parent().Repr())
+
     requires Valid()
     requires Parent().Valid()
-    requires HasNext?()
+    requires HasPeek?()
+    ensures Valid()
+    ensures Parent().Valid()
+    ensures Parent() == old(Parent())
+    ensures Parent().Model() == old(Parent().Model())
+
+    ensures Parent().Iterators() >= old(Parent().Iterators())
+    ensures Index() == 1 + old(Index())
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && (it != this ==> it.Index() == old(it.Index()))
+    {
+      index := index + 1;
+    }
+
+  method Prev() 
+    modifies this, Parent(), Parent().Repr()
+    requires allocated(Parent())
+    requires allocated(Parent().Repr())
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
+    ensures allocated(Parent().Repr())
+
+    requires Valid()
+    requires Parent().Valid()
+    requires HasPeek?()
     ensures Valid()
     ensures Parent().Valid()
     ensures Parent() == old(Parent())  
     ensures Parent().Model() == old(Parent().Model())  
 
-    ensures fresh(Parent().Repr() - old(Parent().Repr()))
-    ensures allocated(Parent().Repr())
-
     ensures Parent().Iterators() >= old(Parent().Iterators())
-    ensures x == Parent().Model()[old(Index())]
-    ensures Index() == 1 + old(Index())
+    ensures Index() + 1 == old(Index())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent() == old(it.Parent()) && (it != this ==> it.Index() == old(it.Index()))
-    {
-      var elem := parent.elements[index];
-      index := index + 1;
-      return elem;
-    }
+  {
+    index := index - 1;
+  }
 
   method Copy() returns (it: ListIterator<A>)
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
-    
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
+    ensures allocated(Parent().Repr())
+
     requires Valid()
     requires Parent().Valid()
     ensures fresh(it)
@@ -130,9 +151,6 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
     ensures Index() == old(Index())
-
-    ensures fresh(Parent().Repr() - old(Parent().Repr()))
-    ensures allocated(Parent().Repr())
     
     ensures it.Valid()
     ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
@@ -141,8 +159,7 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
     {
-      var itImpl := new ArrayListIteratorImpl(parent);      
-      itImpl.index := index;
+      var itImpl := new ArrayListIteratorImpl(parent, index);      
       it := itImpl; 
       parent.iterators := parent.iterators + { itImpl };
     }
@@ -151,19 +168,18 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
-   
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
+    ensures allocated(Parent().Repr())
+
     requires Valid()
     requires Parent().Valid()
-    requires HasNext?()
+    requires HasPeek?()
     ensures Valid()
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
     ensures |Parent().Model()| == old(|Parent().Model()|)
     ensures Index() == old(Index()) 
     ensures Parent().Model() == old(Parent().Model()[Index():=x])
-    
-    ensures fresh(Parent().Repr() - old(Parent().Repr()))
-    ensures allocated(Parent().Repr())
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
@@ -234,15 +250,14 @@ class ArrayListImpl<A> extends ArrayList<A> {
   method Empty() returns (b: bool)
     modifies this, Repr()
     requires allocated(Repr())
-    
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
-    ensures b == Empty?() 
+    ensures b == Empty?()
 
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
- 
     ensures Iterators() >= old(Iterators())
   {
     b := size == 0;
@@ -251,16 +266,17 @@ class ArrayListImpl<A> extends ArrayList<A> {
   method Size() returns (s: nat)
     modifies this, Repr()
     requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
     
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
-    ensures s == |Model()| 
-
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
+    ensures s == |Model()|
 
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     s := size;
   }
@@ -286,13 +302,12 @@ class ArrayListImpl<A> extends ArrayList<A> {
   method PushFront(x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
-
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
@@ -310,17 +325,16 @@ class ArrayListImpl<A> extends ArrayList<A> {
   method PopFront() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
-   
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     requires !Empty?()
     ensures Valid()
     ensures [x] + Model() == old(Model())
 
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
-
     ensures Iterators() >= old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext?())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
       :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     x := elements[0];
@@ -349,17 +363,16 @@ class ArrayListImpl<A> extends ArrayList<A> {
   method PopBack() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     requires !Empty?()
     ensures Valid()
     ensures Model() + [x] == old(Model())
 
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
-
     ensures Iterators() >= old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext?())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
       :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     assert size > 0;
@@ -370,13 +383,12 @@ class ArrayListImpl<A> extends ArrayList<A> {
   method PushBack(x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + [x]
-
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid())
@@ -390,16 +402,15 @@ class ArrayListImpl<A> extends ArrayList<A> {
     size := size + 1;
   }
 
-  method Begin() returns (it: ListIterator<A>)
+  method First() returns (it: ListIterator<A>)
     modifies this, Repr()
     requires allocated(Repr())
-    
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
-
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
 
     ensures fresh(it)
     ensures Iterators() >= {it} + old(Iterators())
@@ -409,7 +420,29 @@ class ArrayListImpl<A> extends ArrayList<A> {
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
-    it := new ArrayListIteratorImpl(this);
+    it := new ArrayListIteratorImpl(this, 0);
+    iterators := iterators + { it };
+  }
+
+  method Last() returns (it: ListIterator<A>)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+ 
+    requires Valid()
+    ensures Valid()
+    ensures Model() == old(Model())
+
+    ensures fresh(it)
+    ensures Iterators() >= {it} + old(Iterators())
+    ensures it.Valid()
+    ensures it.Index() == |old(Model())| - 1 == |Model()| - 1 //no es capaz de deducirlo si no lo ponemos
+    ensures it.Parent() == this
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+  {
+    it := new ArrayListIteratorImpl(this, size - 1);
     iterators := iterators + { it };
   }
 
@@ -417,16 +450,16 @@ class ArrayListImpl<A> extends ArrayList<A> {
   method Insert(mid: ListIterator<A>, x: A) returns (newt: ListIterator<A>)
     modifies this, Repr()
     requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
 
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
     requires mid in Iterators()
+    requires mid.HasPeek?()
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
-
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
 
     ensures fresh(newt)
     ensures Iterators() >= {newt} + old(Iterators())
@@ -459,22 +492,21 @@ class ArrayListImpl<A> extends ArrayList<A> {
   method Erase(mid: ListIterator<A>) returns (next: ListIterator<A>)
     modifies this, Repr()
     requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
 
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
-    requires mid.HasNext?()
+    requires mid.HasPeek?()
     requires mid in Iterators()
     ensures Valid()
     ensures Model() == Seq.Remove(old(Model()), old(mid.Index()))
 
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
-
     ensures fresh(next)
-    ensures Iterators() >= {next} + old(Iterators())
+    ensures Iterators() >= {next}+old(Iterators())
     ensures next.Valid() && next.Parent() == this && next.Index() == old(mid.Index())
-     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasNext?())
+     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
       :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     var midImpl := mid as ArrayListIteratorImpl;
