@@ -5,7 +5,7 @@ trait LinkedList<A> extends List<A> {
   method PushFront(x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
@@ -19,7 +19,7 @@ trait LinkedList<A> extends List<A> {
   method PopFront() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
@@ -34,7 +34,7 @@ trait LinkedList<A> extends List<A> {
   method PushBack(x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
@@ -53,7 +53,7 @@ trait LinkedList<A> extends List<A> {
   method PopBack() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
@@ -75,7 +75,7 @@ trait LinkedList<A> extends List<A> {
   method Insert(mid: ListIterator<A>, x: A) returns (newt: ListIterator<A>)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
@@ -102,7 +102,7 @@ trait LinkedList<A> extends List<A> {
   method Erase(mid: ListIterator<A>) returns (next: ListIterator<A>)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()

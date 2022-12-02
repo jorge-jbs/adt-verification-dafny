@@ -5,7 +5,7 @@ trait ArrayList<A> extends List<A> {
   method PushFront(x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
@@ -19,7 +19,7 @@ trait ArrayList<A> extends List<A> {
   method PopFront() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
@@ -29,12 +29,12 @@ trait ArrayList<A> extends List<A> {
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
-      :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
   method PushBack(x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
@@ -48,7 +48,7 @@ trait ArrayList<A> extends List<A> {
   method PopBack() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
@@ -58,13 +58,13 @@ trait ArrayList<A> extends List<A> {
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
-      :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
  
   // Insertion of x before mid, newt points to x
   method Insert(mid: ListIterator<A>, x: A) returns (newt: ListIterator<A>)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
@@ -86,7 +86,7 @@ trait ArrayList<A> extends List<A> {
   method Erase(mid: ListIterator<A>) returns (next: ListIterator<A>)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
@@ -99,8 +99,8 @@ trait ArrayList<A> extends List<A> {
 
     ensures fresh(next)
     ensures Iterators() >= {next}+old(Iterators())
-    ensures next.Valid() && next.Parent()==this && next.Index()==old(mid.Index())
+    ensures next.Valid() && next.Parent() == this && next.Index() == old(mid.Index())
      ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
-      :: it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 }
 
