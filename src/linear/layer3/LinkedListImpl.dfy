@@ -4,6 +4,7 @@ include "../../../src/linear/layer4/DoublyLinkedListWithLast.dfy"
 class LinkedListIteratorImpl<A> extends ListIterator<A> {
   ghost var parent: LinkedListImpl<A>
   var node: DNode?<A>
+  ghost var pastTheEnd: bool
 
   predicate Valid()
     reads this, parent, parent.Repr()
@@ -18,17 +19,19 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
     parent
   }
 
-  function Index(): nat
+  function Index(): int
     reads this, parent, parent.Repr()
     requires Valid()
     requires Parent().Valid()
-    ensures Index() <= |Parent().Model()|
+    ensures -1 <= Index() <= |Parent().Model()|
 
   {
     if node != null then
       parent.list.list.GetIndex(node)
-    else
+    else if pastTheEnd then
       |parent.list.list.spine|
+    else
+      -1
   }
 
   constructor(l: LinkedListImpl<A>, n: DNode?<A>)
@@ -42,7 +45,7 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
     node := n;
   }
 
-  constructor Begin(l: LinkedListImpl<A>)
+  constructor First(l: LinkedListImpl<A>)
     requires l.Valid()
     ensures Valid()
     ensures parent == l
@@ -51,6 +54,23 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
   {
     parent := l;
     node := l.list.list.head;
+    pastTheEnd := true;
+  }
+
+  constructor Last(l: LinkedListImpl<A>)
+    requires l.Valid()
+    ensures Valid()
+    ensures parent == l
+    ensures Index() == |l.Model()| - 1
+    ensures node == l.list.last
+  {
+    parent := l;
+    node := l.list.last;
+    pastTheEnd := false;
+    new;
+    if node != null {
+      l.list.list.LastHasLastIndex(node);
+    }
   }
 
   constructor CopyCtr(it: LinkedListIteratorImpl<A>)
@@ -58,12 +78,14 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
     ensures Valid()
     ensures parent == it.parent
     ensures node == it.node
+    ensures pastTheEnd == it.pastTheEnd
   {
     parent := it.parent;
     node := it.node;
+    pastTheEnd := it.pastTheEnd;
   }
 
-  method HasNext() returns (b: bool)
+  method HasPeek() returns (b: bool)
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
@@ -75,7 +97,7 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
     ensures Index() == old(Index())
-    ensures b == HasNext?()
+    ensures b == HasPeek?()
 
     ensures fresh(Parent().Repr() - old(Parent().Repr()))
     ensures allocated(Parent().Repr())
@@ -87,16 +109,35 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
     return node != null;
   }
 
-  method Next() returns (x: A)
+  method Prev()
+    modifies this, Parent(), Parent().Repr()
+    requires allocated(Parent())
+    requires allocated(Parent().Repr())
+    ensures fresh(Parent().Repr()-old(Parent().Repr()))
+    ensures allocated(Parent().Repr())
+
+    requires Valid()
+    requires Parent().Valid()
+    requires HasPeek?()
+    ensures Valid()
+    ensures Parent().Valid()
+    ensures Parent() == old(Parent())
+    ensures Parent().Model() == old(Parent().Model())
+
+    ensures Parent().Iterators() >= old(Parent().Iterators())
+    ensures Index() + 1 == old(Index())
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && (it != this ==> it.Index() == old(it.Index()))
+
+  method Next()
     modifies this
     requires Valid()
     requires Parent().Valid()
-    requires HasNext?()
+    requires HasPeek?()
     requires allocated(Parent())
     requires forall it | it in Parent().Iterators() :: allocated(it)
     ensures Parent().Valid()
     ensures Valid()
-    ensures old(Index()) < Index()
     ensures old(Parent()) == Parent()
     ensures old(Parent().Model()) == Parent().Model()
 
@@ -105,21 +146,18 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
     ensures forall x | x in Parent().Repr() :: allocated(x)
 
     ensures Parent().Iterators() == old(Parent().Iterators())
-    ensures x == Parent().Model()[old(Index())]
     ensures Index() == 1 + old(Index())
     ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
       it.Valid() && (it != this ==> it.Index() == old(it.Index()))
   {
     assert |parent.Model()| > 0;
     assert Index() < |parent.Model()|;
-    { // GHOST
-      if Index() < |parent.list.list.spine|-1 {
-        assert parent.list.list.spine[Index()+1]
-          == parent.list.list.spine[Index()].next;
-      }
+    if Index() < |parent.list.list.spine|-1 {
+      assert parent.list.list.spine[Index()+1]
+        == parent.list.list.spine[Index()].next;
     }
-    x := node.data;
     node := node.next;
+    pastTheEnd := true;
   }
 
   method Peek() returns (p: A)
@@ -129,7 +167,7 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
 
     requires Valid()
     requires Parent().Valid()
-    requires HasNext?()
+    requires HasPeek?()
     ensures Valid()
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
@@ -182,7 +220,7 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
     requires Parent().Valid()
     requires allocated(Parent())
     requires forall it | it in Parent().Repr() :: allocated(it)
-    requires HasNext?()
+    requires HasPeek?()
     ensures Valid()
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
@@ -278,16 +316,17 @@ class LinkedListImpl<A> extends LinkedList<A> {
   method Size() returns (s: nat)
     modifies this, Repr()
     requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
 
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
     ensures s == |Model()|
 
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
-
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
   {
     assert Valid();
     assert size == |list.list.spine| == |list.list.Model()| == |list.Model()| == |Model()|;
@@ -300,31 +339,6 @@ class LinkedListImpl<A> extends LinkedList<A> {
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
   {
     iters
-  }
-
-  method Begin() returns (it: ListIterator<A>)
-    modifies this, Repr()
-    requires Valid()
-    requires forall x | x in Repr() :: allocated(x)
-
-    ensures Valid()
-    ensures Model() == old(Model())
-
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr() - old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-
-    ensures fresh(it)
-    ensures it.Valid()
-    ensures it.Parent() == this
-    ensures it.Index() == 0
-    ensures Iterators() == {it} + old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid())
-      :: it.Valid() && old(it.Parent()) == it.Parent() && old(it.Index()) == it.Index();
-  {
-    var it1 := new LinkedListIteratorImpl.Begin(this);
-    iters := {it1} + iters;
-    it := it1;
   }
 
   constructor()
@@ -340,6 +354,47 @@ class LinkedListImpl<A> extends LinkedList<A> {
     size := 0;
     iters := {};
   }
+
+  method First() returns (it: ListIterator<A>)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
+    requires Valid()
+    ensures Valid()
+    ensures Model() == old(Model())
+
+    ensures fresh(it)
+    ensures Iterators() >= {it} + old(Iterators())
+    ensures it.Valid()
+    ensures it.Index() == 0
+    ensures it.Parent() == this
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+  {
+    var it1 := new LinkedListIteratorImpl.First(this);
+    iters := {it1} + iters;
+    it := it1;
+  }
+
+  method Last() returns (it: ListIterator<A>)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
+    requires Valid()
+    ensures Valid()
+    ensures Model() == old(Model())
+
+    ensures fresh(it)
+    ensures Iterators() >= {it} + old(Iterators())
+    ensures it.Valid()
+    ensures it.Index() == |Model()| - 1 == |old(Model())| - 1 //no es capaz de deducirlo si no lo ponemos
+    ensures it.Parent() == this
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
   method Front() returns (x: A)
     modifies this, Repr()
@@ -373,10 +428,14 @@ class LinkedListImpl<A> extends LinkedList<A> {
 
     ensures Iterators() == old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Index() == old(it.Index()) + 1
+      && it.Valid()
+      && if old(it.Index()) == -1 then
+        it.Index() == old(it.Index())
+      else
+        it.Index() == old(it.Index()) + 1
   {
     list.PushFront(x);
-    /*GHOST*/ size := size + 1;
+    size := size + 1;
   }
 
   method PopFront() returns (x: A)
@@ -393,11 +452,11 @@ class LinkedListImpl<A> extends LinkedList<A> {
     ensures forall x | x in Repr() :: allocated(x)
 
     ensures Iterators() == old(Iterators())
-    ensures forall it | it in Iterators() && old(it.Valid()) && old(it.Index()) != 0 ::
+    ensures forall it | it in Iterators() && old(it.Valid()) && old(it.Index()) > 0 ::
       it.Valid() && it.Index() + 1 == old(it.Index())
   {
     x := list.PopFront();
-    /*GHOST*/ size := size - 1;
+    size := size - 1;
   }
 
   method Back() returns (x: A)
@@ -488,7 +547,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
-    requires mid.HasNext?()
+    requires mid.HasPeek?()
     requires mid in Iterators()
     requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
@@ -514,6 +573,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
     requires mid.Valid()
     requires mid in Iterators()
     requires mid.Parent() == this
+    requires mid.Index() >= 0
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
 
@@ -572,7 +632,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
-    requires mid.HasNext?()
+    requires mid.HasPeek?()
     requires mid in Iterators()
     ensures Valid()
     ensures Model() == Seq.Remove(old(Model()), old(mid.Index()))
@@ -597,7 +657,8 @@ class LinkedListImpl<A> extends LinkedList<A> {
         it.Index() == old(it.Index()) - 1
   {
     next := mid.Copy();
-    var x := next.Next();
+    var x := next.Peek();
+    next.Next();
     list.Remove(CoerceIter(mid).node);
     size := size - 1;
     iters := {next} + iters;

@@ -12,9 +12,13 @@ trait LinkedList<A> extends List<A> {
     ensures Valid()
     ensures Model() == [x] + old(Model())
 
-    ensures Iterators() >= old(Iterators())
+    ensures Iterators() == old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index()) + 1
+      && it.Valid()
+      && if old(it.Index()) == -1 then
+        it.Index() == old(it.Index())
+      else
+        it.Index() == old(it.Index()) + 1
 
   method PopFront() returns (x: A)
     modifies this, Repr()
@@ -28,7 +32,7 @@ trait LinkedList<A> extends List<A> {
     ensures [x] + Model() == old(Model())
 
     ensures Iterators() >= old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.Index()) != 0 ::
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.Index()) > 0 ::
       it.Valid() && it.Parent() == old(it.Parent()) && it.Index() + 1 == old(it.Index())
 
   method PushBack(x: A)
