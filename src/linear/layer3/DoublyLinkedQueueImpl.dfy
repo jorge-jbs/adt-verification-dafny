@@ -2,7 +2,8 @@ include "../../../src/linear/layer1/Queue.dfy"
 include "../../../src/linear/layer4/DoublyLinkedListWithLast.dfy"
 
 class DoublyLinkedQueue<A> extends Queue<A> {
-  var list: DoublyLinkedListWithLast<A>;
+  var list: DoublyLinkedListWithLast<A>
+  var size: nat
 
   function Repr0(): set<object>
     reads this
@@ -42,6 +43,7 @@ class DoublyLinkedQueue<A> extends Queue<A> {
   {
     && ReprDepth == 2
     && list.Valid()
+    && size == |list.Model()|
   }
 
   function Model(): seq<A>
@@ -51,12 +53,32 @@ class DoublyLinkedQueue<A> extends Queue<A> {
     list.Model()
   }
 
-  function method Empty(): bool
-    reads this, Repr()
+  method Empty() returns (b:bool)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
-    ensures Empty() <==> Model() == []
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures b==Empty?() 
   {
-    list.list.head == null
+    return list.list.head == null;
+  }
+
+  method Size() returns (s: nat)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
+    requires Valid()
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures s == |Model()| 
+  {
+    return size;
   }
 
   constructor()
@@ -67,20 +89,26 @@ class DoublyLinkedQueue<A> extends Queue<A> {
   {
     ReprDepth := 2;
     list := new DoublyLinkedListWithLast();
+    size := 0;
   }
 
-  function method Front(): A
-    reads this, Repr()
+  method Front() returns (x:A)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
-    requires Model() != []
+    requires !Empty?()
     ensures Valid()
-    ensures Front() == Model()[0]
+    ensures Model() == old(Model())
+    ensures x == Model()[0]
   {
-    list.Front()
+    return list.Front();
   }
 
   method Enqueue(x: A)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + [x]
@@ -88,10 +116,11 @@ class DoublyLinkedQueue<A> extends Queue<A> {
     ensures fresh(Repr() - old(Repr()))
   {
     list.PushBack(x);
+    size := size + 1;
   }
 
   method Dequeue() returns (x: A)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     requires Model() != []
     ensures Valid()
@@ -99,5 +128,6 @@ class DoublyLinkedQueue<A> extends Queue<A> {
     ensures Repr() < old(Repr())
   {
     x := list.PopFront();
+    size := size - 1;
   }
 }

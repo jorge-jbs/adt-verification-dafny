@@ -3,6 +3,7 @@ include "../../../src/linear/layer4/SinglyLinkedList.dfy"
 
 class LinkedStack<A> extends Stack<A> {
   var list: SinglyLinkedList<A>;
+  var size: nat;
 
   function Repr0(): set<object>
     reads this
@@ -34,6 +35,7 @@ class LinkedStack<A> extends Stack<A> {
   {
     && ReprDepth == 1
     && list.Valid()
+    && size == |list.Model()|
   }
 
   function Model(): seq<A>
@@ -51,29 +53,56 @@ class LinkedStack<A> extends Stack<A> {
   {
     ReprDepth := 1;
     list := new SinglyLinkedList();
+    size := 0;
   }
 
-  function method Empty(): bool
-    reads this, Repr()
+  method Empty() returns (b: bool)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+    
     requires Valid()
-    ensures Empty() <==> Model() == []
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures b==Empty?() 
   {
-    list.head == null
+    return list.head == null;
+  }
+
+  method Size() returns (s:nat)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
+    requires Valid()
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures s==|Model()| 
+  {
+    return size;
   }
 
   // O(1)
-  function method Top(): A
-    reads this, Repr()
+  method Top() returns (x: A)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr()-old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
-    requires Model() != []
-    ensures Top() == Model()[0]
+    requires !Empty?()
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures x == Model()[0]
   {
-    list.head.data
+    return list.head.data;
   }
 
   // O(1)
   method Push(x: A)
-    modifies Repr()
+    modifies this, Repr()
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
@@ -83,14 +112,15 @@ class LinkedStack<A> extends Stack<A> {
     ensures forall x | x in Repr() :: allocated(x)
   {
     list.Push(x);
+    size := size + 1;
   }
 
   // O(1)
   method Pop() returns (x: A)
-    modifies Repr()
+    modifies this, Repr()
     requires forall x | x in Repr()::allocated(x)
     requires Valid()
-    requires !Empty()
+    requires !Empty?()
     ensures Valid()
     ensures [x] + Model() == old(Model())
 
@@ -99,9 +129,11 @@ class LinkedStack<A> extends Stack<A> {
     ensures forall x | x in Repr() :: allocated(x)
   {
     x := list.Pop();
+    size := size - 1;
   }
 }
 
+/*
 method EvalPostfix(s: string) returns (res: int)
   requires forall c | c in s :: c in "0123456789+-*//*"
 {
@@ -653,4 +685,5 @@ method Main() {
   st.Push(1);
   Print(st);
 }
+*/
 */
