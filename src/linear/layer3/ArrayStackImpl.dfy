@@ -49,25 +49,52 @@ class ArrayStackImpl<A> extends Stack<A> {
     size := 0;
   }
 
-  function method Empty(): bool
-    reads this, Repr()
+  method Empty() returns (b: bool)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+    
     requires Valid()
-    ensures Empty() <==> Model() == []
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures b == Empty?() 
   {
-    size == 0
+    b := size == 0;
   }
 
-  // O(1)
-  function method Top(): A
-    reads this, Repr()
+  method Size() returns (s: nat)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
-    requires Model() != []
-    ensures Top() == Model()[0]
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures s == |Model()| 
+  {
+    s := size;
+  }
+
+
+  // O(1)
+  method Top() returns (x: A)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
+    requires Valid()
+    requires !Empty?()
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures x == Model()[0]
   { 
     assert Model() == Seq.Rev(list[0..size]);
     Seq.LastRev(list[0..size]);
     assert list[size - 1] == Seq.Rev(list[0..size])[0];
-    list[size - 1]
+    x := list[size - 1];
   }
 
   method Grow(x: A)//auxiliary method to duplicate space
@@ -103,11 +130,13 @@ class ArrayStackImpl<A> extends Stack<A> {
   // O(1) amortized
   method Push(x: A)
     modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     ensures Valid()
     ensures Model() == [x] + old(Model())
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
-    ensures forall x | x in Repr() :: allocated(x)
   {
     if size == list.Length {
       Grow(x);
@@ -123,12 +152,14 @@ class ArrayStackImpl<A> extends Stack<A> {
   // O(1)
   method Pop() returns (x: A)
     modifies this, Repr()
-    requires size > 0
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
+    requires !Empty?()
     ensures Valid()
     ensures [x] + Model() == old(Model())
-    ensures forall x | x in Repr() - old(Repr()) :: fresh(x)
-    ensures forall x | x in Repr() :: allocated(x)
   {
     x := list[size - 1];
     size := size - 1;

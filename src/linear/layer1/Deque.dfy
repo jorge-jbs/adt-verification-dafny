@@ -4,34 +4,34 @@ trait Deque<A> extends ADT<seq<A>> {
   predicate Empty?()
     reads this, Repr()
     requires Valid()
-  { Model() == []}
+  { Model() == [] }
 
-  method Empty() returns (b:bool)
+  method Empty() returns (b: bool)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
-    ensures b==Empty?() 
+    ensures b == Empty?() 
 
-  method Size() returns (s:nat)
+  method Size() returns (s: nat)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
-    ensures s==|Model()| 
+    ensures s == |Model()| 
 
-  method Front() returns (x:A)
+  method Front() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
@@ -43,7 +43,7 @@ trait Deque<A> extends ADT<seq<A>> {
   method PushFront(x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
@@ -53,7 +53,7 @@ trait Deque<A> extends ADT<seq<A>> {
   method PopFront() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
     
     requires Valid()
@@ -61,22 +61,22 @@ trait Deque<A> extends ADT<seq<A>> {
     ensures Valid()
     ensures [x] + Model() == old(Model())
 
-  method Back() returns (x:A)
+  method Back() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
     requires !Empty?()
     ensures Valid()
     ensures Model() == old(Model())
-    ensures x == Model()[|Model()|-1]
+    ensures x == Model()[|Model()| - 1]
 
   method PushBack(x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
@@ -86,7 +86,7 @@ trait Deque<A> extends ADT<seq<A>> {
   method PopBack() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    ensures fresh(Repr()-old(Repr()))
+    ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
 
     requires Valid()
