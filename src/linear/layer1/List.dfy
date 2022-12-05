@@ -314,7 +314,7 @@ trait List<A> extends ADT<seq<A>> {
     requires mid.Valid()
     requires mid.Parent() == this
     requires mid in Iterators()
-    requires mid.HasPeek?()
+    requires mid.Index() >= 0
     ensures Valid()
     ensures Model() == Seq.Insert(x, old(Model()), old(mid.Index()))
 
