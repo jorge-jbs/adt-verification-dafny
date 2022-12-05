@@ -1,6 +1,6 @@
-include "../src/linear/layer2/ArrayList.dfy"
-include "iterators/FillArray.dfy"
-include "iterators/DupElements.dfy"
+include "../../src/linear/layer2/ArrayList.dfy"
+include "../../examples/iterators/FillArray.dfy"
+include "../../examples/iterators/DupElements.dfy"
 
 
 class Person{
