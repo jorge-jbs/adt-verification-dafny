@@ -3,7 +3,7 @@ include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
 include "../../src/UtilsAux.dfy"
 
-method elimDup(l:LinkedList<int>)
+method ElimDup(l:LinkedList<int>)
 //method {:verify true} elimDupA(l:ArrayList<int>) //NO CHANGES
  modifies l, l.Repr()
  requires allocated(l.Repr())
@@ -18,20 +18,19 @@ method elimDup(l:LinkedList<int>)
 
  ensures l.Iterators() >= old(l.Iterators())
 {
-  var aux;
-  var it2 := l.Begin();
+  var it2 := l.First();
   var it1 := it2.Copy();
-  var b := it1.HasNext();
+  var b := it1.HasPeek();
 
   if (b) {
-    aux := it2.Next();
+    it2.Next();
 
     ghost var j := 1;
-    assert it2.HasNext?() ==> it1.HasNext?() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()];
+    assert it2.HasPeek?() ==> it1.HasPeek?() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()];
     assert it2.Index()==1 && it1.Index()==0;
 
     ghost var omodel := l.Model();
-    b := it2.HasNext();
+    b := it2.HasPeek();
 
     while b
       decreases |l.Model()| - it2.Index()
@@ -43,11 +42,11 @@ method elimDup(l:LinkedList<int>)
       invariant it1.Parent() == l && it2.Parent()==l
       invariant it1.Valid() && it2.Valid()
       invariant it2.Index()==it1.Index()+1
-      invariant it2.HasNext?() ==> it1.HasNext?() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()]
+      invariant it2.HasPeek?() ==> it1.HasPeek?() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()]
 
       invariant (set x | x in old(l.Model())) == (set x | x in l.Model())
       invariant Sorted(l.Model()) && StrictSorted(l.Model()[..it2.Index()])
-      invariant b == it2.HasNext?()
+      invariant b == it2.HasPeek?()
 
       invariant l.Iterators() >= old(l.Iterators())
     {
@@ -58,11 +57,11 @@ method elimDup(l:LinkedList<int>)
         ghost var oit2 := it2.Index();
         it2 := l.Erase(it2);
       } else {
-        var _ := it2.Next();
-        var _ := it1.Next();
+        it2.Next();
+        it1.Next();
       }
       j := j+1;
-      b:=it2.HasNext();  
+      b:=it2.HasPeek();  
     }
   }
 

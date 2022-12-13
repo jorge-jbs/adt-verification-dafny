@@ -1,12 +1,14 @@
 include "../../src/linear/layer1/List.dfy"
 include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
+include "../../src/Order.dfy"
 
-method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>)
+method FindMax<A>(l: LinkedList<A>, le:(A,A) -> bool) returns (max: ListIterator<A>)
   modifies l, l.Repr()
   requires allocated(l.Repr())
   ensures fresh(l.Repr()-old(l.Repr()))
   ensures allocated(l.Repr())
+  requires IsTotalOrder(le)
 
   requires l.Valid()
   requires l.Model() != []
@@ -16,7 +18,7 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>)
   ensures max.Valid()
   ensures max.Parent() == l
   ensures max.HasPeek?()
-  ensures forall x | x in l.Model() :: l.Model()[max.Index()] >= x
+  ensures forall x | x in l.Model() :: le(x,l.Model()[max.Index()])
 
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) ::
@@ -43,7 +45,7 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>)
     invariant max != it
     invariant max.HasPeek?()
     invariant it.Index() <= |l.Model()|
-    invariant forall k | 0 <= k < it.Index() :: l.Model()[max.Index()] >= l.Model()[k]
+    invariant forall k | 0 <= k < it.Index() :: le(l.Model()[k],l.Model()[max.Index()])// >= l.Model()[k]
     invariant b == it.HasPeek?()
 
     invariant l.Iterators() >= old(l.Iterators())
@@ -53,7 +55,7 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>)
   { var itPeek:= it.Peek(); 
     var maxPeek:= max.Peek();
 
-    if itPeek > maxPeek {
+    if le(maxPeek,itPeek) {
       max := it.Copy();
     }
     it.Next();
@@ -62,11 +64,12 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>)
 }
 
 
-method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>)
+method FindMaxAL<A>(l: ArrayList<A>,le:(A,A)->bool) returns (max: ListIterator<A>)
   modifies l, l.Repr()
   requires allocated(l.Repr())
   ensures fresh(l.Repr()-old(l.Repr()))
   ensures allocated(l.Repr())
+  requires IsTotalOrder(le)
 
   requires l.Valid()
   requires l.Model() != []
@@ -76,7 +79,7 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>)
   ensures max.Valid()
   ensures max.Parent() == l
   ensures max.HasPeek?()
-  ensures forall x | x in l.Model() :: l.Model()[max.Index()] >= x
+  ensures forall x | x in l.Model() :: le(x,l.Model()[max.Index()])
 
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) ::
@@ -104,7 +107,7 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>)
     invariant max != it
     invariant max.HasPeek?()
     invariant it.Index() <= |l.Model()|
-    invariant forall k | 0 <= k < it.Index() :: l.Model()[max.Index()] >= l.Model()[k]
+    invariant forall k | 0 <= k < it.Index() :: le(l.Model()[k],l.Model()[max.Index()])
     invariant b == it.HasPeek?()
     
     invariant l.Iterators() >= old(l.Iterators())
@@ -114,7 +117,7 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>)
     var itPeek:= it.Peek(); 
     var maxPeek:= max.Peek();
 
-    if itPeek > maxPeek {
+    if le(maxPeek,itPeek) {
       max := it.Copy();
     }
     it.Next(); 
