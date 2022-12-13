@@ -15,7 +15,7 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>)
   ensures fresh(max) && max in l.Iterators()
   ensures max.Valid()
   ensures max.Parent() == l
-  ensures max.HasNext?()
+  ensures max.HasPeek?()
   ensures forall x | x in l.Model() :: l.Model()[max.Index()] >= x
 
   ensures l.Iterators() >= old(l.Iterators())
@@ -23,9 +23,9 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>)
     it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
 
 {
-  max := l.Begin();
-  var it := l.Begin();
-  var b:=it.HasNext(); //Nuevo
+  max := l.First();
+  var it := l.First();
+  var b:=it.HasPeek(); //Nuevo
 
   while b
     decreases |l.Model()| - it.Index()
@@ -41,10 +41,10 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>)
     invariant max.Parent() == l
     invariant max in l.Iterators()
     invariant max != it
-    invariant max.HasNext?()
+    invariant max.HasPeek?()
     invariant it.Index() <= |l.Model()|
     invariant forall k | 0 <= k < it.Index() :: l.Model()[max.Index()] >= l.Model()[k]
-    invariant b == it.HasNext?()
+    invariant b == it.HasPeek?()
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) ::
@@ -56,8 +56,8 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>)
     if itPeek > maxPeek {
       max := it.Copy();
     }
-    var _ := it.Next();
-    b:=it.HasNext();
+    it.Next();
+    b:=it.HasPeek();
   }
 }
 
@@ -75,7 +75,7 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>)
   ensures fresh(max) && max in l.Iterators()
   ensures max.Valid()
   ensures max.Parent() == l
-  ensures max.HasNext?()
+  ensures max.HasPeek?()
   ensures forall x | x in l.Model() :: l.Model()[max.Index()] >= x
 
   ensures l.Iterators() >= old(l.Iterators())
@@ -83,9 +83,9 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>)
     it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
 
 {
-  max := l.Begin();
-  var it := l.Begin();
-  var b:=it.HasNext();
+  max := l.First();
+  var it := l.First();
+  var b:=it.HasPeek();
 
   while b
     decreases |l.Model()| - it.Index()
@@ -102,14 +102,14 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>)
     invariant max.Parent() == l
     invariant max in l.Iterators()
     invariant max != it
-    invariant max.HasNext?()
+    invariant max.HasPeek?()
     invariant it.Index() <= |l.Model()|
     invariant forall k | 0 <= k < it.Index() :: l.Model()[max.Index()] >= l.Model()[k]
-    invariant b == it.HasNext?()
+    invariant b == it.HasPeek?()
     
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Index() == old(it.Index())
+      it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
   {
     var itPeek:= it.Peek(); 
     var maxPeek:= max.Peek();
@@ -117,9 +117,8 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>)
     if itPeek > maxPeek {
       max := it.Copy();
     }
-    var _ := it.Next();
-    
-    b:=it.HasNext();
+    it.Next(); 
+    b:=it.HasPeek();
   }
 }
 

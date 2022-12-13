@@ -4,7 +4,7 @@ include "../../src/linear/layer2/ArrayList.dfy"
 include "../../src/Iterators_Utils.dfy"
 
 function idMap(xs:seq<int>):map<int,int>
-{map i | 0<=i<=|xs| :: i}
+{map i | -1<=i<=|xs| :: i}
 
 method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:map<int,int>)
   modifies l, l.Repr()
@@ -19,7 +19,7 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:ma
   ensures fresh(max) && max in l.Iterators()
   ensures max.Valid()
   ensures max.Parent() == l
-  ensures max.HasNext?()
+  ensures max.HasPeek?()
   ensures forall x | x in l.Model() :: l.Model()[max.Index()] >= x
   
   ensures l.Iterators() >= old(l.Iterators())
@@ -29,12 +29,11 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:ma
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: old(it.Index()) in mit //domain
   ensures forall i | i in mit :: mit[i]==i //range  
 {
-   mit:= map it | 0<=it<=|old(l.Model())|::it;
+  mit:= map it | -1<=it<=|old(l.Model())|::it;
 
-
-  max := l.Begin();
-  var it := l.Begin();
-  var b:= it.HasNext();
+  max := l.First();
+  var it := l.First();
+  var b:= it.HasPeek();
 
   while b
     decreases |l.Model()| - it.Index()
@@ -51,10 +50,10 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:ma
     invariant max.Parent() == l
     invariant max in l.Iterators()
     invariant max != it
-    invariant max.HasNext?()
+    invariant max.HasPeek?()
     invariant it.Index() <= |l.Model()|
     invariant forall k | 0 <= k < it.Index() :: l.Model()[max.Index()] >= l.Model()[k]
-    invariant b == it.HasNext?()
+    invariant b == it.HasPeek?()
     
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
@@ -66,8 +65,8 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:ma
     if itPeek > maxPeek {
       max := it.Copy();
     }
-    var _ := it.Next();
-    b:=it.HasNext();
+    it.Next();
+    b:=it.HasPeek();
   }
 }
 
@@ -85,11 +84,12 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>, ghost mit:m
   ensures fresh(max) && max in l.Iterators()
   ensures max.Valid()
   ensures max.Parent() == l
-  ensures max.HasNext?()
+  ensures max.HasPeek?()
   ensures forall x | x in l.Model() :: l.Model()[max.Index()] >= x
   
   ensures l.Iterators() >= old(l.Iterators())
-  ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
+  ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
+    it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
   ensures mit==buildMap((set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),identity)
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: old(it.Index()) in mit //domain
   ensures forall i | i in mit :: mit[i]==identity(i) //range
@@ -98,9 +98,9 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>, ghost mit:m
     mit:=buildMap(setValid,identity);
 
 
-  max := l.Begin();
-  var it := l.Begin();
-  var b:= it.HasNext();
+  max := l.First();
+  var it := l.First();
+  var b:= it.HasPeek();
 
   while b
     decreases |l.Model()| - it.Index()
@@ -117,10 +117,10 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>, ghost mit:m
     invariant max.Parent() == l
     invariant max in l.Iterators()
     invariant max != it
-    invariant max.HasNext?()
+    invariant max.HasPeek?()
     invariant it.Index() <= |l.Model()|
     invariant forall k | 0 <= k < it.Index() :: l.Model()[max.Index()] >= l.Model()[k]
-    invariant b == it.HasNext?()
+    invariant b == it.HasPeek?()
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
@@ -132,7 +132,7 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>, ghost mit:m
     if itPeek > maxPeek {
       max := it.Copy();
     }
-    var _ := it.Next();
-    b:=it.HasNext();
+    it.Next();
+    b:=it.HasPeek();
   }
 }
