@@ -26,8 +26,8 @@ method ElimDup(l:LinkedList<int>)
     it2.Next();
 
     ghost var j := 1;
-    assert it2.HasPeek?() ==> it1.HasPeek?() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()];
-    assert it2.Index()==1 && it1.Index()==0;
+    assert it2.HasPeek?() ==> it1.HasPeek?() && l.Model()[it1.Index()+1] == l.Model()[it2.Index()];
+    assert it2.Index() == 1 && it1.Index() == 0;
 
     ghost var omodel := l.Model();
     b := it2.HasPeek();

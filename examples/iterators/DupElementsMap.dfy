@@ -16,20 +16,20 @@ method DupElements<A>(l: LinkedList<A>) returns (ghost mit:map<int,int>)
   ensures l.Valid()
   ensures l.Model() == Dup(old(l.Model()))
   ensures |l.Model()| == 2 * |old(l.Model())|
-  ensures forall i | 0<=i<|old(l.Model())| :: old(l.Model())[i] == l.Model()[2*i]==l.Model()[2*i+1]
+  ensures forall i | 0 <= i < |old(l.Model())| :: old(l.Model())[i] == l.Model()[2*i] == l.Model()[2*i+1]
   
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
      it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
-  ensures mit== DupMapI(old(l.Model()),|old(l.Model())|)
+  ensures mit == DupMapI(old(l.Model()),|old(l.Model())|)
   //ensures mit == BuildMap((set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),DupF(|old(l.Model())|))
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: old(it.Index()) in mit //domain
-  ensures forall i | i in mit :: mit[i]==DupI(i,|old(l.Model())|)//range
+  ensures forall i | i in mit :: mit[i] == DupI(i,|old(l.Model())|)//range
 {
 
-    //ghost var validSet:=(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index()));
-    //mit:=BuildMap(validSet,Identity);
-    mit:= DupMapI(old(l.Model()),0);
+  //ghost var validSet:=(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index()));
+  //mit:=BuildMap(validSet,Identity);
+  mit:= DupMapI(old(l.Model()),0);
 
   var it := l.First();
   var b := it.HasPeek();  
@@ -58,7 +58,7 @@ method DupElements<A>(l: LinkedList<A>) returns (ghost mit:map<int,int>)
        iter.Valid() && iter.Parent()==old(iter.Parent()) && mit[old(iter.Index())]==iter.Index()
     //invariant it !in old(l.Iterators())
     //invariant  mit == BuildMap((set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),DupInvariantF(i))
-    invariant mit== DupMapI(old(l.Model()),i)
+    invariant mit == DupMapI(old(l.Model()),i)
   {
 
     assert i < old(|l.Model()|);
@@ -73,8 +73,8 @@ method DupElements<A>(l: LinkedList<A>) returns (ghost mit:map<int,int>)
     
     var it1:=l.Insert(it, x);
 
-      ghost var model := l.Model();
-      calc == {
+    ghost var model := l.Model();
+    calc == {
        model;
        Seq.Insert(x, omodel, it.Index());
        omodel[..it.Index()] + [x] + omodel[it.Index()..];
@@ -84,8 +84,8 @@ method DupElements<A>(l: LinkedList<A>) returns (ghost mit:map<int,int>)
        DupRev(old(l.Model()[..i])) + [old(l.Model()[i])] + [old(l.Model()[i])] + omodel[2*i+1..];
        { assert old(l.Model()[..i+1][..|l.Model()[..i+1]|-1]) == old(l.Model()[..i]); }
        DupRev(old(l.Model()[..i+1])) + omodel[2*i+1..];
-     }
-     assert model == DupRev(old(l.Model()[..i+1])) + omodel[2*i+1..];
+    }
+    assert model == DupRev(old(l.Model()[..i+1])) + omodel[2*i+1..];
 
     it.Next();
     b := it.HasPeek();
@@ -116,18 +116,18 @@ method DupElementsAL(l: ArrayList<int>) returns (ghost mit:map<int,int>)
   ensures l.Valid()
   ensures l.Model() == old(Dup(l.Model()))
   ensures |l.Model()| == 2* |old(l.Model())|
-  ensures forall i | 0<=i<|old(l.Model())| :: old(l.Model())[i] == l.Model()[2*i]==l.Model()[2*i+1]
+  ensures forall i | 0 <= i < |old(l.Model())| :: old(l.Model())[i] == l.Model()[2*i] == l.Model()[2*i+1]
 
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
       it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
   ensures mit == BuildMap((set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),Identity)
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: old(it.Index()) in mit //domain
-  ensures forall i | i in mit :: mit[i]==Identity(i)//range
+  ensures forall i | i in mit :: mit[i] == Identity(i)//range
 {
      
-    ghost var validSet:=(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index()));
-    mit:=BuildMap(validSet,Identity);
+  ghost var validSet:=(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index()));
+  mit:=BuildMap(validSet,Identity);
 
 
   var it := l.First();
@@ -155,7 +155,7 @@ method DupElementsAL(l: ArrayList<int>) returns (ghost mit:map<int,int>)
     invariant l.Iterators() >= old(l.Iterators())
     invariant it !in old(l.Iterators())
     invariant forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && old(iter.Index()) in mit::
-        iter.Valid() && iter.Parent()==old(iter.Parent()) && mit[old(iter.Index())]==iter.Index();
+        iter.Valid() && iter.Parent()==old(iter.Parent()) && mit[old(iter.Index())] == iter.Index();
   {
      
      
@@ -165,9 +165,9 @@ method DupElementsAL(l: ArrayList<int>) returns (ghost mit:map<int,int>)
     
     var x := it.Peek();    
     
-    assert x==l.Model()[2*i];
+    assert x == l.Model()[2*i];
     
-    var it1:=l.Insert(it, x);
+    var it1 := l.Insert(it, x);
     
     ghost var model := l.Model();
     calc == {
@@ -192,7 +192,7 @@ method DupElementsAL(l: ArrayList<int>) returns (ghost mit:map<int,int>)
 
   }
 
-  assert i==|old(l.Model())|;
+  assert i == |old(l.Model())|;
   DupDupRev(old(l.Model()[..i]));
   assert old(l.Model()[..i]) == old(l.Model());
 
@@ -211,10 +211,10 @@ modifies l, l.Repr()
   {
     ghost var validSet:=(set it |it in old(l.Iterators()) && old(it.Valid())&& old(it.Index())<|old(l.Model())|);
 
-    var mit1:=DupElements(l);
-    var mit2:=DupElements(l);
+    var mit1 := DupElements(l);
+    var mit2 := DupElements(l);
 
-    mit:= map it | it in mit1 ::mit2[mit1[it]];
+    mit := map it | it in mit1 ::mit2[mit1[it]];
     assert forall it | it in validSet :: it.Valid() && mit[old(it.Index())] == 4*old(it.Index())+3;
   }
 
@@ -228,7 +228,7 @@ modifies l, l.Repr()
   ensures l.Valid()
   ensures l.Model() == Dup(old(l.Model()))
   ensures |l.Model()| == 2* |old(l.Model())|
-  ensures forall i | 0<=i<|old(l.Model())| :: old(l.Model())[i] == l.Model()[2*i]==l.Model()[2*i+1]
+  ensures forall i | 0 <= i < |old(l.Model())| :: old(l.Model())[i] == l.Model()[2*i] == l.Model()[2*i+1]
 
   ensures l.Iterators() >= old(l.Iterators())
 {
@@ -264,9 +264,9 @@ modifies l, l.Repr()
     
     var x := it.Peek();    
     
-    assert x==l.Model()[2*i];
+    assert x == l.Model()[2*i];
 
-     it:=l.Insert(it, x);
+    it:=l.Insert(it, x);
     
 
     ghost var model := l.Model();
@@ -292,7 +292,7 @@ modifies l, l.Repr()
 
   }
 
-  assert i==|old(l.Model())|;
+  assert i == |old(l.Model())|;
   DupDupRev(old(l.Model()[..i]));
   assert old(l.Model()[..i]) == old(l.Model());
 

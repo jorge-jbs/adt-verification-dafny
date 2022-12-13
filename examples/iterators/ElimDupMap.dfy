@@ -128,34 +128,34 @@ method {:timeLimitMultiplier 100} ElimDup(l:LinkedList<int>) returns (ghost mit:
  requires l.Valid() && Sorted(l.Model())
  ensures l.Valid()
 
- ensures l.Model()==DelDup(old(l.Model()),|old(l.Model())|)
+ ensures l.Model() == DelDup(old(l.Model()),|old(l.Model())|)
  //ensures (set x | x in old(l.Model())) == (set x | x in l.Model())
  //ensures StrictSorted(l.Model())
 
  ensures l.Iterators() >= old(l.Iterators())
  ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
   it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
- ensures mit==DelMap(old(l.Model()),(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),|old(l.Model())|)
+ ensures mit == DelMap(old(l.Model()),(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),|old(l.Model())|)
 {
-  ghost var validSet:=(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index()));
-  ghost var omodel:=l.Model();
+  ghost var validSet := (set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index()));
+  ghost var omodel := l.Model();
 
 
-  var it2:=l.First(); 
-  var it1:=it2.Copy();
+  var it2 := l.First(); 
+  var it1 := it2.Copy();
   var b := it1.HasPeek();
 
   if (b) 
    { 
      
-     mit:=DelMap(old(l.Model()),validSet,1);
+    mit := DelMap(old(l.Model()),validSet,1);
 
     it2.Next();
-    ghost var j:=1; //to traverse old(l.Model())
-    ghost var p:=0;//first occurrence in old(l.Model()) of current element it1
+    ghost var j := 1; //to traverse old(l.Model())
+    ghost var p := 0;//first occurrence in old(l.Model()) of current element it1
 
-     assert it2.HasPeek?() ==> it1.HasPeek?() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()];
-     assert it2.Index()==1 && it1.Index()==0;
+     assert it2.HasPeek?() ==> it1.HasPeek?() && l.Model()[it1.Index()+1] == l.Model()[it2.Index()];
+     assert it2.Index() == 1 && it1.Index() == 0;
   
 
     b := it2.HasPeek();
@@ -194,84 +194,82 @@ method {:timeLimitMultiplier 100} ElimDup(l:LinkedList<int>) returns (ghost mit:
      //   ::mit[old(it.Index())]<it2.Index()
      //invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit && old(it.Index())>=j
      //   ::mit[old(it.Index())]>=it2.Index()
-     invariant mit==DelMap(old(l.Model()),(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),j)
-   { ghost var pmodel:=l.Model();
+     invariant mit == DelMap(old(l.Model()),(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),j)
+   { ghost var pmodel := l.Model();
      
-       assert  j in mit ==> mit[j]==|DelDup(old(l.Model()),j)|;
+       assert  j in mit ==> mit[j] == |DelDup(old(l.Model()),j)|;
      
      var it1Peek := it1.Peek();
      var it2Peek := it2.Peek();
      if (it1Peek == it2Peek) 
-     {  assert old(l.Model())[j..]==l.Model()[it2.Index()..];
-        assert old(l.Model())[j..][0]==l.Model()[it2.Index()..][0];
-        assert old(l.Model())[j]==l.Model()[it2.Index()];
-        assert l.Model()[it1.Index()]==old(l.Model())[j-1];
-        ghost var oit2:=it2.Index();
+     {  assert old(l.Model())[j..] == l.Model()[it2.Index()..];
+        assert old(l.Model())[j..][0] == l.Model()[it2.Index()..][0];
+        assert old(l.Model())[j] == l.Model()[it2.Index()];
+        assert l.Model()[it1.Index()] == old(l.Model())[j-1];
+        ghost var oit2 := it2.Index();
           
         assert it2 !in old(l.Iterators()); 
-        assert j < j+1 && old(l.Model())[j]==old(l.Model())[j-1];
+        assert j < j+1 && old(l.Model())[j] == old(l.Model())[j-1];
         assert !ValidIt(old(l.Model()),j+1,j);
         
         DelMapRange(old(l.Model()),validSet,j);     
         
         it2 := l.Erase(it2);  
           
-        assert forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit && old(it.Index()) <j
-          ::it.Valid() && mit[old(it.Index())]==it.Index()<j;
-        assert forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit && old(it.Index()) >j
-          ::it.Valid() && mit[old(it.Index())]==it.Index()+1;
+        assert forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit && old(it.Index()) < j
+          ::it.Valid() && mit[old(it.Index())] == it.Index() < j;
+        assert forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit && old(it.Index()) > j
+          ::it.Valid() && mit[old(it.Index())] == it.Index()+1;
         UpdateMapNV(old(l.Model()),validSet,j);
      
 
-        j:=j+1;
+        j := j+1;
 
-        assert l.Model()==pmodel[..oit2]+pmodel[oit2+1..];
-        assert l.Model()[..it2.Index()]==DelDup(old(l.Model()),j);    
+        assert l.Model() == pmodel[..oit2]+pmodel[oit2+1..];
+        assert l.Model()[..it2.Index()] == DelDup(old(l.Model()),j);    
        
         mit:=DelMap(old(l.Model()),validSet,j);
 
          
-        assert forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && mit[old(it.Index())]==it.Index();
-        assert mit==DelMap(old(l.Model()),validSet,j);
-        assert l.Model()[it2.Index()..]==old(l.Model())[j..];
-
-
+        assert forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
+         it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index();
+        assert mit == DelMap(old(l.Model()),validSet,j);
+        assert l.Model()[it2.Index()..] == old(l.Model())[j..];
       }
     else 
      {   
-        assert  old(l.Model())[j]==l.Model()[it2.Index()]!=l.Model()[it1.Index()]==old(l.Model())[j-1];
-        assert l.Model()[it2.Index()..]==[l.Model()[it2.Index()]]+l.Model()[it2.Index()+1..];
-
+        assert  old(l.Model())[j] == l.Model()[it2.Index()]!=l.Model()[it1.Index()] == old(l.Model())[j-1];
+        assert l.Model()[it2.Index()..] == [l.Model()[it2.Index()]]+l.Model()[it2.Index()+1..];
 
         assert ValidIt(old(l.Model()),j+1,j);
         UpdateMapV(old(l.Model()),validSet,j);
-        assert DelMap(old(l.Model()),validSet,j+1)==DelMap(old(l.Model()),validSet,j);
+        assert DelMap(old(l.Model()),validSet,j+1) == DelMap(old(l.Model()),validSet,j);
       
         it2.Next(); 
         it1.Next();
            
-        p:=j;
-        j:=j+1;
+        p := j;
+        j := j+1;
       
-        assert l.Model()[it2.Index()..]==old(l.Model())[j..];
-        assert l.Model()[..it2.Index()]==DelDup(old(l.Model()),j); 
+        assert l.Model()[it2.Index()..] == old(l.Model())[j..];
+        assert l.Model()[..it2.Index()] == DelDup(old(l.Model()),j); 
 
-        mit:=DelMap(old(l.Model()),validSet,j); 
+        mit := DelMap(old(l.Model()),validSet,j); 
         assert forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
          it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index();
-        assert mit==DelMap(old(l.Model()),validSet,j);
+        assert mit == DelMap(old(l.Model()),validSet,j);
       }
     b:=it2.HasPeek();  
   }
-  assert mit==DelMap(old(l.Model()),validSet,j);
-  assert j==|old(l.Model())| && it2.Index()==|l.Model()|;
-  assert l.Model()==DelDup(old(l.Model()),|old(l.Model())|);
+  assert mit == DelMap(old(l.Model()),validSet,j);
+  assert j == |old(l.Model())| && it2.Index() == |l.Model()|;
+  assert l.Model() == DelDup(old(l.Model()),|old(l.Model())|);
 
 
   //assert forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::it.Valid() && mit[old(it.Index())]==it.Index();
    }
   else {
-         mit:=map[];
+         mit := map[];
        }
 
 }
