@@ -3,7 +3,7 @@ include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
 include "../../src/Iterators_Utils.dfy"
 
-function idMap(xs:seq<int>):map<int,int>
+function IdMap(xs:seq<int>):map<int,int>
 {map i | -1<=i<=|xs| :: i}
 
 method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:map<int,int>)
@@ -25,7 +25,7 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:ma
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
       it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
-  ensures mit==idMap(old(l.Model()))
+  ensures mit==IdMap(old(l.Model()))
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: old(it.Index()) in mit //domain
   ensures forall i | i in mit :: mit[i]==i //range  
 {
@@ -90,12 +90,12 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>, ghost mit:m
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
     it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
-  ensures mit==buildMap((set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),identity)
+  ensures mit==BuildMap((set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),Identity)
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: old(it.Index()) in mit //domain
-  ensures forall i | i in mit :: mit[i]==identity(i) //range
+  ensures forall i | i in mit :: mit[i]==Identity(i) //range
 {
     var setValid:=set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index());
-    mit:=buildMap(setValid,identity);
+    mit:=BuildMap(setValid,Identity);
 
 
   max := l.First();

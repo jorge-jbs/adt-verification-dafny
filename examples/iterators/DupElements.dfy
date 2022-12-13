@@ -23,8 +23,8 @@ method DupElements<A>(l: LinkedList<A>)
       else it.Index()==2*old(it.Index())+1 //Because we insert before
 {
 
-  var it := l.Begin();
-  var b := it.HasNext();
+  var it := l.First();
+  var b := it.HasPeek();
 
   ghost var i := 0;
 
@@ -42,7 +42,7 @@ method DupElements<A>(l: LinkedList<A>)
     invariant i <= old(|l.Model()|)
     invariant l.Model()[..2*i] == DupRev(old(l.Model()[..i]))
     invariant l.Model()[2*i..] == old(l.Model()[i..])
-    invariant b == it.HasNext?()
+    invariant b == it.HasPeek?()
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall iter | iter in old(l.Iterators()) && old(iter.Valid())::
@@ -73,8 +73,8 @@ method DupElements<A>(l: LinkedList<A>)
      }
     assert model == DupRev(old(l.Model()[..i+1])) + omodel[2*i+1..];
 
-    var _ := it.Next();
-    b := it.HasNext();
+    it.Next();
+    b := it.HasPeek();
     i := i + 1;
   }
 
@@ -101,8 +101,8 @@ method DupElementsAL<A>(l: ArrayList<A>)
   ensures forall it | it in old(l.Iterators()) && old(it.Valid())::
       it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
 {
-  var it := l.Begin();
-  var b := it.HasNext();
+  var it := l.First();
+  var b := it.HasPeek();
 
   ghost var i := 0;
 
@@ -120,7 +120,7 @@ method DupElementsAL<A>(l: ArrayList<A>)
     invariant i <= old(|l.Model()|)
     invariant l.Model()[..2*i] == DupRev(old(l.Model()[..i]))
     invariant l.Model()[2*i..] == old(l.Model()[i..])
-    invariant b == it.HasNext?()
+    invariant b == it.HasPeek?()
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant  forall it | it in old(l.Iterators()) && old(it.Valid())::
@@ -150,9 +150,9 @@ method DupElementsAL<A>(l: ArrayList<A>)
     }
     assert model == DupRev(old(l.Model()[..i+1])) + omodel[2*i+1..];
 
-    var _ := it.Next();
-    var _ := it.Next(); //In ArrayList index mid remains, so we jump over two elements to reach the following one
-    b := it.HasNext();
+    it.Next();
+    it.Next(); //In ArrayList index mid remains, so we jump over two elements to reach the following one
+    b := it.HasPeek();
     i := i + 1;
   }
 

@@ -9,9 +9,8 @@ function Dup<A>(xs: seq<A>): seq<A>
 //This is the map that proves the subsequence property
 function DupMap<A>(xs: seq<A>):map<int,int>
 {
- map i | 0<=i<|xs| :: 2*i
+ (map i | 0<=i<|xs| :: 2*i)[-1:=-1]
 }
-
 
 function DupRev<A>(xs: seq<A>): seq<A>
   ensures 2*|xs| == |DupRev(xs)|
@@ -45,13 +44,13 @@ lemma DupDupRev<A>(xs: seq<A>)
 
 
 
-lemma {:induction xs} setDup<A>(xs: seq<A>)
+lemma {:induction xs} SetDup<A>(xs: seq<A>)
 ensures forall x :: x in xs <==> x in Dup(xs)
 ensures |Dup(xs)|==2*|xs|
 ensures forall i | 0<=i<|xs| :: xs[i]==Dup(xs)[2*i]==Dup(xs)[2*i+1]
 {}
 
- lemma {:induction xs} dupElsAux<A>(xs: seq<A>,x:A)
+ lemma {:induction xs} DupElsAux<A>(xs: seq<A>,x:A)
  requires x in xs
  ensures multiset(Dup(xs))[x]==2*multiset(xs)[x]
 {
@@ -72,7 +71,7 @@ ensures forall i | 0<=i<|xs| :: xs[i]==Dup(xs)[2*i]==Dup(xs)[2*i+1]
             calc=={
               multiset(Dup(xs))[xs[0]];
               2+multiset(Dup(xs[1..]))[xs[0]];
-              {setDup(xs[1..]);
+              {SetDup(xs[1..]);
               assert xs[0] !in xs[1..] ==> xs[0] !in Dup(xs[1..]);
               assert multiset(Dup(xs[1..]))[xs[0]]==0;}
               2;{assert xs==[xs[0]]+xs[1..];
@@ -98,36 +97,36 @@ ensures forall i | 0<=i<|xs| :: xs[i]==Dup(xs)[2*i]==Dup(xs)[2*i+1]
 }
 
 
-lemma {:induction xs} dupEls<A>(xs: seq<A>)
+lemma {:induction xs} DupEls<A>(xs: seq<A>)
  ensures forall x | x in xs :: multiset(Dup(xs))[x]==2*multiset(xs)[x]
 { forall x | x in xs 
   ensures multiset(Dup(xs))[x]==2*multiset(xs)[x]{
-   dupElsAux(xs,x);
+   DupElsAux(xs,x);
 
   }
 }
 
 
-function dup(i:int,j:int):int
-ensures i==j==> dup(i,j)==2*i
-ensures i!=j ==> dup(i,j)==2*i+1
+function DupI(i:int,j:int):int
+ensures i==j==> DupI(i,j)==2*i
+ensures i!=j ==> DupI(i,j)==2*i+1
 {if (i==j) then 2*i
  else 2*i+1}
  
 
-function fdup(j:int):(int -> int) 
-{ i => dup(i,j)}
+function DupF(j:int):(int -> int) 
+{ i => DupI(i,j)}
 
 
-function dupInvariant(i:int,j:int):int
-ensures i<j==> dupInvariant(i,j)==2*i+1
-ensures i>=j ==> dupInvariant(i,j)==j+i
+function DupInvariant(i:int,j:int):int
+ensures i<j==> DupInvariant(i,j)==2*i+1
+ensures i>=j ==> DupInvariant(i,j)==j+i
 {if (i < j) then 2*i+1
  else i+j}
 
 
-function fdupInvariant(j:int):(int -> int) 
-{ i => dupInvariant(i,j) }
+function DupInvariantF(j:int):(int -> int) 
+{ i => DupInvariant(i,j) }
 
-function dupMap<A>(xs:seq<A>,i:int):map<int,int>
-{map it | 0<=it<=|xs| :: if (it < i) then 2*it+1 else i+it}
+function DupMapI<A>(xs:seq<A>,i:int):map<int,int>
+{(map it | -1<=it<=|xs| :: if (it < i) then 2*it+1 else i+it)}
