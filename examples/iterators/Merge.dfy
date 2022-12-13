@@ -77,13 +77,13 @@ method {:timeLimitMultiplier 100} Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml
     var it2Peek := it2.Peek();
     var x;
     if (it1Peek <= it2Peek) {
-
+      x := it1Peek;
       it1.Next();        
       assert l1.Model()[..it1.Index()] == model1+[x];
       assert multiset(l1.Model()[..it1.Index()]) == multiset(model1+[x]);
     }
     else {
-      
+      x := it2Peek;
       it2.Next();        
       assert l2.Model()[..it2.Index()] == model2+[x];
       assert multiset(l2.Model()[..it2.Index()]) == multiset{x}+multiset(model2);
