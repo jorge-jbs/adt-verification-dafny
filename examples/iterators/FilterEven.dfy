@@ -332,8 +332,8 @@ method {:timeLimitMultiplier 100} filterEven(l:LinkedList<int>)
   //allProps(old(l.Model()),l.Model(),x=>x%2==0);
 
   assert ValidIt(old(l.Model()),|old(l.Model())|,x=>x%2==0);
-  assert forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && ValidIt(old(l.Model()),old(iter.Index()),x => x%2==0) && 0 <= old(iter.Index())
-         ::iter.Valid() && iter.Parent()==old(iter.Parent()) &&
-           iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|;
+  //assert forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && ValidIt(old(l.Model()),old(iter.Index()),x => x%2==0) && 0 <= old(iter.Index())
+  //       ::iter.Valid() && iter.Parent()==old(iter.Parent()) &&
+  //         iter.Index()==|FilterR(old(l.Model())[..old(iter.Index())],x => x%2==0)|;
 }
 

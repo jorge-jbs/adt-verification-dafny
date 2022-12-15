@@ -20,7 +20,7 @@ method FillArrayLL<A>(l: LinkedList<A>, v: array<A>) returns (ghost mit:map<int,
 
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
-     it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
+     it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())] == it.Index()
   ensures mit == IdentityMap((set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())))
   //ensures mit==buildMap((set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),identity)
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: old(it.Index()) in mit //domain
@@ -50,7 +50,7 @@ method FillArrayLL<A>(l: LinkedList<A>, v: array<A>) returns (ghost mit:map<int,
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
-       it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index();
+       it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())]==it.Index();
   {
     var x := it.Peek();
     it.Next();

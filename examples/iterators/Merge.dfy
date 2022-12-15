@@ -31,9 +31,9 @@ method {:timeLimitMultiplier 100} Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml
 
   ensures l1.Iterators() >= old(l1.Iterators()) && l2.Iterators() >= old(l2.Iterators())
   ensures forall it | it in old(l1.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index()) == it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
   ensures forall it | it in old(l2.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index()) == it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
 {
   var it1 := l1.First();
   var it2 := l2.First();
@@ -51,7 +51,7 @@ method {:timeLimitMultiplier 100} Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml
 
     invariant l1.Valid() && l2.Valid() && ml.Valid()
     invariant it1 in l1.Iterators() && it2 in l2.Iterators()
-    invariant it1.Parent() == l1 && it2.Parent()==l2
+    invariant it1.Parent() == l1 && it2.Parent() == l2
     invariant it1.Valid() && it2.Valid()
     invariant it1.Index() >= 0 && it2.Index() >= 0 
     invariant l1.Model() == old(l1.Model()) && l2.Model() == old(l2.Model())
@@ -64,9 +64,9 @@ method {:timeLimitMultiplier 100} Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml
     
     invariant l1.Iterators() >= old(l1.Iterators()) && l2.Iterators() >= old(l2.Iterators())
     invariant forall it | it in old(l1.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index()) == it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
     invariant forall it | it in old(l2.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index()) == it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
 
     invariant {l1}+l1.Repr()!!{l2}+l2.Repr()  && {l1}+l1.Repr()!!{ml}+ml.Repr() && {l2}+l2.Repr()!!{ml}+ml.Repr()
   {
@@ -111,7 +111,7 @@ method {:timeLimitMultiplier 100} Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml
 
     invariant l1.Valid() && l2.Valid() && ml.Valid()
     invariant it1 in l1.Iterators() && it2 in l2.Iterators()
-    invariant it1.Parent() == l1 && it2.Parent()==l2
+    invariant it1.Parent() == l1 && it2.Parent() == l2
     invariant it1.Valid() && it2.Valid()
     invariant it1.Index() >= 0 && it2.Index() >= 0 
     invariant l1.Model() == old(l1.Model()) && l2.Model() == old(l2.Model())
@@ -124,9 +124,9 @@ method {:timeLimitMultiplier 100} Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml
   
     invariant l1.Iterators() >= old(l1.Iterators()) && l2.Iterators() >= old(l2.Iterators())
     invariant forall it | it in old(l1.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index())== it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index())== it.Index()
     invariant forall it | it in old(l2.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index())== it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index())== it.Index()
 
     invariant {l1}+l1.Repr()!!{l2}+l2.Repr()  && {l1}+l1.Repr()!!{ml}+ml.Repr() && {l2}+l2.Repr()!!{ml}+ml.Repr()
    {
@@ -173,9 +173,9 @@ method {:timeLimitMultiplier 100} Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml
 
     invariant l1.Iterators() >= old(l1.Iterators()) && l2.Iterators() >= old(l2.Iterators())
     invariant forall it | it in old(l1.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index()) == it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
     invariant forall it | it in old(l2.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index()) == it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
 
     invariant {l1}+l1.Repr()!!{l2}+l2.Repr()  && {l1}+l1.Repr()!!{ml}+ml.Repr() && {l2}+l2.Repr()!!{ml}+ml.Repr()
    {

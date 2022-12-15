@@ -22,7 +22,7 @@ method FindMax<A>(l: LinkedList<A>, le:(A,A) -> bool) returns (max: ListIterator
 
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) ::
-    it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+    it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
 {
   max := l.First();
@@ -50,7 +50,7 @@ method FindMax<A>(l: LinkedList<A>, le:(A,A) -> bool) returns (max: ListIterator
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
   { var itPeek := it.Peek(); 
     var maxPeek := max.Peek();
@@ -83,7 +83,7 @@ method FindMaxAL<A>(l: ArrayList<A>,le:(A,A)->bool) returns (max: ListIterator<A
 
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) ::
-    it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+    it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
 {
   max := l.First();
@@ -112,7 +112,7 @@ method FindMaxAL<A>(l: ArrayList<A>,le:(A,A)->bool) returns (max: ListIterator<A
     
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent()==old(it.Parent()) && it.Index() == old(it.Index())
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     var itPeek := it.Peek(); 
     var maxPeek := max.Peek();

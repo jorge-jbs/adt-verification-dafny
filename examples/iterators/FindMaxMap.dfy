@@ -24,7 +24,7 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:ma
   
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
-      it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())] == it.Index()
   ensures mit == IdMap(old(l.Model()))
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: old(it.Index()) in mit //domain
   ensures forall i | i in mit :: mit[i] == i //range  
@@ -57,7 +57,7 @@ method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:ma
     
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
-       it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())] == it.Index() 
+       it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())] == it.Index() 
   {
     var itPeek := it.Peek(); 
     var maxPeek := max.Peek();
@@ -89,7 +89,7 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>, ghost mit:m
   
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
-    it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
+    it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())]==it.Index()
   ensures mit == BuildMap((set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),Identity)
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: old(it.Index()) in mit //domain
   ensures forall i | i in mit :: mit[i] == Identity(i) //range
@@ -124,7 +124,7 @@ method FindMaxAL(l: ArrayList<int>) returns (max: ListIterator<int>, ghost mit:m
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
-     it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()    
+     it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())] == it.Index()    
   {
     var itPeek := it.Peek(); 
     var maxPeek := max.Peek();
