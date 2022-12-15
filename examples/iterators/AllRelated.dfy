@@ -10,7 +10,7 @@ method AllRelated<A>(l: List<A>, r: (A,A) -> bool) returns (b:bool)
   ensures fresh(l.Repr()-old(l.Repr()))
   ensures allocated(l.Repr())
 
-  requires IsPreorder(r)
+  requires IsPreorder(r)//reflexive and transitive
 
   ensures l.Valid()
   ensures l.Model() == old(l.Model())
@@ -95,3 +95,5 @@ method DecSorted(l: List<int>) returns (b:bool)
 { 
   b := AllRelated(l, (x,y) => x >= y); 
 } 
+
+
