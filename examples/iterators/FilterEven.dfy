@@ -14,7 +14,7 @@ predicate SubSec<A>(xs1:seq<A>,xs2:seq<A>,f:map<int,int>)
   predicate IsSubSec<A>(xs1:seq<A>,xs2:seq<A>)
   {exists f:map<int,int> :: SubSec(xs1,xs2,f)}
 
- lemma {: verify false} MultiSeq<A>(xs:seq<A>)
+ lemma {:verify true} MultiSeq<A>(xs:seq<A>)
   requires xs != []
   ensures  multiset(xs)[xs[|xs|-1]] == multiset(xs[..|xs|-1])[xs[|xs|-1]]+1
   ensures forall x | x in xs && x != xs[|xs|-1] :: multiset(xs)[x] == multiset(xs[..|xs|-1])[x]
@@ -46,7 +46,7 @@ ensures xs != [] && !f(xs[|xs|-1]) ==> FilterRMap(xs,f) == FilterRMap(xs[..|xs|-
 
 }
   
-  lemma {:timeLimitMultiplier 100} {:verify false} SubSecFilter<A>(xs: seq<A>,f: A -> bool)
+  lemma {:timeLimitMultiplier 100} {:verify true} SubSecFilter<A>(xs: seq<A>,f: A -> bool)
   ensures SubSec(FilterR(xs,f),xs,FilterRMap(xs,f))
   {
     if xs == [] {}
@@ -78,7 +78,7 @@ ensures x in multiset(FilterR(xs,f)) ==> x in multiset(xs)
 {}
 
 
-lemma {:verify false} MultiFilter<A>(xs: seq<A>,x:A,f: A -> bool)
+lemma {:verify true} MultiFilter<A>(xs: seq<A>,x:A,f: A -> bool)
 requires xs != [] && x in xs && x in FilterR(xs,f)
 ensures multiset(FilterR(xs,f))[x] == multiset(xs)[x]
 {
@@ -133,15 +133,15 @@ ensures multiset(FilterR(xs,f))[x] == multiset(xs)[x]
   
 }
 
-lemma {:verify false} PropInFilter<A>(xs: seq<A>,f: A -> bool)
+lemma {:verify true} PropInFilter<A>(xs: seq<A>,f: A -> bool)
   ensures forall i | 0<=i< |xs| && f(xs[i]) :: xs[i] in  FilterR(xs,f)
 {}
 
-lemma {:verify false} PropSubSecFilter<A>(xs: seq<A>,f: A -> bool)
+lemma {:verify true} PropSubSecFilter<A>(xs: seq<A>,f: A -> bool)
 ensures IsSubSec(FilterR(xs,f),xs)
 {SubSecFilter(xs,f);}
 
-lemma {: verify false} PropmultiFilter<A>(xs: seq<A>,f: A -> bool)
+lemma {:verify true} PropmultiFilter<A>(xs: seq<A>,f: A -> bool)
 ensures forall x | x in multiset(FilterR(xs,f)) :: multiset(FilterR(xs,f))[x] == multiset(xs)[x]
 {
   forall x | x in multiset(FilterR(xs,f))
@@ -149,7 +149,7 @@ ensures forall x | x in multiset(FilterR(xs,f)) :: multiset(FilterR(xs,f))[x] ==
   { MultiFilter(xs,x,f);}
 }
 
-lemma {:verify false} PropAtiFilter<A>(xs: seq<A>,f: A -> bool,i:int)
+lemma {:verify true} PropAtiFilter<A>(xs: seq<A>,f: A -> bool,i:int)
 requires 0 <= i < |xs|
 ensures !f(xs[i]) ==> FilterR(xs[..i+1],f) == FilterR(xs[..i],f)
 ensures f(xs[i]) ==> FilterR(xs[..i+1],f) == FilterR(xs[..i],f)+[xs[i]]
@@ -173,13 +173,13 @@ ensures f(xs[i]) ==> FilterR(xs[..i+1],f) == FilterR(xs[..i],f)+[xs[i]]
 
 }
 
-lemma {:verify false} FilterLength<A>(xs: seq<A>,f: A -> bool,i:int)
+lemma {:verify true} FilterLength<A>(xs: seq<A>,f: A -> bool,i:int)
 requires 0 <= i < |xs|
 ensures !f(xs[i]) ==> |FilterR(xs[..i+1],f)| == |FilterR(xs[..i],f)|
 ensures f(xs[i]) ==> |FilterR(xs[..i+1],f)| == |FilterR(xs[..i],f)|+1
 {PropAtiFilter(xs,f,i);}
 
-lemma {:induction i} {:verify false} FilterLength2<A>(xs: seq<A>,f: A -> bool,i:int)
+lemma {:induction i} {:verify true} FilterLength2<A>(xs: seq<A>,f: A -> bool,i:int)
 requires 0 <= i <= |xs|
 ensures |FilterR(xs[..i],f)| <= i
 {if (i == 0) {assert xs[..i] == [];}
@@ -193,7 +193,7 @@ ensures 0 <= i < |xs| && f(xs[i]) ==> ValidIt(xs,i,f)
   (i == |xs|) || (i == -1) || (0 <= i < |xs| && f(xs[i]))
 }
 
-lemma {:verify false} AllProps<A>(oxs:seq<A>,xs:seq<A>,f:A -> bool)
+lemma {:verify true} AllProps<A>(oxs:seq<A>,xs:seq<A>,f:A -> bool)
 requires xs == FilterR(oxs,f)
 ensures forall i | 0 <= i < |xs| :: f(xs[i])
 ensures forall i | 0 <= i < |oxs| && f(oxs[i]) :: oxs[i] in xs 
