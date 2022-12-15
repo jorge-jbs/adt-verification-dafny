@@ -48,7 +48,7 @@ method AllEqual<A(==)>(l: List<A>) returns (b:bool)
   requires l.Valid()
   ensures l.Valid()
   ensures l.Model() == old(l.Model())
-  ensures b == forall i| 0 <= i < |old(l.Model())|-1 :: old(l.Model())[i] == old(l.Model())[i+1]
+  ensures b == forall i | 0 <= i < |old(l.Model())|-1 :: old(l.Model())[i] == old(l.Model())[i+1]
   
   ensures l.Iterators() >= old(l.Iterators())
 {
