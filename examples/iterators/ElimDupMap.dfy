@@ -13,14 +13,14 @@ predicate StrictSorted(xs:seq<int>)
 
 function DelDup(xs:seq<int>,i:int):seq<int>//[0,i)
 requires 0 <= i <= |xs|
-ensures i==0 ==>DelDup(xs,i)==[]
-ensures i==1 ==>DelDup(xs,i)==[xs[0]]
-ensures i>1 && xs[i-1]!=xs[i-2] ==> DelDup(xs,i)==DelDup(xs,i-1)+[xs[i-1]]
-ensures i>1 && xs[i-1]==xs[i-2] ==> DelDup(xs,i)==DelDup(xs,i-1)
+ensures i == 0 ==> DelDup(xs,i) == []
+ensures i == 1 ==> DelDup(xs,i) == [xs[0]]
+ensures i > 1 && xs[i-1] != xs[i-2] ==> DelDup(xs,i) == DelDup(xs,i-1)+[xs[i-1]]
+ensures i > 1 && xs[i-1] == xs[i-2] ==> DelDup(xs,i) == DelDup(xs,i-1)
 {
- if (i==0) then []
- else if (i==1) then [xs[0]]
- else if (xs[i-1]!=xs[i-2]) then DelDup(xs,i-1)+[xs[i-1]]
+ if (i == 0) then []
+ else if (i == 1) then [xs[0]]
+ else if (xs[i-1] != xs[i-2]) then DelDup(xs,i-1)+[xs[i-1]]
  else DelDup(xs,i-1)
 
 }
@@ -47,9 +47,9 @@ ensures j <= it <|xs| ==>ValidIt(xs,j,it) == true
 
 function Fit(xs:seq<int>,j:int,it:int):int
 requires 1 <= j <= |xs| && -1 <= it <= |xs|
-ensures it <= 0 ==> Fit(xs,j,it)==it
-ensures it>0 && it >= j ==> Fit(xs,j,it)==it-(j-|DelDup(xs,j)|)
-ensures it>0 && it < j ==> Fit(xs,j,it)==|DelDup(xs,it)|
+ensures it <= 0 ==> Fit(xs,j,it) == it
+ensures it > 0 && it >= j ==> Fit(xs,j,it) == it-(j-|DelDup(xs,j)|)
+ensures it > 0 && it < j ==> Fit(xs,j,it) == |DelDup(xs,it)|
 {
   if (it <= 0) then it
   else if (it >= j) then it-(j-|DelDup(xs,j)|)
@@ -59,32 +59,32 @@ ensures it>0 && it < j ==> Fit(xs,j,it)==|DelDup(xs,it)|
 
 lemma Updatef(xs:seq<int>,j:int,it:int)
 requires 1 <= j < |xs| && -1 <= it <= |xs|
-ensures it == j ==> Fit(xs,j+1,it)==Fit(xs,j,it)
-ensures it < j ==> Fit(xs,j+1,it)==Fit(xs,j,it)
+ensures it == j ==> Fit(xs,j+1,it) == Fit(xs,j,it)
+ensures it < j ==> Fit(xs,j+1,it) == Fit(xs,j,it)
 {}
 
 
 function  DelMap(xs:seq<int>,its:set<int>,j:int):map<int,int>
 requires 0 <= j <= |xs| 
-ensures j == 0 ==> DelMap(xs,its,j)==map[]
+ensures j == 0 ==> DelMap(xs,its,j) == map[]
 ensures 1 < j <= |xs| ==> forall it | it in DelMap(xs,its,j) :: 
-    it in its && -1 <= it <= |xs| && ValidIt(xs,j,it) && DelMap(xs,its,j)[it]==Fit(xs,j,it) 
+    it in its && -1 <= it <= |xs| && ValidIt(xs,j,it) && DelMap(xs,its,j)[it] == Fit(xs,j,it) 
 { if (j==0) then map[]
-  else map it | it in its && -1<=it<=|xs| && ValidIt(xs,j,it):: Fit(xs,j,it)}
+  else map it | it in its && -1 <= it <= |xs| && ValidIt(xs,j,it):: Fit(xs,j,it)}
 
 
 
 lemma DelMapRange(xs:seq<int>,its:set<int>,j:int)
 requires 0 <= j <= |xs| 
  ensures forall it | it in DelMap(xs,its,j) && 0 <= it < j
-       ::DelMap(xs,its,j)[it]<|DelDup(xs,j)|
+       ::DelMap(xs,its,j)[it] < |DelDup(xs,j)|
  ensures forall it | it in DelMap(xs,its,j) && it > j
-       ::DelMap(xs,its,j)[it]>|DelDup(xs,j)|
+       ::DelMap(xs,its,j)[it] > |DelDup(xs,j)|
 ensures forall it | it in DelMap(xs,its,j) && it == j
-       ::DelMap(xs,its,j)[it]==|DelDup(xs,j)|
+       ::DelMap(xs,its,j)[it] == |DelDup(xs,j)|
 {
 forall it | it in DelMap(xs,its,j) && 0 <= it < j
-ensures DelMap(xs,its,j)[it]<|DelDup(xs,j)|{
+ensures DelMap(xs,its,j)[it] < |DelDup(xs,j)|{
  Monotone(xs,it,j);
 }
 }
@@ -92,28 +92,28 @@ ensures DelMap(xs,its,j)[it]<|DelDup(xs,j)|{
 
 lemma UpdateMapV(xs:seq<int>,its:set<int>,j:int)
 requires 0 < j < |xs| 
-ensures   ValidIt(xs,j+1,j) ==> DelMap(xs,its,j+1)==DelMap(xs,its,j)
+ensures   ValidIt(xs,j+1,j) ==> DelMap(xs,its,j+1) == DelMap(xs,its,j)
 {
   if (ValidIt(xs,j+1,j)){
-    assert |DelDup(xs,j+1)|==|DelDup(xs,j)|+1;}
+    assert |DelDup(xs,j+1)| == |DelDup(xs,j)|+1;}
 }
 
 lemma UpdateMapNV(xs:seq<int>,its:set<int>,j:int)
 requires 0 < j < |xs| && !ValidIt(xs,j+1,j)
-ensures forall it | it in DelMap(xs,its,j) && it < j :: it in DelMap(xs,its,j+1) && DelMap(xs,its,j+1)[it]==DelMap(xs,its,j)[it]<j
-ensures forall it | it in DelMap(xs,its,j) && it > j :: it in DelMap(xs,its,j+1) && DelMap(xs,its,j+1)[it]==DelMap(xs,its,j)[it]-1
+ensures forall it | it in DelMap(xs,its,j) && it < j :: it in DelMap(xs,its,j+1) && DelMap(xs,its,j+1)[it] == DelMap(xs,its,j)[it]<j
+ensures forall it | it in DelMap(xs,its,j) && it > j :: it in DelMap(xs,its,j+1) && DelMap(xs,its,j+1)[it] == DelMap(xs,its,j)[it]-1
 ensures j !in DelMap(xs,its,j+1)
 {
 forall it | it in DelMap(xs,its,j) && 0 <= it < j 
-ensures it in DelMap(xs,its,j+1) && DelMap(xs,its,j+1)[it]==DelMap(xs,its,j)[it]<j
+ensures it in DelMap(xs,its,j+1) && DelMap(xs,its,j+1)[it] == DelMap(xs,its,j)[it]<j
 {
   Monotone(xs,it,j);DelDupSize(xs,j);
 }
 forall it | it in DelMap(xs,its,j) && it>j 
-ensures it in DelMap(xs,its,j+1) && DelMap(xs,its,j+1)[it]==DelMap(xs,its,j)[it]-1
+ensures it in DelMap(xs,its,j+1) && DelMap(xs,its,j+1)[it] == DelMap(xs,its,j)[it]-1
 {
   Monotone(xs,j,it);DelDupSize(xs,j);
-  assert DelMap(xs,its,j+1)[it]==it-(j+1-|DelDup(xs,j+1)|)==it-(j+1-|DelDup(xs,j)|);
+  assert DelMap(xs,its,j+1)[it] == it-(j+1-|DelDup(xs,j+1)|) == it-(j+1-|DelDup(xs,j)|);
 }
 }
 
@@ -134,7 +134,7 @@ method {:timeLimitMultiplier 100} ElimDup(l:LinkedList<int>) returns (ghost mit:
 
  ensures l.Iterators() >= old(l.Iterators())
  ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
-  it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())]==it.Index()
+  it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())] == it.Index()
  ensures mit == DelMap(old(l.Model()),(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),|old(l.Model())|)
 {
   ghost var validSet := (set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index()));
@@ -170,13 +170,13 @@ method {:timeLimitMultiplier 100} ElimDup(l:LinkedList<int>) returns (ghost mit:
      invariant it1.Valid() && it2.Valid()
      invariant it1.Index() >= 0 && it2.Index() >= 0
      invariant it2.Index() == it1.Index()+1 
-     invariant it2.HasPeek?() ==> it1.HasPeek?() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()]
-     invariant j+(|l.Model()| - it2.Index())==|omodel| && 1<=j<=|old(l.Model())| 
+     invariant it2.HasPeek?() ==> it1.HasPeek?() && l.Model()[it1.Index()+1] == l.Model()[it2.Index()]
+     invariant j+(|l.Model()| - it2.Index()) == |omodel| && 1 <= j <= |old(l.Model())| 
 
-     invariant l.Model()[..it2.Index()]==DelDup(old(l.Model()),j)    
-     invariant old(l.Model())[j-1]==l.Model()[it1.Index()]
-     invariant l.Model()[it2.Index()..]==old(l.Model())[j..] 
-     invariant forall k | p <= k < j ::old(l.Model())[k]==old(l.Model())[j-1]==l.Model()[it1.Index()]
+     invariant l.Model()[..it2.Index()] == DelDup(old(l.Model()),j)    
+     invariant old(l.Model())[j-1] == l.Model()[it1.Index()]
+     invariant l.Model()[it2.Index()..] == old(l.Model())[j..] 
+     invariant forall k | p <= k < j :: old(l.Model())[k] == old(l.Model())[j-1] == l.Model()[it1.Index()]
      invariant b == it2.HasPeek?()
 
      //invariant (set x | x in old(l.Model())) == (set x | x in l.Model())
@@ -189,7 +189,7 @@ method {:timeLimitMultiplier 100} ElimDup(l:LinkedList<int>) returns (ghost mit:
      //invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && it.Valid() && it.Index()>it2.Index() :: old(it.Index())>j;
 
      invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
-       it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())]==it.Index()<=old(it.Index())
+       it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())] == it.Index() <= old(it.Index())
      //invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit && old(it.Index())<j
      //   ::mit[old(it.Index())]<it2.Index()
      //invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit && old(it.Index())>=j

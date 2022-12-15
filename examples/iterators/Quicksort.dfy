@@ -15,7 +15,7 @@ ensures multiset(xs) == multiset(ys)
  calc=={
    multiset(xs);{assert xs == xs[..i]+xs[i..j]+xs[j..];}
    multiset(xs[..i]+xs[i..j]+xs[j..]);
-   {assert xs[i..j]==[xs[i]]+xs[i+1..j]; assert xs[j..] == [xs[j]]+xs[j+1..];}
+   {assert xs[i..j] == [xs[i]]+xs[i+1..j]; assert xs[j..] == [xs[j]]+xs[j+1..];}
    multiset(xs[..i]+[xs[i]]+xs[i+1..j]+[xs[j]]+xs[j+1..]);
    multiset(xs[..i])+multiset{xs[i]}+multiset(xs[i+1..j])+multiset{xs[j]}+multiset(xs[j+1..]);
    multiset(xs[..i])+multiset{xs[i]}+multiset{xs[j]}+multiset(xs[i+1..j])+multiset(xs[j+1..]);
@@ -171,7 +171,7 @@ ensures forall z | c.Index() <= z < p.Index() :: l.Model()[z] < x
 ensures forall z | p.Index() <= z < q.Index() :: l.Model()[z] == x
 ensures forall z | q.Index() <= z < c.Index()+n:: l.Model()[z] > x
 ensures nL == p.Index()-c.Index() && nG == c.Index()+n-q.Index()
-ensures x in multiset(old(l.Model()[c.Index()..c.Index()+n])) ==> p.Index()<q.Index()
+ensures x in multiset(old(l.Model()[c.Index()..c.Index()+n])) ==> p.Index() < q.Index()
 {
   p := c.Copy();
   q := c.Copy();
@@ -193,7 +193,7 @@ ensures x in multiset(old(l.Model()[c.Index()..c.Index()+n])) ==> p.Index()<q.In
     invariant |l.Model()| == |old(l.Model())|
     invariant  multiset(l.Model()) == multiset(old(l.Model()))
     invariant nL == p.Index()-c.Index() && nG == r.Index()-q.Index()
-    invariant x in multiset(l.Model()[c.Index()..r.Index()]) ==> p.Index()<q.Index()
+    invariant x in multiset(l.Model()[c.Index()..r.Index()]) ==> p.Index() < q.Index()
     
     invariant forall z | c.Index() <= z < p.Index() :: l.Model()[z] < x
     invariant forall z | p.Index() <= z < q.Index() :: l.Model()[z] == x

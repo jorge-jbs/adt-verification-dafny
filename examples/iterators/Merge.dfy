@@ -60,7 +60,7 @@ method {:timeLimitMultiplier 100} Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml
     invariant Smaller(ml.Model(),l1.Model()[it1.Index()..]) && Smaller(ml.Model(),l2.Model()[it2.Index()..])
     invariant multiset(ml.Model()) == multiset(l1.Model()[..it1.Index()])+multiset(l2.Model()[..it2.Index()])
     invariant it1HasPeek == it1.HasPeek?()
-    invariant it2HasPeek== it2.HasPeek?()
+    invariant it2HasPeek == it2.HasPeek?()
     
     invariant l1.Iterators() >= old(l1.Iterators()) && l2.Iterators() >= old(l2.Iterators())
     invariant forall it | it in old(l1.Iterators()) && old(it.Valid())::
@@ -124,9 +124,9 @@ method {:timeLimitMultiplier 100} Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml
   
     invariant l1.Iterators() >= old(l1.Iterators()) && l2.Iterators() >= old(l2.Iterators())
     invariant forall it | it in old(l1.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index())== it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
     invariant forall it | it in old(l2.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index())== it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
 
     invariant {l1}+l1.Repr()!!{l2}+l2.Repr()  && {l1}+l1.Repr()!!{ml}+ml.Repr() && {l2}+l2.Repr()!!{ml}+ml.Repr()
    {
@@ -167,7 +167,7 @@ method {:timeLimitMultiplier 100} Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml
     invariant it1.Index() == |l1.Model()|
     invariant Sorted(ml.Model()) && Sorted(l1.Model()) && Sorted(l2.Model())
     invariant Smaller(ml.Model(),l2.Model()[it2.Index()..])
-    invariant it2.HasPeek?() ==> it1.Index() ==|l1.Model()|
+    invariant it2.HasPeek?() ==> it1.Index() == |l1.Model()|
     invariant multiset(ml.Model()) == multiset(l1.Model()[..it1.Index()])+multiset(l2.Model()[..it2.Index()])
     invariant it2HasPeek == it2.HasPeek?()
 

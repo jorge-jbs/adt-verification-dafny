@@ -20,7 +20,7 @@ method DupElements<A>(l: LinkedList<A>) returns (ghost mit:map<int,int>)
   
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
-     it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
+     it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())] == it.Index()
   ensures mit == DupMapI(old(l.Model()),|old(l.Model())|)
   //ensures mit == BuildMap((set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),DupF(|old(l.Model())|))
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()):: old(it.Index()) in mit //domain
@@ -55,7 +55,7 @@ method DupElements<A>(l: LinkedList<A>) returns (ghost mit:map<int,int>)
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && old(iter.Index()) in mit::
-       iter.Valid() && iter.Parent()==old(iter.Parent()) && mit[old(iter.Index())]==iter.Index()
+       iter.Valid() && iter.Parent() == old(iter.Parent()) && mit[old(iter.Index())] == iter.Index()
     //invariant it !in old(l.Iterators())
     //invariant  mit == BuildMap((set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),DupInvariantF(i))
     invariant mit == DupMapI(old(l.Model()),i)
@@ -64,11 +64,11 @@ method DupElements<A>(l: LinkedList<A>) returns (ghost mit:map<int,int>)
     assert i < old(|l.Model()|);
     ghost var omodel := l.Model();
     assert omodel[..2*i] == DupRev(old(l.Model()[..i]));
-    assert omodel[2*i]==old(l.Model()[i]);
+    assert omodel[2*i] == old(l.Model()[i]);
 
     var x := it.Peek();
     
-    assert x==l.Model()[2*i]==old(l.Model()[i]);
+    assert x==l.Model()[2*i] == old(l.Model()[i]);
 
     
     var it1:=l.Insert(it, x);
@@ -155,7 +155,7 @@ method DupElementsAL(l: ArrayList<int>) returns (ghost mit:map<int,int>)
     invariant l.Iterators() >= old(l.Iterators())
     invariant it !in old(l.Iterators())
     invariant forall iter | iter in old(l.Iterators()) && old(iter.Valid()) && old(iter.Index()) in mit::
-        iter.Valid() && iter.Parent()==old(iter.Parent()) && mit[old(iter.Index())] == iter.Index();
+        iter.Valid() && iter.Parent() == old(iter.Parent()) && mit[old(iter.Index())] == iter.Index();
   {
      
      
@@ -209,7 +209,7 @@ modifies l, l.Repr()
   ensures l.Valid()
   ensures l.Model() == Dup(Dup(old(l.Model())))
   {
-    ghost var validSet:=(set it |it in old(l.Iterators()) && old(it.Valid())&& old(it.Index())<|old(l.Model())|);
+    ghost var validSet:=(set it |it in old(l.Iterators()) && old(it.Valid())&& old(it.Index()) < |old(l.Model())|);
 
     var mit1 := DupElements(l);
     var mit2 := DupElements(l);

@@ -24,7 +24,7 @@ method AllPositive(l: List<int>) returns (b:bool)
   invariant allocated(l.Repr())
   invariant fresh(l.Repr()-old(l.Repr()))
 
-  invariant l.Valid() && it.Valid() && it.Parent()==l && it in l.Iterators()
+  invariant l.Valid() && it.Valid() && it.Parent() == l && it in l.Iterators()
   invariant l.Model() == old(l.Model())
   invariant 0 <= it.Index() <= |old(l.Model())|
   invariant b == (forall i | 0 <= i < it.Index() :: old(l.Model())[i] >= 0)
@@ -66,8 +66,8 @@ method AllEqual<A(==)>(l: List<A>) returns (b:bool)
     invariant allocated(l.Repr())
     invariant fresh(l.Repr()-old(l.Repr()))
 
-    invariant l.Valid() && it1.Valid() && it1.Parent()==l && it1 in l.Iterators()
-    invariant it2.Valid() && it2.Parent()==l && it2 in l.Iterators()
+    invariant l.Valid() && it1.Valid() && it1.Parent() == l && it1 in l.Iterators()
+    invariant it2.Valid() && it2.Parent() == l && it2 in l.Iterators()
     invariant l.Model() == old(l.Model())
     invariant 0 <= it1.Index() <= |old(l.Model())|
     invariant it2.HasPeek?() ==> it2.Index() == it1.Index()-1

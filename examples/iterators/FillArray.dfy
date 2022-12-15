@@ -115,9 +115,8 @@ method FillArrayLL<A>(l: LinkedList<A>, v: array<A>)
 
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) :: 
-     it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
+     it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 {
-  ghost var iters:=l.Iterators();
   var it := l.First();
   var b := it.HasPeek();
 
@@ -139,7 +138,7 @@ method FillArrayLL<A>(l: LinkedList<A>, v: array<A>)
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) :: 
-       it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
+       it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
 
     var x := it.Peek();
@@ -167,9 +166,8 @@ method FillArrayAL<A>(l: ArrayList<A>, v: array<A>)
 
   ensures l.Iterators() >= old(l.Iterators())
   ensures forall it | it in old(l.Iterators()) && old(it.Valid()) :: 
-    it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
+    it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 {
-  ghost var iters := l.Iterators();
   var it := l.First();
   var b := it.HasPeek();
 
@@ -191,7 +189,7 @@ method FillArrayAL<A>(l: ArrayList<A>, v: array<A>)
 
     invariant l.Iterators() >= old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) :: 
-       it.Valid() && it.Parent()==old(it.Parent()) && it.Index()==old(it.Index())
+       it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     var x := it.Peek();
     v[i] := x;
