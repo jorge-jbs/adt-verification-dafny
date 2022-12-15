@@ -122,7 +122,7 @@ ensures multiset(l.Model()) == multiset(old(l.Model()))
 ensures l.Iterators() >= old(l.Iterators())
 ensures p in l.Iterators() && q in l.Iterators() && p.Index() == old(p.Index()) && q.Index() == old(q.Index())
 ensures forall it | it in old(l.Iterators()) && old(it.Valid())::
-  it.Valid() && it.Parent() == old(it.Parent()) && it.Index()==old(it.Index())
+  it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
 //ADDITIONAL GHOST INFO
 ensures c in l.Iterators() && c.Valid() && c.Parent() == l && c.Index() == old(c.Index())
@@ -163,7 +163,7 @@ ensures |l.Model()| == |old(l.Model())|
 
 ensures l.Iterators() >= {p,q}+old(l.Iterators())
 ensures forall it | it in old(l.Iterators()) && old(it.Valid()) :: 
-  it.Valid() && it.Parent() == old(it.Parent()) && it.Index()==old(it.Index())
+  it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
 ensures multiset(l.Model()[c.Index()..c.Index()+n]) == multiset(old(l.Model()[c.Index()..c.Index()+n]))
 ensures l.Model()[..c.Index()] == old(l.Model()[..c.Index()]) && l.Model()[c.Index()+n..] == old(l.Model()[c.Index()+n..]) 
@@ -204,7 +204,7 @@ ensures x in multiset(old(l.Model()[c.Index()..c.Index()+n])) ==> p.Index()<q.In
 
     invariant l.Iterators() >= {p,q,r}+old(l.Iterators())
     invariant forall it | it in old(l.Iterators()) && old(it.Valid()) :: 
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index()==old(it.Index())
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
    var rPeek := r.Peek(); 
    if (rPeek > x)
@@ -226,7 +226,7 @@ ensures x in multiset(old(l.Model()[c.Index()..c.Index()+n])) ==> p.Index()<q.In
   i := i + 1;
     
 }
-assert r.Index()==c.Index()+n;
+assert r.Index() == c.Index()+n;
 
 }
 
@@ -250,7 +250,7 @@ ensures l.Model()[..c.Index()] == old(l.Model()[..c.Index()]) && l.Model()[c.Ind
 
 ensures l.Iterators() >= old(l.Iterators())
 ensures forall it | it in old(l.Iterators()) && old(it.Valid()) ::
-  it.Valid() && it.Parent() == old(it.Parent()) && it.Index()==old(it.Index())
+  it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 {
   var p,q:ListIterator<int>; var nL,nG:int;
   if (n>1)

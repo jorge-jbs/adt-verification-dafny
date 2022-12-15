@@ -39,10 +39,10 @@ method ElimDup(l:LinkedList<int>)
 
       invariant l.Valid()
       invariant it2 in l.Iterators() && it1 in l.Iterators()
-      invariant it1.Parent() == l && it2.Parent()==l
+      invariant it1.Parent() == l && it2.Parent() == l
       invariant it1.Valid() && it2.Valid()
-      invariant it2.Index()==it1.Index()+1
-      invariant it2.HasPeek?() ==> it1.HasPeek?() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()]
+      invariant it2.Index() == it1.Index()+1
+      invariant it2.HasPeek?() ==> it1.HasPeek?() && l.Model()[it1.Index()+1] == l.Model()[it2.Index()]
 
       invariant (set x | x in old(l.Model())) == (set x | x in l.Model())
       invariant Sorted(l.Model()) && StrictSorted(l.Model()[..it2.Index()])

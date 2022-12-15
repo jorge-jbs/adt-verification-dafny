@@ -134,7 +134,7 @@ method {:timeLimitMultiplier 100} ElimDup(l:LinkedList<int>) returns (ghost mit:
 
  ensures l.Iterators() >= old(l.Iterators())
  ensures forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
-  it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()
+  it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())]==it.Index()
  ensures mit == DelMap(old(l.Model()),(set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index())),|old(l.Model())|)
 {
   ghost var validSet := (set it |it in old(l.Iterators()) && old(it.Valid())::old(it.Index()));
@@ -166,10 +166,10 @@ method {:timeLimitMultiplier 100} ElimDup(l:LinkedList<int>) returns (ghost mit:
 
      invariant l.Valid()
      invariant it2 in l.Iterators() && it1 in l.Iterators()
-     invariant it1.Parent() == l && it2.Parent()==l
+     invariant it1.Parent() == l && it2.Parent() == l
      invariant it1.Valid() && it2.Valid()
      invariant it1.Index() >= 0 && it2.Index() >= 0
-     invariant it2.Index()==it1.Index()+1 
+     invariant it2.Index() == it1.Index()+1 
      invariant it2.HasPeek?() ==> it1.HasPeek?() && l.Model()[it1.Index()+1]==l.Model()[it2.Index()]
      invariant j+(|l.Model()| - it2.Index())==|omodel| && 1<=j<=|old(l.Model())| 
 
@@ -184,12 +184,12 @@ method {:timeLimitMultiplier 100} ElimDup(l:LinkedList<int>) returns (ghost mit:
 
      invariant l.Iterators() >= old(l.Iterators())
      invariant it1 !in old(l.Iterators()) && it2 !in old(l.Iterators())
-     invariant it2.Index()==|DelDup(old(l.Model()),j)|<=j
+     invariant it2.Index() == |DelDup(old(l.Model()),j)| <= j
      //invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index())>=j :: it.Index()>=it2.Index();
      //invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && it.Valid() && it.Index()>it2.Index() :: old(it.Index())>j;
 
      invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
-       it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index()<=old(it.Index())
+       it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())]==it.Index()<=old(it.Index())
      //invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit && old(it.Index())<j
      //   ::mit[old(it.Index())]<it2.Index()
      //invariant forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit && old(it.Index())>=j
@@ -232,7 +232,7 @@ method {:timeLimitMultiplier 100} ElimDup(l:LinkedList<int>) returns (ghost mit:
 
          
         assert forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
-         it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index();
+         it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())]==it.Index();
         assert mit == DelMap(old(l.Model()),validSet,j);
         assert l.Model()[it2.Index()..] == old(l.Model())[j..];
       }
@@ -256,7 +256,7 @@ method {:timeLimitMultiplier 100} ElimDup(l:LinkedList<int>) returns (ghost mit:
 
         mit := DelMap(old(l.Model()),validSet,j); 
         assert forall it | it in old(l.Iterators()) && old(it.Valid()) && old(it.Index()) in mit::
-         it.Valid() && it.Parent()==old(it.Parent()) && mit[old(it.Index())]==it.Index();
+         it.Valid() && it.Parent() == old(it.Parent()) && mit[old(it.Index())]==it.Index();
         assert mit == DelMap(old(l.Model()),validSet,j);
       }
     b:=it2.HasPeek();  
