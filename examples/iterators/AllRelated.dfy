@@ -1,7 +1,7 @@
 include "../../src/linear/layer1/List.dfy"
 include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
-include "../../src/Order.dfy"
+include "../../src/OrderCloseEnded.dfy"
 
 method AllRelated<A>(l: List<A>, r: (A,A) -> bool) returns (b:bool)
   modifies l,l.Repr()
@@ -10,7 +10,7 @@ method AllRelated<A>(l: List<A>, r: (A,A) -> bool) returns (b:bool)
   ensures fresh(l.Repr()-old(l.Repr()))
   ensures allocated(l.Repr())
 
-  requires IsPreorder(r)//reflexive and transitive
+  requires IsPreorder(r,set x | x in l.Model())//reflexive and transitive
 
   ensures l.Valid()
   ensures l.Model() == old(l.Model())
@@ -69,9 +69,9 @@ method Sorted<A>(l: List<A>, le:(A,A) -> bool) returns (b:bool)
   ensures fresh(l.Repr()-old(l.Repr()))
   ensures allocated(l.Repr())
 
-  requires IsTotalOrder(le)
 
   requires l.Valid()
+  requires IsTotalOrder(le,set x | x in l.Model())
   ensures l.Valid()
   ensures l.Model() == old(l.Model())
   ensures b == forall i, j | 0 <= i <= j < |old(l.Model())| :: le(old(l.Model())[i],old(l.Model())[j])
@@ -97,3 +97,27 @@ method DecSorted(l: List<int>) returns (b:bool)
 } 
 
 
+class O{
+  var id:int;
+  function method Comparador(otro:O):bool
+  reads this, otro
+   {id <= (otro.id)}
+}
+
+
+method prueba(l:List<O>) returns (b:bool)
+  modifies l,l.Repr()
+  requires allocated(l.Repr())
+  ensures fresh(l.Repr()-old(l.Repr()))
+  ensures allocated(l.Repr())
+
+
+  requires l.Valid()
+  requires Ordered(l.Model(),menor)
+  ensures l.Valid()
+  ensures l.Model() == old(l.Model())
+  ensures b == forall i, j | 0 <= i <= j < |old(l.Model())| :: old(l.Model())[i].Comparador(old(l.Model())[j])
+  
+  ensures l.Iterators() >= old(l.Iterators())
+{   assume IsTotalOrder(menor,set x | x in l.Model());
+    b := AllRelated(l, menor); } 
