@@ -1,7 +1,7 @@
-predicate IsPreorder<A(!new)>(le: (A, A) -> bool)
+predicate IsPreorder<A>(le: (A, A) -> bool, s:set<A>)
 {
-  (forall a :: le(a, a)) &&
-  (forall a, b, c | le(a, b) && le(b, c) :: le(a, c))
+  (forall a | a in s :: le(a, a)) &&
+  (forall a, b, c | a in s && b in s && c in s && le(a, b) && le(b, c) :: le(a, c))
 }
 
 predicate IsTotalPreorder<A(!new)>(le: (A, A) -> bool)

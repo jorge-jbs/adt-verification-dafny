@@ -3,11 +3,11 @@ include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
 include "../../src/UtilsAux.dfy"
 
-predicate smaller(xs1:seq<int>,xs2:seq<int>)
-{forall i,j:: 0<=i<|xs1| && 0<=j<|xs2| ==> xs1[i]<=xs2[j]}
+predicate Smaller(xs1:seq<int>,xs2:seq<int>)
+{forall i,j:: 0 <= i < |xs1| && 0 <= j < |xs2| ==> xs1[i] <= xs2[j]}
 
-method {:timeLimitMultiplier 100} {:verify true} merge(l1:LinkedList<int>,l2:LinkedList<int>,ml:LinkedList<int>)
-//method {:timeLimitMultiplier 6} {:verify true} merge(l1:ArrayList,l2:ArrayList,ml:ArrayList) //NO CHANGES
+method {:timeLimitMultiplier 100} Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml:LinkedList<int>)
+//method {:timeLimitMultiplier 6} {:verify true} Merge(l1:ArrayList,l2:ArrayList,ml:ArrayList) //NO CHANGES
   modifies l1, l1.Repr(), l2, l2.Repr(),ml, ml.Repr()
   requires allocated(l1.Repr())
   requires allocated(l2.Repr())
@@ -24,23 +24,23 @@ method {:timeLimitMultiplier 100} {:verify true} merge(l1:LinkedList<int>,l2:Lin
   requires  Sorted(l1.Model()) && Sorted(l2.Model())
 
   ensures l1.Valid() && l2.Valid() && ml.Valid()
-  ensures l1.Model()==old(l1.Model()) && l2.Model()==old(l2.Model())
+  ensures l1.Model() == old(l1.Model()) && l2.Model() == old(l2.Model())
   ensures Sorted(ml.Model())
-  ensures multiset(ml.Model())==multiset(l1.Model())+multiset(l2.Model())
+  ensures multiset(ml.Model()) == multiset(l1.Model())+multiset(l2.Model())
   ensures {l1}+l1.Repr()!!{l2}+l2.Repr()  && {l1}+l1.Repr()!!{ml}+ml.Repr() && {l2}+l2.Repr()!!{ml}+ml.Repr()
 
   ensures l1.Iterators() >= old(l1.Iterators()) && l2.Iterators() >= old(l2.Iterators())
   ensures forall it | it in old(l1.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index())== it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
   ensures forall it | it in old(l2.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index())== it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
 {
-  var it1:=l1.Begin();
-  var it2:=l2.Begin();
-  var it1HasNext := it1.HasNext();
-  var it2HasNext := it2.HasNext();
+  var it1 := l1.First();
+  var it2 := l2.First();
+  var it1HasPeek := it1.HasPeek();
+  var it2HasPeek := it2.HasPeek();
 
-  while (it1HasNext && it2HasNext)
+  while (it1HasPeek && it2HasPeek)
     decreases |l1.Model()| + |l2.Model()|- (it1.Index()+it2.Index())
     invariant fresh(l1.Repr()-old(l1.Repr()))
     invariant allocated(l1.Repr())
@@ -51,55 +51,56 @@ method {:timeLimitMultiplier 100} {:verify true} merge(l1:LinkedList<int>,l2:Lin
 
     invariant l1.Valid() && l2.Valid() && ml.Valid()
     invariant it1 in l1.Iterators() && it2 in l2.Iterators()
-    invariant it1.Parent() == l1 && it2.Parent()==l2
+    invariant it1.Parent() == l1 && it2.Parent() == l2
     invariant it1.Valid() && it2.Valid()
-    invariant l1.Model()==old(l1.Model()) && l2.Model()==old(l2.Model())
+    invariant it1.Index() >= 0 && it2.Index() >= 0 
+    invariant l1.Model() == old(l1.Model()) && l2.Model() == old(l2.Model())
     invariant it1.Index()+it2.Index() == |ml.Model()|
     invariant Sorted(ml.Model()) && Sorted(l1.Model()) && Sorted(l2.Model())
-    invariant smaller(ml.Model(),l1.Model()[it1.Index()..]) && smaller(ml.Model(),l2.Model()[it2.Index()..])
-    invariant multiset(ml.Model())==multiset(l1.Model()[..it1.Index()])+multiset(l2.Model()[..it2.Index()])
-    invariant it1HasNext == it1.HasNext?()
-    invariant it2HasNext == it2.HasNext?()
+    invariant Smaller(ml.Model(),l1.Model()[it1.Index()..]) && Smaller(ml.Model(),l2.Model()[it2.Index()..])
+    invariant multiset(ml.Model()) == multiset(l1.Model()[..it1.Index()])+multiset(l2.Model()[..it2.Index()])
+    invariant it1HasPeek == it1.HasPeek?()
+    invariant it2HasPeek == it2.HasPeek?()
     
     invariant l1.Iterators() >= old(l1.Iterators()) && l2.Iterators() >= old(l2.Iterators())
     invariant forall it | it in old(l1.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index())== it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
     invariant forall it | it in old(l2.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index())== it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
 
     invariant {l1}+l1.Repr()!!{l2}+l2.Repr()  && {l1}+l1.Repr()!!{ml}+ml.Repr() && {l2}+l2.Repr()!!{ml}+ml.Repr()
   {
-    ghost var model1:=l1.Model()[..it1.Index()]; 
-    ghost var model2:=l2.Model()[..it2.Index()];
+    ghost var model1 := l1.Model()[..it1.Index()]; 
+    ghost var model2 := l2.Model()[..it2.Index()];
 
     var it1Peek := it1.Peek();
     var it2Peek := it2.Peek();
     var x;
     if (it1Peek <= it2Peek) {
-
-      x := it1.Next();        
-      assert l1.Model()[..it1.Index()]==model1+[x];
-      assert multiset(l1.Model()[..it1.Index()])==multiset(model1+[x]);
+      x := it1Peek;
+      it1.Next();        
+      assert l1.Model()[..it1.Index()] == model1+[x];
+      assert multiset(l1.Model()[..it1.Index()]) == multiset(model1+[x]);
     }
     else {
-      
-      x:=it2.Next();        
-      assert l2.Model()[..it2.Index()]==model2+[x];
-      assert multiset(l2.Model()[..it2.Index()])==multiset{x}+multiset(model2);
+      x := it2Peek;
+      it2.Next();        
+      assert l2.Model()[..it2.Index()] == model2+[x];
+      assert multiset(l2.Model()[..it2.Index()]) == multiset{x}+multiset(model2);
     }
       
-    ghost var model:=ml.Model();
+    ghost var model := ml.Model();
 
     ml.PushBack(x);
-    assert multiset(ml.Model())==multiset(model)+multiset{x};
+    assert multiset(ml.Model()) == multiset(model)+multiset{x};
     
-    it1HasNext := it1.HasNext();
-    it2HasNext := it2.HasNext();
+    it1HasPeek := it1.HasPeek();
+    it2HasPeek := it2.HasPeek();
     }
-  assert it1.Index()==|l1.Model()| || it2.Index()==|l2.Model()|;
+  assert it1.Index() == |l1.Model()| || it2.Index() == |l2.Model()|;
 
-  it1HasNext := it1.HasNext();
-  while (it1HasNext)
+  it1HasPeek := it1.HasPeek();
+  while (it1HasPeek)
     decreases |l1.Model()| + |l2.Model()|- (it1.Index()+it2.Index())
     invariant fresh(l1.Repr()-old(l1.Repr()))
     invariant allocated(l1.Repr())
@@ -110,42 +111,44 @@ method {:timeLimitMultiplier 100} {:verify true} merge(l1:LinkedList<int>,l2:Lin
 
     invariant l1.Valid() && l2.Valid() && ml.Valid()
     invariant it1 in l1.Iterators() && it2 in l2.Iterators()
-    invariant it1.Parent() == l1 && it2.Parent()==l2
+    invariant it1.Parent() == l1 && it2.Parent() == l2
     invariant it1.Valid() && it2.Valid()
-    invariant l1.Model()==old(l1.Model()) && l2.Model()==old(l2.Model())
+    invariant it1.Index() >= 0 && it2.Index() >= 0 
+    invariant l1.Model() == old(l1.Model()) && l2.Model() == old(l2.Model())
     invariant it1.Index()+it2.Index() == |ml.Model()|
     invariant Sorted(ml.Model()) && Sorted(l1.Model()) && Sorted(l2.Model())
-    invariant smaller(ml.Model(),l1.Model()[it1.Index()..]) && smaller(ml.Model(),l2.Model()[it2.Index()..])
-    invariant it1.HasNext?() ==> it2.Index()==|l2.Model()|
-    invariant multiset(ml.Model())==multiset(l1.Model()[..it1.Index()])+multiset(l2.Model()[..it2.Index()])
-    invariant it1HasNext == it1.HasNext?()
+    invariant Smaller(ml.Model(),l1.Model()[it1.Index()..]) && Smaller(ml.Model(),l2.Model()[it2.Index()..])
+    invariant it1.HasPeek?() ==> it2.Index() == |l2.Model()|
+    invariant multiset(ml.Model()) == multiset(l1.Model()[..it1.Index()])+multiset(l2.Model()[..it2.Index()])
+    invariant it1HasPeek == it1.HasPeek?()
   
     invariant l1.Iterators() >= old(l1.Iterators()) && l2.Iterators() >= old(l2.Iterators())
     invariant forall it | it in old(l1.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index())== it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
     invariant forall it | it in old(l2.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index())== it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
 
     invariant {l1}+l1.Repr()!!{l2}+l2.Repr()  && {l1}+l1.Repr()!!{ml}+ml.Repr() && {l2}+l2.Repr()!!{ml}+ml.Repr()
    {
-      ghost var model1:=l1.Model()[..it1.Index()];
+    ghost var model1 := l1.Model()[..it1.Index()];
 
-    var x:=it1.Next();
+    var x:= it1.Peek();
+    it1.Next();
 
-    assert l1.Model()[..it1.Index()]==model1+[x];
-    assert multiset(l1.Model()[..it1.Index()])==multiset(model1+[x]);
-    ghost var model:=ml.Model();
+    assert l1.Model()[..it1.Index()] == model1+[x];
+    assert multiset(l1.Model()[..it1.Index()]) == multiset(model1+[x]);
+    ghost var model := ml.Model();
 
     ml.PushBack(x);
 
-    assert multiset(ml.Model())==multiset(model)+multiset{x};
+    assert multiset(ml.Model()) == multiset(model)+multiset{x};
 
-    it1HasNext := it1.HasNext();
+    it1HasPeek := it1.HasPeek();
     }
 
-  it2HasNext := it2.HasNext();
+  it2HasPeek := it2.HasPeek();
 
-  while (it2HasNext)
+  while (it2HasPeek)
     decreases |l1.Model()| + |l2.Model()|- (it1.Index()+it2.Index())
     invariant fresh(l1.Repr()-old(l1.Repr()))
     invariant allocated(l1.Repr())
@@ -156,43 +159,45 @@ method {:timeLimitMultiplier 100} {:verify true} merge(l1:LinkedList<int>,l2:Lin
 
     invariant l1.Valid() && l2.Valid() && ml.Valid()
     invariant it1 in l1.Iterators() && it2 in l2.Iterators()
-    invariant it1.Parent() == l1 && it2.Parent()==l2
+    invariant it1.Parent() == l1 && it2.Parent() == l2
     invariant it1.Valid() && it2.Valid()
-    invariant l1.Model()==old(l1.Model()) && l2.Model()==old(l2.Model())
+    invariant it1.Index() >= 0 && it2.Index() >= 0 
+    invariant l1.Model() == old(l1.Model()) && l2.Model() == old(l2.Model())
     invariant it1.Index()+it2.Index() == |ml.Model()|
-    invariant it1.Index()==|l1.Model()|
+    invariant it1.Index() == |l1.Model()|
     invariant Sorted(ml.Model()) && Sorted(l1.Model()) && Sorted(l2.Model())
-    invariant smaller(ml.Model(),l2.Model()[it2.Index()..])
-    invariant it2.HasNext?() ==> it1.Index()==|l1.Model()|
-    invariant multiset(ml.Model())==multiset(l1.Model()[..it1.Index()])+multiset(l2.Model()[..it2.Index()])
-    invariant it2HasNext == it2.HasNext?()
+    invariant Smaller(ml.Model(),l2.Model()[it2.Index()..])
+    invariant it2.HasPeek?() ==> it1.Index() == |l1.Model()|
+    invariant multiset(ml.Model()) == multiset(l1.Model()[..it1.Index()])+multiset(l2.Model()[..it2.Index()])
+    invariant it2HasPeek == it2.HasPeek?()
 
     invariant l1.Iterators() >= old(l1.Iterators()) && l2.Iterators() >= old(l2.Iterators())
     invariant forall it | it in old(l1.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index())== it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
     invariant forall it | it in old(l2.Iterators()) && old(it.Valid())::
-      it.Valid() && it.Parent()==old(it.Parent()) && old(it.Index())== it.Index()
+      it.Valid() && it.Parent() == old(it.Parent()) && old(it.Index()) == it.Index()
 
     invariant {l1}+l1.Repr()!!{l2}+l2.Repr()  && {l1}+l1.Repr()!!{ml}+ml.Repr() && {l2}+l2.Repr()!!{ml}+ml.Repr()
    {
-    ghost var model2:=l2.Model()[..it2.Index()];
+    ghost var model2 := l2.Model()[..it2.Index()];
 
-    var x:=it2.Next();
+    var x:= it2.Peek();
+    it2.Next();
 
-    assert l2.Model()[..it2.Index()]==model2+[x];
-    assert multiset(l2.Model()[..it2.Index()])==multiset(model2+[x]);
-    ghost var model:=ml.Model();
+    assert l2.Model()[..it2.Index()] == model2+[x];
+    assert multiset(l2.Model()[..it2.Index()]) == multiset(model2+[x]);
+    ghost var model := ml.Model();
 
     ml.PushBack(x);
 
-      assert multiset(ml.Model())==multiset(model)+multiset{x};
+    assert multiset(ml.Model()) == multiset(model)+multiset{x};
 
-    it2HasNext := it2.HasNext();
+    it2HasPeek := it2.HasPeek();
 
    }
 
-  assert it1.Index()==|l1.Model()| && it2.Index()==|l2.Model()|;
-  assert l1.Model()[..it1.Index()]==l1.Model();
-  assert l2.Model()[..it2.Index()]==l2.Model();
+  assert it1.Index() == |l1.Model()| && it2.Index() == |l2.Model()|;
+  assert l1.Model()[..it1.Index()] == l1.Model();
+  assert l2.Model()[..it2.Index()] == l2.Model();
 
 }
