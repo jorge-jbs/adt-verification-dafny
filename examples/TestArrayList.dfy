@@ -12,7 +12,7 @@ include "../src/linear/layer2/ArrayList.dfy"
   var model := [10, 20, 30];
   assert l.Model() == model;
 
-  var it := l.Begin();
+  var it := l.First();
   assert it.Parent().Model()[it.Index()] == 10;
   var _ := l.PopFront();
   assert l.Model() == model[1..];
@@ -20,8 +20,8 @@ include "../src/linear/layer2/ArrayList.dfy"
   var _ := l.PopFront();
   assert l.Model() == model[2..];
   assert  it.Parent().Model()[it.Index()] == 30;
-  var _ := it.Next();
-  assert !it.HasNext?();
+  it.Next();
+  assert !it.HasPeek?();
   var _ := l.PopFront();
   // assert it.Valid();    // assertion violation
 }
@@ -36,10 +36,10 @@ method Test2(l1: ArrayList<int>, l2: ArrayList<int>)
   modifies l1, l2, l1.Repr(), l2.Repr()
 {
   var model2 := l2.Model();
-  var it1 := l1.Begin();
-  var it2 := l2.Begin();
+  var it1 := l1.First();
+  var it2 := l2.First();
   assert it1.Parent().Model()[it1.Index()] == 1 && it2.Parent().Model()[it2.Index()] == 4;
-  var _ := it1.Next();
+  it1.Next();
   assert it1.Parent().Model()[it1.Index()] == 2 && it2.Parent().Model()[it2.Index()] == 4;
   var _ := l2.PopFront();
   assert l2.Model() == model2[1..];
