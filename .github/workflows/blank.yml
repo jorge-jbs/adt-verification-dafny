@@ -29,4 +29,3 @@ jobs:
 
       - name: Check library
         run: ./check.sh
-        timeout-minutes: 15
