@@ -1,5 +1,5 @@
 include "../../../src/Utils.dfy"
-include "../../../src/linear/layer1/ADT.dfy"
+include "../../../src/ADT.dfy"
 
 trait ListIterator<A> {
   function Parent(): List<A>

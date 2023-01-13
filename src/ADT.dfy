@@ -1,4 +1,4 @@
-include "../../../src/Utils.dfy"
+include "../src/Utils.dfy"
 
 type pos = n: int | n > 0 witness 1
 
