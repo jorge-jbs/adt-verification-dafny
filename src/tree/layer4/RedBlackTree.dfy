@@ -1,6 +1,6 @@
-include "../../src/tree/Tree.dfy"
-include "../../src/tree/SearchTree.dfy"
-include "../../src/tree/TreeData.dfy"
+include "../../../src/tree/layer4/Tree.dfy"
+include "../../../src/tree/layer4/SearchTree.dfy"
+include "../../../src/tree/layer4/TreeData.dfy"
 
 lemma {:verify false} SubAddToAddSubPrime(p: map<K, V>, k: K, v: V, q: K)
   requires q != k
