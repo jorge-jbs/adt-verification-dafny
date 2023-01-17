@@ -35,8 +35,8 @@ ensures l.Valid()
 {
   FillArray(l,persons);
   var clara := new Person(1,48,"Clara");
- // l.PushBack(clara);
- // var _ := l.PopBack();
+  /*l.PushBack(clara);
+  var _ := l.PopBack();*/
  
  assert forall i | 0<=i<|l.Model()| :: persons[i]==l.Model()[i];
 

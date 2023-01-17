@@ -13,21 +13,23 @@ function Fib(n: nat): seq<nat>
     fib + [fib[n-3] + fib[n-2]]
 }
 
-predicate ValidDistinct(adts: seq<ADT>)
+/*predicate ValidDistinct(adts: seq<ADT>)
   reads set r | r in adts :: r
   reads BigUnion(set r | r in adts :: r.Repr())
 {
   && (forall r | r in adts :: r.Valid())
   && (forall r, s | r in adts && s in adts && [r, s] <= adts ::
         {r} + r.Repr() !! {s} + s.Repr())
-}
+}*/
 
 method NextPrefix(pre: List<nat>, n: nat)
   modifies pre, pre.Repr()
   requires allocated(pre.Repr())
   ensures fresh(pre.Repr()-old(pre.Repr()))
-  requires ValidDistinct([pre])
-  ensures ValidDistinct([pre])
+  //requires ValidDistinct([pre])
+  //ensures ValidDistinct([pre])
+  requires pre.Valid()
+  ensures pre.Valid()
 
   requires n >= 2
   requires pre.Model() == Fib(n)
@@ -42,21 +44,24 @@ method NextPrefix(pre: List<nat>, n: nat)
 
 method Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
   modifies l, l.Repr()
+  requires l.Valid()
   requires allocated(l.Repr())
+  
+
   ensures allocated(l.Repr())
+  ensures allocated(nl.Repr())
   ensures fresh(l.Repr() - old(l.Repr()))
   ensures fresh(nl)
   ensures fresh(nl.Repr())
+  ensures ({l}+l.Repr()) !! ({nl}+nl.Repr())
 
-  requires ValidDistinct([l])
-  ensures ValidDistinct([l, nl])
-
+  ensures l.Valid() && nl.Valid() 
   ensures l.Model() == old(l.Model())
   ensures nl.Model() == l.Model()
 {
   nl := new LinkedListImpl();
-  assert forall r, s | [r, s] <= [l, nl] :: [r, s] == [l, nl];
-  assert ValidDistinct([l, nl]);
+  //assert forall r, s | [r, s] <= [l, nl] :: [r, s] == [l, nl];
+  //assert ValidDistinct([l, nl]);
   var it := l.First();
   var b := it.HasPeek();
   while b
@@ -65,13 +70,16 @@ method Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
     invariant fresh(l.Repr() - old(l.Repr()))
     invariant fresh(nl)
     invariant fresh(nl.Repr())
+    invariant ({l}+l.Repr()) !! ({nl}+nl.Repr())
 
-    invariant ValidDistinct([l, nl])
+    //invariant ValidDistinct([l, nl])
+    invariant l.Valid() && nl.Valid() 
     invariant it.Valid()
     invariant it.Parent() == l
     invariant b == it.HasPeek?()
 
     invariant l.Model() == old(l.Model())
+    invariant 0 <= it.Index() <= |old(l.Model())|
     invariant nl.Model() == l.Model()[..it.Index()]
   {
     var x := it.Peek();
@@ -81,7 +89,7 @@ method Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
   }
 }
 
-method FibPrefixes2() returns (pres: List<List<nat>>)  // 45s
+/*method FibPrefixes2() returns (pres: List<List<nat>>)  // 45s
   ensures allocated(pres.Repr())
   ensures fresh(pres)
   ensures fresh(pres.Repr())
@@ -185,4 +193,4 @@ method FibPrefixes(n: nat) returns (pres: List<List<nat>>)
     i := i + 1;
   }
   assert i == n;
-}
+}*/
