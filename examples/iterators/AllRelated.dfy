@@ -97,7 +97,7 @@ method DecSorted(l: List<int>) returns (b:bool)
 } 
 
 
-class O{
+/*class O{
   var id:int;
   function method Comparador(otro:O):bool
   reads this, otro
@@ -121,3 +121,4 @@ method prueba(l:List<O>) returns (b:bool)
   ensures l.Iterators() >= old(l.Iterators())
 {   assume IsTotalOrder(menor,set x | x in l.Model());
     b := AllRelated(l, menor); } 
+*/

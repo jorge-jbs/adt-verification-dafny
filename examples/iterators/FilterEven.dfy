@@ -6,9 +6,9 @@ include "../../src/Iterators_Utils.dfy"
 
 predicate SubSec<A>(xs1:seq<A>,xs2:seq<A>,f:map<int,int>)
   {
-   forall i :: ( 0 <= i < |xs1| <==> i in f) &&
-   forall i | i in f :: 0 <= i < |xs1| && 0 <= f[i] < |xs2| && xs2[f[i]] == xs1[i] &&
-   forall i,j | i in f && j in f && i < j :: f[i] < f[j]   
+   (forall i ::  0 <= i < |xs1| <==> i in f) &&
+   (forall i | i in f :: 0 <= i < |xs1| && 0 <= f[i] < |xs2| && xs2[f[i]] == xs1[i]) &&
+   (forall i,j | i in f && j in f && i < j :: f[i] < f[j])   
   }
 
   predicate IsSubSec<A>(xs1:seq<A>,xs2:seq<A>)

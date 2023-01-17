@@ -106,7 +106,7 @@ method DupElements<A>(l: LinkedList<A>) returns (ghost mit:map<int,int>)
 }
 
 
-method DupElementsAL(l: ArrayList<int>) returns (ghost mit:map<int,int>)
+method DupElementsAL<A>(l: ArrayList<A>) returns (ghost mit:map<int,int>)
   modifies l, l.Repr()
   requires allocated(l.Repr())
   ensures fresh(l.Repr()-old(l.Repr()))
@@ -114,7 +114,7 @@ method DupElementsAL(l: ArrayList<int>) returns (ghost mit:map<int,int>)
 
   requires l.Valid()
   ensures l.Valid()
-  ensures l.Model() == old(Dup(l.Model()))
+  ensures l.Model() == Dup(old(l.Model()))
   ensures |l.Model()| == 2* |old(l.Model())|
   ensures forall i | 0 <= i < |old(l.Model())| :: old(l.Model())[i] == l.Model()[2*i] == l.Model()[2*i+1]
 
@@ -143,7 +143,7 @@ method DupElementsAL(l: ArrayList<int>) returns (ghost mit:map<int,int>)
     invariant l.Valid()
     invariant 2*i <= |l.Model()|
     invariant i <= old(|l.Model()|)
-    invariant l.Model()[..2*i] == old(DupRev(l.Model()[..i]))
+    invariant l.Model()[..2*i] == DupRev(old(l.Model()[..i]))
     invariant l.Model()[2*i..] == old(l.Model()[i..])
     invariant it.Parent() == l
     invariant it.Valid()
@@ -161,7 +161,7 @@ method DupElementsAL(l: ArrayList<int>) returns (ghost mit:map<int,int>)
      
     assert i < old(|l.Model()|);
     ghost var omodel := l.Model();
-    assert omodel[..2*i] == old(DupRev(l.Model()[..i]));
+    assert omodel[..2*i] == DupRev(old(l.Model()[..i]));
     
     var x := it.Peek();    
     

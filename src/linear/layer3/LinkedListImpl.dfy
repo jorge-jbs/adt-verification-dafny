@@ -43,6 +43,7 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
   {
     parent := l;
     node := n;
+    pastTheEnd := false;
   }
 
   constructor First(l: LinkedListImpl<A>)
