@@ -286,7 +286,8 @@ ensures forall it | it in old(l.Iterators()) && old(it.Valid()) ::
         multiset(omodel2[c.Index()..c.Index()+n]);
         multiset(omodel2[c.Index()..c.Index()+nL])+multiset(omodel2[c.Index()+nL..c.Index()+n]);
         {assert omodel2[c.Index()+nL..] == omodel1[c.Index()+nL..];
-        SubsecEq(omodel2[c.Index()+nL..],omodel1[c.Index()+nL..],0,n-nL); 
+        SubsecEq(omodel2[c.Index()+nL..],omodel1[c.Index()+nL..],0,n-nL);
+        assert  omodel2[c.Index()+nL..][0..n-nL] == omodel2[c.Index()+nL..c.Index()+n]; 
         assert omodel2[c.Index()+nL..c.Index()+n] == omodel1[c.Index()+nL..c.Index()+n]; }
         multiset(omodel1[c.Index()..c.Index()+nL])+multiset(omodel1[c.Index()+nL..c.Index()+n]);
         multiset(omodel1[c.Index()..c.Index()+n]);
