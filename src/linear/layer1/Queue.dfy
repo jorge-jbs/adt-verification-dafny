@@ -1,4 +1,4 @@
-include "../../../src/linear/layer1/ADT.dfy"
+include "../../../src/ADT.dfy"
 
 trait Queue<A> extends ADT<seq<A>> {
   predicate Empty?()

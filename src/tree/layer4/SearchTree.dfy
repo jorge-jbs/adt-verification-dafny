@@ -1,5 +1,5 @@
-include "../../src/tree/Tree.dfy"
-include "../../src/tree/TreeData.dfy"
+include "../../../src/tree/layer4/Tree.dfy"
+include "../../../src/tree/layer4/TreeData.dfy"
 
 lemma {:verify true} mapIdem(m:map<K,V>,k:K,v:V)
   requires k in m && m[k]==v

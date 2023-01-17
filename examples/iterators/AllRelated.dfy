@@ -95,30 +95,3 @@ method DecSorted(l: List<int>) returns (b:bool)
 { 
   b := AllRelated(l, (x,y) => x >= y); 
 } 
-
-
-/*class O{
-  var id:int;
-  function method Comparador(otro:O):bool
-  reads this, otro
-   {id <= (otro.id)}
-}
-
-
-method prueba(l:List<O>) returns (b:bool)
-  modifies l,l.Repr()
-  requires allocated(l.Repr())
-  ensures fresh(l.Repr()-old(l.Repr()))
-  ensures allocated(l.Repr())
-
-
-  requires l.Valid()
-  requires Ordered(l.Model(),menor)
-  ensures l.Valid()
-  ensures l.Model() == old(l.Model())
-  ensures b == forall i, j | 0 <= i <= j < |old(l.Model())| :: old(l.Model())[i].Comparador(old(l.Model())[j])
-  
-  ensures l.Iterators() >= old(l.Iterators())
-{   assume IsTotalOrder(menor,set x | x in l.Model());
-    b := AllRelated(l, menor); } 
-*/

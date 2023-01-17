@@ -57,8 +57,8 @@ method Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
   nl := new LinkedListImpl();
   assert forall r, s | [r, s] <= [l, nl] :: [r, s] == [l, nl];
   assert ValidDistinct([l, nl]);
-  var it := l.Begin();
-  var b := it.HasNext();
+  var it := l.First();
+  var b := it.HasPeek();
   while b
     decreases |l.Model()| - it.Index()
     invariant allocated(l.Repr())
@@ -69,14 +69,15 @@ method Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
     invariant ValidDistinct([l, nl])
     invariant it.Valid()
     invariant it.Parent() == l
-    invariant b == it.HasNext?()
+    invariant b == it.HasPeek?()
 
     invariant l.Model() == old(l.Model())
     invariant nl.Model() == l.Model()[..it.Index()]
   {
-    var x := it.Next();
+    var x := it.Peek();
+    it.Next();
     nl.PushBack(x);
-    b := it.HasNext();
+    b := it.HasPeek();
   }
 }
 

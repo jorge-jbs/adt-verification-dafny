@@ -1,6 +1,6 @@
-include "../../src/Order.dfy"
-include "../../src/tree/TreeData.dfy"
-include "../../src/tree/layer1/KeyValue.dfy"
+include "../../../src/Order.dfy"
+include "../../../src/tree/layer4/TreeData.dfy"
+include "../../../src/tree/layer1/KeyValue.dfy"
 
 datatype Color = Red | Black
 
