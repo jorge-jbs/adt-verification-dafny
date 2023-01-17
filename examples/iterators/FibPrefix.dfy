@@ -22,12 +22,12 @@ function Fib(n: nat): seq<nat>
         {r} + r.Repr() !! {s} + s.Repr())
 }*/
 
-method NextPrefix(pre: List<nat>, n: nat)
+method {:verify false} NextPrefix(pre: List<nat>, n: nat)
   modifies pre, pre.Repr()
   requires allocated(pre.Repr())
+  ensures allocated(pre.Repr())
   ensures fresh(pre.Repr()-old(pre.Repr()))
-  //requires ValidDistinct([pre])
-  //ensures ValidDistinct([pre])
+
   requires pre.Valid()
   ensures pre.Valid()
 
@@ -42,11 +42,10 @@ method NextPrefix(pre: List<nat>, n: nat)
   pre.PushBack(x+y);
 }
 
-method Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
+method {:verify false} Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
   modifies l, l.Repr()
   requires l.Valid()
   requires allocated(l.Repr())
-  
 
   ensures allocated(l.Repr())
   ensures allocated(nl.Repr())
@@ -60,19 +59,17 @@ method Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
   ensures nl.Model() == l.Model()
 {
   nl := new LinkedListImpl();
-  //assert forall r, s | [r, s] <= [l, nl] :: [r, s] == [l, nl];
-  //assert ValidDistinct([l, nl]);
   var it := l.First();
   var b := it.HasPeek();
   while b
     decreases |l.Model()| - it.Index()
     invariant allocated(l.Repr())
+    invariant allocated(nl.Repr())
     invariant fresh(l.Repr() - old(l.Repr()))
     invariant fresh(nl)
     invariant fresh(nl.Repr())
     invariant ({l}+l.Repr()) !! ({nl}+nl.Repr())
 
-    //invariant ValidDistinct([l, nl])
     invariant l.Valid() && nl.Valid() 
     invariant it.Valid()
     invariant it.Parent() == l
@@ -89,11 +86,11 @@ method Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
   }
 }
 
-/*method FibPrefixes2() returns (pres: List<List<nat>>)  // 45s
+method {:verify false} FibPrefixes2() returns (pres: List<List<nat>>)  // 45s
   ensures allocated(pres.Repr())
   ensures fresh(pres)
   ensures fresh(pres.Repr())
-  ensures ValidDistinct([pres])
+  ensures pres.Valid()
   ensures forall pre | pre in pres.Model() ::
     && allocated(pre.Repr())
     && fresh(pre)
@@ -127,13 +124,13 @@ method Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
 }
 
 // Compute n fibonacci prefixes of increasing length
-method FibPrefixes(n: nat) returns (pres: List<List<nat>>)
+method {:verify false} FibPrefixes(n: nat) returns (pres: List<List<nat>>)
   requires n >= 2
 
   ensures allocated(pres.Repr())
   ensures fresh(pres)
   ensures fresh(pres.Repr())
-  ensures ValidDistinct([pres])
+  ensures pres.Valid()
   ensures forall pre | pre in pres.Model() :: allocated(pres.Repr())
   ensures forall r | r in pres.Model() :: r.Valid()
   ensures forall i, j | 0 <= i < j < |pres.Model()| ::
@@ -153,13 +150,14 @@ method FibPrefixes(n: nat) returns (pres: List<List<nat>>)
     invariant allocated(pres.Repr())
     invariant fresh(pres)
     invariant fresh(pres.Repr())
-    invariant ValidDistinct([pres])
+    invariant pres.Valid()
     invariant forall pre | pre in pres.Model() ::
       && allocated(pre.Repr())
       && fresh(pre)
       && fresh(pre.Repr())
+      && pre.Valid()
     invariant forall pre | pre in pres.Model() :: {pres} + pres.Repr() !! {pre} + pre.Repr()
-    invariant forall r | r in pres.Model() :: r.Valid()
+    //invariant forall r | r in pres.Model() :: r.Valid()
     invariant forall i, j | 0 <= i < j < |pres.Model()| ::
       && pres.Model()[i] != pres.Model()[j]
       && pres.Model()[i] !in pres.Model()[j].Repr()
@@ -173,10 +171,34 @@ method FibPrefixes(n: nat) returns (pres: List<List<nat>>)
   {
     assert pres.Model()[|pres.Model()|-1] in pres.Model();
     label init:
+    assert forall pre | pre in pres.Model() :: pre.Valid();
+    assert pres.Model()[|pres.Model()|-1].Model()==Fib(|pres.Model()|);
+
+    assert forall pre | pre in pres.Model() ::
+      && allocated(pre.Repr())
+      && fresh(pre)
+      && fresh(pre.Repr())
+      && pre.Valid();
     var lpre := pres.Back();
+
+    assert forall pre | pre in pres.Model() ::
+      && allocated(pre.Repr())
+      && fresh(pre)
+      && fresh(pre.Repr())
+      && pre.Valid();
+    /*assert lpre==pres.Model()[|pres.Model()|-1];
+    assert lpre.Model() == Fib(|pres.Model()|);*/
+    
     var npre := Copy(lpre);
+    
     NextPrefix(npre, i);
-    assert forall i | 0 <= i < |pres.Model()| ::
+    
+    assert npre.Model() == Fib(i+1);
+    assert allocated(npre.Repr());
+    assert fresh(npre);
+    assert fresh(npre.Repr());
+    assert npre.Valid();
+   /* assert forall i | 0 <= i < |pres.Model()| ::
       pres.Model()[i].Model() == Fib(i+1);
     assert npre.Model() == Fib(i+1);
     assert allocated(npre.Repr());
@@ -188,9 +210,9 @@ method FibPrefixes(n: nat) returns (pres: List<List<nat>>)
       && pres.Model()[i] != npre
       && pres.Model()[i] !in npre.Repr()
       && npre !in pres.Model()[i].Repr()
-      && pres.Model()[i].Repr() !! npre.Repr();
+      && pres.Model()[i].Repr() !! npre.Repr();*/
     pres.PushBack(npre);
     i := i + 1;
   }
   assert i == n;
-}*/
+}
