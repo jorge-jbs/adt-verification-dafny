@@ -422,7 +422,9 @@ class SinglyLinkedList<A> {
     { // GHOST
       ghost var i :| 0 <= i < |spine| && spine[i] == mid;
       spine := spine[..i+1] + [n] + spine[i+1..];
+      assert forall i | 0 <= i < |spine|-1 :: spine[i].next == spine[i+1];
       ModelRelationWithSpine();
+      assert spine == Seq.Insert(mid.next, old(spine), old(GetIndex(mid))+1);
     }
   }
 

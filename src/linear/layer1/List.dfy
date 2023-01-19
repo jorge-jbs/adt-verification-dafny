@@ -168,6 +168,8 @@ trait List<A> extends ADT<seq<A>> {
     ensures b == Empty?()
 
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
   method Size() returns (s: nat)
     modifies this, Repr()
@@ -238,6 +240,8 @@ trait List<A> extends ADT<seq<A>> {
     ensures x == Model()[0]
  
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
   method PushFront(x: A)
     modifies this, Repr()
@@ -277,6 +281,8 @@ trait List<A> extends ADT<seq<A>> {
     ensures x == Model()[|Model()| - 1]
 
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
   method PushBack(x: A)
     modifies this, Repr()
