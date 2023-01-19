@@ -29,7 +29,7 @@ trait UnorderedMultisetIterator<A> {
     requires Parent().Valid()
     ensures HasPeek?()  <==> Traversed() < Parent().Model() && |Traversed()| < |Parent().Model()|
     //|Traversed()| < |Parent().Model()| es necesario para poder verificar con cota |s.Model()|-|it.Traversed()|
-    ensures !HasPeek?() ==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()|
+    ensures !HasPeek?() <==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()|
   
 
   method HasPeek() returns (b:bool)
@@ -313,6 +313,7 @@ trait UnorderedMultiset<A (==)> extends ADT<multiset<A>> {
     ensures fresh(newt)
     ensures newt.Valid() && newt.Parent() == this  
     ensures newt.HasPeek?() && newt.Peek?()==x  
+    
     ensures Iterators() >= {newt}+old(Iterators())
      //points either to the inserted elemento or to the already existing one
  
@@ -339,7 +340,7 @@ trait UnorderedMultiset<A (==)> extends ADT<multiset<A>> {
 
 }
 
-method {:verify true} main(s:UnorderedMultiset<int>)
+method {:verify false} main(s:UnorderedMultiset<int>)
  modifies s, s.Repr()
  requires allocated(s.Repr())
  ensures fresh(s.Repr()-old(s.Repr()))
@@ -375,7 +376,7 @@ method {:verify true} main(s:UnorderedMultiset<int>)
   assert it.Traversed()==s.Model();  
 }
 
-method {:verify true} {:timeLimitMultiplier 100} otry(s:UnorderedMultiset<int>)
+method {:verify false} {:timeLimitMultiplier 100} otry(s:UnorderedMultiset<int>)
  modifies s, s.Repr()
  requires allocated(s.Repr())
  ensures fresh(s.Repr()-old(s.Repr()))

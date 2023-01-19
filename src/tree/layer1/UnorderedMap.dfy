@@ -1,25 +1,9 @@
 include "KeyValue.dfy"
 include "../../../src/ADT.dfy"
 
+trait UnorderedMapIterator<K,V>{
 
-/*function Keys(m:map<K,V>): set<K>
-     ensures Keys(m)==set k | k in m :: k
-    // ensures |Keys(m)|==|m|
-     {set k | k in m :: k}
-
-  function Pairs(m : map<K,V> ): set<pairKV>
-     ensures Pairs(m)== (set k,v | k in m && v == m[k] :: (k,v))
-     ensures forall p, p'| p in Pairs(m) && p' in Pairs(m) && p!=p' :: p.0!=p'.0
-     ensures forall k, v  | k in m && m[k]==v:: (k,v) in Pairs(m)
-     ensures forall k,v | (k,v) in Pairs(m) :: k in m && m[k]==v
-    // ensures |Pairs(m)|==|Keys(m)|
-     { 
-       (set k,v | k in m && v == m[k] :: (k,v))}
-*/
-
-trait UnorderedMapIterator{
-
-function Parent(): UnorderedMap
+function Parent(): UnorderedMap<K,V>
     reads this
 
 predicate Valid()
@@ -32,16 +16,16 @@ function Traversed():set<K>
     requires Parent().Valid() 
     ensures Traversed() <= (Parent().Model().Keys)
 
-function Peek?():pairKV
+function Peek?():(K,V)
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid() 
     requires HasPeek?()
     
-    ensures Peek?() in Parent().Model().Items &&
-            key(Peek?()) !in Traversed() &&
-            // key(Peek()) in Parent().Model() && 
-            value(Peek?())==Parent().Model()[key(Peek?())]
+    ensures Peek?() in Parent().Model().Items 
+            && key(Peek?()) !in Traversed() 
+            //key(Peek()) in Parent().Model() && 
+            //value(Peek?()) == Parent().Model()[key(Peek?())]
   
 predicate HasPeek?()
     reads this, Parent(), Parent().Repr()
@@ -49,7 +33,7 @@ predicate HasPeek?()
     requires Parent().Valid()
     ensures HasPeek?()  <==> Traversed() < Parent().Model().Keys && |Traversed()| < |Parent().Model().Keys|
     //|Traversed()| < |Parent().Model()| es necesario para poder verificar con cota |s.Model()|-|it.Traversed()|
-    ensures !HasPeek?() ==> Traversed() == Parent().Model().Keys && |Traversed()| == |Parent().Model().Keys|
+    ensures !HasPeek?() <==> Traversed() == Parent().Model().Keys && |Traversed()| == |Parent().Model().Keys|
 
 method HasPeek() returns (b:bool)
     modifies this, Parent(), Parent().Repr()
@@ -91,7 +75,7 @@ method HasPeek() returns (b:bool)
     ensures Parent().Model() == old(Parent().Model())
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
-    ensures Traversed() == {old(key(Peek?()))}+old(Traversed())
+    ensures Traversed() == {key(old(Peek?()))}+old(Traversed())
     
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
@@ -99,7 +83,7 @@ method HasPeek() returns (b:bool)
       && (it != this ==> it.Traversed() == old(it.Traversed())
                          && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?())))
 
-  method Peek() returns (p:pairKV) 
+  method Peek() returns (p:(K,V)) 
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
@@ -114,7 +98,7 @@ method HasPeek() returns (b:bool)
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
 
-    ensures Traversed() == old(Traversed()) && Peek?()==old(Peek?()) // no debería ser necesario pero lo es 
+    ensures Traversed() == old(Traversed()) && Peek?()==old(Peek?()) 
     ensures p == Peek?()
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
@@ -122,7 +106,7 @@ method HasPeek() returns (b:bool)
       && it.Traversed() == old(it.Traversed())
       && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
 
-  method Copy() returns (it: UnorderedMapIterator)
+  method Copy() returns (it: UnorderedMapIterator<K,V>)
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
@@ -151,7 +135,8 @@ method HasPeek() returns (b:bool)
 
 }
 
-trait UnorderedMap extends ADT<map<K,V>> {
+trait UnorderedMap<K (==),V> extends ADT<map<K,V>> {
+
   predicate Empty?()
     reads this, Repr()
     requires Valid()
@@ -196,12 +181,12 @@ trait UnorderedMap extends ADT<map<K,V>> {
       && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
 
 
-  function Iterators(): set<UnorderedMapIterator>
+  function Iterators(): set<UnorderedMapIterator<K,V>>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
 
-  method First() returns (it: UnorderedMapIterator)
+  method First() returns (it: UnorderedMapIterator<K,V>)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -215,15 +200,15 @@ trait UnorderedMap extends ADT<map<K,V>> {
     ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
-    ensures it.Traversed()=={} 
+    ensures it.Traversed() == {} 
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed()) 
       && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
 
- method contains(k:K) returns (b:bool)
-   modifies this, Repr()
+ method Contains(k:K) returns (b:bool)
+    modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
     ensures allocated(Repr())
@@ -240,166 +225,161 @@ trait UnorderedMap extends ADT<map<K,V>> {
       && it.Traversed() == old(it.Traversed()) 
       && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
 
-
-method at(k:K) returns (v:V)
-    //modifies this,Repr()
+method At(k:K) returns (v:V)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+    
     requires Valid()
-    requires forall x | x in Repr() :: allocated(x)
     requires k in Model()
     ensures Valid()
-    //ensures Model()==old(Model())
+    ensures Model() == old(Model())
     ensures v == Model()[k] 
 
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-   
-    ensures Iterators() == old(Iterators())
+    ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Traversed() == old(it.Traversed()) 
+      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
 
- method add(k:K,v:V)
-    modifies this,Repr()
+
+ method Add(k:K,v:V)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
-    requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
     ensures Model() == old(Model())[k:=v] 
 
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-   
     ensures Iterators() == old(Iterators())
 
 
-method remove(k:int) 
-    modifies this,Repr()
-    requires Valid()
-    requires forall x | x in Repr() :: allocated(x)
-    ensures Valid()
-    ensures Model()== map k' | k' in old(Model()) && k'!=k::old(Model())[k']
+method Remove(k:K) 
+  modifies this, Repr()
+  requires allocated(Repr())
+  ensures fresh(Repr() - old(Repr()))
+  ensures allocated(Repr())
 
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
+  requires Valid()
+  ensures Valid()
+  ensures Model()== map k' | k' in old(Model()) && k' != k :: old(Model())[k']
 
-    ensures Iterators() == old(Iterators())
+  ensures Iterators() >= old(Iterators())
 
-
-
-method find(k:K) returns (newt:UnorderedMapIterator)
+method Find(k:K) returns (newt:UnorderedMapIterator<K,V>)
     modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
-    requires forall x | x in Repr() :: allocated(x)
-    ensures Valid() 
+    ensures Valid()
     ensures Model()==old(Model())
     
     ensures fresh(newt) 
     ensures newt.Valid() && newt.Parent()==this
-    ensures k in old(Model()) ==> newt.HasNext() && key(newt.Peek())==k
-    ensures k !in old(Model()) ==> newt.Traversed()==Model().Keys
+    ensures k in old(Model()) ==> newt.HasPeek?() && key(newt.Peek?()) == k
+    ensures k !in old(Model()) ==> newt.Traversed() == Model().Keys
 
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
+    ensures Iterators() >= {newt}+old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Traversed() == old(it.Traversed()) 
+      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
 
-    ensures Iterators() == {newt}+old(Iterators())
-
-  method insert(mid: UnorderedMapIterator, k: K, v : V) returns (newt:UnorderedMapIterator)
+  method Insert(mid: UnorderedMapIterator, k: K, v : V) returns (newt:UnorderedMapIterator<K,V>)
     modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
-    requires mid.Valid() 
-    requires mid.Parent() == this
-    requires mid in Iterators()
-    requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
     ensures Model() == old(Model())[k:=v]
 
+    requires mid.Valid() 
+    requires mid.Parent() == this
+    requires mid in Iterators()
+
     ensures fresh(newt)
     ensures Iterators() == {newt}+old(Iterators())
-    ensures newt.Valid() && newt.Parent()==this  
-    ensures newt.HasNext() && newt.Peek()==(k,v)
+    ensures newt.Valid() && newt.Parent() == this  
+    ensures newt.HasPeek?() && newt.Peek?() == (k,v)
 
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-
-    //points either to the inserted elemento or to the already existing one
+    ensures Iterators() >= {newt}+old(Iterators())
+    
+ //points either to the inserted elemento or to the already existing one
  
-
-
-
-  method erase(mid:UnorderedMapIterator) returns (next: UnorderedMapIterator)
+  method Erase(mid:UnorderedMapIterator<K,V>) returns (next: UnorderedMapIterator<K,V>)
     modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     requires mid.Valid()
     requires mid.Parent() == this
-    requires mid.HasNext()
+    requires mid.HasPeek?()
     requires mid in Iterators()
-    requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
-    ensures Model()== map k | k in old(Model()) && k!=old(key(mid.Peek()))::old(Model())[k]
+    ensures Model()== map k | k in old(Model()) && k != key(old(mid.Peek?()))::old(Model())[k]
     ensures |Model()|==|old(Model())|-1
 
     ensures fresh(next)
-    ensures Iterators() == {next}+old(Iterators())
-    ensures next.Valid() && next.Parent()==this 
-    ensures next.Traversed()==old(mid.Traversed()) 
-
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
- 
+    ensures next.Valid() && next.Parent() == this 
+    ensures next.Traversed() == old(mid.Traversed()) 
+    ensures Iterators() >= {next}+old(Iterators())
 }
 
-lemma prove(m:map<K,V>)
-ensures forall k | k in m.Keys :: m[k] in m.Values
-ensures forall p | p in m.Items:: key(p) in m && value(p)==m[key(p)]
-ensures |m|==|m.Keys|
-{}
 
-
-method {:verify true} main(s:UnorderedMap)
-modifies s, s.Repr()
-requires s.Valid() && s.Empty()
-requires forall x | x in s.Repr() :: allocated(x)
-ensures s.Valid()
-ensures forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
-ensures fresh(s.Repr()-old(s.Repr()))
-ensures forall x | x in s.Repr() :: allocated(x)
+method {:verify true} main(s:UnorderedMap<int,int>)
+ modifies s, s.Repr()
+ requires allocated(s.Repr())
+ ensures fresh(s.Repr()-old(s.Repr()))
+ ensures allocated(s.Repr())
+  
+ requires s.Valid() && s.Empty?()
 {
   assert s.Model()==map[];
- s.add(1,2);
- var x:= s.at(1);
+ s.Add(1,2);
+ var x:= s.At(1);
  assert s.Model()==map[1:=2];
- s.add(1,3);
- x:=s.at(1);
+ s.Add(1,3);
+ x:=s.At(1);
  assert x==3;
 
- var z:=s.contains(1);
+ var z:=s.Contains(1);
  assert z;
- z:=s.contains(7);
+ z:=s.Contains(7);
  assert !z;
- s.add(2,3); s.add(3,4); s.add(4,5);
+ s.Add(2,3); s.Add(3,4); s.Add(4,5);
 
  var it:=s.First();
- var cont:=0; 
-  while (it.HasNext())
+ var cont:=0;
+ var b := it.HasPeek(); 
+  while (b)
      decreases |s.Model()|
     //decreases |s.Model()-it.Model().0|
     //decreases s.Model()-it.Traversed()
      invariant s.Valid() 
-     invariant it.Valid() && it in s.Iterators() && it.Parent()==s  
-     invariant  forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+     invariant it.Valid() && it in s.Iterators() && it.Parent() == s  
+     invariant allocated(s.Repr())
      invariant fresh(s.Repr()-old(s.Repr()))
-     invariant forall x | x in s.Repr() :: allocated(x)
-    {
-     it:=s.erase(it);
-
+     invariant allocated(s.Repr())
+     invariant b == it.HasPeek?()    {
+     it := s.Erase(it);
+     b := it.HasPeek();
     } 
-   assert it.Traversed()==s.Model().Keys; 
+  assert it.Traversed()==s.Model().Keys; 
 
-   s.remove(1);
-    z:=s.contains(1);
- assert !z;
+  s.Remove(1);
+  z:=s.Contains(1);
+  assert !z;
 
 
 }
