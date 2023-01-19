@@ -62,23 +62,6 @@ method AllEqual<A(==)>(l: List<A>) returns (b:bool)
   ensures l.Iterators() >= old(l.Iterators())
 { b := AllRelated(l, (x,y) => x==y); } 
 
-class Dummy {}
-
-method AllDummyEqual(l: List<Dummy>) returns (b: bool)
-  modifies l,l.Repr()
-  requires allocated(l.Repr())
-  ensures fresh(l.Repr()-old(l.Repr()))
-  ensures allocated(l.Repr())
-
-  requires l.Valid()
-  ensures l.Valid()
-  ensures l.Model() == old(l.Model())
-  ensures b == forall i, j | 0 <= i <= j < |old(l.Model())| :: old(l.Model())[i] == old(l.Model())[j]
-  
-  ensures l.Iterators() >= old(l.Iterators())
-{
-  b := AllEqual(l);
-}
 
 method Sorted<A>(l: List<A>, le:(A,A) -> bool) returns (b:bool)
   modifies l,l.Repr()
@@ -111,4 +94,4 @@ method DecSorted(l: List<int>) returns (b:bool)
   ensures l.Iterators() >= old(l.Iterators())
 { 
   b := AllRelated(l, (x,y) => x >= y); 
-}
+} 

@@ -25,7 +25,6 @@ ensures i > 1 && xs[i-1] == xs[i-2] ==> DelDup(xs,i) == DelDup(xs,i-1)
 
 }
 
-
 lemma Monotone(xs:seq<int>,i:int,j:int)
 requires 0 <= i < j <= |xs|
 ensures |DelDup(xs,i)| < |DelDup(xs,j)|

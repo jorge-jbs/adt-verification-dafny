@@ -6,7 +6,7 @@ include "../../src/UtilsAux.dfy"
 predicate Smaller(xs1:seq<int>,xs2:seq<int>)
 {forall i,j:: 0 <= i < |xs1| && 0 <= j < |xs2| ==> xs1[i] <= xs2[j]}
 
-method {:timeLimitMultiplier 100} Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml:LinkedList<int>)
+method {:timeLimitMultiplier 100} MyMerge(l1:LinkedList<int>,l2:LinkedList<int>,ml:LinkedList<int>)
 //method {:timeLimitMultiplier 6} {:verify true} Merge(l1:ArrayList,l2:ArrayList,ml:ArrayList) //NO CHANGES
   modifies l1, l1.Repr(), l2, l2.Repr(),ml, ml.Repr()
   requires allocated(l1.Repr())
