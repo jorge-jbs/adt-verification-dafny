@@ -28,7 +28,7 @@ trait UnorderedSetIterator<A> {
     requires Parent().Valid()
     ensures HasPeek?()  <==> Traversed() < Parent().Model() && |Traversed()| < |Parent().Model()|
     //|Traversed()| < |Parent().Model()| es necesario para poder verificar con cota |s.Model()|-|it.Traversed()|
-    ensures !HasPeek?() ==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()|
+    ensures !HasPeek?() <==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()|
   
   method HasPeek() returns (b:bool)
     modifies this, Parent(), Parent().Repr()
@@ -196,7 +196,7 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
-    ensures it.Traversed()=={} 
+    ensures it.Traversed() == {} 
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -242,7 +242,7 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
 
     requires Valid()
     ensures Valid()
-    ensures Model()== old(Model()) - {x} 
+    ensures Model() == old(Model()) - {x} 
 
     ensures Iterators() >= old(Iterators())
 
@@ -254,11 +254,11 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
 
     requires Valid()
     ensures Valid()
-    ensures Model()==old(Model())
+    ensures Model() == old(Model())
     
     ensures fresh(newt) 
     ensures newt.Valid() && newt.Parent() == this
-    ensures x in old(Model()) ==> newt.HasPeek?() && newt.Peek?() == x //DUDA: newt.Traversed()
+    ensures x in old(Model()) ==> newt.HasPeek?() && newt.Peek?() == x 
     ensures x !in old(Model()) ==> newt.Traversed() == Model()
 
     ensures Iterators() >= {newt}+old(Iterators())
@@ -279,12 +279,9 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
 
     ensures fresh(newt)
     ensures newt.Valid() && newt.Parent()==this  
-    ensures newt.HasPeek?() && newt.Peek?()==x  //DUDA: newt.Traversed()
+    ensures newt.HasPeek?() && newt.Peek?() == x  
     ensures Iterators() >= {newt}+old(Iterators())
      //points either to the inserted elemento or to the already existing one
- 
-
-
 
   method Erase(mid:UnorderedSetIterator<A>) returns (next: UnorderedSetIterator<A>)
     modifies this, Repr()
@@ -298,11 +295,11 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     requires mid.HasPeek?()
     requires mid in Iterators()
     ensures Valid()
-    ensures Model()== old(Model())-{old(mid.Peek?())}
+    ensures Model() == old(Model())-{old(mid.Peek?())}
     
     ensures fresh(next)
     ensures next.Valid() && next.Parent() == this 
-    ensures next.Traversed() == old(mid.Traversed()) //DUDA
+    ensures next.Traversed() == old(mid.Traversed()) 
     ensures Iterators() >= {next}+old(Iterators())
 
 }

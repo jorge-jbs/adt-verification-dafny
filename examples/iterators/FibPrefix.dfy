@@ -124,15 +124,18 @@ method {:verify false} FibPrefixes2() returns (pres: List<List<nat>>)  // 45s
 }
 
 // Compute n fibonacci prefixes of increasing length
-method {:verify false} FibPrefixes(n: nat) returns (pres: List<List<nat>>)
+method {:verify true} FibPrefixes(n: nat) returns (pres: List<List<nat>>)
   requires n >= 2
 
   ensures allocated(pres.Repr())
   ensures fresh(pres)
   ensures fresh(pres.Repr())
   ensures pres.Valid()
-  ensures forall pre | pre in pres.Model() :: allocated(pres.Repr())
-  ensures forall r | r in pres.Model() :: r.Valid()
+  ensures forall pre | pre in pres.Model() :: 
+    && allocated(pre.Repr()) 
+    && fresh(pre) 
+    && fresh(pre.Repr()) 
+    && pre.Valid() 
   ensures forall i, j | 0 <= i < j < |pres.Model()| ::
     && pres.Model()[i] != pres.Model()[j]
     && pres.Model()[i] !in pres.Model()[j].Repr()
@@ -182,10 +185,10 @@ method {:verify false} FibPrefixes(n: nat) returns (pres: List<List<nat>>)
     var lpre := pres.Back();
 
     assert forall pre | pre in pres.Model() ::
-      && allocated(pre.Repr())
-      && fresh(pre)
-      && fresh(pre.Repr())
-      && pre.Valid();
+      && allocated(pre.Repr());
+     // && fresh(pre)
+     // && fresh(pre.Repr())
+     // && pre.Valid();
     /*assert lpre==pres.Model()[|pres.Model()|-1];
     assert lpre.Model() == Fib(|pres.Model()|);*/
     

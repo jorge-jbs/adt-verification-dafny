@@ -347,3 +347,4 @@ trait List<A> extends ADT<seq<A>> {
     ensures Iterators() >= {next} + old(Iterators())
     ensures next.Valid() && next.Parent() == this && next.Index() == old(mid.Index())
 }
+
