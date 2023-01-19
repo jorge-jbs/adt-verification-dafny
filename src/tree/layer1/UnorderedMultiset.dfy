@@ -72,8 +72,7 @@ trait UnorderedMultisetIterator<A> {
     ensures Parent().Model() == old(Parent().Model())
     ensures Traversed() == multiset{old(Peek?())}+old(Traversed()) 
 
-    ensures Parent().Iterators() >= old(Parent().Iterators())    
-    
+    ensures Parent().Iterators() >= old(Parent().Iterators())     
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -95,15 +94,13 @@ trait UnorderedMultisetIterator<A> {
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
 
-    ensures Traversed() == old(Traversed()) && Peek?()==old(Peek?()) // no debería ser necesario pero lo es 
+    ensures Traversed() == old(Traversed()) && Peek?()==old(Peek?()) 
     ensures p == Peek?()
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed())
       && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
-
-  
 
   method Copy() returns (it: UnorderedMultisetIterator<A>)
     modifies this, Parent(), Parent().Repr()
@@ -155,6 +152,11 @@ trait UnorderedMultiset<A (==)> extends ADT<multiset<A>> {
     ensures b == Empty?()
 
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Traversed() == old(it.Traversed()) 
+      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
 
   method Size() returns (s: nat)
     modifies this, Repr()
@@ -210,6 +212,11 @@ trait UnorderedMultiset<A (==)> extends ADT<multiset<A>> {
     ensures Valid()
     ensures Model() == old(Model())
     ensures b == (x in Model())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Traversed() == old(it.Traversed()) 
+      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
 
   method Count(x:A) returns (c:int)
     modifies this, Repr()
@@ -241,8 +248,6 @@ trait UnorderedMultiset<A (==)> extends ADT<multiset<A>> {
     ensures Model() == old(Model()) + multiset{x} 
 
     ensures Iterators() >= old(Iterators())
-
-
 
   method Remove(x:A) 
     modifies this, Repr()
@@ -285,6 +290,11 @@ trait UnorderedMultiset<A (==)> extends ADT<multiset<A>> {
     ensures x !in old(Model()) ==> newt.Traversed() == Model()
 
     ensures Iterators() >= {newt}+old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Traversed() == old(it.Traversed()) 
+      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
 
   method Insert(mid: UnorderedMultisetIterator<A>, x: A) returns (newt:UnorderedMultisetIterator<A>)
     modifies this, Repr()
@@ -301,8 +311,8 @@ trait UnorderedMultiset<A (==)> extends ADT<multiset<A>> {
     requires mid in Iterators()
 
     ensures fresh(newt)
-    ensures newt.Valid() && newt.Parent()==this  
-    ensures newt.HasPeek?() && newt.Peek?()==x  //DUDA: newt.Traversed()
+    ensures newt.Valid() && newt.Parent() == this  
+    ensures newt.HasPeek?() && newt.Peek?()==x  
     ensures Iterators() >= {newt}+old(Iterators())
      //points either to the inserted elemento or to the already existing one
  

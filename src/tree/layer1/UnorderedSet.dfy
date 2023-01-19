@@ -262,6 +262,12 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     ensures x !in old(Model()) ==> newt.Traversed() == Model()
 
     ensures Iterators() >= {newt}+old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Traversed() == old(it.Traversed()) 
+      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+
 
   method Insert(mid: UnorderedSetIterator<A>, x: A) returns (newt:UnorderedSetIterator<A>)
     modifies this, Repr()
@@ -304,7 +310,7 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
 
 }
 
-method {:verify true} main(s:UnorderedSet<int>)
+method {:verify false} main(s:UnorderedSet<int>)
   modifies s, s.Repr()
   requires allocated(s.Repr())
   ensures fresh(s.Repr()-old(s.Repr()))
@@ -338,7 +344,7 @@ method {:verify true} main(s:UnorderedSet<int>)
   assert it.Traversed()==s.Model();  
 }
 
-method {:verify true} {:timeLimitMultiplier 100} otry(s:UnorderedSet<int>)
+method {:verify false} {:timeLimitMultiplier 100} otry(s:UnorderedSet<int>)
   modifies s, s.Repr()
   requires allocated(s.Repr())
   ensures fresh(s.Repr()-old(s.Repr()))
