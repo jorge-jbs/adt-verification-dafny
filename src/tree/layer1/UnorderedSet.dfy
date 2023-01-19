@@ -151,6 +151,12 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     ensures b == Empty?()
 
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Traversed() == old(it.Traversed()) 
+      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+
 
   method Size() returns (s: nat)
     modifies this, Repr()
@@ -209,6 +215,11 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     ensures b == (x in Model())
 
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Traversed() == old(it.Traversed()) 
+      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
 
 
   method Add(x:A)
@@ -330,7 +341,7 @@ method {:verify true} main(s:UnorderedSet<int>)
   assert it.Traversed()==s.Model();  
 }
 
-method {:verify true} otry(s:UnorderedSet<int>)
+method {:verify true} {:timeLimitMultiplier 100} otry(s:UnorderedSet<int>)
   modifies s, s.Repr()
   requires allocated(s.Repr())
   ensures fresh(s.Repr()-old(s.Repr()))
