@@ -1,3 +1,5 @@
+include "../../../src/Utils.dfy"
+
 datatype tree<A> = Empty | Node(left: tree<A>, data: A, right: tree<A>)
 
 function method Leaf<A>(d: A): tree<A>
@@ -74,14 +76,6 @@ function method postorder<A>(t: tree<A>): seq<A>
 function method size<A>(t: tree<A>): nat
 {
   |preorder(t)|
-}
-
-function method max(x: int, y: int): int
-{
-  if x < y then
-    y
-  else
-    x
 }
 
 function method depth<A>(t: tree<A>): nat

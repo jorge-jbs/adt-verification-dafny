@@ -21,6 +21,7 @@ class TNode {
     value := v;
     left := l;
     right := r;
+    color := Black;
   }
 
   constructor RedBlack(l: TNode?, k: K, v: V, r: TNode?, c: Color)
@@ -38,11 +39,16 @@ class TNode {
   }
 
   constructor Leaf(k: K, v: V)
+    ensures left == null
+    ensures key == k
+    ensures value == v
+    ensures right == null
   {
     key := k;
     value := v;
     left := null;
     right := null;
+    color := Black;
   }
 }
 

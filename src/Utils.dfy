@@ -11,6 +11,14 @@ function method abs(x: int): int
     x
 }
 
+function method max(x: int, y: int): int
+{
+  if x < y then
+    y
+  else
+    x
+}
+
 lemma reprProgression<A>(s1: set<A>, s2: set<A>, s3: set<A>)
   requires (s3-s2) * s1 == {} // s3-s2 is completely fresh respect s1
   ensures s3-s1 == (s3-s2) + (s2-s1) * s3
