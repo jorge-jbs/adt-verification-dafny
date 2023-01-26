@@ -259,6 +259,8 @@ class ArrayListImpl<A> extends ArrayList<A> {
     ensures b == Empty?()
 
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     b := size == 0;
   }
@@ -284,17 +286,18 @@ class ArrayListImpl<A> extends ArrayList<A> {
   method Front() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+ 
     requires Valid()
     requires !Empty?()
     ensures Valid()
     ensures Model() == old(Model())
     ensures x == Model()[0]
-
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
  
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     x := elements[0];
   }
@@ -342,20 +345,21 @@ class ArrayListImpl<A> extends ArrayList<A> {
     size := size - 1;
   }
 
-  method Back() returns (x: A)//Nuevo metodo
+  method Back() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
-    
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
     requires Valid()
     requires !Empty?()
     ensures Valid()
     ensures Model() == old(Model())
     ensures x == Model()[|Model()| - 1]
 
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
- 
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     x := elements[size - 1];
   }
