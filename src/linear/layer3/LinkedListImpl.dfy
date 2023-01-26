@@ -300,16 +300,17 @@ class LinkedListImpl<A> extends LinkedList<A> {
   method Empty() returns (b: bool)
     modifies this, Repr()
     requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
 
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
     ensures b == Empty?()
 
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
-
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     return list.list.head == null;
   }
@@ -400,6 +401,8 @@ class LinkedListImpl<A> extends LinkedList<A> {
   method Front() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
 
     requires Valid()
     requires !Empty?()
@@ -407,10 +410,9 @@ class LinkedListImpl<A> extends LinkedList<A> {
     ensures Model() == old(Model())
     ensures x == Model()[0]
 
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
-
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     return list.Front();
   }
@@ -463,17 +465,18 @@ class LinkedListImpl<A> extends LinkedList<A> {
   method Back() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
 
     requires Valid()
     requires !Empty?()
     ensures Valid()
     ensures Model() == old(Model())
-    ensures x == Model()[|Model()|-1]
-
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
+    ensures x == Model()[|Model()| - 1]
 
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     return list.Back();
   }
