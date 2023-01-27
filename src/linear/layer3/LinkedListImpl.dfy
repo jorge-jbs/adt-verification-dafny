@@ -599,6 +599,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
         it.Index() == old(it.Index()) + 1
   {
     if CoerceIter(mid).node == null {
+      /*GHOST*/
       assert mid.Index() == |list.list.spine|;
       PushBack(x);
       newt := new LinkedListIteratorImpl(this, list.last);
@@ -611,7 +612,9 @@ class LinkedListImpl<A> extends LinkedList<A> {
         |list.list.spine|-1;
         old(|list.list.spine|);
         old(mid.Index());
+
       }
+      assert forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x);
     } else {
       var node := CoerceIter(mid).node;
       list.InsertBefore(node, x);
@@ -627,6 +630,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
       assert newt.Valid();
       assert newt.Parent() == this;
     }
+    assert fresh(newt);
     iters := {newt} + iters;
   }
 
