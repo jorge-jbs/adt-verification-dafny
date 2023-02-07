@@ -286,7 +286,7 @@ trait UnorderedMultiset<A (==)> extends ADT<multiset<A>> {
     
     ensures fresh(newt) 
     ensures newt.Valid() && newt.Parent() == this
-    ensures x in old(Model()) ==> newt.HasPeek?() && newt.Peek?() == x //DUDA: newt.Traversed()
+    ensures x in old(Model()) ==> newt.HasPeek?() && newt.Peek?() == x 
     ensures x !in old(Model()) ==> newt.Traversed() == Model()
 
     ensures Iterators() >= {newt}+old(Iterators())
@@ -313,7 +313,6 @@ trait UnorderedMultiset<A (==)> extends ADT<multiset<A>> {
     ensures fresh(newt)
     ensures newt.Valid() && newt.Parent() == this  
     ensures newt.HasPeek?() && newt.Peek?()==x  
-    
     ensures Iterators() >= {newt}+old(Iterators())
      //points either to the inserted elemento or to the already existing one
  
@@ -335,7 +334,7 @@ trait UnorderedMultiset<A (==)> extends ADT<multiset<A>> {
     
     ensures fresh(next)
     ensures next.Valid() && next.Parent() == this 
-    ensures next.Traversed() == old(mid.Traversed()) //DUDA
+    ensures next.Traversed() == old(mid.Traversed()) 
     ensures Iterators() >= {next}+old(Iterators())
 
 }

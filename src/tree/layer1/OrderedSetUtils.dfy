@@ -234,7 +234,6 @@ ensures elemth(s,k) in s && |smaller(s,elemth(s,k))|==k
 }
 
 
-
 lemma {:induction s} lelemthrev(s:set<int>,x:int,k:int)
 requires 0<=k<|s| && x in s && |smaller(s,x)|==k
 ensures x==elemth(s,k)
@@ -256,6 +255,25 @@ ensures x==elemth(s,k)
    }
 
 }
+
+
+
+lemma elemthSmaller(s:set<int>,ss:set<int>)
+requires s > ss && |s| > |ss|
+requires forall x,y | x in ss && y in s-ss :: x < y
+ensures forall y | y in s-ss :: y >= elemth(s,|ss|)
+{}
+
+lemma elemthSet(s:set<int>,ss:set<int>)
+requires s > ss 
+requires forall x,y | x in ss && y in s-ss :: x < y
+ensures |ss| < |s| && elemth(s,|ss|) in s && elemth(s,|ss|) !in ss
+{ sizesStrictContained(ss,s);
+  assert 0 <= |ss| < |s|;
+  lelemth(s,|ss|);
+  elemthSmaller(s,ss);
+}  
+
 
 
 lemma {:verify true} firstAndLast(s:set<int>)

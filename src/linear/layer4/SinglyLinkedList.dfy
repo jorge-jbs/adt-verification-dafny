@@ -173,7 +173,7 @@ class SinglyLinkedList<A> {
   }
 
   function Model(): seq<A>
-    reads this, spine
+    reads this, Repr()
     requires Valid()
   {
     ModelAux(spine)

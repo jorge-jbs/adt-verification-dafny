@@ -24,7 +24,7 @@ function Peek?():(K,V)
     
     ensures Peek?() in Parent().Model().Items 
             && key(Peek?()) !in Traversed() 
-            //key(Peek()) in Parent().Model() && 
+            //key(Peek?()) in Parent().Model() && 
             //value(Peek?()) == Parent().Model()[key(Peek?())]
   
 predicate HasPeek?()
