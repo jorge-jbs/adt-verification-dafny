@@ -129,6 +129,16 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
     ensures Index() + 1 == old(Index())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent() == old(it.Parent()) && (it != this ==> it.Index() == old(it.Index()))
+  {
+    assert |parent.Model()| > 0;
+    assert Index() >= 0;
+    if Index() > 0 {
+      assert parent.list.list.spine[Index()-1]
+        == parent.list.list.spine[Index()].prev;
+    }
+    node := node.prev;
+    pastTheEnd := false;
+  }
 
   method Next()
     modifies this
@@ -397,6 +407,11 @@ class LinkedListImpl<A> extends LinkedList<A> {
     ensures it.Parent() == this
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+  {
+    var it1 := new LinkedListIteratorImpl.Last(this);
+    iters := {it1} + iters;
+    it := it1;
+  }
 
   method Front() returns (x: A)
     modifies this, Repr()
@@ -542,7 +557,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
     requires it in Iterators()
     ensures it == CoerceIter(it)
   {
-    it
+    it as LinkedListIteratorImpl<A>
   }
 
   // Insertion after mid
