@@ -185,7 +185,7 @@ module Tree {
         }
       }
     }
-    
+
     method {:verify false} Insert(k: K, v: V)
       modifies this, Repr()
       requires Valid()
@@ -231,6 +231,12 @@ module Tree {
       reads elems(sk)
     {
       RB.RedBlackTree(TreeModelRec(sk))
+    }
+
+    predicate RedBlackTree()
+      reads this, elems(skeleton)
+    {
+      RB.RedBlackTreeRoot(TreeModelRec(skeleton))
     }
 
     // 67"
@@ -423,6 +429,55 @@ module Tree {
           assert false;
         }
       }
+    }
+
+    // 5"
+    static method RBInsertRoot(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
+      returns (newNode: TNode, ghost newSk: tree<TNode>, ghost insertedNode:TNode)
+
+      modifies set x | x in elems(sk) :: x`left
+      modifies set x | x in elems(sk) :: x`right
+      modifies set x | x in elems(sk) :: x`value
+      modifies set x | x in elems(sk) :: x`color
+
+      requires ValidRec(node, sk)
+      ensures ValidRec(newNode, newSk)
+      ensures TreeModelRec(newSk) == RB.RBInsertRoot(old(TreeModelRec(sk)), k, v)
+
+      ensures elems(newSk) == elems(sk) + {insertedNode}
+      ensures insertedNode.key == k && insertedNode.value == v
+      ensures forall n | n in elems(sk) && old(n.key) != k ::
+        n.key == old(n.key) && n.value == old(n.value)
+
+      requires allocated(elems(sk))
+      ensures fresh(elems(newSk)-elems(sk))
+      ensures allocated(elems(newSk))
+    {
+      newNode, newSk, insertedNode := RBInsertRec(node, sk, k, v);
+      newNode.color := Black;
+    }
+
+    // 26"
+    method RBInsert(k: K, v: V)
+      modifies this, Repr()
+
+      requires Valid()
+      requires SearchTree()
+      requires RedBlackTree()
+
+      ensures Valid()
+      ensures SearchTree()
+      ensures RedBlackTree()
+      ensures MapModel() == old(MapModel())[k := v]
+
+      requires allocated(Repr())
+      ensures fresh(Repr()-old(Repr()))
+      ensures allocated(Repr())
+    {
+      ghost var z;
+      root, skeleton, z := RBInsertRoot(root, skeleton, k, v);
+      RBInsertRootSpec(old(TreeModelRec(skeleton)), k, v);
+      RBInsertRootModel(old(TreeModelRec(skeleton)), k, v);
     }
   }
 }

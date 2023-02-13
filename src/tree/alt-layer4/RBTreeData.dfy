@@ -218,6 +218,11 @@ module RBTreeData {
     }
   }
 
+  function method RedBlackTreeRoot(t: rbtree): bool
+  {
+    RedBlackTree(t) && (t.Node? ==> t.color.Black?)
+  }
+
   function method NegColor(c: Color): Color
   {
     match c {
@@ -307,6 +312,20 @@ module RBTreeData {
         else
           Node(l, k, v', r, c)
     }
+  }
+
+  function method BlackenRoot(t: rbtree): rbtree
+  {
+    match t {
+      case Empty => Empty
+      case Node(l, k, v, r, c) =>
+        Node(l, k, v, r, Black)
+    }
+  }
+
+  function method RBInsertRoot(t: rbtree, k: K, v: V): rbtree
+  {
+    BlackenRoot(RBInsert(t, k, v))
   }
 
   lemma FlipColorsSpec(t: rbtree)
@@ -500,4 +519,22 @@ module RBTreeData {
     requires SearchTree(t)
     requires SearchTree(RBInsert(t, k, v))
     ensures model(t)[k := v] == model(RBInsert(t, k, v))
+
+  lemma RBInsertRootSpec(t: rbtree, k': K, v': V)
+    requires SearchTree(t)
+    requires RedBlackTreeRoot(t)
+    ensures keys(t) + {k'} == keys(RBInsert(t, k', v'))
+    ensures SearchTree(RBInsertRoot(t, k', v'))
+    ensures RedBlackTreeRoot(RBInsertRoot(t, k', v'))
+  {
+    RBInsertSpec(t, k', v');
+  }
+
+  lemma RBInsertRootModel(t: rbtree, k: K, v: V)
+    requires SearchTree(t)
+    requires SearchTree(RBInsertRoot(t, k, v))
+    ensures model(t)[k := v] == model(RBInsertRoot(t, k, v))
+  {
+    RBInsertModel(t, k, v);
+  }
 }
