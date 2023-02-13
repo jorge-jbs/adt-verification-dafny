@@ -243,7 +243,6 @@ module RBTreeData {
   function method RotateLeft(t: rbtree): rbtree
     requires t.Node?
     requires t.right.Node?
-    requires t.right.color.Red?
   {
     Node(
       Node(t.left, t.key, t.value, t.right.left, Red),
@@ -257,7 +256,6 @@ module RBTreeData {
   function method RotateRight(t: rbtree): rbtree
     requires t.Node?
     requires t.left.Node?
-    requires t.left.color.Red?
   {
     Node(
       t.left.left,

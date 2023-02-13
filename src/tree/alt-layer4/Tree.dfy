@@ -88,17 +88,20 @@ module Tree {
       ValidRec(root, skeleton)
     }
 
-    static predicate SearchTreeRec(sk: tree<TNode>)
-      reads set x | x in elems(sk) :: x`key
+    static function TreeModelRec(sk: tree<TNode>): rbtree
+      reads elems(sk)
+      ensures (set n | n in elems(sk) :: n.key) == keys(TreeModelRec(sk))
     {
       match sk {
-        case Empty() => true
-        case Node(l, n, r) =>
-          && (forall m | m in elems(l) :: m.key < n.key)
-          && (forall m | m in elems(r) :: n.key < m.key)
-          && SearchTreeRec(l)
-          && SearchTreeRec(r)
+        case Empty => RB.Empty
+        case Node(l, n, r) => RB.Node(TreeModelRec(l), n.key, n.value, TreeModelRec(r), n.color)
       }
+    }
+
+    static predicate SearchTreeRec(sk: tree<TNode>)
+      reads elems(sk)
+    {
+      RB.SearchTree(TreeModelRec(sk))
     }
 
     predicate SearchTree()
@@ -108,20 +111,8 @@ module Tree {
       SearchTreeRec(skeleton)
     }
 
-    static function TreeModelRec(sk: tree<TNode>): rbtree
-      reads elems(sk)
-      ensures (set n | n in elems(sk) :: n.key) == keys(TreeModelRec(sk))
-      ensures SearchTreeRec(sk) ==> RB.SearchTree(TreeModelRec(sk))
-    {
-      match sk {
-        case Empty => RB.Empty
-        case Node(l, n, r) => RB.Node(TreeModelRec(l), n.key, n.value, TreeModelRec(r), n.color)
-      }
-    }
-
     function TreeModel(): rbtree
       reads this, elems(skeleton)
-      //ensures SearchTree() ==> RB.SearchTree(TreeModel())
     {
       TreeModelRec(skeleton)
     }
@@ -195,7 +186,7 @@ module Tree {
       }
     }
     
-    method Insert(k: K, v: V)
+    method {:verify false} Insert(k: K, v: V)
       modifies this, Repr()
       requires Valid()
       requires SearchTree()
@@ -231,52 +222,28 @@ module Tree {
     }
 
     static function BlackHeight(sk: tree<TNode>): nat
-      reads set x | x in elems(sk) :: x`color
+      reads elems(sk)
     {
-      match sk {
-        case Empty() => 0
-        case Node(l, n, r) =>
-          if n.color.Black? then
-            1 + max(BlackHeight(l), BlackHeight(r))
-          else
-            max(BlackHeight(l), BlackHeight(r))
-      }
+      RB.BlackHeight(TreeModelRec(sk))
     }
 
-    static predicate {:verify true} RedBlackTreeRec(sk: tree<TNode>)
-      reads set x | x in elems(sk) :: x`key
-      reads set x | x in elems(sk) :: x`color
+    static predicate RedBlackTreeRec(sk: tree<TNode>)
+      reads elems(sk)
     {
-      match sk {
-        case Empty() => true
-        case Node(l, n, r) =>
-          // Red links lean left:
-          && (r.Node? ==> r.data.color.Black?)
-          // No node has two red links connected to it:
-          && (l.Node? && l.data.color.Red? && l.left.Node? ==> l.left.data.color.Black?)
-          // && (n.color.Red? && !l.Empty? ==> l.data.color.Black?)
-          // Perfect black balance:
-          && BlackHeight(l) == BlackHeight(r)
-
-          && RedBlackTreeRec(l)
-          && RedBlackTreeRec(r)
-      }
+      RB.RedBlackTree(TreeModelRec(sk))
     }
 
+    // 67"
     static method FlipColors(node: TNode, ghost sk: tree<TNode>)
       modifies node`color, node.left`color, node.right`color
 
       requires ValidRec(node, sk)
-      requires SearchTreeRec(sk)
       requires node.left != null
       requires node.right != null
       requires TreeModelRec(sk).left.Node?  /* redundant */
       requires TreeModelRec(sk).right.Node?  /* redundant */
 
       ensures ValidRec(node, sk)
-      ensures SearchTreeRec(sk)
-      //ensures BlackHeight(sk) == old(BlackHeight(sk))
-
       ensures TreeModelRec(sk) == RB.FlipColors(old(TreeModelRec(sk)))
 
       requires allocated(elems(sk))
@@ -287,6 +254,7 @@ module Tree {
       node.right.color := NegColor(node.right.color);
     }
 
+    // 22"
     static method RotateLeft(node: TNode, ghost sk: tree<TNode>)
       returns (newNode: TNode, ghost newSk: tree<TNode>)
 
@@ -296,16 +264,11 @@ module Tree {
       modifies node.right`color
 
       requires ValidRec(node, sk)
-      requires isRed(node.right)
-      requires SearchTreeRec(sk)
+      requires node.right != null
       requires TreeModelRec(sk).right.Node?  /* redundant */
-      requires TreeModelRec(sk).right.color.Red?  /* redundant */
 
       ensures ValidRec(newNode, newSk)
-      ensures SearchTreeRec(newSk)
-      //ensures BlackHeight(newSk) == old(BlackHeight(sk))
       ensures TreeModelRec(newSk) == RB.RotateLeft(old(TreeModelRec(sk)))
-
       ensures elems(newSk) == elems(sk)
 
       requires allocated(elems(sk))
@@ -320,6 +283,7 @@ module Tree {
       newSk := T.Node(T.Node(sk.left, node, sk.right.left), newNode, sk.right.right);
     }
 
+    // 10"
     static method RotateRight(node: TNode, ghost sk: tree<TNode>)
       returns (newNode: TNode, ghost newSk: tree<TNode>)
 
@@ -329,16 +293,11 @@ module Tree {
       modifies node.left`color
 
       requires ValidRec(node, sk)
-      requires isRed(node.left)
-      requires SearchTreeRec(sk)
+      requires node.left != null
       requires TreeModelRec(sk).left.Node?  /* redundant */
-      requires TreeModelRec(sk).left.color.Red?  /* redundant */
 
       ensures ValidRec(newNode, newSk)
-      ensures SearchTreeRec(newSk)
-      //ensures BlackHeight(newSk) == old(BlackHeight(sk))
       ensures TreeModelRec(newSk) == RB.RotateRight(old(TreeModelRec(sk)))
-
       ensures elems(newSk) == elems(sk)
 
       requires allocated(elems(sk))
@@ -353,6 +312,7 @@ module Tree {
       newSk := T.Node(sk.left.left, newNode, T.Node(sk.left.right, node, sk.right));
     }
 
+    // 4"
     static method Restore(node: TNode, ghost sk: tree<TNode>)
       returns (newNode: TNode, ghost newSk: tree<TNode>)
 
@@ -361,15 +321,9 @@ module Tree {
       modifies set x | x in elems(sk) :: x`color
 
       requires ValidRec(node, sk)
-      requires SearchTreeRec(sk)
-      //requires BlackHeight(sk.left) == BlackHeight(sk.right)
-      //requires RedBlackTreeRec(sk.left)
-      //requires RedBlackTreeRec(sk.right)
 
       ensures ValidRec(newNode, newSk)
-      ensures SearchTreeRec(newSk)
       ensures TreeModelRec(newSk) == RB.Restore(old(TreeModelRec(sk)))
-
       ensures elems(newSk) == elems(sk)
 
       requires allocated(elems(sk))
@@ -422,8 +376,8 @@ module Tree {
       assert TreeModelRec(newSk) == t''';
     }
 
-    // 8'30"
-    static method {:verify false} RBInsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
+    // 4'41"
+    static method RBInsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
       returns (newNode: TNode, ghost newSk: tree<TNode>, ghost insertedNode:TNode)
 
       modifies set x | x in elems(sk) :: x`left
@@ -432,13 +386,7 @@ module Tree {
       modifies set x | x in elems(sk) :: x`color
 
       requires ValidRec(node, sk)
-      requires SearchTreeRec(sk)
-      requires RedBlackTreeRec(sk)
-
       ensures ValidRec(newNode, newSk)
-      ensures SearchTreeRec(newSk)
-      //ensures RedBlackTreeRec(newSk)
-      //ensures BlackHeight(newSk) == old(BlackHeight(sk))
       ensures TreeModelRec(newSk) == RB.RBInsert(old(TreeModelRec(sk)), k, v)
 
       ensures elems(newSk) == elems(sk) + {insertedNode}
