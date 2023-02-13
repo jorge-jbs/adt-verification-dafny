@@ -361,10 +361,9 @@ module RBTreeData {
     ensures RedBlackTree(t)
   {}
 
-  lemma {:verify false} RestoreSpec(t: rbtree)
+  lemma RestoreSpec(t: rbtree)
     requires t.Node?
     requires SearchTree(t)
-    //requires RedBlackTree(t)
     requires isRed(t.right) && isRed(t.right.left) ==>
       isBlack(t) && isRed(t.left)
     requires !(
@@ -485,7 +484,6 @@ module RBTreeData {
       assert RedBlackTree(t'''.right);
     }
     */
-    //assume false;
   }
 
   lemma RBInsertSpec(t: rbtree, k': K, v': V)
@@ -515,10 +513,219 @@ module RBTreeData {
     }
   }
 
-  lemma {:verify false} RBInsertModel(t: rbtree, k: K, v: V)
+  // 58"
+  lemma FlipColorsModel(t: rbtree)
+    requires t.Node?
+    requires t.left.Node?
+    requires t.right.Node?
     requires SearchTree(t)
-    requires SearchTree(RBInsert(t, k, v))
-    ensures model(t)[k := v] == model(RBInsert(t, k, v))
+    requires SearchTree(FlipColors(t))
+    ensures model(t) == model(FlipColors(t))
+  {
+    calc == {
+      model(FlipColors(t));
+      model(
+        Node(
+          Node(t.left.left, t.left.key, t.left.value, t.left.right, NegColor(t.left.color)),
+          t.key,
+          t.value,
+          Node(t.right.left, t.right.key, t.right.value, t.right.right, NegColor(t.right.color)),
+          NegColor(t.color)
+        )
+      );
+      model(Node(t.left.left, t.left.key, t.left.value, t.left.right, NegColor(t.left.color)))
+        + map[t.key := t.value]
+        + model(Node(t.right.left, t.right.key, t.right.value, t.right.right, NegColor(t.right.color)));
+      model(t.left.left) + map[t.left.key := t.left.value] + model(t.left.right)
+        + map[t.key := t.value]
+        + model(t.right.left) + map[t.right.key := t.right.value] + model(t.right.right);
+      model(Node(t.left.left, t.left.key, t.left.value, t.left.right, t.left.color))
+        + map[t.key := t.value]
+        + model(Node(t.right.left, t.right.key, t.right.value, t.right.right, t.right.color));
+      model(
+        Node(
+          Node(t.left.left, t.left.key, t.left.value, t.left.right, t.left.color),
+          t.key,
+          t.value,
+          Node(t.right.left, t.right.key, t.right.value, t.right.right, t.right.color),
+          t.color
+        )
+      );
+      model(t);
+    }
+  }
+
+  lemma RotateLeftModel(t: rbtree)
+    requires t.Node?
+    requires t.right.Node?
+    requires SearchTree(t)
+    requires SearchTree(RotateLeft(t))
+    ensures model(t) == model(RotateLeft(t))
+  {
+    calc == {
+      model(RotateLeft(t));
+      model(
+        Node(
+          Node(t.left, t.key, t.value, t.right.left, Red),
+          t.right.key,
+          t.right.value,
+          t.right.right,
+          t.color
+        )
+      );
+      model(Node(t.left, t.key, t.value, t.right.left, Red))
+        + map[t.right.key := t.right.value]
+        + model(t.right.right);
+      model(t.left)
+        + map[t.key := t.value]
+        + model(t.right.left)
+        + map[t.right.key := t.right.value]
+        + model(t.right.right);
+      model(t.left)
+        + map[t.key := t.value]
+        + model(t.right);
+      model(t);
+    }
+  }
+
+  lemma RotateRightModel(t: rbtree)
+    requires t.Node?
+    requires t.left.Node?
+    requires SearchTree(t)
+    requires SearchTree(RotateRight(t))
+    ensures model(t) == model(RotateRight(t))
+  {
+    calc == {
+      model(RotateRight(t));
+      model(
+        Node(
+          t.left.left,
+          t.left.key,
+          t.left.value,
+          Node(t.left.right, t.key, t.value, t.right, Red),
+          t.color
+        )
+      );
+      model(t.left.left)
+        + map[t.left.key := t.left.value]
+        + model(Node(t.left.right, t.key, t.value, t.right, Red));
+      model(t.left.left)
+        + map[t.left.key := t.left.value]
+        + model(t.left.right)
+        + map[t.key := t.value]
+        + model(t.right);
+      model(t.left)
+        + map[t.key := t.value]
+        + model(t.right);
+      model(t);
+    }
+  }
+
+  lemma RestoreModel(t: rbtree)
+    requires t.Node?
+    requires SearchTree(t)
+    requires isRed(t.right) && isRed(t.right.left) ==>
+      isBlack(t) && isRed(t.left)
+    requires !(
+      && isRed(t)
+      && isRed(t.left)
+      && isRed(t.right)
+    )
+    requires !(
+      && isRed(t)
+      && isRed(t.left)
+      && isRed(t.left.left)
+    )
+    requires BlackHeight(t.left) == BlackHeight(t.right)
+    requires RedBlackTree(t.left)
+    requires RedBlackTree(t.right)
+
+    ensures SearchTree(Restore(t))
+    ensures model(t) == model(Restore(t))
+  {
+    RestoreSpec(t);
+    var t' :=
+      if isRed(t.right) then
+        RotateLeft(t)
+      else
+        t;
+    var t'' :=
+      if isRed(t'.left) && isRed(t'.left.left) then
+        RotateRight(t')
+      else
+        t';
+    var t''' :=
+      if isRed(t''.left) && isRed(t''.right) then
+        FlipColors(t'')
+      else
+        t'';
+
+
+    if isRed(t.right) {
+      RotateLeftModel(t);
+      assert model(RotateLeft(t)) == model(t);
+    }
+    assert model(t) == model(t');
+
+    if isRed(t'.left) && isRed(t'.left.left) {
+      RotateRightModel(t');
+      assert model(RotateRight(t')) == model(t');
+    }
+    assert model(t') == model(t'');
+
+    if isRed(t''.left) && isRed(t''.right) {
+      FlipColorsModel(t'');
+      assert model(FlipColors(t'')) == model(t'');
+    }
+    assert model(t'') == model(t''');
+
+    assert t''' == Restore(t);
+  }
+
+  // 1'40"
+  lemma {:induction} RBInsertModel(t: rbtree, k': K, v': V)
+    requires SearchTree(t)
+    requires RedBlackTree(t)
+    requires !(isRed(t) && isRed(t.left))
+    requires SearchTree(RBInsert(t, k', v'))
+    ensures model(t)[k' := v'] == model(RBInsert(t, k', v'))
+  {
+    match t {
+      case Empty => {
+      }
+      case Node(l, k, v, r, c) => {
+        if k < k' {
+          RBInsertSpec(r, k', v');
+          calc == {
+            model(RBInsert(Node(l, k, v, r, c), k', v'));
+            model(Restore(Node(l, k, v, RBInsert(r, k', v'), c)));
+            { RestoreModel(Node(l, k, v, RBInsert(r, k', v'), c)); }
+            model(Node(l, k, v, RBInsert(r, k', v'), c));
+            { toMap''Lemmas(Node(l, k, v, RBInsert(r, k', v'), c)); }
+            model(l) + map[k := v] + model(RBInsert(r, k', v'));
+            model(l) + map[k := v] + model(r)[k' := v'];
+            model(l) + map[k := v] + model(r) + map[k' := v'];
+            model(t) + map[k' := v'];
+          }
+        } else if k' < k {
+          RBInsertSpec(l, k', v');
+          calc == {
+            model(RBInsert(Node(l, k, v, r, c), k', v'));
+            model(Restore(Node(RBInsert(l, k', v'), k, v, r, c)));
+            { RestoreModel(Node(RBInsert(l, k', v'), k, v, r, c)); }
+            model(Node(RBInsert(l, k', v'), k, v, r, c));
+            { toMap''Lemmas(Node(RBInsert(l, k', v'), k, v, r, c)); }
+            model(RBInsert(l, k', v')) + map[k := v] + model(r);
+            model(l)[k' := v'] + map[k := v] + model(r);
+            model(l) + map[k' := v'] + map[k := v] + model(r);
+            model(l) + map[k := v] + model(r) + map[k' := v'];
+            model(t) + map[k' := v'];
+          }
+        } else {
+        }
+      }
+    }
+  }
 
   lemma RBInsertRootSpec(t: rbtree, k': K, v': V)
     requires SearchTree(t)
@@ -532,6 +739,7 @@ module RBTreeData {
 
   lemma RBInsertRootModel(t: rbtree, k: K, v: V)
     requires SearchTree(t)
+    requires RedBlackTreeRoot(t)
     requires SearchTree(RBInsertRoot(t, k, v))
     ensures model(t)[k := v] == model(RBInsertRoot(t, k, v))
   {
