@@ -129,6 +129,16 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
     ensures Index() + 1 == old(Index())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent() == old(it.Parent()) && (it != this ==> it.Index() == old(it.Index()))
+  {
+    assert |parent.Model()| > 0;
+    assert Index() >= 0;
+    if Index() > 0 {
+      assert parent.list.list.spine[Index()-1]
+        == parent.list.list.spine[Index()].prev;
+    }
+    node := node.prev;
+    pastTheEnd := false;
+  }
 
   method Next()
     modifies this
@@ -300,16 +310,17 @@ class LinkedListImpl<A> extends LinkedList<A> {
   method Empty() returns (b: bool)
     modifies this, Repr()
     requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
 
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
     ensures b == Empty?()
 
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
-
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     return list.list.head == null;
   }
@@ -396,10 +407,17 @@ class LinkedListImpl<A> extends LinkedList<A> {
     ensures it.Parent() == this
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+  {
+    var it1 := new LinkedListIteratorImpl.Last(this);
+    iters := {it1} + iters;
+    it := it1;
+  }
 
   method Front() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
 
     requires Valid()
     requires !Empty?()
@@ -407,10 +425,9 @@ class LinkedListImpl<A> extends LinkedList<A> {
     ensures Model() == old(Model())
     ensures x == Model()[0]
 
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
-
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     return list.Front();
   }
@@ -463,17 +480,18 @@ class LinkedListImpl<A> extends LinkedList<A> {
   method Back() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
 
     requires Valid()
     requires !Empty?()
     ensures Valid()
     ensures Model() == old(Model())
-    ensures x == Model()[|Model()|-1]
-
-    ensures fresh(Repr() - old(Repr()))
-    ensures allocated(Repr())
+    ensures x == Model()[|Model()| - 1]
 
     ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
   {
     return list.Back();
   }
@@ -539,7 +557,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
     requires it in Iterators()
     ensures it == CoerceIter(it)
   {
-    it
+    it as LinkedListIteratorImpl<A>
   }
 
   // Insertion after mid
@@ -596,6 +614,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
         it.Index() == old(it.Index()) + 1
   {
     if CoerceIter(mid).node == null {
+      /*GHOST*/
       assert mid.Index() == |list.list.spine|;
       PushBack(x);
       newt := new LinkedListIteratorImpl(this, list.last);
@@ -608,7 +627,9 @@ class LinkedListImpl<A> extends LinkedList<A> {
         |list.list.spine|-1;
         old(|list.list.spine|);
         old(mid.Index());
+
       }
+      assert forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x);
     } else {
       var node := CoerceIter(mid).node;
       list.InsertBefore(node, x);
@@ -624,6 +645,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
       assert newt.Valid();
       assert newt.Parent() == this;
     }
+    assert fresh(newt);
     iters := {newt} + iters;
   }
 

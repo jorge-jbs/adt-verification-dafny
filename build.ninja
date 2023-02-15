@@ -1,0 +1,63 @@
+rule dafny
+  depfile = $in.d
+  command = ./dafnyBuildMD.sh $in
+
+#build examples/reordenando-la-cola.dll: dafny ./examples/reordenando-la-cola.dfy
+#build examples/accidentes-aereos.dll: dafny ./examples/accidentes-aereos.dfy
+#build examples/iterators/AllProperty.dll: dafny ./examples/iterators/AllProperty.dfy
+#build examples/iterators/ElimDupNoIts.dll: dafny ./examples/iterators/ElimDupNoIts.dfy
+#build examples/iterators/Quicksort.dll: dafny ./examples/iterators/Quicksort.dfy
+#build examples/iterators/Dup_Utils.dll: dafny ./examples/iterators/Dup_Utils.dfy
+#build examples/iterators/FillArray.dll: dafny ./examples/iterators/FillArray.dfy
+#build examples/iterators/ListaPersonas.dll: dafny ./examples/iterators/ListaPersonas.dfy
+#build examples/iterators/DupElementsMap.dll: dafny ./examples/iterators/DupElementsMap.dfy
+#build examples/iterators/Misc.dll: dafny ./examples/iterators/Misc.dfy
+#build examples/iterators/FibPrefix.dll: dafny ./examples/iterators/FibPrefix.dfy
+#build examples/iterators/FindMax.dll: dafny ./examples/iterators/FindMax.dfy
+#build examples/iterators/ElimDupMix.dll: dafny ./examples/iterators/ElimDupMix.dfy
+#build examples/iterators/FindMaxMap.dll: dafny ./examples/iterators/FindMaxMap.dfy
+#build examples/iterators/AllRelated.dll: dafny ./examples/iterators/AllRelated.dfy
+#build examples/iterators/FilterEven.dll: dafny ./examples/iterators/FilterEven.dfy
+#build examples/iterators/FillArrayMap.dll: dafny ./examples/iterators/FillArrayMap.dfy
+#build examples/iterators/DupElements.dll: dafny ./examples/iterators/DupElements.dfy
+#build examples/iterators/ElimDupMap.dll: dafny ./examples/iterators/ElimDupMap.dfy
+#build examples/iterators/ElimDup.dll: dafny ./examples/iterators/ElimDup.dfy
+#build examples/iterators/Merge.dll: dafny ./examples/iterators/Merge.dfy
+#build examples/accidentes-aereos-main.dll: dafny ./examples/accidentes-aereos-main.dfy
+#build examples/TestArrayList.dll: dafny ./examples/TestArrayList.dfy
+#build examples/ListOfObjects.dll: dafny ./examples/ListOfObjects.dfy
+#build examples/reordenando-la-cola-main.dll: dafny ./examples/reordenando-la-cola-main.dfy
+#build examples/TestMeth.dll: dafny ./examples/TestMeth.dfy
+#build examples/sets/unordSetIntersection.dll: dafny ./examples/sets/unordSetIntersection.dfy
+#build examples/sets/ordSetIntersection.dll: dafny ./examples/sets/ordSetIntersection.dfy
+#build examples/sets/ordSetContainedL.dll: dafny ./examples/sets/ordSetContainedL.dfy
+#build examples/sets/unordSetContained.dll: dafny ./examples/sets/unordSetContained.dfy
+#build examples/sets/ordSetContained.dll: dafny ./examples/sets/ordSetContained.dfy
+build src/Order.dll: dafny ./src/Order.dfy
+build src/ADT.dll: dafny ./src/ADT.dfy
+build src/linear/layer4/SinglyLinkedList.dll: dafny ./src/linear/layer4/SinglyLinkedList.dfy
+build src/linear/layer4/DoublyLinkedListWithLast.dll: dafny ./src/linear/layer4/DoublyLinkedListWithLast.dfy
+build src/linear/layer4/SinglyLinkedListWithLast.dll: dafny ./src/linear/layer4/SinglyLinkedListWithLast.dfy
+build src/linear/layer4/DoublyLinkedList.dll: dafny ./src/linear/layer4/DoublyLinkedList.dfy
+#build src/linear/layer4/CircularDoublyLinkedList.dll: dafny ./src/linear/layer4/CircularDoublyLinkedList.dfy
+build src/linear/layer2/ArrayList.dll: dafny ./src/linear/layer2/ArrayList.dfy
+build src/linear/layer2/LinkedList.dll: dafny ./src/linear/layer2/LinkedList.dfy
+build src/linear/layer3/ArrayQueueImpl.dll: dafny ./src/linear/layer3/ArrayQueueImpl.dfy
+build src/linear/layer3/ArrayDequeImpl.dll: dafny ./src/linear/layer3/ArrayDequeImpl.dfy
+build src/linear/layer3/LinkedDequeImpl.dll: dafny ./src/linear/layer3/LinkedDequeImpl.dfy
+build src/linear/layer3/SinglyLinkedQueueImpl.dll: dafny ./src/linear/layer3/SinglyLinkedQueueImpl.dfy
+build src/linear/layer3/LinkedStackImpl.dll: dafny ./src/linear/layer3/LinkedStackImpl.dfy
+build src/linear/layer3/ArrayStackImpl.dll: dafny ./src/linear/layer3/ArrayStackImpl.dfy
+build src/linear/layer3/ArrayListImpl.dll: dafny ./src/linear/layer3/ArrayListImpl.dfy
+build src/linear/layer3/DoublyLinkedQueueImpl.dll: dafny ./src/linear/layer3/DoublyLinkedQueueImpl.dfy
+build src/linear/layer3/LinkedListImpl.dll: dafny ./src/linear/layer3/LinkedListImpl.dfy
+build src/linear/layer1/Deque.dll: dafny ./src/linear/layer1/Deque.dfy
+build src/linear/layer1/List.dll: dafny ./src/linear/layer1/List.dfy
+build src/linear/layer1/Queue.dll: dafny ./src/linear/layer1/Queue.dfy
+build src/linear/layer1/Stack.dll: dafny ./src/linear/layer1/Stack.dfy
+#build src/UtilsAux.dll: dafny ./src/UtilsAux.dfy
+build src/Utils.dll: dafny ./src/Utils.dfy
+
+build all: phony src/Order.dll src/ADT.dll src/linear/layer4/SinglyLinkedList.dll src/linear/layer4/DoublyLinkedListWithLast.dll src/linear/layer4/SinglyLinkedListWithLast.dll src/linear/layer4/DoublyLinkedList.dll src/linear/layer2/ArrayList.dll src/linear/layer2/LinkedList.dll src/linear/layer3/ArrayQueueImpl.dll src/linear/layer3/ArrayDequeImpl.dll src/linear/layer3/LinkedDequeImpl.dll src/linear/layer3/SinglyLinkedQueueImpl.dll src/linear/layer3/LinkedStackImpl.dll src/linear/layer3/ArrayStackImpl.dll src/linear/layer3/ArrayListImpl.dll src/linear/layer3/DoublyLinkedQueueImpl.dll src/linear/layer3/LinkedListImpl.dll src/linear/layer1/Deque.dll src/linear/layer1/List.dll src/linear/layer1/Queue.dll src/linear/layer1/Stack.dll src/Utils.dll
+
+default all
