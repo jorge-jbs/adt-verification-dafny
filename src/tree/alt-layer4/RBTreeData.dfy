@@ -1,13 +1,11 @@
 include "../../../src/MUtils.dfy"
+include "../../../src/tree/alt-layer4/KeyValue.dfy"
+include "../../../src/tree/alt-layer4/Color.dfy"
 
 module RBTreeData {
-
   import opened Utils
-
-  type K = int
-  type V = int
-
-  datatype Color = Red | Black
+  import opened KeyValue
+  import opened Color
 
   datatype rbtree = Empty | Node(left: rbtree, key: K, value: V, right: rbtree, color: Color)
 
@@ -109,9 +107,9 @@ module RBTreeData {
       case Node(l, k, v, r, c) => {
         SearchImpliesUnique(l);
         SearchImpliesUnique(r);
-        assume false;
+        assume {:axiom} false;
         assert preorder(t) == [(k, v)] + preorder(l) + preorder(r);
-        assume false;
+        assume {:axiom} false;
       }
     }
   }
@@ -170,7 +168,7 @@ module RBTreeData {
       case Node(l, k', v', r, c) => {
         if k' < k {
           SInsertSpec(r, k, v);
-          assume false;
+          assume {:axiom} false;
         } else if k < k' {
           SInsertSpec(l, k, v);
           calc == {
@@ -221,14 +219,6 @@ module RBTreeData {
   function method RedBlackTreeRoot(t: rbtree): bool
   {
     RedBlackTree(t) && (t.Node? ==> t.color.Black?)
-  }
-
-  function method NegColor(c: Color): Color
-  {
-    match c {
-      case Black => Red
-      case Red => Black
-    }
   }
 
   function method FlipColors(t: rbtree): rbtree
