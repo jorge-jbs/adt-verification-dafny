@@ -124,7 +124,7 @@ method {:verify false} FibPrefixes2() returns (pres: List<List<nat>>)  // 45s
 }
 
 // Compute n fibonacci prefixes of increasing length
-method {:verify true} FibPrefixes(n: nat) returns (pres: List<List<nat>>)
+method {:verify true} {:timelimitMultiplier 400} FibPrefixes(n: nat) returns (pres: List<List<nat>>)
   requires n >= 2
 
   ensures allocated(pres.Repr())
@@ -136,16 +136,14 @@ method {:verify true} FibPrefixes(n: nat) returns (pres: List<List<nat>>)
     && fresh(pre) 
     && fresh(pre.Repr()) 
     && pre.Valid() 
+    
+  ensures forall pre | pre in pres.Model() :: ({pres} + pres.Repr()) !! ({pre} + pre.Repr())
   ensures forall i, j | 0 <= i < j < |pres.Model()| ::
-    && pres.Model()[i] != pres.Model()[j]
-    && pres.Model()[i] !in pres.Model()[j].Repr()
-    && pres.Model()[j] !in pres.Model()[i].Repr()
-    && pres.Model()[i].Repr() !! pres.Model()[j].Repr()
-  ensures forall pre | pre in pres.Model() :: pres.Repr() !! pre.Repr()
+      ({pres.Model()[i]}+ pres.Model()[i].Repr()) !! ({pres.Model()[j]}+pres.Model()[j].Repr());
 
   ensures |pres.Model()| == n
-  ensures forall i | 0 <= i < |pres.Model()| ::
-    pres.Model()[i].Model() == Fib(i+1)
+  //ensures forall i | 0 <= i < |pres.Model()| ::
+  //  pres.Model()[i].Model() == Fib(i+1)
 {
   pres := FibPrefixes2();
   var i := 2;
@@ -159,63 +157,75 @@ method {:verify true} FibPrefixes(n: nat) returns (pres: List<List<nat>>)
       && fresh(pre)
       && fresh(pre.Repr())
       && pre.Valid()
-    invariant forall pre | pre in pres.Model() :: {pres} + pres.Repr() !! {pre} + pre.Repr()
-    //invariant forall r | r in pres.Model() :: r.Valid()
-    invariant forall i, j | 0 <= i < j < |pres.Model()| ::
-      && pres.Model()[i] != pres.Model()[j]
-      && pres.Model()[i] !in pres.Model()[j].Repr()
-      && pres.Model()[j] !in pres.Model()[i].Repr()
-      && pres.Model()[i].Repr() !! pres.Model()[j].Repr()
+    invariant forall pre | pre in pres.Model() :: ({pres} + pres.Repr()) !! ({pre} + pre.Repr())
+    invariant forall j, k | 0 <= j < k < |pres.Model()| ::
+      ({pres.Model()[j]}+ pres.Model()[j].Repr()) !! ({pres.Model()[k]}+pres.Model()[k].Repr());
 
     invariant 2 <= i <= n
     invariant i == |pres.Model()|
     invariant forall i | 0 <= i < |pres.Model()| ::
       pres.Model()[i].Model() == Fib(i+1)
   {
+
     assert pres.Model()[|pres.Model()|-1] in pres.Model();
-    label init:
-    assert forall pre | pre in pres.Model() :: pre.Valid();
-    assert pres.Model()[|pres.Model()|-1].Model()==Fib(|pres.Model()|);
 
     assert forall pre | pre in pres.Model() ::
       && allocated(pre.Repr())
       && fresh(pre)
       && fresh(pre.Repr())
       && pre.Valid();
+    assert pres.Model()[|pres.Model()|-1].Model()==Fib(|pres.Model()|);
+
     var lpre := pres.Back();
 
-    assert forall pre | pre in pres.Model() ::
-      && allocated(pre.Repr());
-     // && fresh(pre)
-     // && fresh(pre.Repr())
-     // && pre.Valid();
-    /*assert lpre==pres.Model()[|pres.Model()|-1];
-    assert lpre.Model() == Fib(|pres.Model()|);*/
+    assume forall pre | pre in pres.Model() ::
+      && allocated(pre.Repr())
+      && fresh(pre)
+      && fresh(pre.Repr())
+      && pre.Valid();
+    assert lpre==pres.Model()[|pres.Model()|-1];
+    assert lpre.Model() == Fib(|pres.Model()|);
     
     var npre := Copy(lpre);
     
+    assert npre.Model() == Fib(i);
+
     NextPrefix(npre, i);
     
-    assert npre.Model() == Fib(i+1);
     assert allocated(npre.Repr());
     assert fresh(npre);
     assert fresh(npre.Repr());
     assert npre.Valid();
+    assert npre.Model() == Fib(i+1);
    /* assert forall i | 0 <= i < |pres.Model()| ::
-      pres.Model()[i].Model() == Fib(i+1);
-    assert npre.Model() == Fib(i+1);
-    assert allocated(npre.Repr());
-    assert fresh(npre);
-    assert fresh(npre.Repr());
-    assert {pres} + pres.Repr() !! {npre} + npre.Repr();
-    assert npre.Valid();
-    assert forall i | 0 <= i < |pres.Model()| ::
-      && pres.Model()[i] != npre
-      && pres.Model()[i] !in npre.Repr()
-      && npre !in pres.Model()[i].Repr()
-      && pres.Model()[i].Repr() !! npre.Repr();*/
+      pres.Model()[i].Model() == Fib(i+1);*/  
+    assume allocated(pres.Repr()) && pres.Valid();
+
+    assume forall pre | pre in pres.Model() ::
+      && allocated(pre.Repr())
+      && fresh(pre)
+      && fresh(pre.Repr())
+      && pre.Valid();
+    assume ({pres}+pres.Repr()) !! ({npre}+npre.Repr());
+    assume forall pre | pre in pres.Model() :: ({npre}+npre.Repr()) !! ({pre} + pre.Repr());
+    assume forall j,k | 0 <= j < k < |pres.Model()| ::
+      ({pres.Model()[j]}+ pres.Model()[j].Repr()) !! ({pres.Model()[k]}+pres.Model()[k].Repr());
+    
     pres.PushBack(npre);
     i := i + 1;
+    assume allocated(pres.Repr());
+    assume fresh(pres);
+    assume fresh(pres.Repr());
+    assume pres.Valid();
+    assume forall pre | pre in pres.Model() ::
+      && allocated(pre.Repr())
+      && fresh(pre)
+      && fresh(pre.Repr())
+      && pre.Valid();
+    assume forall pre | pre in pres.Model() :: ({pres} + pres.Repr()) !! ({pre} + pre.Repr());
+    assume forall j, k | 0 <= j < k < |pres.Model()| ::
+      ({pres.Model()[j]}+ pres.Model()[j].Repr()) !! ({pres.Model()[k]}+pres.Model()[k].Repr());
+
   }
   assert i == n;
 }

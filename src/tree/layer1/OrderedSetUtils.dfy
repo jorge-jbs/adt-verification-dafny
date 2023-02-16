@@ -213,6 +213,7 @@ requires 0<=k<|s|
 lemma {:induction s,k} {:verify true} lelemth(s:set<int>,k:int)
 requires 0<=k<|s|
 ensures elemth(s,k) in s && |smaller(s,elemth(s,k))|==k
+ensures forall y | y in s && y < elemth(s,k) :: y in smaller(s,elemth(s,k))
 { lminimum(s);
   if (k==0) { }
   else {
@@ -258,21 +259,118 @@ ensures x==elemth(s,k)
 
 
 
-lemma elemthSmaller(s:set<int>,ss:set<int>)
+lemma elemthSmaller(s:set<int>,ss:set<int>, y:int)
 requires s > ss && |s| > |ss|
-requires forall x,y | x in ss && y in s-ss :: x < y
-ensures forall y | y in s-ss :: y >= elemth(s,|ss|)
-{}
+requires y in s - ss 
+requires forall x,z | x in ss && z in s-ss :: x < z
+ensures y >= elemth(s,|ss|)
+{  lelemth(s,|ss|);
+   assert elemth(s,|ss|) in s;
+   assert forall z | z in ss :: z < y;
+   if (y < elemth(s,|ss|))
+     { assert y in smaller(s,elemth(s,|ss|));
+       assert ss <= smaller(s,elemth(s,|ss|));
+      // assert y !in ss;
+       assert ss+{y} <= smaller(s,elemth(s,|ss|));
+       assert |ss+{y}|==|ss|+1;
+       sizesContained(ss+{y},smaller(s,elemth(s,|ss|)));
+       assert |ss+{y}| <= |smaller(s,elemth(s,|ss|))|;
+       assert false;
+      }
+}
+
+
+
+lemma elemthSmallerAll(s:set<int>,ss:set<int>)
+requires s > ss && |s| > |ss|
+requires forall x,z | x in ss && z in s-ss :: x < z
+ensures forall y | y in s - ss :: y >= elemth(s,|ss|)
+ensures forall y | y in s - ss && y != elemth(s,|ss|)  :: y > elemth(s,|ss|)
+{ forall y | y in s - ss
+  ensures y >= elemth(s,|ss|) {elemthSmaller(s,ss,y);} 
+  
+  }
+
+
+lemma elemthBigger1(s:set<int>,ss:set<int>, y:int)
+requires s > ss && |s| > |ss|
+requires y in s && y < elemth(s,|ss|)
+requires forall x,z | x in ss && z in s-ss :: x < z
+ensures y in ss
+{
+  if (y !in ss)
+  {elemthSmaller(s,ss,y);
+  assert y >= elemth(s,|ss|);
+  assert false;}
+}
+
+
+
+lemma elemthBigger2(s:set<int>,ss:set<int>, y:int)
+requires s > ss && |s| > |ss|
+requires y in ss
+requires forall x,z | x in ss && z in s-ss :: x < z
+ensures y < elemth(s,|ss|)
+{ 
+  if (y >= elemth(s,|ss|))
+  { assert y !in smaller(s,elemth(s,|ss|));
+    smallerSubset(s,ss);
+    assert smaller(s,elemth(s,|ss|)) < ss;
+    sizesStrictContained(smaller(s,elemth(s,|ss|)),ss);
+    sizesStrictContained(ss,s);
+    assert |smaller(s,elemth(s,|ss|))| < |ss|;
+    lelemth(s,|ss|);}
+}
+
+
+lemma elemthBiggerAll(s:set<int>,ss:set<int>)
+requires s > ss && |s| > |ss|
+requires forall x,z | x in ss && z in s-ss :: x < z
+ensures forall y | y in ss :: y < elemth(s,|ss|)
+{ 
+    forall y | y in ss 
+    ensures y < elemth(s,|ss|){
+      elemthBigger2(s,ss,y);
+    }
+}
+
+
+lemma smallerSubset(s:set<int>,ss:set<int>)
+requires s > ss && |s| > |ss|
+requires forall x,z | x in ss && z in s-ss :: x < z
+ensures smaller(s,elemth(s,|ss|)) <= ss
+{forall y | y in smaller(s,elemth(s,|ss|))
+ ensures y in ss
+ {elemthBigger1(s,ss,y);
+ }
+}
+
+lemma smallerSet(s:set<int>,ss:set<int>)
+requires s > ss && |s| > |ss|
+requires forall x,z | x in ss && z in s-ss :: x < z
+ensures smaller(s,elemth(s,|ss|)) == ss
+{
+  smallerSubset(s,ss);
+  forall y | y in ss
+  ensures y in smaller(s,elemth(s,|ss|))
+   {elemthBigger2(s,ss,y);
+ }
+
+}
 
 lemma elemthSet(s:set<int>,ss:set<int>)
 requires s > ss 
 requires forall x,y | x in ss && y in s-ss :: x < y
-ensures |ss| < |s| && elemth(s,|ss|) in s && elemth(s,|ss|) !in ss
+ensures |ss| < |s| && elemth(s,|ss|) in s && elemth(s, |ss|) !in ss
 { sizesStrictContained(ss,s);
   assert 0 <= |ss| < |s|;
   lelemth(s,|ss|);
-  elemthSmaller(s,ss);
-}  
+  if (elemth(s, |ss|) in ss)
+  {  elemthBigger2(s,ss,elemth(s, |ss|));
+     assert elemth(s, |ss|) < elemth(s, |ss|);
+     assert false;
+  }
+ }
 
 
 
@@ -308,15 +406,17 @@ function isSortedSeq(xs:seq<int>):bool
 function seq2Set (xs:seq<int>):set<int>
 {set x | x in xs::x}
 
+
 function isSet(xs:seq<int>):bool
 {forall i,j | 0 <= i < j < |xs| :: xs[i] != xs[j]}
 
 
 lemma emptyset(xs:seq<int>)
 ensures xs == [] <==> seq2Set(xs)=={}
-{ assume xs != [];
-  assert xs[0] in xs;
-  assert xs[0] in seq2Set(xs);
+{ if (xs != [])
+  {assert xs[0] in xs;
+   assert xs[0] in (set x | x in xs::x);
+   assert xs[0] in seq2Set(xs);}
 }
 
 lemma existsOne(xs:seq<int>,i:int,j:int)
@@ -331,21 +431,24 @@ ensures exists k | 0 <= k < |xs| :: xs[k] !in xs[i..j];
 
 
 //function lemma
-function seq2SetContained(xs:seq<int>, i:int,j:int):bool
+lemma seq2SetContained(xs:seq<int>, i:int,j:int)
 requires isSet(xs) 
 requires |xs| > 0 && 0<=i<=j<=|xs| && j-i < |xs| 
 ensures seq2Set(xs[i..j]) < seq2Set(xs)
-ensures seq2SetContained(xs,i,j)
 {
 
- if (i==j) then 
-    sizesSeq2Set(xs); true
-  
+  if (i==j)  
+    {sizesSeq2Set(xs); }
   else
+   { 
+    forall x | x in xs[i..j] 
+    ensures x in xs {}
     existsOne(xs,i,j);
-    assert exists k | 0 <= k < |xs| :: xs[k] in  seq2Set(xs) && xs[k] !in  seq2Set(xs[i..j]);
-    true
-  
+     assert exists k | 0 <= k < |xs| :: 
+       xs[k] in  xs && xs[k] !in  seq2Set(xs[i..j]);
+     assert exists k | 0 <= k < |xs| :: 
+      xs[k] in  seq2Set(xs) && xs[k] !in  seq2Set(xs[i..j]);
+   }
 }
 
 
@@ -359,6 +462,12 @@ decreases s
     
 }
 
+
+lemma unionseq2Set(xs:seq<int>,x:int)
+requires isSet(xs) && x !in xs
+ensures seq2Set([x]+xs)=={x}+seq2Set(xs)
+
+
 lemma sizesSet2Seq(s:set<int>)
 ensures |set2Seq(s)|==|s|
 {}
@@ -369,6 +478,8 @@ ensures |seq2Set(xs)| == |xs|
 {if (xs==[]) {}
  else {sizesSeq2Set(xs[1..]);
        assert xs==[xs[0]]+xs[1..];
+       assert xs[0] !in xs[1..];
+       unionseq2Set(xs[1..],xs[0]);
        assert seq2Set(xs)=={xs[0]}+seq2Set(xs[1..]);
        assert |seq2Set(xs)|==1+|seq2Set(xs[1..])|;}
 }
@@ -377,6 +488,10 @@ lemma idem(s:set<int>)
 ensures seq2Set(set2Seq(s)) == s 
 {  if s != {} {
     var y := Pick(s);
+    assert y !in s - {y};
+    assert y !in  set2Seq(s - {y});
+    assert isSet(set2Seq(s - {y}));
+    unionseq2Set(set2Seq(s - {y}),y);
     assert seq2Set([y] + set2Seq(s - {y})) == seq2Set([y]) + seq2Set(set2Seq(s - {y}));
   }
 }
