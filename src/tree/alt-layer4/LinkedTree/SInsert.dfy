@@ -1,15 +1,15 @@
-include "../../../src/tree/alt-layer4/RBTreeData.dfy"
-include "../../../src/tree/alt-layer4/TreeData.dfy"
-include "../../../src/tree/alt-layer4/TNode.dfy"
-include "../../../src/tree/alt-layer4/KeyValue.dfy"
+include "../../../../src/tree/alt-layer4/RBTree.dfy"
+include "../../../../src/tree/alt-layer4/Tree.dfy"
+include "../../../../src/tree/alt-layer4/TNode.dfy"
+include "../../../../src/tree/alt-layer4/KeyValue.dfy"
 
-module Insert {
-  import opened RB = RBTreeData
-  import opened T = TreeData
+module LinkedTree.SInsert {
+  import opened RB = RBTree
+  import opened T = Tree
   import opened TNode
   import opened KeyValue
 
-  method InsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
+  method SInsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
       returns (newNode: TNode, ghost newSk: tree<TNode>, ghost insertedNode: TNode)
     modifies set x | x in elems(sk) :: x`left
     modifies set x | x in elems(sk) :: x`right
@@ -44,7 +44,7 @@ module Insert {
         insertedNode := node;
       } else if node.key < k {
         ghost var newSkRight;
-        node.right, newSkRight, insertedNode := InsertRec(node.right, sk.right, k, v);
+        node.right, newSkRight, insertedNode := SInsertRec(node.right, sk.right, k, v);
         newSk := T.Node(sk.left, node, newSkRight);
         /*
         assert TreeModelRec(newSkRight) == SInsert(old(TreeModelRec(sk.right)), k, v);
@@ -61,7 +61,7 @@ module Insert {
         //assume false;
       } else if k < node.key {
         ghost var newSkLeft;
-        node.left, newSkLeft, insertedNode := InsertRec(node.left, sk.left, k, v);
+        node.left, newSkLeft, insertedNode := SInsertRec(node.left, sk.left, k, v);
         newSk := T.Node(newSkLeft, node, sk.right);
         //assume false;
       } else {

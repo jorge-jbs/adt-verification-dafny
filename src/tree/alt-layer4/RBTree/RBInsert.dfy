@@ -1,191 +1,13 @@
-include "../../../src/MUtils.dfy"
-include "../../../src/tree/alt-layer4/KeyValue.dfy"
-include "../../../src/tree/alt-layer4/Color.dfy"
+include "../../../../src/MUtils.dfy"
+include "../../../../src/tree/alt-layer4/KeyValue.dfy"
+include "../../../../src/tree/alt-layer4/Color.dfy"
+include "../../../../src/tree/alt-layer4/RBTree/Base.dfy"
 
-module RBTreeData {
-  import opened Utils
+module RBTree.RBInsert {
+  //import opened Utils
   import opened KeyValue
   import opened Color
-
-  datatype rbtree = Empty | Node(left: rbtree, key: K, value: V, right: rbtree, color: Color)
-
-  function method Leaf(k: K, v: V): rbtree
-  {
-    Node(Empty, k, v, Empty, Black)
-  }
-
-  function method keys(t: rbtree): set<K>
-    ensures t.Empty? ==> keys(t) == {}
-    ensures !t.Empty? ==> keys(t) == keys(t.left) + {t.key} + keys(t.right)
-  {
-    match t {
-      case Empty => {}
-      case Node(l, k, v, r, c) => keys(l) + {k} + keys(r)
-    }
-  }
-
-  function method toMap(t: rbtree): map<K, V>
-  {
-    match t {
-      case Empty => map[]
-      case Node(l, k, v, r, c) => toMap(l) + toMap(r) + map[k := v]
-    }
-  }
-
-  function method preorder(t: rbtree): seq<(K, V)>
-  {
-    match t {
-      case Empty => []
-      case Node(l, k, v, r, c) =>  [(k, v)] + inorder(l) + inorder(r)
-    }
-  }
-
-  function method inorder(t: rbtree): seq<(K, V)>
-  {
-    match t {
-      case Empty => []
-      case Node(l, k, v, r, c) => inorder(l) + [(k, v)] + inorder(r)
-    }
-  }
-
-  function method seqToMap(s: seq<(K, V)>): map<K, V>
-  {
-    if s == [] then
-      map[]
-    else
-      map[s[0].0 := s[0].1] + seqToMap(s[1..])
-  }
-
-  function method seqToMap'(s: seq<(K, V)>): map<K, V>
-    requires forall i, j | 0 <= i < j < |s| :: s[i].0 != s[j].0
-  {
-    map t: (K, V) | t in s :: t.0 := t.1
-    //map i: int | 0 <= i < |s| :: s[i].0 := s[i].1
-  }
-
-  function method toMap'(t: rbtree): map<K, V>
-  {
-    seqToMap(preorder(t))
-  }
-
-  function method SearchTree(t: rbtree): bool
-  {
-    match t {
-      case Empty => true
-      case Node(l, k, v, r, c) =>
-        && (forall m | m in keys(l) :: m < k)
-        && (forall m | m in keys(r) :: k < m)
-        && SearchTree(l)
-        && SearchTree(r)
-    }
-  }
-
-  function method Get(t: rbtree, k: K): V
-    requires k in keys(t)
-    requires SearchTree(t)
-  {
-    match t {
-      case Empty => assert false; 0
-      case Node(l, k', v, r, c) =>
-        if k < k' then
-          Get(l, k)
-        else if k' < k then
-          Get(r, k)
-        else
-          v
-    }
-  }
-
-  lemma {:induction} SearchImpliesUnique(t: rbtree)
-    requires SearchTree(t)
-    ensures forall i, j | 0 <= i < j < |preorder(t)| ::
-      preorder(t)[i].0 != preorder(t)[j].0
-  {
-    match t {
-      case Empty => {
-      }
-      case Node(l, k, v, r, c) => {
-        SearchImpliesUnique(l);
-        SearchImpliesUnique(r);
-        assume {:axiom} false;
-        assert preorder(t) == [(k, v)] + preorder(l) + preorder(r);
-        assume {:axiom} false;
-      }
-    }
-  }
-
-  function method toMap''(t: rbtree): map<K, V>
-    requires SearchTree(t)
-  {
-    map k: K | k in keys(t) :: Get(t, k)
-  }
-
-  function method model(t: rbtree): map<K, V>
-    requires SearchTree(t)
-  {
-    toMap''(t)
-  }
-
-  lemma toMap''Lemmas(t: rbtree)
-    requires SearchTree(t)
-    ensures t.Node? ==>
-      toMap''(t) == toMap''(t.left) + toMap''(t.right) + map[t.key := t.value]
-  {}
-
-  function method toMap'''(t: rbtree): map<K, V>
-  {
-    seqToMap(preorder(t))
-  }
-
-  function method SInsert(t: rbtree, k': K, v': V): rbtree
-  {
-    match t {
-      case Empty => Leaf(k', v')
-      case Node(l, k, v, r, c) =>
-        if k < k' then
-          Node(l, k, v, SInsert(r, k', v'), c)
-        else if k' < k then
-          Node(SInsert(l, k', v'), k, v, r, c)
-        else
-          Node(l, k, v', r, c)
-    }
-  }
-
-  lemma {:induction} SInsertSpec(t: rbtree, k: K, v: V)
-    requires SearchTree(t)
-    ensures keys(t) + {k} == keys(SInsert(t, k, v))
-    ensures SearchTree(SInsert(t, k, v))
-  {}
-
-  lemma {:verify false} SInsertModel(t: rbtree, k: K, v: V)
-    requires SearchTree(t)
-    requires SearchTree(SInsert(t, k, v))
-    ensures model(t)[k := v] == model(SInsert(t, k, v))
-  {
-    match t {
-      case Empty => {
-      }
-      case Node(l, k', v', r, c) => {
-        if k' < k {
-          SInsertSpec(r, k, v);
-          assume {:axiom} false;
-        } else if k < k' {
-          SInsertSpec(l, k, v);
-          calc == {
-            model(SInsert(Node(l, k', v', r, c), k, v));
-            model(Node(SInsert(l, k, v), k', v', r, c));
-            { toMap''Lemmas(Node(SInsert(l, k, v), k', v', r, c)); }
-            model(SInsert(l, k, v)) + map[k' := v'] + model(r);
-            model(l)[k := v] + map[k' := v'] + model(r);
-            model(l) + map[k := v] + map[k' := v'] + model(r);
-            model(l) + map[k' := v'] + model(r) + map[k := v];
-            model(t) + map[k := v];
-          }
-        } else {
-        }
-      }
-    }
-  }
+  import opened Base
 
   function method BlackHeight(sk: rbtree): nat
   {
@@ -193,9 +15,9 @@ module RBTreeData {
       case Empty() => 0
       case Node(l, k, v, r, c) =>
         if c.Black? then
-          1 + max(BlackHeight(l), BlackHeight(r))
+          1 + Utils.max(BlackHeight(l), BlackHeight(r))
         else
-          max(BlackHeight(l), BlackHeight(r))
+          Utils.max(BlackHeight(l), BlackHeight(r))
     }
   }
 

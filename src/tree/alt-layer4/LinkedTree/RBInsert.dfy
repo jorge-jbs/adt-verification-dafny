@@ -1,12 +1,12 @@
-include "../../../src/tree/alt-layer4/RBTreeData.dfy"
-include "../../../src/tree/alt-layer4/TreeData.dfy"
-include "../../../src/tree/alt-layer4/TNode.dfy"
-include "../../../src/tree/alt-layer4/Color.dfy"
+include "../../../../src/tree/alt-layer4/RBTree.dfy"
+include "../../../../src/tree/alt-layer4/Tree.dfy"
+include "../../../../src/tree/alt-layer4/TNode.dfy"
+include "../../../../src/tree/alt-layer4/Color.dfy"
 
-module RBInsert {
+module LinkedTree.RBInsert {
   import opened KeyValue
-  import RB = RBTreeData
-  import opened T = TreeData
+  import RB = RBTree
+  import opened T = Tree
   import opened TNode
   import opened Color
 

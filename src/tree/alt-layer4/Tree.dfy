@@ -1,101 +1,91 @@
-include "../../../src/tree/alt-layer4/RBTreeData.dfy"
-include "../../../src/tree/alt-layer4/TreeData.dfy"
-include "../../../src/tree/alt-layer4/KeyValue.dfy"
-include "../../../src/tree/alt-layer4/TNode.dfy"
-include "../../../src/tree/alt-layer4/Insert.dfy"
-include "../../../src/tree/alt-layer4/RBInsert.dfy"
-//include "../../../src/MUtils.dfy"
+include "../../../src/MUtils.dfy"
 
 module Tree {
-  import opened TNode
-  import RB = RBTreeData
-  import opened T = TreeData
-  import opened KeyValue
-  import opened Insert
-  import opened RBInsert
+  import opened Utils
 
-  class Tree {
-    var root: TNode?;
-    ghost var skeleton: tree<TNode>;
+  datatype tree<A> = Empty | Node(left: tree<A>, data: A, right: tree<A>)
 
-    function Repr(): set<object>
-      reads this
-    {
-      elems(skeleton)
+  function method Leaf<A>(d: A): tree<A>
+  {
+    Node(Empty, d, Empty)
+  }
+
+  function method elems<A>(t: tree<A>): set<A>
+    ensures t.Empty? ==> elems(t) == {}
+    ensures !t.Empty? ==> elems(t) == elems(t.left) + {t.data} + elems(t.right)
+  {
+    match t {
+      case Empty => {}
+      case Node(l, x, r) => elems(l) + {x} + elems(r)
     }
+  }
 
-    predicate Valid()
-      reads this, Repr()
-    {
-      ValidRec(root, skeleton)
+  function method elemsDownTo<A>(t: tree<A>, d: nat): set<A>
+  {
+    if d == 0 || t.Empty? then
+      {}
+    else
+      elemsDownTo(t.left, d-1) + {t.data} + elemsDownTo(t.right, d-1)
+  }
+
+  function method melems<A>(t: tree<A>): multiset<A>
+  {
+    match t {
+      case Empty => multiset{}
+      case Node(l, x, r) => melems(l) + multiset{x} + melems(r)
     }
+  }
 
-    predicate SearchTree()
-      reads this, Repr()
-      requires Valid()
-    {
-      SearchTreeRec(skeleton)
+  function method fmap<A, B>(t: tree<A>, f: A -> B): tree<B>
+  {
+    match t {
+      case Empty() => Empty()
+      case Node(l, x, r) => Node(fmap(l, f), f(x), fmap(r, f))
     }
+  }
 
-    function TreeModel(): RB.rbtree
-      reads this, elems(skeleton)
-    {
-      TreeModelRec(skeleton)
+  function method preorder<A>(t: tree<A>): seq<A>
+  {
+    match t {
+      case Empty => []
+      case Node(l, x, r) => [x] + preorder(l) + preorder(r)
     }
+  }
 
-    function MapModel(): map<K, V>
-      reads this, elems(skeleton)
-      requires Valid()
-      requires SearchTree()
-    {
-      RB.model(TreeModel())
+  function method inorder<A>(t: tree<A>): seq<A>
+  {
+    match t {
+      case Empty => []
+      case Node(l, x, r) => inorder(l) + [x] + inorder(r)
     }
+  }
 
-    method Insert(k: K, v: V)
-      modifies this, Repr()
-      requires Valid()
-      requires SearchTree()
-      ensures Valid()
-      ensures SearchTree()
-      ensures MapModel() == old(MapModel())[k := v]
-
-      requires allocated(Repr())
-      ensures fresh(Repr()-old(Repr()))
-      ensures allocated(Repr())
-    {
-      ghost var z;
-      root, skeleton, z := InsertRec(root, skeleton, k, v);
-      RB.SInsertSpec(old(TreeModelRec(skeleton)), k, v);
-      RB.SInsertModel(old(TreeModelRec(skeleton)), k, v);
+  function method revinorder<A>(t: tree<A>): seq<A>
+  {
+    match t {
+      case Empty => []
+      case Node(l, x, r) => revinorder(r) + [x] + revinorder(l)
     }
+  }
 
-    predicate RedBlackTree()
-      reads this, elems(skeleton)
-    {
-      RB.RedBlackTreeRoot(TreeModelRec(skeleton))
+  function method postorder<A>(t: tree<A>): seq<A>
+  {
+    match t {
+      case Empty => []
+      case Node(l, x, r) => postorder(l) + postorder(r) + [x]
     }
+  }
 
-    // 26"
-    method RBInsert(k: K, v: V)
-      modifies this, Repr()
+  function method size<A>(t: tree<A>): nat
+  {
+    |preorder(t)|
+  }
 
-      requires Valid()
-      requires SearchTree()
-      requires RedBlackTree()
-
-      ensures Valid()
-      ensures SearchTree()
-      ensures RedBlackTree()
-      ensures MapModel() == old(MapModel())[k := v]
-
-      requires allocated(Repr())
-      ensures fresh(Repr()-old(Repr()))
-      ensures allocated(Repr())
-    {
-      ghost var z;
-      root, skeleton, z := RBInsertRoot(root, skeleton, k, v);
-      RB.RBInsertRootSpec(old(TreeModelRec(skeleton)), k, v);
-      RB.RBInsertRootModel(old(TreeModelRec(skeleton)), k, v);
+  function method depth<A>(t: tree<A>): nat
+  {
+    match t {
+      case Empty => 0
+      case Node(l, x, r) => max(depth(l), depth(r)) + 1
     }
   }
 }
