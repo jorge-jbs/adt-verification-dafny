@@ -1,10 +1,10 @@
-include "../../../../src/tree/alt-layer4/RBTree.dfy"
+include "../../../../src/tree/alt-layer4/RBTree/SInsert.dfy"
 include "../../../../src/tree/alt-layer4/Tree.dfy"
 include "../../../../src/tree/alt-layer4/TNode.dfy"
 include "../../../../src/tree/alt-layer4/KeyValue.dfy"
 
 module LinkedTree.SInsert {
-  import opened RB = RBTree
+  import opened RB = RBTree.SInsert
   import opened T = Tree
   import opened TNode
   import opened KeyValue
@@ -28,7 +28,7 @@ module LinkedTree.SInsert {
       n.key == old(n.key) && n.value == old(n.value)
 
     requires allocated(elems(sk))
-    ensures fresh(elems(newSk)-old(elems(sk)))
+    ensures fresh(elems(newSk)-elems(sk))
     ensures allocated(elems(newSk))
   {
     if node == null {

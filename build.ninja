@@ -59,17 +59,19 @@ build src/linear/layer1/Stack.dll: dafny ./src/linear/layer1/Stack.dfy
 build src/Utils.dll: dafny ./src/Utils.dfy
 build src/MUtils.dll: dafny ./src/MUtils.dfy
 
-build src/tree/alt-layer4/RBInsert.dll: dafny ./src/tree/alt-layer4/RBInsert.dfy
-build src/tree/alt-layer4/Color.dll: dafny ./src/tree/alt-layer4/Color.dfy
-build src/tree/alt-layer4/TreeData.dll: dafny ./src/tree/alt-layer4/TreeData.dfy
-build src/tree/alt-layer4/Insert.dll: dafny ./src/tree/alt-layer4/Insert.dfy
-build src/tree/alt-layer4/KeyValue.dll: dafny ./src/tree/alt-layer4/KeyValue.dfy
-build src/tree/alt-layer4/Tree.dll: dafny ./src/tree/alt-layer4/Tree.dfy
-build src/tree/alt-layer4/TNode.dll: dafny ./src/tree/alt-layer4/TNode.dfy
-build src/tree/alt-layer4/RBTreeData.dll: dafny ./src/tree/alt-layer4/RBTreeData.dfy
-build src/tree/alt-layer4/SearchTree.dll: dafny ./src/tree/alt-layer4/SearchTree.dfy
+build src/tree/alt-layer4/LinkedTree.dll: dafny src/tree/alt-layer4/LinkedTree.dfy
+build src/tree/alt-layer4/Color.dll: dafny src/tree/alt-layer4/Color.dfy
+build src/tree/alt-layer4/KeyValue.dll: dafny src/tree/alt-layer4/KeyValue.dfy
+build src/tree/alt-layer4/RBTree.dll: dafny src/tree/alt-layer4/RBTree.dfy
+build src/tree/alt-layer4/LinkedTree/RBInsert.dll: dafny src/tree/alt-layer4/LinkedTree/RBInsert.dfy
+build src/tree/alt-layer4/LinkedTree/SInsert.dll: dafny src/tree/alt-layer4/LinkedTree/SInsert.dfy
+build src/tree/alt-layer4/LinkedTree/RBRemove.dll: dafny src/tree/alt-layer4/LinkedTree/RBRemove.dfy
+build src/tree/alt-layer4/Tree.dll: dafny src/tree/alt-layer4/Tree.dfy
+build src/tree/alt-layer4/TNode.dll: dafny src/tree/alt-layer4/TNode.dfy
+build src/tree/alt-layer4/RBTree/RBInsert.dll: dafny src/tree/alt-layer4/RBTree/RBInsert.dfy
+build src/tree/alt-layer4/RBTree/SInsert.dll: dafny src/tree/alt-layer4/RBTree/SInsert.dfy
+build src/tree/alt-layer4/RBTree/RBRemove.dll: dafny src/tree/alt-layer4/RBTree/RBRemove.dfy
+build src/tree/alt-layer4/RBTree/Base.dll: dafny src/tree/alt-layer4/RBTree/Base.dfy
 
-
-
-build all: phony src/Order.dll src/ADT.dll src/linear/layer4/SinglyLinkedList.dll src/linear/layer4/DoublyLinkedListWithLast.dll src/linear/layer4/SinglyLinkedListWithLast.dll src/linear/layer4/DoublyLinkedList.dll src/linear/layer2/ArrayList.dll src/linear/layer2/LinkedList.dll src/linear/layer3/ArrayQueueImpl.dll src/linear/layer3/ArrayDequeImpl.dll src/linear/layer3/LinkedDequeImpl.dll src/linear/layer3/SinglyLinkedQueueImpl.dll src/linear/layer3/LinkedStackImpl.dll src/linear/layer3/ArrayStackImpl.dll src/linear/layer3/ArrayListImpl.dll src/linear/layer3/DoublyLinkedQueueImpl.dll src/linear/layer3/LinkedListImpl.dll src/linear/layer1/Deque.dll src/linear/layer1/List.dll src/linear/layer1/Queue.dll src/linear/layer1/Stack.dll src/Utils.dll src/MUtils.dll src/tree/alt-layer4/RBInsert.dll src/tree/alt-layer4/Color.dll src/tree/alt-layer4/TreeData.dll src/tree/alt-layer4/Insert.dll src/tree/alt-layer4/KeyValue.dll src/tree/alt-layer4/Tree.dll src/tree/alt-layer4/TNode.dll src/tree/alt-layer4/RBTreeData.dll src/tree/alt-layer4/SearchTree.dll
+build all: phony src/Order.dll src/ADT.dll src/linear/layer4/SinglyLinkedList.dll src/linear/layer4/DoublyLinkedListWithLast.dll src/linear/layer4/SinglyLinkedListWithLast.dll src/linear/layer4/DoublyLinkedList.dll src/linear/layer2/ArrayList.dll src/linear/layer2/LinkedList.dll src/linear/layer3/ArrayQueueImpl.dll src/linear/layer3/ArrayDequeImpl.dll src/linear/layer3/LinkedDequeImpl.dll src/linear/layer3/SinglyLinkedQueueImpl.dll src/linear/layer3/LinkedStackImpl.dll src/linear/layer3/ArrayStackImpl.dll src/linear/layer3/ArrayListImpl.dll src/linear/layer3/DoublyLinkedQueueImpl.dll src/linear/layer3/LinkedListImpl.dll src/linear/layer1/Deque.dll src/linear/layer1/List.dll src/linear/layer1/Queue.dll src/linear/layer1/Stack.dll src/Utils.dll src/MUtils.dll src/tree/alt-layer4/LinkedTree.dll src/tree/alt-layer4/Color.dll src/tree/alt-layer4/KeyValue.dll src/tree/alt-layer4/RBTree.dll src/tree/alt-layer4/LinkedTree/RBInsert.dll src/tree/alt-layer4/LinkedTree/SInsert.dll src/tree/alt-layer4/LinkedTree/RBRemove.dll src/tree/alt-layer4/Tree.dll src/tree/alt-layer4/TNode.dll src/tree/alt-layer4/RBTree/RBInsert.dll src/tree/alt-layer4/RBTree/SInsert.dll src/tree/alt-layer4/RBTree/RBRemove.dll 
 default all

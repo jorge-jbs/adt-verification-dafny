@@ -1,11 +1,11 @@
-include "../../../src/tree/alt-layer4/RBTree.dfy"
+include "../../../src/tree/alt-layer4/RBTree/Base.dfy"
 include "../../../src/tree/alt-layer4/Tree.dfy"
 include "../../../src/tree/alt-layer4/KeyValue.dfy"
 include "../../../src/tree/alt-layer4/Color.dfy"
 
 module TNode {
   import opened KeyValue
-  import opened RB = RBTree
+  import opened RB = RBTree.Base
   import opened T = Tree
   import opened Color
 

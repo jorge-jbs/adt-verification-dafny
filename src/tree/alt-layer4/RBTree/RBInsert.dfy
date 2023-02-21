@@ -9,40 +9,6 @@ module RBTree.RBInsert {
   import opened Color
   import opened Base
 
-  function method BlackHeight(sk: rbtree): nat
-  {
-    match sk {
-      case Empty() => 0
-      case Node(l, k, v, r, c) =>
-        if c.Black? then
-          1 + Utils.max(BlackHeight(l), BlackHeight(r))
-        else
-          Utils.max(BlackHeight(l), BlackHeight(r))
-    }
-  }
-
-  function method RedBlackTree(t: rbtree): bool
-  {
-    match t {
-      case Empty => true
-      case Node(l, k, v, r, c) =>
-        // Red links lean left:
-        && (r.Node? ==> r.color.Black?)
-        // No node has two red links connected to it:
-        && (l.Node? && l.color.Red? && l.left.Node? ==> l.left.color.Black?)
-        // Perfect black balance:
-        && BlackHeight(l) == BlackHeight(r)
-
-        && RedBlackTree(l)
-        && RedBlackTree(r)
-    }
-  }
-
-  function method RedBlackTreeRoot(t: rbtree): bool
-  {
-    RedBlackTree(t) && (t.Node? ==> t.color.Black?)
-  }
-
   function method FlipColors(t: rbtree): rbtree
     requires t.Node?
     requires t.left.Node?
@@ -81,16 +47,6 @@ module RBTree.RBInsert {
       Node(t.left.right, t.key, t.value, t.right, Red),
       t.color
     )
-  }
-
-  function method isRed(t: rbtree): bool
-  {
-    t.Node? && t.color.Red?
-  }
-
-  function method isBlack(t: rbtree): bool
-  {
-    t.Node? && t.color.Black?
   }
 
   function method Restore(t: rbtree): rbtree
@@ -140,37 +96,81 @@ module RBTree.RBInsert {
     BlackenRoot(RBInsert(t, k, v))
   }
 
-  lemma FlipColorsSpec(t: rbtree)
+  lemma {:verify true} FlipColorsSpec(t: rbtree)
     requires t.Node?
     requires t.left.Node?
     requires t.right.Node?
+    requires t.left.color == NegColor(t.color)
+    requires t.right.color == NegColor(t.color)
     requires SearchTree(t)
-    requires RedBlackTree(t)
+    //requires BlackBalanced(t)
     ensures keys(t) == keys(FlipColors(t))
     ensures SearchTree(FlipColors(t))
-    ensures RedBlackTree(t)
+    //ensures BlackBalanced(FlipColors(t))
+    ensures BlackHeight(t) == BlackHeight(FlipColors(t))
+
+    ensures RotateRight(t).color == t.color
+    ensures RotateRight(t).right.color == Red
   {}
 
-  lemma RotateLeftSpec(t: rbtree)
+  lemma {:verify true} RotateLeftSpec(t: rbtree)
     requires t.Node?
-    requires t.right.Node?
-    requires t.right.color.Red?
+    requires isRed(t.right)
     requires SearchTree(t)
-    requires RedBlackTree(t)
     ensures keys(t) == keys(RotateLeft(t))
     ensures SearchTree(RotateLeft(t))
-    ensures RedBlackTree(t)
+    ensures BlackHeight(RotateLeft(t)) == BlackHeight(t)
   {}
 
-  lemma RotateRightSpec(t: rbtree)
+  lemma {:verify true} RotateRightSpec(t: rbtree)
     requires t.Node?
-    requires t.left.Node?
-    requires t.left.color.Red?
+    requires isRed(t.left)
     requires SearchTree(t)
-    requires RedBlackTree(t)
     ensures keys(t) == keys(RotateRight(t))
     ensures SearchTree(RotateRight(t))
-    ensures RedBlackTree(t)
+    ensures BlackHeight(RotateRight(t)) == BlackHeight(t)
+    ensures RedBlackTree(t) ==>
+      && RedBlackTree(RotateRight(t).left)
+      && RedBlackTree(RotateRight(t).right)
+    ensures size(RotateRight(t)) == size(t)
+  {
+    if RedBlackTree(t) {
+      assert RedBlackTree(t.left);
+    }
+  }
+
+  lemma {:verify true} AllFlipColorsSpec()
+    ensures forall t: rbtree
+        | t.Node?
+        && t.left.Node?
+        && t.right.Node?
+        && t.left.color == NegColor(t.color)
+        && t.right.color == NegColor(t.color)
+        && SearchTree(t)
+      :: keys(t) == keys(FlipColors(t))
+      && SearchTree(FlipColors(t))
+      && BlackHeight(t) == BlackHeight(FlipColors(t))
+  {}
+
+  lemma {:verify true} AllRotateLeftSpec()
+    ensures forall t: rbtree
+        | t.Node?
+        && isRed(t.right)
+        && SearchTree(t)
+        && RedBlackTree(t)
+      :: keys(t) == keys(RotateLeft(t))
+      && SearchTree(RotateLeft(t))
+      && BlackHeight(RotateLeft(t)) == BlackHeight(t)
+  {}
+
+  lemma {:verify true} AllRotateRightSpec()
+    ensures forall t: rbtree
+        | t.Node?
+        && isRed(t.left)
+        && SearchTree(t)
+      :: keys(t) == keys(RotateRight(t))
+      && SearchTree(RotateRight(t))
+      && BlackHeight(RotateRight(t)) == BlackHeight(t)
   {}
 
   lemma RestoreSpec(t: rbtree)

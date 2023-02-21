@@ -1,4 +1,6 @@
-include "../../../src/tree/alt-layer4/RBTree.dfy"
+include "../../../src/tree/alt-layer4/RBTree/Base.dfy"
+include "../../../src/tree/alt-layer4/RBTree/SInsert.dfy"
+include "../../../src/tree/alt-layer4/RBTree/RBInsert.dfy"
 include "../../../src/tree/alt-layer4/Tree.dfy"
 include "../../../src/tree/alt-layer4/KeyValue.dfy"
 include "../../../src/tree/alt-layer4/TNode.dfy"
@@ -8,7 +10,9 @@ include "../../../src/tree/alt-layer4/LinkedTree/RBInsert.dfy"
 
 module LinkedTree {
   import opened TNode
-  import RB = RBTree
+  import RB = RBTree.Base
+  import RBi = RBTree.RBInsert
+  import RBs = RBTree.SInsert
   import opened T = Tree
   import opened KeyValue
   import opened SInsert
@@ -65,8 +69,8 @@ module LinkedTree {
     {
       ghost var z;
       root, skeleton, z := SInsertRec(root, skeleton, k, v);
-      RB.SInsertSpec(old(TreeModelRec(skeleton)), k, v);
-      RB.SInsertModel(old(TreeModelRec(skeleton)), k, v);
+      RBs.SInsertSpec(old(TreeModelRec(skeleton)), k, v);
+      RBs.SInsertModel(old(TreeModelRec(skeleton)), k, v);
     }
 
     predicate RedBlackTree()
@@ -94,8 +98,8 @@ module LinkedTree {
     {
       ghost var z;
       root, skeleton, z := RBInsertRoot(root, skeleton, k, v);
-      RB.RBInsertRootSpec(old(TreeModelRec(skeleton)), k, v);
-      RB.RBInsertRootModel(old(TreeModelRec(skeleton)), k, v);
+      RBi.RBInsertRootSpec(old(TreeModelRec(skeleton)), k, v);
+      RBi.RBInsertRootModel(old(TreeModelRec(skeleton)), k, v);
     }
   }
 }

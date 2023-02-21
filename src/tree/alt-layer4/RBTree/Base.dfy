@@ -145,4 +145,48 @@ module RBTree.Base {
   {
     seqToMap(preorder(t))
   }
+
+  function method isRed(t: rbtree): bool
+  {
+    t.Node? && t.color.Red?
+  }
+
+  function method isBlack(t: rbtree): bool
+  {
+    t.Node? && t.color.Black?
+  }
+
+  function method BlackHeight(sk: rbtree): nat
+  {
+    match sk {
+      case Empty => 0
+      case Node(l, k, v, r, c) =>
+        if c.Black? then
+          1 + Utils.max(BlackHeight(l), BlackHeight(r))
+        else
+          Utils.max(BlackHeight(l), BlackHeight(r))
+    }
+  }
+
+  function method RedBlackTree(t: rbtree): bool
+  {
+    match t {
+      case Empty => true
+      case Node(l, k, v, r, c) =>
+        // Red links lean left:
+        && (r.Node? ==> r.color.Black?)
+        // No node has two red links connected to it:
+        && (l.Node? && l.color.Red? && l.left.Node? ==> l.left.color.Black?)
+        // Perfect black balance:
+        && BlackHeight(l) == BlackHeight(r)
+
+        && RedBlackTree(l)
+        && RedBlackTree(r)
+    }
+  }
+
+  function method RedBlackTreeRoot(t: rbtree): bool
+  {
+    RedBlackTree(t) && (t.Node? ==> t.color.Black?)
+  }
 }

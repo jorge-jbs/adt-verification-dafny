@@ -1,11 +1,13 @@
-include "../../../../src/tree/alt-layer4/RBTree.dfy"
+include "../../../../src/tree/alt-layer4/RBTree/Base.dfy"
+include "../../../../src/tree/alt-layer4/RBTree/RBInsert.dfy"
 include "../../../../src/tree/alt-layer4/Tree.dfy"
 include "../../../../src/tree/alt-layer4/TNode.dfy"
 include "../../../../src/tree/alt-layer4/Color.dfy"
 
 module LinkedTree.RBInsert {
   import opened KeyValue
-  import RB = RBTree
+  import RB = RBTree.Base
+  import RBi = RBTree.RBInsert
   import opened T = Tree
   import opened TNode
   import opened Color
@@ -21,7 +23,7 @@ module LinkedTree.RBInsert {
     requires TreeModelRec(sk).right.Node?  /* redundant */
 
     ensures ValidRec(node, sk)
-    ensures TreeModelRec(sk) == RB.FlipColors(old(TreeModelRec(sk)))
+    ensures TreeModelRec(sk) == RBi.FlipColors(old(TreeModelRec(sk)))
 
     requires allocated(elems(sk))
     ensures allocated(elems(sk))
@@ -45,7 +47,7 @@ module LinkedTree.RBInsert {
     requires TreeModelRec(sk).right.Node?  /* redundant */
 
     ensures ValidRec(newNode, newSk)
-    ensures TreeModelRec(newSk) == RB.RotateLeft(old(TreeModelRec(sk)))
+    ensures TreeModelRec(newSk) == RBi.RotateLeft(old(TreeModelRec(sk)))
     ensures elems(newSk) == elems(sk)
 
     requires allocated(elems(sk))
@@ -74,7 +76,7 @@ module LinkedTree.RBInsert {
     requires TreeModelRec(sk).left.Node?  /* redundant */
 
     ensures ValidRec(newNode, newSk)
-    ensures TreeModelRec(newSk) == RB.RotateRight(old(TreeModelRec(sk)))
+    ensures TreeModelRec(newSk) == RBi.RotateRight(old(TreeModelRec(sk)))
     ensures elems(newSk) == elems(sk)
 
     requires allocated(elems(sk))
@@ -100,7 +102,7 @@ module LinkedTree.RBInsert {
     requires ValidRec(node, sk)
 
     ensures ValidRec(newNode, newSk)
-    ensures TreeModelRec(newSk) == RB.Restore(old(TreeModelRec(sk)))
+    ensures TreeModelRec(newSk) == RBi.Restore(old(TreeModelRec(sk)))
     ensures elems(newSk) == elems(sk)
 
     requires allocated(elems(sk))
@@ -110,17 +112,17 @@ module LinkedTree.RBInsert {
     ghost var t := TreeModelRec(sk);
     ghost var t' :=
       if RB.isRed(t.right) then
-        RB.RotateLeft(t)
+        RBi.RotateLeft(t)
       else
         t;
     ghost var t'' :=
       if RB.isRed(t'.left) && RB.isRed(t'.left.left) then
-        RB.RotateRight(t')
+        RBi.RotateRight(t')
       else
         t';
     ghost var t''' :=
       if RB.isRed(t''.left) && RB.isRed(t''.right) then
-        RB.FlipColors(t'')
+        RBi.FlipColors(t'')
       else
         t'';
     newNode := node;
@@ -141,7 +143,7 @@ module LinkedTree.RBInsert {
     }
     if isRed(newNode.left) && isRed(newNode.left.left) {
       newNode, newSk := RotateRight(newNode, newSk);
-      assert TreeModelRec(newSk) == RB.RotateRight(t');
+      assert TreeModelRec(newSk) == RBi.RotateRight(t');
     }
 
     assert TreeModelRec(newSk) == t'';
@@ -164,7 +166,7 @@ module LinkedTree.RBInsert {
 
     requires ValidRec(node, sk)
     ensures ValidRec(newNode, newSk)
-    ensures TreeModelRec(newSk) == RB.RBInsert(old(TreeModelRec(sk)), k, v)
+    ensures TreeModelRec(newSk) == RBi.RBInsert(old(TreeModelRec(sk)), k, v)
 
     ensures elems(newSk) == elems(sk) + {insertedNode}
     ensures insertedNode.key == k && insertedNode.value == v
@@ -213,7 +215,7 @@ module LinkedTree.RBInsert {
 
     requires ValidRec(node, sk)
     ensures ValidRec(newNode, newSk)
-    ensures TreeModelRec(newSk) == RB.RBInsertRoot(old(TreeModelRec(sk)), k, v)
+    ensures TreeModelRec(newSk) == RBi.RBInsertRoot(old(TreeModelRec(sk)), k, v)
 
     ensures elems(newSk) == elems(sk) + {insertedNode}
     ensures insertedNode.key == k && insertedNode.value == v
