@@ -455,14 +455,13 @@ trait OrderedSet extends UnorderedSet<int>{
 
 
 
-method {:verify true} try(s:OrderedSet)
+method {:verify true} {:timeLimitMultiplier 100} try(s:OrderedSet)
 modifies s, s.Repr()
 requires s.Valid() && s.Empty?()
-requires forall x | x in s.Repr() :: allocated(x)
+requires allocated(s.Repr())
 ensures s.Valid()
-ensures forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
 ensures fresh(s.Repr()-old(s.Repr()))
-ensures forall x | x in s.Repr() :: allocated(x)
+ensures  allocated(s.Repr())
 {
 
  
@@ -472,19 +471,22 @@ ensures forall x | x in s.Repr() :: allocated(x)
  var b:=s.Contains(10);
  assert b;
 
- /*var it : OrderedSetIterator :=s.First(); var cont:=0;
-  while (it.HasNext())
+ var it : OrderedSetIterator :=s.First(); var cont:=0;
+  b := it.HasPeek();
+  while (b)
   //decreases |s.Model()|-|it.Traversed()|
   decreases |s.Model()|-it.Index()
   invariant it.Valid() && it.Parent()==s
   invariant s.Valid() && s.Model()=={0,1,2,7,10}
-  invariant  forall x {:trigger x in s.Repr(), x in old(s.Repr())} | x in s.Repr() - old(s.Repr()) :: fresh(x)
+   invariant  allocated(s.Repr())
   invariant fresh(s.Repr()-old(s.Repr()))
-  invariant forall x | x in s.Repr() :: allocated(x)
-    {var aux:=it.Next();
-     if (aux%2==0) {cont:=cont+1;} 
+  invariant b == it.HasPeek?()
+    { var aux := it.Peek();
+      it.Next();
+      if (aux%2==0) {cont:=cont+1;} 
+      b := it.HasPeek();
     } 
-*/
+
    assert s.Model()=={0,1,2,7,10};
   var it2 :=s.Find(2) ;
   assert it2 is OrderedSetIterator;
