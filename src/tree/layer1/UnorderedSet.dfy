@@ -286,6 +286,7 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     ensures fresh(newt)
     ensures newt.Valid() && newt.Parent() == this  
     ensures newt.HasPeek?() && newt.Peek?() == x  
+    
     ensures Iterators() >= {newt}+old(Iterators())
      //points either to the inserted elemento or to the already existing one
 
@@ -306,6 +307,7 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     ensures fresh(next)
     ensures next.Valid() && next.Parent() == this 
     ensures next.Traversed() == old(mid.Traversed()) 
+    
     ensures Iterators() >= {next}+old(Iterators())
 
 }
