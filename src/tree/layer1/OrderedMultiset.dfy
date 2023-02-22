@@ -2,123 +2,212 @@ include "../../../src/tree/layer1/UnorderedMultiset.dfy"
 include "../../../src/tree/layer1/OrderedMultisetUtils.dfy"
 
 
-trait OrderedMultisetIterator extends UnorderedMultisetIterator{
+trait OrderedMultisetIterator extends UnorderedMultisetIterator<int>{
   
+  function Index(): int
+    reads this, Parent(), Parent().Repr()
+    requires Valid()
+    requires Parent().Valid()
+    ensures -1 <= Index() <= |Parent().Model()|
+   
   function Traversed():multiset<int>
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid() 
-    ensures Traversed()<=Parent().Model()
-    ensures forall x,y | x in Traversed() && y in Parent().Model()-Traversed() :: x<=y
+    ensures Traversed() <= Parent().Model()
+    //ensures forall x,y | x in Traversed() && y in Parent().Model()-Traversed() :: x<=y
+    ensures Index() >= 0 ==> |Traversed()| == Index()
+    ensures HasPeek?() ==> Traversed() < Parent().Model()
+    {
+      if (Index() == -1 ) then multiset{}
+      else if (Index() == |Parent().Model()|) then Parent().Model()
+      else 
+      lelemth(Parent().Model(),Index());
+      var p := elemth(Parent().Model(),Index());
+      var sm :=  msmaller(Parent().Model(),p);
+      sm[p := Index()-|sm|]
 
+    }
    //Several elements equal to the Peek may be in Traversed and some others not
   // Example: Model=={1,1,2,3,3,3,4,5} Traversed=={1,1,2,3,3} Peek=3 
-
-  function method Peek(): int
+  predicate HasPeek?()
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
-    requires HasNext()
-    ensures Peek() in Parent().Model() && (Parent().Model()-Traversed())[Peek()]>0
-    ensures Peek()==elemth(Parent().Model(),|Traversed()|)
-    ensures forall x | x in Traversed() :: x<=Peek()
-    ensures forall x | x in Parent().Model()-Traversed() :: Peek()<=x 
+    {
+      0 <= Index() < |Parent().Model()|
+    }
 
-
-  function method Index(): int
-    reads this, Parent(), Parent().Repr()
-    requires Valid()
-    requires Parent().Valid()
-    ensures HasNext() ==> Index()==|Traversed()|
-    ensures !HasNext() ==> Index()==|Parent().Model()|
-
-  method Next() returns (x: int)
-    modifies this
-    requires Valid()
-    requires Parent().Valid()
-    requires HasNext()
+  method HasPeek() returns (b:bool)
+  modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
-    requires forall it | it in Parent().Repr() :: allocated(it)
+    requires allocated(Parent().Repr())
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
+    ensures allocated(Parent().Repr())
+
+    requires Valid()
+    requires Parent().Valid()
+    ensures Valid()
     ensures Parent().Valid()
-    ensures Valid()
-    ensures old(Parent()) == Parent()
-    ensures old(Parent().Model()) == Parent().Model()
-
-    ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
-    ensures fresh(Parent().Repr()-old(Parent().Repr()))
-    ensures forall x | x in Parent().Repr() :: allocated(x)
-
-    ensures Parent().Iterators() == old(Parent().Iterators())
-    ensures x==old(Peek()) && Traversed() == multiset{old(Peek())}+old(Traversed()) 
-    ensures |Traversed()|==1+|old(Traversed())|
-    ensures HasNext() ==> Peek()==elemth(Parent().Model(),|Traversed()|)//already known
-
-
-    ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
-      it.Valid() && (it != this ==> it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek())))
-
-  function method HasPrev(): bool//igual que HasNext
-    reads this, Parent(), Parent().Repr()
-    requires Valid()
-    requires Parent().Valid()
-    ensures HasPrev()  <==> Traversed() < Parent().Model() && |Traversed()| < |Parent().Model()|
-    //|Traversed()| < |Parent().Model()| es necesario para poder verificar con cota |s.Model()|-|it.Traversed()|
-    ensures !HasPrev() ==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()|
-  
-
-  method Prev() returns (x: int)
-    modifies this
-    requires Valid()
-    requires Parent().Valid()
-    requires HasNext() 
-    requires allocated(Parent())
-    requires forall it | it in Parent().Repr() :: allocated(it)
-    ensures Parent().Valid()
-    ensures Valid()
-    ensures old(Parent()) == Parent()
-    ensures old(Parent().Model()) == Parent().Model()
-
-    ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
-    ensures fresh(Parent().Repr()-old(Parent().Repr()))
-    ensures forall x | x in Parent().Repr() :: allocated(x)
-
-    ensures Parent().Iterators() == old(Parent().Iterators())
-    ensures x==old(Peek())  
-    ensures old(Traversed())==multiset{} ==> Traversed()==Parent().Model()
-    ensures old(Traversed())!=multiset{} ==> Traversed()==old(Traversed())-multiset{maximum(old(Traversed()))}
-    ensures forall it | it in Parent().Iterators() && old(it.Valid()) ::
-      it.Valid() && (it != this ==> it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek())))
-
-  method Copy() returns (it: UnorderedMultisetIterator)
-    modifies Parent(), Parent().Repr()
-    requires Valid()
-    requires Parent().Valid()
-    requires allocated(Parent())
-    requires forall it | it in Parent().Iterators() :: allocated(it)
-    ensures fresh(it)
-    ensures Valid()
     ensures Parent() == old(Parent())
+    ensures Parent().Model() == old(Parent().Model()) 
+    
+    ensures Index() == old(Index())//NEW
+
+    ensures Traversed() == old(Traversed()) 
+    ensures HasPeek?() ==> Peek?()==old(Peek?())
+    ensures b == HasPeek?()
+
+    ensures Parent().Iterators() >= old(Parent().Iterators())
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Traversed() == old(it.Traversed())
+      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it is OrderedMultisetIterator:://NEW
+      (it as OrderedMultisetIterator).Index() == old((it as OrderedMultisetIterator).Index()) 
+     
+  function Peek?():int
+    reads this, Parent(), Parent().Repr()
+    requires Valid()
+    requires Parent().Valid() 
+    requires HasPeek?()
+    ensures Peek?() in Parent().Model() && (Parent().Model()-Traversed())[Peek?()]>0
+  { assume elemth(Parent().Model(),Index()) in Parent().Model();
+    assume (Parent().Model()-Traversed())[elemth(Parent().Model(),Index())]>0;
+    elemth(Parent().Model(),Index())}
+
+
+  method Peek() returns (p:int) 
+    modifies this, Parent(), Parent().Repr()
+    requires allocated(Parent())
+    requires allocated(Parent().Repr())
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
+    ensures allocated(Parent().Repr())
+
+    requires Valid()
+    requires Parent().Valid()
+    requires HasPeek?() 
+    ensures Valid()
     ensures Parent().Valid()
+    ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
 
-    ensures forall x {:trigger x in Parent().Repr(), x in old(Parent().Repr())} | x in Parent().Repr() - old(Parent().Repr()) :: fresh(x)
-    ensures fresh(Parent().Repr()-old(Parent().Repr()))
-    ensures forall x | x in Parent().Repr() :: allocated(x)
+    ensures Index() == old(Index()) //NEW 
+
+    ensures Traversed() == old(Traversed()) && Peek?()==old(Peek?()) // no debería ser necesario pero lo es 
+    ensures p == Peek?()
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Traversed() == old(it.Traversed())
+      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it is OrderedMultisetIterator:://NEW
+      (it as OrderedMultisetIterator).Index() == old((it as OrderedMultisetIterator).Index()) 
+
+
+    method Next() 
+    modifies this, Parent(), Parent().Repr()
+    requires allocated(Parent())
+    requires allocated(Parent().Repr())
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
+    ensures allocated(Parent().Repr())
+
+    requires Valid()
+    requires Parent().Valid()
+    requires HasPeek?()
+    ensures Valid()
+    ensures Parent().Valid()
+    ensures Parent() == old(Parent())
+    ensures Parent().Model() == old(Parent().Model())
+
+    ensures Parent().Iterators() >= old(Parent().Iterators())
+    ensures Traversed() == multiset{old(Peek?())}+old(Traversed()) 
+    //ensures |Traversed()|==1+|old(Traversed())|
+    ensures Index() == old(Index()) + 1 //NEW 
+
+
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && (it != this ==> it.Traversed() == old(it.Traversed())
+                         && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?())))
     
-    ensures it is OrderedMultisetIterator
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it is OrderedMultisetIterator && it != this:://NEW
+      (it as OrderedMultisetIterator).Index() == old((it as OrderedMultisetIterator).Index()) 
+
+  method Prev() 
+    modifies this, Parent(), Parent().Repr()
+    requires allocated(Parent())
+    requires allocated(Parent().Repr())
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
+    ensures allocated(Parent().Repr())
+
+    requires Valid()
+    requires Parent().Valid()
+    requires HasPeek?()
+    ensures Valid()
+    ensures Parent().Valid()
+    ensures Parent() == old(Parent())
+    ensures Parent().Model() == old(Parent().Model())
+
+    ensures Parent().Iterators() >= old(Parent().Iterators())
+    ensures Index() == old(Index()) - 1
+    
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && (it != this ==> it.Traversed() == old(it.Traversed())
+                         && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?())))
+ 
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it is OrderedMultisetIterator && it != this:://NEW
+      (it as OrderedMultisetIterator).Index() == old((it as OrderedMultisetIterator).Index()) 
+
+  method Copy() returns (it: UnorderedMultisetIterator<int>)
+     modifies this, Parent(), Parent().Repr()
+    requires allocated(Parent())
+    requires allocated(Parent().Repr())
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
+    ensures allocated(Parent().Repr())
+
+    requires Valid()
+    requires Parent().Valid()
+    ensures fresh(it)
+    ensures Valid()
+    ensures Parent().Valid()
+    ensures Parent() == old(Parent())
+    ensures Parent().Model() == old(Parent().Model())
+    
+    ensures Index() == old(Index()) //NEW
+
+    ensures Traversed() == old(Traversed()) 
+    ensures HasPeek?() ==> Peek?()==old(Peek?())
+
+
     ensures it.Valid()
-    ensures Parent().Iterators() == {it} + old(Parent().Iterators())
+    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures Parent() == it.Parent()
 
-    ensures Traversed() == it.Traversed() 
-    ensures HasNext() ==> Peek()==it.Peek()
+    ensures it is OrderedMultisetIterator
+    ensures  (it as OrderedMultisetIterator).Index() == Index()
+    ensures Traversed() == it.Traversed() && (it.HasPeek?() ==> Peek?()==it.Peek?())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Traversed() == old(it.Traversed()) 
+      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+    
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it is OrderedMultisetIterator:://NEW
+      (it as OrderedMultisetIterator).Index() == old((it as OrderedMultisetIterator).Index()) 
+
+
 
   
 }
 
-trait OrderedMultiset extends UnorderedMultiset{
+/*trait OrderedMultiset extends UnorderedMultiset<int>{
   
    //Novelties respect UnorderedSet
    // Last iterator method 
@@ -319,4 +408,4 @@ ensures forall x | x in s.Repr() :: allocated(x)
   z:=it4.Prev();
   assert !it4.HasPrev();
 
-}*/
+}*/*/

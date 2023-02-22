@@ -56,29 +56,7 @@ trait UnorderedMultisetIterator<A> {
       && it.Traversed() == old(it.Traversed())
       && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
 
-  method Next()
-    modifies this, Parent(), Parent().Repr() 
-    requires allocated(Parent())
-    requires allocated(Parent().Repr())
-    ensures fresh(Parent().Repr() - old(Parent().Repr()))
-    ensures allocated(Parent().Repr())
-
-    requires Valid()
-    requires Parent().Valid()
-    requires HasPeek?()
-    ensures Valid()
-    ensures Parent().Valid()
-    ensures Parent() == old(Parent())
-    ensures Parent().Model() == old(Parent().Model())
-    ensures Traversed() == multiset{old(Peek?())}+old(Traversed()) 
-
-    ensures Parent().Iterators() >= old(Parent().Iterators())     
-    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      && it.Valid() 
-      && it.Parent() == old(it.Parent()) 
-      && (it != this ==> it.Traversed() == old(it.Traversed())
-                         && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?())))
-
+  
   method Peek() returns (p:A) 
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
@@ -101,6 +79,30 @@ trait UnorderedMultisetIterator<A> {
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed())
       && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+
+
+  method Next()
+    modifies this, Parent(), Parent().Repr() 
+    requires allocated(Parent())
+    requires allocated(Parent().Repr())
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
+    ensures allocated(Parent().Repr())
+
+    requires Valid()
+    requires Parent().Valid()
+    requires HasPeek?()
+    ensures Valid()
+    ensures Parent().Valid()
+    ensures Parent() == old(Parent())
+    ensures Parent().Model() == old(Parent().Model())
+    ensures Traversed() == multiset{old(Peek?())}+old(Traversed()) 
+
+    ensures Parent().Iterators() >= old(Parent().Iterators())     
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && (it != this ==> it.Traversed() == old(it.Traversed())
+                         && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?())))
 
   method Copy() returns (it: UnorderedMultisetIterator<A>)
     modifies this, Parent(), Parent().Repr()

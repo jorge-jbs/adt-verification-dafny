@@ -180,6 +180,8 @@ ensures elemth(s,k) in s && |msmaller(s,elemth(s,k))|<=k<=|msmaller(s,elemth(s,k
   }
 }
 
+
+
 lemma {:induction s} lelemthrev(s:multiset<int>,x:int,k:int)
 requires 0<=k<|s| && x in s && |msmaller(s,x)|==k
 ensures x==elemth(s,k)

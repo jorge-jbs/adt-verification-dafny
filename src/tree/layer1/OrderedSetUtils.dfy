@@ -63,7 +63,7 @@ requires s != {}
 // Minimum is smaller or equal than all the set elements
 lemma lmin(s:set<int>,x:int)
 requires s!={} && x in s
-ensures x>=minimum(s)
+ensures x >= minimum(s)
 {
   var y:=Pick(s);
   if (s-{y} == {}){assert s=={y};assert x==y;}
@@ -80,7 +80,7 @@ ensures minimum(s) in s && forall x | x in s :: minimum(s) <= x
 
 //An element smaller than the rest of elements is the minimum
 lemma lminimumrev(s:set<int>,x:int)
-requires x in s && forall z | z in s && z!=x :: x < z
+requires x in s && forall z | z in s && z != x :: x < z
 ensures x == minimum(s)
 {
   lminimum(s);
@@ -103,8 +103,8 @@ requires s != {}
 
 //Maximum is bigger or equal than all the set elements 
 lemma lmax(s:set<int>,x:int)
-requires s!={} && x in s
-ensures x<=maximum(s)
+requires s != {} && x in s
+ensures x <= maximum(s)
 {
   var y:=Pick(s);
   if (s-{y} == {}){assert s=={y};assert x==y;}
@@ -117,13 +117,13 @@ ensures x<=maximum(s)
 lemma lmaximum(s:set<int>)
 requires s != {}
 ensures maximum(s) in s && forall x | x in s :: maximum(s) >= x
-ensures forall x | x in s && s-{x}!={} && x > maximum(s-{x}) :: x==maximum(s) 
-ensures forall x | x in s && s-{x}!={} && x <= maximum(s-{x}) :: maximum(s)==maximum(s-{x}) 
+ensures forall x | x in s && s-{x}!={} && x > maximum(s-{x}) :: x == maximum(s) 
+ensures forall x | x in s && s-{x}!={} && x <= maximum(s-{x}) :: maximum(s) == maximum(s-{x}) 
 {forall x | x in s
  ensures maximum(s) >= x {lmax(s,x);}}
 
 lemma lmaximumOne(s:set<int>,x:int)
-requires s!={} && x in s && s-{x}!={} 
+requires s != {} && x in s && s-{x} != {} 
 ensures if (x <= maximum(s-{x})) then maximum(s) == maximum(s-{x}) else maximum(s)==x
 {
   lmaximum(s);
@@ -131,7 +131,7 @@ ensures if (x <= maximum(s-{x})) then maximum(s) == maximum(s-{x}) else maximum(
 
 //Any element of the set bigger tahn the rest is the maximum
 lemma lmaximumrev(s:set<int>,x:int)
-requires x in s && forall z | z in s && z!=x :: x > z
+requires x in s && forall z | z in s && z != x :: x > z
 ensures x == maximum(s)
 {
   lmaximum(s);
@@ -142,7 +142,7 @@ ensures x == maximum(s)
 }
 
 lemma lmaximum2(s:set<int>,x:int)
-requires s!={} && x in s && s-{x}!={} && x < maximum(s-{x})
+requires s != {} && x in s && s-{x} != {} && x < maximum(s-{x})
 ensures maximum(s)!=x 
 {lmaximum(s-{x});
 assert maximum(s-{x}) in s;
@@ -180,13 +180,13 @@ ensures forall z | z in s && z < x :: z in smaller(s,x)
 
 lemma {:verify true} smallerMin(s:set<int>)
 requires s != {}
-ensures smaller(s,minimum(s))=={} && |smaller(s,minimum(s))|==0
+ensures smaller(s,minimum(s)) == {} && |smaller(s,minimum(s))| == 0
 {}
 
 
 lemma {:verify true} smallerMax(s:set<int>)
 requires s != {}
-ensures smaller(s,maximum(s))==s-{maximum(s)} && |smaller(s,maximum(s))|== |s|-1
+ensures smaller(s,maximum(s)) == s-{maximum(s)} && |smaller(s,maximum(s))| == |s|-1
 { sizes(smaller(s,maximum(s)),s-{maximum(s)});
   assert |smaller(s,maximum(s))|==|s-{maximum(s)}|;
   lmaximum(s);
@@ -196,8 +196,8 @@ ensures smaller(s,maximum(s))==s-{maximum(s)} && |smaller(s,maximum(s))|== |s|-1
 
 lemma smallerElem(s:set<int>,x:int)
 requires s!={} && x in s && x != minimum(s)
-ensures smaller(s-{minimum(s)},x)==smaller(s,x)-{minimum(s)}
-ensures |smaller(s-{minimum(s)},x)|==|smaller(s,x)|-1
+ensures smaller(s-{minimum(s)},x) == smaller(s,x)-{minimum(s)}
+ensures |smaller(s-{minimum(s)},x)| == |smaller(s,x)|-1
 { lminimum(s);
   sizeOfSet(s,minimum(s));}
 
@@ -212,7 +212,7 @@ requires 0<=k<|s|
 
 lemma {:induction s,k} {:verify true} lelemth(s:set<int>,k:int)
 requires 0<=k<|s|
-ensures elemth(s,k) in s && |smaller(s,elemth(s,k))|==k
+ensures elemth(s,k) in s && |smaller(s,elemth(s,k))| == k
 ensures forall y | y in s && y < elemth(s,k) :: y in smaller(s,elemth(s,k))
 { lminimum(s);
   if (k==0) { }
@@ -236,8 +236,8 @@ ensures forall y | y in s && y < elemth(s,k) :: y in smaller(s,elemth(s,k))
 
 
 lemma {:induction s} lelemthrev(s:set<int>,x:int,k:int)
-requires 0<=k<|s| && x in s && |smaller(s,x)|==k
-ensures x==elemth(s,k)
+requires 0 <= k < |s| && x in s && |smaller(s,x)| == k
+ensures x == elemth(s,k)
 {
  if (k==0){  
    assert smaller(s,x)=={};
@@ -462,11 +462,22 @@ decreases s
     
 }
 
+lemma {:induction s} set2SeqIsSet(s:set<int>) //TO DO
+ensures isSet(set2Seq(s))
 
-lemma unionseq2Set(xs:seq<int>,x:int)
+
+lemma unionseq2Set(xs:seq<int>,x:int) //TO DO
 requires isSet(xs) && x !in xs
 ensures seq2Set([x]+xs)=={x}+seq2Set(xs)
 
+lemma removeseq2Set(xs:seq<int>,i:int) //TO DO
+requires isSet(xs) && 0 <= i < |xs|
+ensures isSet(xs[..i]+xs[i+1..])
+ensures seq2Set(xs[..i]+xs[i+1..]) == seq2Set(xs) - {xs[i]}
+
+lemma decomposeSeq2Set(xs:seq<int>,i:int) //TO DO
+requires isSet(xs) && 0 <= i < |xs|
+ensures seq2Set(xs) == seq2Set(xs[..i])+{xs[i]}+ seq2Set(xs[i+1..])
 
 lemma sizesSet2Seq(s:set<int>)
 ensures |set2Seq(s)|==|s|
@@ -490,6 +501,7 @@ ensures seq2Set(set2Seq(s)) == s
     var y := Pick(s);
     assert y !in s - {y};
     assert y !in  set2Seq(s - {y});
+    set2SeqIsSet(s-{y});
     assert isSet(set2Seq(s - {y}));
     unionseq2Set(set2Seq(s - {y}),y);
     assert seq2Set([y] + set2Seq(s - {y})) == seq2Set([y]) + seq2Set(set2Seq(s - {y}));
@@ -519,10 +531,14 @@ ensures 0 <= s < i < |xs|==> Seq.Remove(xs,i)[s] == xs[s]
 {}
 
 lemma subseq2SetRemove(xs:seq<int>,i:int,s:int)
-requires 0 <= i < s <=|xs| && isSet(xs)
+requires 0 <= i < s <= |xs| && isSet(xs)
 ensures |Seq.Remove(xs,i)| == |xs|-1 && seq2Set(Seq.Remove(xs,i)[..s-1])==seq2Set(xs[..s])-{xs[i]}
 {
-  if (i+1==s ){}
+  if (i+1 == s){ 
+    assert Seq.Remove(xs,i)[..s-1] == Seq.Remove(xs[..s],s-1);
+    assert seq2Set(Seq.Remove(xs,i)[..s-1]) == seq2Set(Seq.Remove(xs[..s],s-1));
+    removeseq2Set(xs[..s],s-1);
+    }
   else 
   {
     assert i+1 < s;
@@ -530,7 +546,11 @@ ensures |Seq.Remove(xs,i)| == |xs|-1 && seq2Set(Seq.Remove(xs,i)[..s-1])==seq2Se
       seq2Set(Seq.Remove(xs,i)[..s-1]);
       seq2Set((xs[..i]+xs[i+1..])[..s-1]);
        {assert (xs[..i]+xs[i+1..])[..s-1]==xs[..i]+xs[i+1..s];}
-      seq2Set(xs[..s])-{xs[i]};
+      seq2Set((xs[..i]+xs[i+1..s]));
+      {assert xs[..i]+xs[i+1..s] == xs[..s][..i]+xs[..s][i+1..];}
+       seq2Set(xs[..s][..i]+xs[..s][i+1..]);
+      {removeseq2Set(xs[..s],i);}
+      seq2Set(xs[..s])-{(xs[..s])[i]};
    }
    }
 }
@@ -548,11 +568,19 @@ ensures |Seq.Remove(xs,i)| == |xs|-1 >=s && seq2Set(Seq.Remove(xs,i)[..s])==seq2
     {assert (xs[..i]+xs[i+1..])[..s]==xs[..i]+xs[i+1..s+1];}
     seq2Set( xs[..i]+xs[i+1..s+1]); 
     {assert xs[..s+1]==xs[..i]+[xs[i]]+xs[i+1..s+1];
-     assert seq2Set(xs[..s+1]) == seq2Set(xs[..i]+xs[i+1..s+1])+{xs[i]};
+     assert xs[..i] == xs[..s+1][..i] && xs[i+1..s+1] == xs[..s+1][i+1..s+1] && xs[i]==xs[..s+1][i];
+          decomposeSeq2Set(xs[..s+1],i);
+     assert seq2Set(xs[..s+1]) == seq2Set(xs[..i])+seq2Set(xs[i+1..s+1])+{xs[i]};
      assert xs[i] !in seq2Set(xs[..i]+xs[i+1..s+1]);
+     removeseq2Set(xs[..s+1],i);
      assert seq2Set(xs[..i]+xs[i+1..s+1])==seq2Set(xs[..s+1])-{xs[i]};}
     seq2Set(xs[..s+1])-{xs[i]};
-    seq2Set(xs[..s])+{xs[s]}-{xs[i]};
+    {decomposeSeq2Set(xs[..s+1],s);}
+    (seq2Set(xs[..s+1][..s])+{xs[..s+1][s]}+seq2Set(xs[..s+1][s+1..]))-{xs[i]};
+    { assert xs[..s+1][..s] == xs[..s];}
+    (seq2Set(xs[..s])+{xs[s]})-{xs[i]};
  }
  }
 }
+
+
