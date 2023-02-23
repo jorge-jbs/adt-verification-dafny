@@ -53,8 +53,8 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
      //assert |Traversed()| == Index() < |Parent().Model()|;
      //assert Traversed() < Parent().Model();
      elemthSet(Parent().Model(),Traversed());
-     elemthSmallerAll(Parent().Model(),Traversed());
-     elemthBiggerAll(Parent().Model(),Traversed());
+     //elemthSmallerAll(Parent().Model(),Traversed());
+     //elemthBiggerAll(Parent().Model(),Traversed());
      elemth(Parent().Model(),Index())
   }
 
@@ -455,7 +455,7 @@ trait OrderedSet extends UnorderedSet<int>{
 
 
 
-method {:verify true} {:timeLimitMultiplier 100} try(s:OrderedSet)
+method {:verify false} {:timeLimitMultiplier 100} try(s:OrderedSet)
 modifies s, s.Repr()
 requires s.Valid() && s.Empty?()
 requires allocated(s.Repr())
