@@ -36,16 +36,19 @@ ensures |s1| <= |s2|
 }
 
 
-lemma sizesStrictContained(s1:set<int>,s2:set<int>)
+lemma sizesStrictContained(s1:set<int>,s2:set<int>) //TO DO
 requires s1 < s2
 ensures |s1| < |s2|
 {
-  sizesContained(s1,s2);
-  assert |s1|<=|s2|;
-  assume s1 == s2;
-  sizes(s1,s2);
-  assert false;
+  if (s1=={}) { assert s2!={};}
+  else {
+     var z:=Pick(s1);
+     sizesStrictContained(s1-{z},s2-{z});
   }
+}
+
+
+
 //MINIMUM DEFINITION:  
 
 function {:induction s} minimum(s:set<int>):int
