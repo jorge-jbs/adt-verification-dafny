@@ -141,6 +141,13 @@ module RBTree.Base {
       toMap''(t) == toMap''(t.left) + toMap''(t.right) + map[t.key := t.value]
   {}
 
+  lemma modelLemmas(t: rbtree)
+    requires SearchTree(t)
+    ensures t.Node? ==>
+      //model(t) == model(t.left) + model(t.right) + map[t.key := t.value]
+      model(t) == model(t.left) + map[t.key := t.value] + model(t.right)
+  {}
+
   function method toMap'''(t: rbtree): map<K, V>
   {
     seqToMap(preorder(t))
