@@ -266,7 +266,7 @@ method Remove(k:K)
 
   requires Valid()
   ensures Valid()
-  ensures Model()== map k' | k' in old(Model()) && k' != k :: old(Model())[k']
+  ensures Model() == map k' | k' in old(Model()) && k' != k :: old(Model())[k']
 
   ensures Iterators() >= old(Iterators())
 

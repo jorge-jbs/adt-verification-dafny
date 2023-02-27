@@ -30,6 +30,7 @@ trait UnorderedSetIterator<A> {
     //|Traversed()| < |Parent().Model()| es necesario para poder verificar con cota |s.Model()|-|it.Traversed()|
     ensures !HasPeek?() <==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()|
   
+
   method HasPeek() returns (b:bool)
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
