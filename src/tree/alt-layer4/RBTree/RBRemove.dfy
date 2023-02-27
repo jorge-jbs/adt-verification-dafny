@@ -394,6 +394,8 @@ module RBTree.RBRemove {
 
     ensures SearchTree(RemoveMin(t).0)
     ensures model(RemoveMin(t).0) == model(t) - {RemoveMin(t).1}
+    ensures RemoveMin(t).1 in model(t)
+    ensures model(t)[RemoveMin(t).1] == RemoveMin(t).2
   {
     RemoveMinSpec(t);
     if t.left.Empty? {
@@ -723,7 +725,7 @@ module RBTree.RBRemove {
               model(t''.left) + map[minK := minV] + model(r');
               model(t''.left) + map[minK := minV] + (model(t''.right) - {minK});
               model(t''.left) + (map[minK := minV] + (model(t''.right) - {minK}));
-              { assert minK in model(t''.right); assume model(t''.right)[minK] == minV; MapDiffCancel(minK, minV, model(t''.right)); }
+              { assert minK in model(t''.right); assert model(t''.right)[minK] == minV; MapDiffCancel(minK, minV, model(t''.right)); }
               model(t''.left) + model(t''.right);
             }
           }
