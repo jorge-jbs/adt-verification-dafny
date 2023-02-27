@@ -1,8 +1,8 @@
-include "../../src/Utils.dfy"
+//include "../../src/Utils.dfy"
 include "../../src/tree/layer1/UnorderedSet.dfy"
 
 
-method unordSetContained(s1:UnorderedSet,s2:UnorderedSet) returns (b:bool)
+method UnordSetContained(s1:UnorderedSet,s2:UnorderedSet) returns (b:bool)
 modifies s1, s1.Repr(), s2, s2.Repr()
 requires allocated(s1.Repr())
 requires allocated(s2.Repr())
@@ -25,7 +25,8 @@ ensures s1.Iterators() >= old(s1.Iterators()) && s2.Iterators() >= old(s2.Iterat
  var it1:=s1.First(); var it2:UnorderedSetIterator;
  assert it1.Traversed()=={};
   b:=true;
- while (it1.HasNext() && b)
+  var it1hasPeek := it1.HasPeek();
+ while (it1hasPeek && b)
    decreases s1.Model()-it1.Traversed(),b
    invariant  allocated(s1.Repr())
    invariant allocated(s2.Repr())
@@ -40,13 +41,15 @@ ensures s1.Iterators() >= old(s1.Iterators()) && s2.Iterators() >= old(s2.Iterat
    invariant it1.Parent()==s1 
    invariant it1.Traversed()<=s1.Model() 
    invariant b == (it1.Traversed() <= s2.Model())
+   invariant it1hasPeek == it1.HasPeek?()
    
    invariant s1.Iterators() >= old(s1.Iterators()) && s2.Iterators() >= old(s2.Iterators())
-
  { 
-   it2 := s2.find(it1.Peek());
-   b := it2.HasNext();
+   var p := it1.Peek();
+   it2 := s2.Find(p);
+   b := it2.HasPeek();
    it1.Next();
+   it1hasPeek := it1.HasPeek();
 
  }
 }
