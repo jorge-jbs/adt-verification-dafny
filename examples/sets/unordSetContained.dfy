@@ -24,9 +24,11 @@ ensures s1.Iterators() >= old(s1.Iterators()) && s2.Iterators() >= old(s2.Iterat
 {
  var it1:=s1.First(); var it2:UnorderedSetIterator;
  assert it1.Traversed()=={};
-  b:=true;
-  var it1hasPeek := it1.HasPeek();
- while (it1hasPeek && b)
+
+ b:=true;
+ var it1HasPeek := it1.HasPeek();
+ 
+ while (it1HasPeek && b)
    decreases s1.Model()-it1.Traversed(),b
    invariant  allocated(s1.Repr())
    invariant allocated(s2.Repr())
@@ -41,7 +43,7 @@ ensures s1.Iterators() >= old(s1.Iterators()) && s2.Iterators() >= old(s2.Iterat
    invariant it1.Parent()==s1 
    invariant it1.Traversed()<=s1.Model() 
    invariant b == (it1.Traversed() <= s2.Model())
-   invariant it1hasPeek == it1.HasPeek?()
+   invariant it1HasPeek == it1.HasPeek?()
    
    invariant s1.Iterators() >= old(s1.Iterators()) && s2.Iterators() >= old(s2.Iterators())
  { 
@@ -49,7 +51,7 @@ ensures s1.Iterators() >= old(s1.Iterators()) && s2.Iterators() >= old(s2.Iterat
    it2 := s2.Find(p);
    b := it2.HasPeek();
    it1.Next();
-   it1hasPeek := it1.HasPeek();
+   it1HasPeek := it1.HasPeek();
 
  }
 }
