@@ -52,15 +52,15 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
     requires HasPeek?()
     
     ensures Peek?() in Parent().Model() && Peek?() !in Traversed()
-    //ensures forall x | x in Traversed() :: x < Peek?()
-    //ensures forall x | x in Parent().Model()-Traversed()-{Peek?()} :: Peek?() < x
-    //ensures forall x | x in Parent().Model()-Traversed() :: Peek?() <= x
+    ensures forall x | x in Traversed() :: x < Peek?()
+    ensures forall x | x in Parent().Model()-Traversed()-{Peek?()} :: Peek?() < x
+    ensures forall x | x in Parent().Model()-Traversed() :: Peek?() <= x
   {  
      //assert |Traversed()| == Index() < |Parent().Model()|;
      //assert Traversed() < Parent().Model();
      elemthSet(Parent().Model(),Traversed());
-     //elemthSmallerAll(Parent().Model(),Traversed());
-     //elemthBiggerAll(Parent().Model(),Traversed());
+     elemthSmallerAll(Parent().Model(),Traversed());
+     elemthBiggerAll(Parent().Model(),Traversed());
 
      elemth(Parent().Model(),Index())
   }
@@ -153,6 +153,8 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
 
     ensures Traversed() == old(Traversed()) && Peek?()==old(Peek?()) // no debería ser necesario pero lo es 
     ensures p == Peek?()
+    
+    ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
