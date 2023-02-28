@@ -1,4 +1,3 @@
-//include "../../src/Utils.dfy"
 include "../../src/tree/layer1/UnorderedSet.dfy"
 
 
@@ -31,7 +30,7 @@ ensures s1.Iterators()>=old(s1.Iterators()) &&
         su.Iterators()>=old(su.Iterators())
 {
 
- var it1:=s1.First(); var it2: UnorderedSetIterator;
+ var it1:=s1.First(); 
  var it1HasPeek := it1.HasPeek();
  while (it1HasPeek)
    decreases (s1.Model()-it1.Traversed())
@@ -60,11 +59,11 @@ ensures s1.Iterators()>=old(s1.Iterators()) &&
              s2.Iterators() >= old(s2.Iterators()) &&
              su.Iterators() >= old(su.Iterators())
 {  
-   var p := it1.Peek();
-   it2 := s2.Find(p);
+   var it1Peek := it1.Peek();
+   var it2 := s2.Find(it1Peek);
    var it2HasPeek := it2.HasPeek();
    if (it2HasPeek) 
-     { su.Add(p); }
+     { su.Add(it1Peek); }
    it1.Next();
    it1HasPeek := it1.HasPeek();
  }
