@@ -36,7 +36,7 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
     ensures Traversed() <= Parent().Model()
     //ensures forall x,y | x in Traversed() && y in Parent().Model()-Traversed() :: x < y 
     ensures Index() >= 0 <==> |Traversed()| == Index()
-    ensures HasPeek?() ==> Traversed() < Parent().Model()
+    ensures HasPeek?() ==> Traversed() < Parent().Model() && |Traversed()| < |Parent().Model()|
     { 
       if (Index() == -1 ) then {}
       else if (Index() == |Parent().Model()|) then Parent().Model()
@@ -87,7 +87,8 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model()) 
-    
+    ensures |Parent().Model()| == old(|Parent().Model()|)
+
     ensures Index() == old(Index())//NEW
 
     ensures Traversed() == old(Traversed()) 
@@ -119,9 +120,11 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
+    ensures |Parent().Model()| == old(|Parent().Model()|)
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures Traversed() == {old(Peek?())}+old(Traversed()) 
+    ensures |Traversed()|==1+|old(Traversed())|
     ensures Index() == old(Index()) + 1 //NEW 
     
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
@@ -148,6 +151,7 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
+    ensures |Parent().Model()| == old(|Parent().Model()|)
 
     ensures Index() == old(Index()) //NEW 
 
@@ -182,6 +186,7 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
+    ensures |Parent().Model()| == old(|Parent().Model()|)
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures Index() == old(Index()) - 1
@@ -209,7 +214,8 @@ method Copy() returns (it: UnorderedSetIterator<int>)
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
-    
+    ensures |Parent().Model()| == old(|Parent().Model()|)
+
     ensures Index() == old(Index()) //NEW
 
     ensures Traversed() == old(Traversed()) 
@@ -257,6 +263,8 @@ trait OrderedSet extends UnorderedSet<int>{
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
+
     ensures b == Empty?()
 
     ensures Iterators() >= old(Iterators())
@@ -279,6 +287,7 @@ trait OrderedSet extends UnorderedSet<int>{
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
     ensures s == |Model()|
 
     ensures Iterators() >= old(Iterators())
@@ -308,6 +317,7 @@ trait OrderedSet extends UnorderedSet<int>{
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
 
     ensures it is OrderedSetIterator 
     ensures fresh(it)
@@ -335,7 +345,8 @@ trait OrderedSet extends UnorderedSet<int>{
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
-    
+    ensures |Model()| == old(|Model()|)
+  
     ensures it is OrderedSetIterator
     ensures fresh(it)
     ensures Iterators() == {it} + old(Iterators())
@@ -363,6 +374,7 @@ trait OrderedSet extends UnorderedSet<int>{
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
     ensures b == (x in Model())
 
     ensures Iterators() >= old(Iterators())
@@ -390,7 +402,8 @@ trait OrderedSet extends UnorderedSet<int>{
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
-    
+    ensures |Model()| == old(|Model()|)
+
     ensures newt is OrderedSetIterator
     ensures fresh(newt) 
     ensures newt.Valid() && newt.Parent()==this

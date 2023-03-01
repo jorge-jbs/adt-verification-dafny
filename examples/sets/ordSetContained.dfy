@@ -20,8 +20,8 @@ ensures b == (s1.Model() <= s2.Model())
 
 ensures s1.Iterators()>=old(s1.Iterators()) && s2.Iterators()>=old(s2.Iterators())
 {
- var it1:=s1.First(); var x1:int; var x2:int;
- var it2:=s2.First(); 
+ var it1:OrderedSetIterator:=s1.First(); var x1:int; var x2:int;
+ var it2:OrderedSetIterator:=s2.First(); 
  assert it1.Traversed()==it2.Traversed()=={};
 
  var it1HasPeek := it1.HasPeek();
@@ -30,7 +30,8 @@ ensures s1.Iterators()>=old(s1.Iterators()) && s2.Iterators()>=old(s2.Iterators(
 
  while (it1HasPeek && it2HasPeek && b)
   // decreases s1.Model()+s2.Model()-(it1.Traversed()+it2.Traversed()),b
-   decreases s2.Model()-it2.Traversed(),b
+  //decreases s2.Model()-it2.Traversed(),b
+  decreases |s2.Model()|-it2.Index(),b
    invariant  allocated(s1.Repr())
    invariant allocated(s2.Repr())
    invariant fresh(s1.Repr()-old(s1.Repr()))
@@ -43,6 +44,7 @@ ensures s1.Iterators()>=old(s1.Iterators()) && s2.Iterators()>=old(s2.Iterators(
    invariant it1 in s1.Iterators() && it2 in s2.Iterators()
    invariant it1.Parent() == s1 && it2.Parent() == s2
    invariant it1.Traversed() <= s1.Model() && it2.Traversed() <= s2.Model()
+   invariant 0 <= it1.Index() <= |s1.Model()| && 0 <= it2.Index() <= |s2.Model()|
    //invariant !it2.HasNext()==> b
    invariant b ==> it1.Traversed() <= it2.Traversed()
    invariant !b ==> !(it1.Traversed() <= s2.Model())
