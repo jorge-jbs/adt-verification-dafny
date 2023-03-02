@@ -95,9 +95,10 @@ module LinkedTree.RBInsert {
   method Restore(node: TNode, ghost sk: tree<TNode>)
     returns (newNode: TNode, ghost newSk: tree<TNode>)
 
-    modifies set x | x in elems(sk) :: x`left
-    modifies set x | x in elems(sk) :: x`right
-    modifies set x | x in elems(sk) :: x`color
+    modifies elems(sk)
+    //modifies set x | x in elems(sk) :: x`left
+    //modifies set x | x in elems(sk) :: x`right
+    //modifies set x | x in elems(sk) :: x`color
 
     requires ValidRec(node, sk)
 
@@ -159,10 +160,11 @@ module LinkedTree.RBInsert {
   method RBInsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
     returns (newNode: TNode, ghost newSk: tree<TNode>, ghost insertedNode:TNode)
 
-    modifies set x | x in elems(sk) :: x`left
-    modifies set x | x in elems(sk) :: x`right
-    modifies set x | x in elems(sk) :: x`value
-    modifies set x | x in elems(sk) :: x`color
+    modifies elems(sk)
+    //modifies set x | x in elems(sk) :: x`left
+    //modifies set x | x in elems(sk) :: x`right
+    //modifies set x | x in elems(sk) :: x`value
+    //modifies set x | x in elems(sk) :: x`color
 
     requires ValidRec(node, sk)
     ensures ValidRec(newNode, newSk)
@@ -208,10 +210,11 @@ module LinkedTree.RBInsert {
   method RBInsertRoot(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
     returns (newNode: TNode, ghost newSk: tree<TNode>, ghost insertedNode:TNode)
 
-    modifies set x | x in elems(sk) :: x`left
-    modifies set x | x in elems(sk) :: x`right
-    modifies set x | x in elems(sk) :: x`value
-    modifies set x | x in elems(sk) :: x`color
+    modifies elems(sk)
+    //modifies set x | x in elems(sk) :: x`left
+    //modifies set x | x in elems(sk) :: x`right
+    //modifies set x | x in elems(sk) :: x`value
+    //modifies set x | x in elems(sk) :: x`color
 
     requires ValidRec(node, sk)
     ensures ValidRec(newNode, newSk)

@@ -101,6 +101,12 @@ module TNode {
     ensures isRed(node) <==> RB.isRed(TreeModelRec(sk))
   {}
 
+  lemma isRedPropAll(nodes: set<TNode?>, sks: set<tree<TNode>>)
+    ensures
+      forall node, sk | node in nodes && sk in sks && ValidRec(node, sk)
+        :: isRed(node) <==> RB.isRed(TreeModelRec(sk))
+  {}
+
   function method isBlack(node: TNode?): bool
     reads node
   {
