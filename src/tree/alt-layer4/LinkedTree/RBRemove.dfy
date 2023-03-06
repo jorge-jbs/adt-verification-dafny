@@ -177,6 +177,12 @@ module LinkedTree.RBRemove {
 
     requires RB.isRed(TreeModelRec(sk)) || RB.isRed(TreeModelRec(sk.left)) /* redundant */
 
+    //requires rb: RedBlackTreeRec(sk)
+    //requires nrl: !(isRed(node) && isRed(node.left))
+    //requires rl: isRed(node) || isRed(node.left)
+    //
+    //requires rrl: RB.isRed(TreeModelRec(sk)) || RB.isRed(TreeModelRec(sk.left)) /* redundant */
+
     ensures ValidRec(newNode, newSk)
     ensures TreeModelRec(newSk) == RBr.RemoveMin(old(TreeModelRec(sk))).0
     ensures removedNode.key == RBr.RemoveMin(old(TreeModelRec(sk))).1
@@ -191,6 +197,9 @@ module LinkedTree.RBRemove {
       newNode := node.right;
       newSk := sk.right;
       removedNode := node;
+      //reveal search;
+      //reveal rb;
+      //reveal rl;
     } else {
       newNode := node;
       newSk := sk;
@@ -216,26 +225,32 @@ module LinkedTree.RBRemove {
       assert elems(newSk.left) !! elems(newSk.right);
       assert newNode !in elems(newSk.right);
       assert newNode !in elems(newSk.left);
+      assert newNode.right !in elems(newSk.left);
       assert allocated(elems(newSk)) by {
         AllocatedAll(elems(newSk));
       }
+      assert ValidRec(newNode.right, newSk.right);
+      RBr.RemoveMinSpec(TreeModelRec(newSk.left));
       newNodeLeft, newSkLeft, removedNode := RemoveMinRec(newNode.left, newSk.left);
+      assert unchanged@PreRec(elems(newSk.right));
+      assert ValidRec(newNode.right, newSk.right);
       assert elems(newSk.left) !! elems(newSk.right);
       assert newNode !in elems(newSk.right);
       assert newNode !in elems(newSk.left);
       assert ValidRec(newNodeLeft, newSkLeft);
       newNode.left := newNodeLeft;
       newSk := Node(newSkLeft, newNode, newSk.right);
-      assume false;
       assert ValidRec(newNode.left, newSk.left);
       assert allocated(elems(newSk)) by {
         AllocatedAll(elems(newSk));
       }
       assert elems(newSk) <= elems(sk);
       //assert ValidRec(newNode.left, newSk.left);
-      assume ValidRec(newNode, newSk);
+      assert ValidRec(newNode, newSk);
       newNode, newSk := Restore(newNode, newSk);
       assume false;
+      assert ValidRec(newNode, newSk);
+      assert TreeModelRec(newSk) == RBr.RemoveMin(old(TreeModelRec(sk))).0;
     }
   }
 }
