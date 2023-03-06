@@ -70,9 +70,10 @@ ensures s1.Iterators()>=old(s1.Iterators()) &&
    invariant 0 <= it2.Index() <= |s2.Model()|
    invariant it2HasPeek == it2.HasPeek?()
 
-   //invariant forall x, y |  x in it1.Traversed() && y in s2.Model()-it2.Traversed():: x < y
-   //invariant forall x, y |  x in it2.Traversed() && y in s1.Model()-it1.Traversed():: x < y
-   
+   invariant forall x, y |  x in it1.Traversed() && y in s2.Model()-it2.Traversed():: x < y
+   invariant forall x, y |  x in it2.Traversed() && y in s1.Model()-it1.Traversed():: x < y
+    
+
    invariant su.Model() == it1.Traversed() * it2.Traversed()
 
    invariant s1.Iterators() >= old(s1.Iterators()) &&
@@ -84,37 +85,48 @@ ensures s1.Iterators()>=old(s1.Iterators()) &&
   var it1Peek := it1.Peek();
   var it2Peek := it2.Peek();
 
-  ghost var oit1:=it1.Index();
-  ghost var oit2 := it2.Index();
-  ghost var oit1T:=it1.Traversed();
-  ghost var oit2T:=it2.Traversed();
-  
+  label oit:
 
   if (it1Peek == it2Peek)
     {   assert it1.Peek?() == it2.Peek?();
+        
         su.Add(it1Peek); 
         it1.Next();
         it2.Next();
+        
         assert |s1.Model()|==old(|s1.Model()|);
-        assert |s1.Model()| - it1.Index() < |s1.Model()| - oit1;
+        assert |s1.Model()| - it1.Index() < |s1.Model()| - old@oit(it1.Index());
+        
         assert su.Model() == it1.Traversed() * it2.Traversed();
+        assert forall x, y |  x in it1.Traversed() && y in s2.Model()-it2.Traversed():: x < y;
+        assert forall x, y |  x in it2.Traversed() && y in s1.Model()-it1.Traversed():: x < y;
     }
   else if (it1Peek < it2Peek)
     { 
        assert forall y | y in s2.Model()-it2.Traversed():: it1.Peek?()<it2.Peek?()<=y;
        assert it1.Peek?() < it2.Peek?();
+       assert it1Peek in s1.Model()-it1.Traversed();
+       assert forall x | x in it2.Traversed() :: x < it1Peek;
+       assert it1Peek !in it2.Traversed();
+
        it1.Next();
+       
+       
         assert |s1.Model()|==old(|s1.Model()|);
-        assert |s1.Model()| - it1.Index() < |s1.Model()| - oit1;
+        assert |s1.Model()| - it1.Index() < |s1.Model()| - old@oit(it1.Index());
+        
+        assert forall x, y |  x in it1.Traversed() && y in s2.Model()-it2.Traversed():: x < y;
+        assert forall x, y |  x in it2.Traversed() && y in s1.Model()-it1.Traversed():: x < y;
+        
         calc ==
         {
           it1.Traversed() * it2.Traversed();
-          {assert it1.Traversed() == oit1T+{it1Peek};
-           assert  it2.Traversed() == oit2T;}
-          (oit1T+{it1Peek}) * it2.Traversed();
-          (oit1T*oit2T)+({it1Peek}*oit2T);
-          {assert it1Peek !in it2.Traversed();}
-          oit1T * oit2T;
+          {assert it1.Traversed() == old@oit(it1.Traversed())+{it1Peek};
+           assert  it2.Traversed() == old@oit(it2.Traversed());}
+          (old@oit(it1.Traversed())+{it1Peek}) * it2.Traversed();
+          (old@oit(it1.Traversed())*old@oit(it2.Traversed()))+({it1Peek}*old@oit(it2.Traversed()));
+          {assert it1Peek !in old@oit(it2.Traversed());}
+          old@oit(it1.Traversed()) * old@oit(it2.Traversed());
           su.Model();
         }
         assert su.Model() == it1.Traversed() * it2.Traversed();
@@ -124,10 +136,30 @@ ensures s1.Iterators()>=old(s1.Iterators()) &&
     { 
       assert forall y | y in s1.Model()-it1.Traversed():: it2.Peek?()<it1.Peek?()<=y;
       assert it1.Peek?() > it2.Peek?();
+
+      assert it2Peek in s2.Model()-it2.Traversed();
+      assert forall x | x in it1.Traversed() :: x < it2Peek;
+      assert it2Peek !in it1.Traversed();
+
       it2.Next();
+      
       assert |s2.Model()|==old(|s2.Model()|);
-      assert |s2.Model()| - it2.Index() < |s2.Model()| - oit2;
-      assume su.Model() == it1.Traversed() * it2.Traversed();
+      assert |s2.Model()| - it2.Index() < |s2.Model()| - old@oit(it2.Index());
+      
+      assert forall x, y |  x in it1.Traversed() && y in s2.Model()-it2.Traversed():: x < y;
+      assert forall x, y |  x in it2.Traversed() && y in s1.Model()-it1.Traversed():: x < y;
+      
+      calc ==
+        {
+          it1.Traversed() * it2.Traversed();
+          {assert it2.Traversed() == old@oit(it2.Traversed())+{it2Peek};
+           assert  it1.Traversed() == old@oit(it1.Traversed());}
+          (old@oit(it1.Traversed())) * (old@oit(it2.Traversed())+{it2Peek});
+          (old@oit(it1.Traversed())*old@oit(it2.Traversed()))+(old@oit(it1.Traversed())*{it2Peek});
+          {assert it2Peek !in old@oit(it1.Traversed());}
+          old@oit(it1.Traversed()) * old@oit(it2.Traversed());
+          su.Model();
+        }
 
 
     }
