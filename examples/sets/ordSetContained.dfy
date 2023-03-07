@@ -55,7 +55,6 @@ ensures s1.Iterators()>=old(s1.Iterators()) && s2.Iterators()>=old(s2.Iterators(
    invariant it2HasPeek == it2.HasPeek?()
 
    invariant s1.Iterators() >= old(s1.Iterators()) && s2.Iterators() >= old(s2.Iterators())
-
  { 
 
   var it1Peek := it1.Peek();

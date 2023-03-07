@@ -1,9 +1,9 @@
-function method BigUnion<A>(S: set<set<A>>): set<A>
+ function BigUnion<A>(S: set<set<A>>): set<A>
 {
   set X, x | X in S && x in X :: x
 }
 
-function method abs(x: int): int
+ function abs(x: int): int
 {
   if x < 0 then
     -x
@@ -24,13 +24,13 @@ lemma reprProgression<A>(s1: set<A>, s2: set<A>, s3: set<A>)
 }
 
 module Array {
-  function method elems<A>(l: array<A>): set<A>
+   function elems<A>(l: array<A>): set<A>
     reads l
   {
     set x | x in l[..]
   }
 
-  function method melems<A>(l: array<A>): multiset<A>
+   function melems<A>(l: array<A>): multiset<A>
     reads l
   {
     multiset(l[..])
@@ -38,7 +38,7 @@ module Array {
 }
 
 module Seq {
-  function Rev<A>(xs: seq<A>): seq<A>
+   function Rev<A>(xs: seq<A>): seq<A>
     ensures |xs| == |Rev(xs)|
   {
     if |xs| == 0 then
@@ -73,7 +73,7 @@ module Seq {
     ensures forall i | 0 <= i < |xs|-1 :: Rev(xs)[i] <= Rev(xs)[i+1]
   {}
 
-  function Map<A,B>(f: A -> B, xs: seq<A>): seq<B>
+   function Map<A,B>(f: A -> B, xs: seq<A>): seq<B>
     reads (set x: A, o: object | x in xs && o in f.reads(x) :: o)
   {
     if xs == [] then
@@ -82,7 +82,7 @@ module Seq {
       [f(xs[0])] + Map(f, xs[1..])
   }
 
-  function Elems<A>(xs: seq<A>): set<A>
+   function Elems<A>(xs: seq<A>): set<A>
   {
     set x | x in xs
   }
@@ -117,7 +117,7 @@ module Seq {
     }
   }
 
-  function MElems<A>(xs: seq<A>): multiset<A>
+   function MElems<A>(xs: seq<A>): multiset<A>
   {
     multiset(xs)
   }
@@ -126,7 +126,7 @@ module Seq {
     ensures forall x :: x in xs <==> x in multiset(xs)
   {}
 
-  function Insert<A>(x: A, xs: seq<A>, i: nat): seq<A>
+   function Insert<A>(x: A, xs: seq<A>, i: nat): seq<A>
     requires 0 <= i <= |xs|
     ensures |xs| + 1 == |Insert(x, xs, i)|
     ensures i == 0 ==> Insert(x, xs, i) == [x] + xs
@@ -138,7 +138,7 @@ module Seq {
     xs[..i] + [x] + xs[i..]
   }
 
-  function Remove<A>(xs: seq<A>, i: nat): seq<A>
+   function Remove<A>(xs: seq<A>, i: nat): seq<A>
     requires 0 <= i < |xs|
     ensures i == 0 ==> Remove(xs, i) == xs[1..]
     ensures i == |xs| ==> Remove(xs, i) == xs[..|xs|-1]

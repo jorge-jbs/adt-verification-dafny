@@ -17,6 +17,20 @@ requires s1==s2
 ensures |s1|==|s2|
 {}
 
+lemma sizesrev(s1:set<int>,s2:set<int>)
+requires s1 <= s2
+requires |s1| < |s2|
+ensures s1 < s2
+{assert |s1|+1 <= |s2|;
+ if (s1=={}){}
+ else { 
+  var x:| x in s1;
+  if (x !in s2){ assert s1 < s2;}
+  else {
+    assert |s1-{x}|<|s2-{x}|==|s2|-1;
+    sizesrev(s1-{x},s2-{x});
+ }}
+}
 
 lemma sizesContained(s1:set<int>,s2:set<int>)
 requires s1 <= s2
@@ -172,7 +186,8 @@ ensures s-{minimum(s)} != {} && maximum(s)==maximum(s-{minimum(s)})
 lemma {:verify true} lMaxMinOne(s:set<int>)
 requires s != {} && |s|==1
 ensures maximum(s)==minimum(s)
-{}
+{ //var x :| s=={x};
+}
 
 function smaller(s:set<int>,x:int):set<int>
 ensures forall z | z in smaller(s,x) :: z in s && z < x
@@ -389,12 +404,13 @@ ensures maximum(s)==elemth(s,|s|-1)
   else{
         var minim:=minimum(s);
         lminimum(s);
-
+        assert |s| >= 2; 
       calc ==
       { elemth(s,|s|-1);{assert |s|-1 != 0;}
         elemth(s-{minim},|s|-2);
          { assert s-{minim}<s;
-         assert |s-{minim}|==|s|-1;
+         assert |s-{minim}|==|s|-1 >= 1;
+         assert s-{minim}!={};
            firstAndLast(s-{minim});}
         maximum(s-{minim});{max2Elems(s);}
         maximum(s);

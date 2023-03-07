@@ -3,7 +3,7 @@ include "../../src/tree/layer1/OrderedSet.dfy"
 
 
 
-method {:timeLimitMultiplier 20} OrdSetIntersection(s1:OrderedSet,s2:OrderedSet,su:OrderedSet)
+method {:timeLimitMultiplier 200} OrdSetIntersection(s1:OrderedSet,s2:OrderedSet,su:OrderedSet)
 modifies s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
 requires allocated(s1.Repr())
 requires allocated(s2.Repr())

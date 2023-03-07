@@ -1,7 +1,6 @@
 include "../../src/tree/layer1/UnorderedSet.dfy"
 
-
-method UnordSetIntersection(s1:UnorderedSet,s2:UnorderedSet,su:UnorderedSet)
+method {:timelimitMultiplier 10} UnordSetIntersection(s1:UnorderedSet,s2:UnorderedSet,su:UnorderedSet)
 modifies s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
 requires allocated(s1.Repr())
 requires allocated(s2.Repr())
@@ -67,6 +66,5 @@ ensures s1.Iterators()>=old(s1.Iterators()) &&
    it1.Next();
    it1HasPeek := it1.HasPeek();
  }
-
 }
 

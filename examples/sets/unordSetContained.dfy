@@ -1,6 +1,4 @@
-//include "../../src/Utils.dfy"
 include "../../src/tree/layer1/UnorderedSet.dfy"
-
 
 method UnordSetContained(s1:UnorderedSet,s2:UnorderedSet) returns (b:bool)
 modifies s1, s1.Repr(), s2, s2.Repr()
