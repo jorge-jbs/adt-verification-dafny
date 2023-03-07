@@ -193,6 +193,7 @@ module LinkedTree.RBRemove {
     ensures fresh(elems(newSk)-elems(sk))
     ensures allocated(elems(newSk))
   {
+    ghost var t := TreeModelRec(sk);
     if node.left == null {
       newNode := node.right;
       newSk := sk.right;
@@ -201,8 +202,25 @@ module LinkedTree.RBRemove {
       //reveal rb;
       //reveal rl;
     } else {
+      ghost var t' :=
+        if RB.isBlack(t.left) && !RB.isRed(t.left.left) then
+          RBr.MoveRedLeftSpec(t);
+          RBr.MoveRedLeft(t)
+        else
+          t;
+      ghost var (l', minK, minV) := RBr.RemoveMin(t'.left);
+      ghost var t'' := RBi.Restore(
+          RB.Node(
+            l',
+            t'.key,
+            t'.value,
+            t'.right,
+            t'.color
+          )
+        );
       newNode := node;
       newSk := sk;
+      assert TreeModelRec(newSk) == t;
       isRedProp(newNode.left.left, newSk.left.left);
       if isBlack(newNode.left) && !isRed(newNode.left.left) {
         RBr.MoveRedLeftSpec(TreeModelRec(newSk));
@@ -215,6 +233,8 @@ module LinkedTree.RBRemove {
       var newNodeLeft;
       ghost var newSkLeft;
       label PreRec:
+      assert TreeModelRec(newSk) == t';
+      assert TreeModelRec(newSk.right) == t'.right;
       assert RB.size(TreeModelRec(newSk.left)) < RB.size(old(TreeModelRec(sk)));
       assert ValidRec(newNode.left, newSk.left);
       assert SearchTreeRec(newSk.left);
@@ -232,6 +252,10 @@ module LinkedTree.RBRemove {
       assert ValidRec(newNode.right, newSk.right);
       RBr.RemoveMinSpec(TreeModelRec(newSk.left));
       newNodeLeft, newSkLeft, removedNode := RemoveMinRec(newNode.left, newSk.left);
+      assert removedNode.key == minK;
+      assert removedNode.value == minV;
+      assert TreeModelRec(newSkLeft) == l';
+      assert TreeModelRec(newSk.right) == t'.right;
       assert unchanged@PreRec(elems(newSk.right));
       assert ValidRec(newNode.right, newSk.right);
       assert elems(newSk.left) !! elems(newSk.right);
@@ -240,6 +264,10 @@ module LinkedTree.RBRemove {
       assert ValidRec(newNodeLeft, newSkLeft);
       newNode.left := newNodeLeft;
       newSk := Node(newSkLeft, newNode, newSk.right);
+      assert removedNode.key == minK;
+      assert removedNode.value == minV;
+      assert TreeModelRec(newSkLeft) == l';
+      assert TreeModelRec(newSk.right) == t'.right;
       assert ValidRec(newNode.left, newSk.left);
       assert allocated(elems(newSk)) by {
         AllocatedAll(elems(newSk));
@@ -247,10 +275,19 @@ module LinkedTree.RBRemove {
       assert elems(newSk) <= elems(sk);
       //assert ValidRec(newNode.left, newSk.left);
       assert ValidRec(newNode, newSk);
+      assert TreeModelRec(newSk) == RB.Node(
+        l',
+        t'.key,
+        t'.value,
+        t'.right,
+        t'.color
+      );
       newNode, newSk := Restore(newNode, newSk);
-      assume false;
       assert ValidRec(newNode, newSk);
       assert TreeModelRec(newSk) == RBr.RemoveMin(old(TreeModelRec(sk))).0;
+      assume false;
+      assert removedNode.key == RBr.RemoveMin(old(TreeModelRec(sk))).1;
+      assert removedNode.value == RBr.RemoveMin(old(TreeModelRec(sk))).2;
     }
   }
 }
