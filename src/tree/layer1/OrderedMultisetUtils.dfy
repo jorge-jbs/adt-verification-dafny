@@ -232,7 +232,7 @@ ensures maximum(s)==elemth(s,|s|-1)
           }
          maximum(s);
       }
-      assume maximum(s)==elemth(s,|s|-1);
+      assert maximum(s)==elemth(s,|s|-1);
   }}
 
 

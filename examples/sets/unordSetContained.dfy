@@ -18,7 +18,6 @@ ensures s1.Model()==old(s1.Model()) && s2.Model()==old(s2.Model())
 ensures b == (s1.Model() <= s2.Model())
 
 ensures s1.Iterators() >= old(s1.Iterators()) && s2.Iterators() >= old(s2.Iterators())
-
 {
  var it1:=s1.First(); var it2:UnorderedSetIterator;
  assert it1.Traversed()=={};
