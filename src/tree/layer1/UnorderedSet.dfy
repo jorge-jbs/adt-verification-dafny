@@ -1,22 +1,23 @@
  include "../../../src/ADT.dfy"
 
+type K = int
 
-trait UnorderedSetIterator<A> {
-  function Parent(): UnorderedSet<A>
+trait UnorderedSetIterator {
+  function Parent(): UnorderedSet
     reads this
 
   predicate Valid()
     reads this, Parent(), Parent().Repr()
     ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
 
-  function Traversed():set<A>
+  function Traversed():set<K>
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid() 
     ensures Traversed() <= Parent().Model()
     ensures 0 <= |Traversed()| <= |Parent().Model()|
 
-  function Peek?():A
+  function Peek?():K
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid() 
@@ -27,8 +28,7 @@ trait UnorderedSetIterator<A> {
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
-    ensures HasPeek?() <==> Traversed() < Parent().Model() &&  |Traversed()| < |Parent().Model()| 
-    //ensures HasPeek?() ==> |Traversed()| < |Parent().Model()| 
+    ensures HasPeek?() ==> Traversed() < Parent().Model() &&  |Traversed()| < |Parent().Model()| 
     ensures !HasPeek?() ==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()| 
 
   
@@ -45,8 +45,11 @@ trait UnorderedSetIterator<A> {
     ensures Valid()
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
-    ensures Parent().Model() == old(Parent().Model()) 
-    ensures Traversed() == old(Traversed()) 
+    ensures Parent().Model() == old(Parent().Model())
+    ensures |Parent().Model()| == old(|Parent().Model()|) 
+    ensures Traversed() == old(Traversed())
+    ensures |Traversed()| == old(|Traversed()|) 
+
     ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
     ensures b == HasPeek?()
 
@@ -55,6 +58,7 @@ trait UnorderedSetIterator<A> {
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed())
+      && |it.Traversed()| == old(|it.Traversed()|)
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
   method Next() 
@@ -71,18 +75,21 @@ trait UnorderedSetIterator<A> {
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
+    ensures |Parent().Model()| == old(|Parent().Model()|)
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures Traversed() == {old(Peek?())}+old(Traversed()) 
-    
+    ensures |Traversed()| == 1 + old(|Traversed()|)
+
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && (it != this ==> it.Traversed() == old(it.Traversed())
+                         && |it.Traversed()| == old(|it.Traversed()|)
                          && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
 
 
-  method Peek() returns (p:A) 
+  method Peek() returns (p:K) 
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
@@ -96,8 +103,10 @@ trait UnorderedSetIterator<A> {
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
-
-    ensures Traversed() == old(Traversed()) 
+    ensures |Parent().Model()| == old(|Parent().Model()|)
+    ensures Traversed() == old(Traversed())
+    ensures |Traversed()| == old(|Traversed()|)
+ 
     ensures HasPeek?() && Peek?()==old(Peek?()) // no debería ser necesario pero lo es 
     ensures p == Peek?()
 
@@ -106,9 +115,10 @@ trait UnorderedSetIterator<A> {
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed())
+      && |it.Traversed()| == old(|it.Traversed()|)
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-  method Copy() returns (it: UnorderedSetIterator<A>)
+  method Copy() returns (it: UnorderedSetIterator)
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
@@ -122,23 +132,29 @@ trait UnorderedSetIterator<A> {
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
+    ensures |Parent().Model()| == old(|Parent().Model()|)
     ensures Traversed() == old(Traversed()) 
+    ensures |Traversed()| == old(|Traversed()|)
+
     ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
 
     ensures it.Valid()
     ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures Parent() == it.Parent()
     ensures Traversed() == it.Traversed()
+    ensures |Traversed()| == |it.Traversed()|
+
     ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed()) 
+      && |it.Traversed()| == old(|it.Traversed()|)
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
 }
 
-trait UnorderedSet<A(==)> extends ADT<set<A>> {
+trait UnorderedSet extends ADT<set<K>> {
 
    predicate Empty?()
     reads this, Repr()
@@ -156,13 +172,15 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
     ensures b == Empty?()
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
-      && it.Traversed() == old(it.Traversed()) 
+      && it.Traversed() == old(it.Traversed())
+      && |it.Traversed()| == old(|it.Traversed()|) 
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
 
@@ -175,22 +193,24 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
     ensures s == |Model()|
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
-      && it.Traversed() == old(it.Traversed()) 
+      && it.Traversed() == old(it.Traversed())
+      && |it.Traversed()| == old(|it.Traversed()|)
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
 
-   function Iterators(): set<UnorderedSetIterator<A>>
+   function Iterators(): set<UnorderedSetIterator>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
 
-  method First() returns (it: UnorderedSetIterator<A>)
+  method First() returns (it: UnorderedSetIterator)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -199,6 +219,7 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
 
     ensures fresh(it)
     ensures Iterators() >= {it} + old(Iterators())
@@ -208,10 +229,11 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
-      && it.Traversed() == old(it.Traversed()) 
+      && it.Traversed() == old(it.Traversed())
+      && |it.Traversed()| == old(|it.Traversed()|) 
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-  method Contains(x:A) returns (b:bool)
+  method Contains(x:K) returns (b:bool)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -220,17 +242,19 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
     ensures b == (x in Model())
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
-      && it.Traversed() == old(it.Traversed()) 
+      && it.Traversed() == old(it.Traversed())
+      && |it.Traversed()| == old(|it.Traversed()|)  
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
 
-  method Add(x:A)
+  method Add(x:K)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -239,10 +263,11 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + {x} 
+    ensures |Model()| == 1 + old(|Model()|) 
 
     ensures Iterators() >= old(Iterators())
 
-  method Remove(x:A) 
+  method Remove(x:K) 
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -251,10 +276,11 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) - {x} 
+    ensures |Model()| == old(|Model()|) - 1 
 
     ensures Iterators() >= old(Iterators())
 
-  method Find(x:A) returns (newt:UnorderedSetIterator<A>)
+  method Find(x:K) returns (newt:UnorderedSetIterator)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -263,21 +289,23 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
-    
+    ensures |Model()| == old(|Model()|)
+
     ensures fresh(newt) 
     ensures newt.Valid() && newt.Parent() == this
     ensures x in old(Model()) ==> newt.HasPeek?() && newt.Peek?() == x 
-    ensures x !in old(Model()) ==> newt.Traversed() == Model()
+    ensures x !in old(Model()) ==> newt.Traversed() == Model() && |newt.Traversed()| == |Model()|
 
     ensures Iterators() >= {newt}+old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed()) 
+      && |it.Traversed()| == old(|it.Traversed()|)
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
 
-  method Insert(mid: UnorderedSetIterator<A>, x: A) returns (newt:UnorderedSetIterator<A>)
+  method Insert(mid: UnorderedSetIterator, x: K) returns (newt:UnorderedSetIterator)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -286,6 +314,7 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + {x}
+    ensures |Model()| == old(|Model()|) + 1
 
     requires mid.Valid() 
     requires mid.Parent() == this
@@ -298,7 +327,7 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     ensures Iterators() >= {newt}+old(Iterators())
      //points either to the inserted elemento or to the already existing one
 
-  method Erase(mid:UnorderedSetIterator<A>) returns (next: UnorderedSetIterator<A>)
+  method Erase(mid:UnorderedSetIterator) returns (next: UnorderedSetIterator)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -311,16 +340,18 @@ trait UnorderedSet<A(==)> extends ADT<set<A>> {
     requires mid in Iterators()
     ensures Valid()
     ensures Model() == old(Model())-{old(mid.Peek?())}
-    
+    ensures |Model()| == old(|Model()|) - 1
+
     ensures fresh(next)
     ensures next.Valid() && next.Parent() == this 
     ensures next.Traversed() == old(mid.Traversed()) 
+    ensures |next.Traversed()| == old(|mid.Traversed()|) 
     
     ensures Iterators() >= {next}+old(Iterators())
 
 }
 
-method {:verify true} main(s:UnorderedSet<int>)
+method {:verify true} main(s:UnorderedSet)
   modifies s, s.Repr()
   requires allocated(s.Repr())
   ensures fresh(s.Repr()-old(s.Repr()))
@@ -355,7 +386,7 @@ method {:verify true} main(s:UnorderedSet<int>)
   assert it.Traversed() == s.Model();  
 }
 
-method {:verify false} {:timeLimitMultiplier 100} otry(s:UnorderedSet<int>)
+method {:verify false} {:timeLimitMultiplier 100} otry(s:UnorderedSet)
   modifies s, s.Repr()
   requires allocated(s.Repr())
   ensures fresh(s.Repr()-old(s.Repr()))

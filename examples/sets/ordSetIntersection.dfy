@@ -133,7 +133,7 @@ ensures s1.Iterators()>=old(s1.Iterators()) &&
 
     }
   else 
-    { 
+    {
       assert forall y | y in s1.Model()-it1.Traversed():: it2.Peek?()<it1.Peek?()<=y;
       assert it1.Peek?() > it2.Peek?();
 

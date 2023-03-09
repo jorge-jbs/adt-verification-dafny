@@ -2,8 +2,8 @@ include "../../../src/tree/layer1/UnorderedSet.dfy"
 include "../../../src/tree/layer1/OrderedSetUtils.dfy"
 
 
-trait OrderedSetIterator extends UnorderedSetIterator<int>{
-   function Parent(): UnorderedSet<int>
+trait OrderedSetIterator extends UnorderedSetIterator{
+   function Parent(): UnorderedSet
     reads this
     ensures Parent() is OrderedSet
   
@@ -22,14 +22,14 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
   // Index(), Traversed() or Peek?()
   //When HasPeek is not true we need Index
 
-   function Index(): int
+   function Index(): K
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
     ensures -1 <= Index() <= |Parent().Model()|
 
 
-   function Traversed():set<int>
+   function Traversed():set<K>
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid() 
@@ -47,7 +47,7 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
       smaller(Parent().Model(),elemth(Parent().Model(),Index()))
     }
     
-   function Peek?():int
+   function Peek?():K
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid() 
@@ -98,7 +98,8 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
 
     ensures Index() == old(Index())//NEW
 
-    ensures Traversed() == old(Traversed()) 
+    ensures Traversed() == old(Traversed())
+    ensures |Traversed()| == old(|Traversed()|)  
     ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
     ensures b == HasPeek?()
 
@@ -107,6 +108,7 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed())
+      && |it.Traversed()| == old(|it.Traversed()|)
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) :: //NEW
@@ -131,20 +133,21 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures Traversed() == {old(Peek?())}+old(Traversed()) 
-    ensures |Traversed()|==1+|old(Traversed())|
+    ensures |Traversed()| == 1 + |old(Traversed())|
     ensures Index() == old(Index()) + 1 //NEW 
     
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && (it != this ==> it.Traversed() == old(it.Traversed())
+                         && |it.Traversed()| == old(|it.Traversed()|)
                          && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
     
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this:://NEW
       (it is OrderedSetIterator && 
       (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()) )
 
-  method Peek() returns (p:int) 
+  method Peek() returns (p:K) 
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
@@ -162,7 +165,9 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
 
     ensures Index() == old(Index()) //NEW 
 
-    ensures Traversed() == old(Traversed()) && Peek?()==old(Peek?()) // no debería ser necesario pero lo es 
+    ensures Traversed() == old(Traversed())
+    ensures |Traversed()| == old(|Traversed()|)
+
     ensures HasPeek?() && Peek?()==old(Peek?()) // no debería ser necesario pero lo es 
     ensures p == Peek?()
     
@@ -171,6 +176,7 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed())
+      && |it.Traversed()| == old(|it.Traversed()|)
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()):://NEW
@@ -201,13 +207,14 @@ trait OrderedSetIterator extends UnorderedSetIterator<int>{
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && (it != this ==> it.Traversed() == old(it.Traversed())
+                         && |it.Traversed()| == old(|it.Traversed()|)
                          && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
  
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) &&  it != this:://NEW
       (it is OrderedSetIterator &&
       (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()) )
 
-method Copy() returns (it: UnorderedSetIterator<int>)
+method Copy() returns (it: UnorderedSetIterator)
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
@@ -225,7 +232,9 @@ method Copy() returns (it: UnorderedSetIterator<int>)
 
     ensures Index() == old(Index()) //NEW
 
-    ensures Traversed() == old(Traversed()) 
+    ensures Traversed() == old(Traversed())
+    ensures |Traversed()| == old(|Traversed()|)
+
     ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
 
 
@@ -235,11 +244,15 @@ method Copy() returns (it: UnorderedSetIterator<int>)
 
     ensures it is OrderedSetIterator
     ensures  (it as OrderedSetIterator).Index() == Index()
-    ensures Traversed() == it.Traversed() && (it.HasPeek?() ==> Peek?()==it.Peek?())
+    ensures Traversed() == it.Traversed() 
+    ensures |Traversed()| == |it.Traversed()|
+    
+    ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed()) 
+      && |it.Traversed()| == old(|it.Traversed()|)
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
     
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) :: //NEW
@@ -248,7 +261,7 @@ method Copy() returns (it: UnorderedSetIterator<int>)
 
 }
 
-trait OrderedSet extends UnorderedSet<int>{
+trait OrderedSet extends UnorderedSet{
   
 
    //Novelties respect UnorderedSet
@@ -276,7 +289,8 @@ trait OrderedSet extends UnorderedSet<int>{
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
-      && it.Traversed() == old(it.Traversed()) 
+      && it.Traversed() == old(it.Traversed())
+      && |it.Traversed()| == old(|it.Traversed()|)  
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
     ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
@@ -300,6 +314,7 @@ trait OrderedSet extends UnorderedSet<int>{
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed()) 
+      && |it.Traversed()| == old(|it.Traversed()|) 
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
     ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
@@ -307,13 +322,13 @@ trait OrderedSet extends UnorderedSet<int>{
       (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()))
 
 
-   function Iterators(): set<UnorderedSetIterator<int>>
+   function Iterators(): set<UnorderedSetIterator>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() ::  it in Repr() && it.Parent() == this 
     ensures forall it | it in Iterators() :: it is OrderedSetIterator
 
-  method First() returns (it: UnorderedSetIterator<int>)
+  method First() returns (it: UnorderedSetIterator)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -333,7 +348,8 @@ trait OrderedSet extends UnorderedSet<int>{
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
-      && it.Traversed() == old(it.Traversed()) 
+      && it.Traversed() == old(it.Traversed())
+      && |it.Traversed()| == old(|it.Traversed()|)  
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
     
     ensures forall it | it in old(Iterators()) && old(it.Valid()):://NEW
@@ -362,7 +378,8 @@ trait OrderedSet extends UnorderedSet<int>{
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
-      && it.Traversed() == old(it.Traversed()) 
+      && it.Traversed() == old(it.Traversed())
+      && |it.Traversed()| == old(|it.Traversed()|)  
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
     ensures forall it | it in old(Iterators()) && old(it.Valid()):://NEW
@@ -370,7 +387,7 @@ trait OrderedSet extends UnorderedSet<int>{
       (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()) )
 
 
-  method Contains(x:int) returns (b:bool)
+  method Contains(x:K) returns (b:bool)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -386,7 +403,8 @@ trait OrderedSet extends UnorderedSet<int>{
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
-      && it.Traversed() == old(it.Traversed()) 
+      && it.Traversed() == old(it.Traversed())
+      && |it.Traversed()| == old(|it.Traversed()|) 
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
     
     ensures forall it | it in old(Iterators()) && old(it.Valid()):://NEW
@@ -398,7 +416,7 @@ trait OrderedSet extends UnorderedSet<int>{
   //Add and Remove remain the same
 
 
-  method Find(x:int) returns (newt:UnorderedSetIterator<int>)
+  method Find(x:K) returns (newt:UnorderedSetIterator)
    modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -413,7 +431,7 @@ trait OrderedSet extends UnorderedSet<int>{
     ensures fresh(newt) 
     ensures newt.Valid() && newt.Parent()==this
     ensures x in old(Model()) ==> newt.HasPeek?() && newt.Peek?() == x 
-    ensures x !in old(Model()) ==> newt.Traversed() == Model()
+    ensures x !in old(Model()) ==> newt.Traversed() == Model() && |newt.Traversed()| == |Model()|
 
     ensures x in old(Model()) ==> (newt as OrderedSetIterator).Index() == |smaller(Model(),x)| //NEW
     ensures x !in old(Model()) ==> (newt as OrderedSetIterator).Index() == |Model()|
@@ -423,13 +441,14 @@ trait OrderedSet extends UnorderedSet<int>{
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed()) 
+      && |it.Traversed()| == old(|it.Traversed()|)
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
     ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
       (it is OrderedSetIterator &&
       (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()))
 
-  method Insert(mid: UnorderedSetIterator<int>, x: int) returns (newt:UnorderedSetIterator<int>)
+  method Insert(mid: UnorderedSetIterator, x: K) returns (newt:UnorderedSetIterator)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -438,7 +457,8 @@ trait OrderedSet extends UnorderedSet<int>{
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + {x}
-    
+    ensures |Model()| == old(|Model()|) + 1
+
     requires mid.Valid() 
     //mid just a hint, it is inserted where corresponds
     //efficiently or not if it respects order
@@ -455,7 +475,7 @@ trait OrderedSet extends UnorderedSet<int>{
     ensures Iterators() >= {newt}+old(Iterators())
 
 
-  method Erase(mid:UnorderedSetIterator<int>) returns (next: UnorderedSetIterator<int>)
+  method Erase(mid:UnorderedSetIterator) returns (next: UnorderedSetIterator)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -471,11 +491,13 @@ trait OrderedSet extends UnorderedSet<int>{
 
     ensures Valid()
     ensures Model()== old(Model())-{old(mid.Peek?())}
+    ensures |Model()| == old(|Model()|) - 1
     
     ensures next is OrderedSetIterator
     ensures fresh(next)
     ensures next.Valid() && next.Parent()==this 
     ensures next.Traversed()==old(mid.Traversed()) 
+    ensures |next.Traversed()| == old(|mid.Traversed()|) 
 
     ensures mid is OrderedSetIterator && (next as OrderedSetIterator).Index() == old((mid as OrderedSetIterator).Index()) 
 
@@ -485,7 +507,7 @@ trait OrderedSet extends UnorderedSet<int>{
 
 
 
-/*method {:verify false} {:timeLimitMultiplier 100} try(s:OrderedSet)
+method {:verify false} {:timeLimitMultiplier 100} try(s:OrderedSet)
 modifies s, s.Repr()
 requires s.Valid() && s.Empty?()
 requires allocated(s.Repr())
@@ -556,4 +578,4 @@ ensures  allocated(s.Repr())
   assert !it5.HasPeek?();*/
 
 
-}*/
+}
