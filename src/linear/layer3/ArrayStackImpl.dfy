@@ -11,7 +11,7 @@ class ArrayStackImpl<A> extends Stack<A> {
     {list}
   }
 
-  function ReprFamily(n: nat): set<object>
+  ghost function ReprFamily(n: nat): set<object>
     decreases n
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
@@ -22,14 +22,14 @@ class ArrayStackImpl<A> extends Stack<A> {
       ReprFamily(n-1)
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Repr()
   {
     && ReprDepth == 1
     && 0 <= size <= list.Length
   }
 
-  function Model(): seq<A>
+  ghost function Model(): seq<A>
     reads this, list
     requires Valid()
     ensures Model() == Seq.Rev(list[0..size])

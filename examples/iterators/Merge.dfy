@@ -1,7 +1,7 @@
 include "../../src/linear/layer1/List.dfy"
 include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
-include "../../src/UtilsAux.dfy"
+include "../../src/Utils.dfy"
 
 predicate Smaller(xs1:seq<int>,xs2:seq<int>)
 {forall i,j:: 0 <= i < |xs1| && 0 <= j < |xs2| ==> xs1[i] <= xs2[j]}
@@ -21,11 +21,11 @@ method {:timeLimitMultiplier 100} MyMerge(l1:LinkedList<int>,l2:LinkedList<int>,
 
   requires l1.Valid() && l2.Valid() && ml.Valid() && ml.Empty?()
   requires {l1}+l1.Repr()!!{l2}+l2.Repr()  && {l1}+l1.Repr()!!{ml}+ml.Repr() && {l2}+l2.Repr()!!{ml}+ml.Repr()
-  requires  Sorted(l1.Model()) && Sorted(l2.Model())
+  requires  Seq.Sorted(l1.Model()) && Seq.Sorted(l2.Model())
 
   ensures l1.Valid() && l2.Valid() && ml.Valid()
   ensures l1.Model() == old(l1.Model()) && l2.Model() == old(l2.Model())
-  ensures Sorted(ml.Model())
+  ensures Seq.Sorted(ml.Model())
   ensures multiset(ml.Model()) == multiset(l1.Model())+multiset(l2.Model())
   ensures {l1}+l1.Repr()!!{l2}+l2.Repr()  && {l1}+l1.Repr()!!{ml}+ml.Repr() && {l2}+l2.Repr()!!{ml}+ml.Repr()
 
@@ -56,7 +56,7 @@ method {:timeLimitMultiplier 100} MyMerge(l1:LinkedList<int>,l2:LinkedList<int>,
     invariant it1.Index() >= 0 && it2.Index() >= 0 
     invariant l1.Model() == old(l1.Model()) && l2.Model() == old(l2.Model())
     invariant it1.Index()+it2.Index() == |ml.Model()|
-    invariant Sorted(ml.Model()) && Sorted(l1.Model()) && Sorted(l2.Model())
+    invariant Seq.Sorted(ml.Model()) && Seq.Sorted(l1.Model()) && Seq.Sorted(l2.Model())
     invariant Smaller(ml.Model(),l1.Model()[it1.Index()..]) && Smaller(ml.Model(),l2.Model()[it2.Index()..])
     invariant multiset(ml.Model()) == multiset(l1.Model()[..it1.Index()])+multiset(l2.Model()[..it2.Index()])
     invariant it1HasPeek == it1.HasPeek?()
@@ -116,7 +116,7 @@ method {:timeLimitMultiplier 100} MyMerge(l1:LinkedList<int>,l2:LinkedList<int>,
     invariant it1.Index() >= 0 && it2.Index() >= 0 
     invariant l1.Model() == old(l1.Model()) && l2.Model() == old(l2.Model())
     invariant it1.Index()+it2.Index() == |ml.Model()|
-    invariant Sorted(ml.Model()) && Sorted(l1.Model()) && Sorted(l2.Model())
+    invariant Seq.Sorted(ml.Model()) && Seq.Sorted(l1.Model()) && Seq.Sorted(l2.Model())
     invariant Smaller(ml.Model(),l1.Model()[it1.Index()..]) && Smaller(ml.Model(),l2.Model()[it2.Index()..])
     invariant it1.HasPeek?() ==> it2.Index() == |l2.Model()|
     invariant multiset(ml.Model()) == multiset(l1.Model()[..it1.Index()])+multiset(l2.Model()[..it2.Index()])
@@ -165,7 +165,7 @@ method {:timeLimitMultiplier 100} MyMerge(l1:LinkedList<int>,l2:LinkedList<int>,
     invariant l1.Model() == old(l1.Model()) && l2.Model() == old(l2.Model())
     invariant it1.Index()+it2.Index() == |ml.Model()|
     invariant it1.Index() == |l1.Model()|
-    invariant Sorted(ml.Model()) && Sorted(l1.Model()) && Sorted(l2.Model())
+    invariant Seq.Sorted(ml.Model()) && Seq.Sorted(l1.Model()) && Seq.Sorted(l2.Model())
     invariant Smaller(ml.Model(),l2.Model()[it2.Index()..])
     invariant it2.HasPeek?() ==> it1.Index() == |l1.Model()|
     invariant multiset(ml.Model()) == multiset(l1.Model()[..it1.Index()])+multiset(l2.Model()[..it2.Index()])

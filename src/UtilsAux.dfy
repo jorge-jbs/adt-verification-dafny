@@ -1,8 +1,14 @@
+// TODO: All the functions in this module are either unused, or duplicated
+// in more specific modules.
+
+
+// TODO: unused
 lemma freshness1(x: set<object>, z: set<object>)
   ensures (forall y {:trigger y in x, y in z} | y in x - z :: fresh(y)) <==>
           (forall y | y in x && y !in z :: fresh(y))
 {}
 
+// TODO: unused
 lemma freshness2(x: set<object>, z: set<object>)
   ensures (forall y | y in x - z :: fresh(y)) <==> (forall y | y in x && y !in z :: fresh(y))
 {
@@ -15,6 +21,7 @@ lemma freshness2(x: set<object>, z: set<object>)
   assert forall y | y in x && y !in z :: fresh(y);
 }
 
+// TODO: unused
 lemma freshness3(x: set<object>, z: set<object>)
   ensures (forall y | y in x - z :: fresh(y)) <==> fresh(x-z)
 {
@@ -26,6 +33,7 @@ lemma freshness3(x: set<object>, z: set<object>)
   }
 }
 
+// TODO: unused - duplicated in FilterEven.dfy
 function FilterR<A>(xs: seq<A>,f: A -> bool): seq<A>
   ensures xs==[] ==> FilterR(xs,f) == xs
   ensures xs!=[] && f(xs[|xs|-1]) ==> FilterR(xs, f) == FilterR(xs[..|xs|-1], f)+[xs[|xs|-1]]
@@ -40,6 +48,7 @@ function FilterR<A>(xs: seq<A>,f: A -> bool): seq<A>
     FilterR(xs[..|xs|-1],f)
 }
 
+// TODO: unused - duplicated in FilterEven.dfy
 // This is the map that proves the subsequence property
 function FilterRMap<A>(xs: seq<A>, f: A -> bool): map<int, int>
 {
@@ -48,6 +57,7 @@ function FilterRMap<A>(xs: seq<A>, f: A -> bool): map<int, int>
   else FilterRMap(xs[..|xs|-1], f)
 }
 
+// TODO: unused - duplicated in FilterEven.dfy
 lemma subSecFilter<A>(xs: seq<A>,f: A -> bool)
   ensures subSec(FilterR(xs, f), xs, FilterRMap(xs, f))
 {
@@ -75,6 +85,7 @@ lemma subSecFilter<A>(xs: seq<A>,f: A -> bool)
   }
 }
 
+// TODO: unused
 lemma PropFilter<A>(xs: seq<A>,f: A -> bool)
   requires forall i :: 0 <= i < |xs| && f(xs[i]) ==> xs[i] in FilterR(xs,f)
   ensures isSubSec(FilterR(xs, f), xs)
@@ -82,6 +93,7 @@ lemma PropFilter<A>(xs: seq<A>,f: A -> bool)
   subSecFilter(xs, f);
 }
 
+// TODO: unused
 function FilterL<A>(xs: seq<A>,f: A -> bool): seq<A>
   ensures xs==[] ==> FilterL(xs,f) == xs
   ensures xs!=[] && f(xs[0]) ==> FilterL(xs,f)== [xs[0]]+FilterL(xs[1..],f)
@@ -93,28 +105,21 @@ function FilterL<A>(xs: seq<A>,f: A -> bool): seq<A>
   else FilterL(xs[1..],f)
 }
 
-// TODO
+// TODO: unused
 lemma filter<A>(xs: seq<A>, f: A -> bool)
   ensures FilterR(xs,f) == FilterL(xs,f)
 
-predicate Sorted(xs: seq<int>)
-{
-  forall i, j :: 0 <= i <= j < |xs| ==> xs[i] <= xs[j]
-}
 
-predicate StrictSorted(xs: seq<int>)
-{
-  forall i, j :: 0 <= i < j < |xs| ==> xs[i] < xs[j]
-}
-
-predicate subSec<A>(xs1: seq<A>, xs2: seq<A>, f: map<int, int>)
+// TODO: unused and duplicated in FilterEven.dfy
+ghost predicate subSec<A>(xs1: seq<A>, xs2: seq<A>, f: map<int, int>)
 {
   && (forall i :: (0 <= i < |xs1| <==> i in f))
   && (forall i :: i in f ==> 0 <= i < |xs1| && 0 <= f[i] < |xs2| && xs2[f[i]] == xs1[i])
   && (forall i, j :: i in f && j in f && i!=j ==> f[i]!=f[j])
 }
 
-predicate isSubSec<A>(xs1: seq<A>, xs2: seq<A>)
+// TODO: unused and duplicated in FilterEven.dfy
+ghost predicate isSubSec<A>(xs1: seq<A>, xs2: seq<A>)
 {
   exists f: map<int, int> :: subSec(xs1, xs2, f)
 }

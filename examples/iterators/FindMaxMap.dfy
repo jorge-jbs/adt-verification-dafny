@@ -3,7 +3,7 @@ include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
 include "../../src/Iterators_Utils.dfy"
 
-function IdMap(xs:seq<int>):map<int,int>
+ghost function IdMap(xs:seq<int>):map<int,int>
 {map i | -1 <= i <= |xs| :: i}
 
 method FindMax(l: LinkedList<int>) returns (max: ListIterator<int>, ghost mit:map<int,int>)

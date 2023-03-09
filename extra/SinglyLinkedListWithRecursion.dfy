@@ -5,7 +5,7 @@ class Node<A> {
   var data: A;
   var next: Node?<A>;
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, repr
   {
     && this in repr
@@ -19,7 +19,7 @@ class Node<A> {
       )
   }
 
-  predicate ValidUntil(n: Node<A>)
+  ghost predicate ValidUntil(n: Node<A>)
     reads this, repr
   {
     && this in repr
@@ -36,7 +36,7 @@ class Node<A> {
       )
   }
 
-  function Model(): seq<A>
+  ghost function Model(): seq<A>
     decreases repr
     reads this, repr
     requires Valid()
@@ -59,20 +59,20 @@ class Node<A> {
     next := null;
   }
 
-  predicate IsPrevOf(n: Node<A>)
+  ghost predicate IsPrevOf(n: Node<A>)
     reads this
   {
     next == n
   }
 
-  predicate IsBefore(n: Node<A>)
+  ghost predicate IsBefore(n: Node<A>)
     reads this
   {
     n in repr
   }
 }
 
-function ReprAux<A>(node: Node?<A>): set<object>
+ghost function ReprAux<A>(node: Node?<A>): set<object>
   reads node
 {
   if node == null then
@@ -81,7 +81,7 @@ function ReprAux<A>(node: Node?<A>): set<object>
     node.repr
 }
 
-predicate ValidAux<A>(node: Node?<A>)
+ghost predicate ValidAux<A>(node: Node?<A>)
   reads node, ReprAux(node)
 {
   node != null ==> node.Valid()
@@ -90,7 +90,7 @@ predicate ValidAux<A>(node: Node?<A>)
 class SinglyLinkedListWithRecursion<A> {
   var head: Node?<A>
 
-  function Repr(): set<object>
+  ghost function Repr(): set<object>
     reads this, head
   {
     if head == null then
@@ -99,13 +99,13 @@ class SinglyLinkedListWithRecursion<A> {
       head.repr
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, head, Repr()
   {
     head != null ==> head.Valid()
   }
 
-  function Model(): seq<A>
+  ghost function Model(): seq<A>
     reads this, head, Repr()
     requires Valid()
   {
@@ -294,7 +294,7 @@ class SinglyLinkedListWithRecursion<A> {
     }
   }
 
-  static function TakeSeq(head: Node<A>, mid: Node<A>): (res: seq<Node<A>>)
+  static ghost function TakeSeq(head: Node<A>, mid: Node<A>): (res: seq<Node<A>>)
     decreases ReprAux(head)
     reads ReprAux(head)
     reads ReprAux(mid)

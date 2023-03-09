@@ -1,6 +1,6 @@
 include "../src/linear/layer1/Stack.dfy"
 
-predicate AdjacentSummits(v: seq<nat>, i: nat, j: nat)
+ghost predicate AdjacentSummits(v: seq<nat>, i: nat, j: nat)
   requires 0 <= i < j < |v|
 {
   && v[i] > v[j]

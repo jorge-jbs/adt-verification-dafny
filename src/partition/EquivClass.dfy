@@ -3,7 +3,7 @@ class EquivClass {
   // var height: nat;
   var parent: EquivClass?;
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, repr
   {
     if parent == null then
@@ -28,7 +28,7 @@ class EquivClass {
     repr := {this};
   }
 
-  predicate IsChildOf(p: EquivClass)
+  ghost predicate IsChildOf(p: EquivClass)
     reads this, repr
     // requires Valid()
   {
@@ -36,7 +36,7 @@ class EquivClass {
   }
 
   // The reflexive-transitive closure of `IsChildOf` (on valid EquivClasses)
-  predicate IsDescOf(p: EquivClass)
+  ghost predicate IsDescOf(p: EquivClass)
     reads this, repr
     // requires Valid()
   {

@@ -1,4 +1,4 @@
-function Dup<A>(xs: seq<A>): seq<A>
+ghost function Dup<A>(xs: seq<A>): seq<A>
 {
   if xs == [] then
     []
@@ -7,12 +7,12 @@ function Dup<A>(xs: seq<A>): seq<A>
 }
 
 //This is the map that proves the subsequence property
-function DupMap<A>(xs: seq<A>):map<int,int>
+ghost function DupMap<A>(xs: seq<A>):map<int,int>
 {
  (map i | 0<=i<|xs| :: 2*i)[-1:=-1]
 }
 
-function DupRev<A>(xs: seq<A>): seq<A>
+ghost function DupRev<A>(xs: seq<A>): seq<A>
   ensures 2*|xs| == |DupRev(xs)|
 {
   if xs == [] then
@@ -107,26 +107,26 @@ lemma {:induction xs} DupEls<A>(xs: seq<A>)
 }
 
 
-function DupI(i:int,j:int):int
+ghost function DupI(i:int,j:int):int
 ensures i == j ==> DupI(i,j) == 2*i
 ensures i != j ==> DupI(i,j) == 2*i+1
 {if (i == j) then 2*i
  else 2*i+1}
  
 
-function DupF(j:int):(int -> int) 
+ghost function DupF(j:int):(int -> int) 
 { i => DupI(i,j)}
 
 
-function DupInvariant(i:int,j:int):int
+ghost function DupInvariant(i:int,j:int):int
 ensures i < j  ==> DupInvariant(i,j) == 2*i+1
 ensures i >= j ==> DupInvariant(i,j) == j+i
 {if (i < j) then 2*i+1
  else i+j}
 
 
-function DupInvariantF(j:int):(int -> int) 
+ghost function DupInvariantF(j:int):(int -> int) 
 { i => DupInvariant(i,j) }
 
-function DupMapI<A>(xs:seq<A>,i:int):map<int,int>
+ghost function DupMapI<A>(xs:seq<A>,i:int):map<int,int>
 {(map it | -1 <= it <= |xs| :: if (it < i) then 2*it+1 else i+it)}

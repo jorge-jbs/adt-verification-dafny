@@ -23,13 +23,13 @@ class CNode<A(0)> {
     this.next := next;
   }
 
-  predicate IsPrevOf(n: CNode<A>)
+  ghost predicate IsPrevOf(n: CNode<A>)
     reads this
   {
     next == n
   }
 
-  predicate IsNextOf(n: CNode<A>)
+  ghost predicate IsNextOf(n: CNode<A>)
     reads this
   {
     prev == n
@@ -40,13 +40,13 @@ class CircularDoublyLinkedList<A(0)> {
   var phantom: CNode<A>;
   ghost var spine: seq<CNode<A>>;
 
-  function Repr(): set<object>
+  ghost function Repr(): set<object>
     reads this
   {
     set x | x in spine
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Repr()
   {
     && spine != []
@@ -100,7 +100,7 @@ class CircularDoublyLinkedList<A(0)> {
     DistinctSpineAux(0);
   }
 
-  static function ModelAux(xs: seq<CNode<A>>): seq<A>
+  static ghost function ModelAux(xs: seq<CNode<A>>): seq<A>
     reads set x | x in xs :: x`data
   {
     if xs == [] then
@@ -126,7 +126,7 @@ class CircularDoublyLinkedList<A(0)> {
     }
   }
 
-  function Model(): seq<A>
+  ghost function Model(): seq<A>
     reads this, spine
     requires Valid()
   {
@@ -161,7 +161,7 @@ class CircularDoublyLinkedList<A(0)> {
     ModelRelationWithSpineAux(spine[..|spine|-1], Model());
   }
 
-  function GetIndex(n: CNode<A>): nat
+  ghost function GetIndex(n: CNode<A>): nat
     reads this, Repr()
     requires Valid()
     requires n in Repr()

@@ -3,7 +3,7 @@ include "../../examples/iterators/FillArray.dfy"
 include "../../examples/iterators/DupElements.dfy"
 
 
-class Person{
+class Person {
   var id:nat;
   var age:nat;
   var name:string;
@@ -18,7 +18,6 @@ class Person{
   modifies this
   {
    name:=n;
-
   }
 }
 

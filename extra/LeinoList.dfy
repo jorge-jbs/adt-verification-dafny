@@ -21,7 +21,7 @@ class LNode<A> {
     }
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, repr
   {
     && this in repr

@@ -4,7 +4,7 @@ class DoublyLinkedListWithLast<A> {
   var list: DoublyLinkedList<A>;
   var last: DNode?<A>;
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, list, list.spine
   {
     && list.Valid()
@@ -15,13 +15,13 @@ class DoublyLinkedListWithLast<A> {
       )
   }
 
-  function Repr(): set<object>
+  ghost function Repr(): set<object>
     reads this, list
   {
     {list} + list.Repr()
   }
 
-  function Model(): seq<A>
+  ghost function Model(): seq<A>
     reads this, list, list.spine
     requires Valid()
   {
@@ -39,7 +39,7 @@ class DoublyLinkedListWithLast<A> {
     last := null;
   }
 
-  function method Front(): A
+  function Front(): A
     reads this, list, list.Repr()
     requires Valid()
     requires Model() != []
@@ -49,7 +49,7 @@ class DoublyLinkedListWithLast<A> {
     list.head.data
   }
 
-  function method Back(): A
+  function Back(): A
     reads this, list, list.Repr()
     requires Valid()
     requires Model() != []

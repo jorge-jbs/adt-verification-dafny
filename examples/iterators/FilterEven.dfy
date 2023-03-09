@@ -4,14 +4,14 @@ include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
 include "../../src/Iterators_Utils.dfy"
 
-predicate SubSec<A>(xs1:seq<A>,xs2:seq<A>,f:map<int,int>)
+ghost predicate SubSec<A>(xs1:seq<A>,xs2:seq<A>,f:map<int,int>)
 {
   && (forall i :: 0 <= i < |xs1| <==> i in f)
   && (forall i | i in f :: 0 <= i < |xs1| && 0 <= f[i] < |xs2| && xs2[f[i]] == xs1[i])
   && (forall i,j | i in f && j in f && i < j :: f[i] < f[j])
 }
 
-predicate IsSubSec<A>(xs1:seq<A>,xs2:seq<A>)
+ghost predicate IsSubSec<A>(xs1:seq<A>,xs2:seq<A>)
 {
   exists f:map<int,int> :: SubSec(xs1,xs2,f)
 }
@@ -24,7 +24,7 @@ lemma {:verify true} MultiSeq<A>(xs:seq<A>)
   assert xs[..|xs|-1]+[xs[|xs|-1]] == xs;
 }
 
-function FilterR<A>(xs: seq<A>,f: A -> bool):seq<A>
+ghost function FilterR<A>(xs: seq<A>,f: A -> bool):seq<A>
   ensures xs == [] ==> FilterR(xs,f) == xs
   ensures xs != [] && f(xs[|xs|-1]) ==> FilterR(xs,f) == FilterR(xs[..|xs|-1],f)+[xs[|xs|-1]] 
   ensures xs != [] && !f(xs[|xs|-1]) ==> FilterR(xs,f) == FilterR(xs[..|xs|-1],f) 
@@ -37,7 +37,7 @@ function FilterR<A>(xs: seq<A>,f: A -> bool):seq<A>
   }
 
 //This is the map that proves the subsequence property
-function FilterRMap<A>(xs: seq<A>,f: A -> bool):map<int,int>
+ghost function FilterRMap<A>(xs: seq<A>,f: A -> bool):map<int,int>
 ensures xs == [] ==> FilterRMap(xs,f) == map[]
 ensures xs != [] && f(xs[|xs|-1]) ==> FilterRMap(xs,f) == FilterRMap(xs[..|xs|-1],f)[|FilterR(xs,f)|-1:=|xs|-1]
 ensures xs != [] && !f(xs[|xs|-1]) ==> FilterRMap(xs,f) == FilterRMap(xs[..|xs|-1],f)

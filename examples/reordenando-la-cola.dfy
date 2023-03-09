@@ -2,21 +2,22 @@ include "../src/Utils.dfy"
 include "../src/linear/layer1/Stack.dfy"
 include "../src/linear/layer1/Queue.dfy"
 
+
 lemma Allocated(s: set<object>)
   ensures forall x | x in s :: allocated(x)
 {}
 
 lemma TransitiveLemma(v: array<int>, i: int)
-  requires forall i | 0 <= i < v.Length - 1 :: abs(v[i]) <= abs(v[i+1])
+  requires forall i | 0 <= i < v.Length - 1 :: Integer.abs(v[i]) <= Integer.abs(v[i+1])
   requires 0 <= i <= v.Length
-  ensures forall j, k | 0 <= j < k < i :: abs(v[j]) <= abs(v[k])
+  ensures forall j, k | 0 <= j < k < i :: Integer.abs(v[j]) <= Integer.abs(v[k])
 {
   if i == 0 {
   } else if i == 1 {
   } else if i == 2 {
   } else {
     TransitiveLemma(v, i-1);
-    assert abs(v[i-2]) <= abs(v[i-1]);
+    assert Integer.abs(v[i-2]) <= Integer.abs(v[i-1]);
   }
 }
 
@@ -39,16 +40,16 @@ method Split(v: array<int>, neg: Stack<int>, pos: Queue<int>)
   requires neg.Empty?()
   requires pos.Empty?()
 
-  requires forall i | 0 <= i < v.Length - 1 :: abs(v[i]) <= abs(v[i+1])
+  requires forall i | 0 <= i < v.Length - 1 :: Integer.abs(v[i]) <= Integer.abs(v[i+1])
 
   ensures {pos} + pos.Repr() !! {neg} + neg.Repr()
   ensures pos.Valid()
   ensures neg.Valid()
 
   ensures forall x | x in neg.Model() :: x < 0
-  ensures forall i | 0 <= i < |neg.Model()| - 1 :: abs(neg.Model()[i]) >= abs(neg.Model()[i+1])
+  ensures forall i | 0 <= i < |neg.Model()| - 1 :: Integer.abs(neg.Model()[i]) >= Integer.abs(neg.Model()[i+1])
   ensures forall x | x in pos.Model() :: x >= 0
-  ensures forall i | 0 <= i < |pos.Model()| - 1 :: abs(pos.Model()[i]) <= abs(pos.Model()[i+1])
+  ensures forall i | 0 <= i < |pos.Model()| - 1 :: Integer.abs(pos.Model()[i]) <= Integer.abs(pos.Model()[i+1])
 
   ensures Seq.MElems(neg.Model()) + Seq.MElems(pos.Model()) == Seq.MElems(v[..])
 {
@@ -61,7 +62,7 @@ method Split(v: array<int>, neg: Stack<int>, pos: Queue<int>)
 
     invariant i <= v.Length
 
-    invariant forall i | 0 <= i < v.Length - 1 :: abs(v[i]) <= abs(v[i+1])
+    invariant forall i | 0 <= i < v.Length - 1 :: Integer.abs(v[i]) <= Integer.abs(v[i+1])
 
     invariant {pos} + pos.Repr() !! {neg} + neg.Repr()
     invariant neg.Valid()
@@ -70,22 +71,22 @@ method Split(v: array<int>, neg: Stack<int>, pos: Queue<int>)
     invariant v !in {neg} + neg.Repr()
 
     invariant forall x | x in neg.Model() :: x < 0
-    invariant forall i | 0 <= i < |neg.Model()| - 1 :: abs(neg.Model()[i]) >= abs(neg.Model()[i+1])
+    invariant forall i | 0 <= i < |neg.Model()| - 1 :: Integer.abs(neg.Model()[i]) >= Integer.abs(neg.Model()[i+1])
     invariant forall x | x in pos.Model() :: x >= 0
-    invariant forall i | 0 <= i < |pos.Model()| - 1 :: abs(pos.Model()[i]) <= abs(pos.Model()[i+1])
+    invariant forall i | 0 <= i < |pos.Model()| - 1 :: Integer.abs(pos.Model()[i]) <= Integer.abs(pos.Model()[i+1])
 
     invariant Seq.MElems(neg.Model()) + Seq.MElems(pos.Model())
       == Seq.MElems(v[..i])
   {
     TransitiveLemma(v, i+1);
-    assert forall j | 0 <= j < i :: abs(v[j]) <= abs(v[i]);
+    assert forall j | 0 <= j < i :: Integer.abs(v[j]) <= Integer.abs(v[i]);
     if v[i] < 0 {
       if |neg.Model()| > 0 {
         assert neg.Model()[0] in Seq.MElems(neg.Model());
         assert neg.Model()[0] in Seq.MElems(neg.Model()) + Seq.MElems(pos.Model());
         assert neg.Model()[0] in Seq.MElems(v[..i]);
         assert neg.Model()[0] in v[..i];
-        assert abs(v[i]) >= abs(neg.Model()[0]);
+        assert Integer.abs(v[i]) >= Integer.abs(neg.Model()[0]);
       }
       neg.Push(v[i]);
     } else {
@@ -94,7 +95,7 @@ method Split(v: array<int>, neg: Stack<int>, pos: Queue<int>)
         assert pos.Model()[|pos.Model()|-1] in Seq.MElems(neg.Model()) + Seq.MElems(pos.Model());
         assert pos.Model()[|pos.Model()|-1] in Seq.MElems(v[..i]);
         assert pos.Model()[|pos.Model()|-1] in v[..i];
-        assert abs(pos.Model()[|pos.Model()|-1]) <= abs(v[i]);
+        assert Integer.abs(pos.Model()[|pos.Model()|-1]) <= Integer.abs(v[i]);
       }
       pos.Enqueue(v[i]);
     }
@@ -199,18 +200,18 @@ method FillFromQueue(r: array<int>, i: nat, q: Queue<int>) returns (l: nat)
 
 lemma LastLemma(neg: seq<int>, pos: seq<int>, s: seq<int>)
   requires forall x | x in neg :: x < 0
-  requires forall i | 0 <= i < |neg|-1 :: abs(neg[i]) >= abs(neg[i+1])
+  requires forall i | 0 <= i < |neg|-1 :: Integer.abs(neg[i]) >= Integer.abs(neg[i+1])
 
   requires forall x | x in pos :: x >= 0
-  requires forall i | 0 <= i < |pos|-1 :: abs(pos[i]) <= abs(pos[i+1])
+  requires forall i | 0 <= i < |pos|-1 :: Integer.abs(pos[i]) <= Integer.abs(pos[i+1])
 
   requires s == neg + pos
 
   ensures forall i | 0 <= i < |s|-1 :: s[i] <= s[i+1]
 {
-  assert forall x | x in neg :: x < 0 && abs(x) == -x;
+  assert forall x | x in neg :: x < 0 && Integer.abs(x) == -x;
   assert forall i | 0 <= i < |neg|-1 :: neg[i] <= neg[i+1];
-  assert forall x | x in pos :: x >= 0 && abs(x) == x;
+  assert forall x | x in pos :: x >= 0 && Integer.abs(x) == x;
   assert forall i | 0 <= i < |pos|-1 :: pos[i] <= pos[i+1];
   ghost var i := |neg|-1;
   if 0 <= i < |s|-1 {
@@ -236,7 +237,7 @@ method Reorder(neg: Stack<int>, pos: Queue<int>, v: array<int>)
   requires {v} !! {neg} + neg.Repr()
   requires {v} !! {pos} + pos.Repr()
   requires {pos} + pos.Repr() !! {neg} + neg.Repr()
-  requires forall i | 0 <= i < v.Length - 1 :: abs(v[i]) <= abs(v[i+1])
+  requires forall i | 0 <= i < v.Length - 1 :: Integer.abs(v[i]) <= Integer.abs(v[i+1])
   requires neg.Valid() && neg.Empty?()
   requires pos.Valid() && pos.Empty?()
 
@@ -266,3 +267,4 @@ method Reorder(neg: Stack<int>, pos: Queue<int>, v: array<int>)
   i := FillFromQueue(v, i, pos);
   LastLemma(negmodel, posmodel, v[..]);
 }
+

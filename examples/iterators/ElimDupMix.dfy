@@ -2,14 +2,14 @@ include "../../src/linear/layer1/List.dfy"
 include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
  
- predicate Sorted(xs:seq<int>)
-  { forall i,j | 0<=i<=j<|xs| :: xs[i]<=xs[j]}
+ghost predicate Sorted(xs:seq<int>)
+  { forall i,j | 0<=i<=j< |xs| :: xs[i]<=xs[j]}
 
 
-  predicate StrictSorted(xs:seq<int>)
-  { forall i,j | 0<=i<j<|xs| :: xs[i]<xs[j]}
+ghost predicate StrictSorted(xs:seq<int>)
+  { forall i,j | 0 <= i < j < |xs| :: xs[i] < xs[j] }
  
-function delDup(xs:seq<int>,i:int):seq<int>//[0,i)
+ghost function delDup(xs:seq<int>,i:int):seq<int>//[0,i)
 requires 0<=i<=|xs|
 ensures i==0 ==>delDup(xs,i)==[]
 ensures i==1 ==>delDup(xs,i)==[xs[0]]
@@ -23,7 +23,7 @@ ensures i>1 && xs[i-1]==xs[i-2] ==> delDup(xs,i)==delDup(xs,i-1)
 
 }
 
-function elimDupMapAux(xs:seq<int>,its:set<int>,i:int):map<int,int>
+ghost function elimDupMapAux(xs:seq<int>,its:set<int>,i:int):map<int,int>
 requires 0<=i<=|xs| 
 {
  if (i==0) then map[]
@@ -34,7 +34,7 @@ requires 0<=i<=|xs|
 }    
 
 
-function elimDupMap(xs:seq<int>,its:set<int>):map<int,int>
+ghost function elimDupMap(xs:seq<int>,its:set<int>):map<int,int>
 {
   if (|xs| in its) then elimDupMapAux(xs,its,|xs|)[|xs|:=|delDup(xs,|xs|)|]
   else elimDupMapAux(xs,its,|xs|)

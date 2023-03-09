@@ -5,25 +5,25 @@ class LinkedDequeImpl<A> extends Deque<A> {
   var list: DoublyLinkedListWithLast<A>
   var size: nat
 
-  function Repr0(): set<object>
+  ghost function Repr0(): set<object>
     reads this
   {
     {list}
   }
 
-  function Repr1(): set<object>
+  ghost function Repr1(): set<object>
     reads this, Repr0()
   {
     Repr0() + {list.list}
   }
 
-  function Repr2(): set<object>
+  ghost function Repr2(): set<object>
     reads this, Repr1()
   {
     Repr1() + list.Repr()
   }
 
-  function ReprFamily(n: nat): set<object>
+  ghost function ReprFamily(n: nat): set<object>
     decreases n
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
@@ -38,7 +38,7 @@ class LinkedDequeImpl<A> extends Deque<A> {
       ReprFamily(n-1)
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Repr()
   {
     && ReprDepth == 2
@@ -46,7 +46,7 @@ class LinkedDequeImpl<A> extends Deque<A> {
     && size == |list.Model()|
   }
 
-  function Model(): seq<A>
+  ghost function Model(): seq<A>
     reads this, Repr()
     requires Valid()
   {

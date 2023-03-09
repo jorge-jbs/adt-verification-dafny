@@ -5,19 +5,19 @@ class LinkedStack<A> extends Stack<A> {
   var list: SinglyLinkedList<A>;
   var size: nat;
 
-  function Repr0(): set<object>
+  ghost function Repr0(): set<object>
     reads this
   {
     {list}
   }
 
-  function Repr1(): set<object>
+  ghost function Repr1(): set<object>
     reads this, Repr0()
   {
     {list} + list.Repr()
   }
 
-  function ReprFamily(n: nat): set<object>
+  ghost function ReprFamily(n: nat): set<object>
     decreases n
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
@@ -30,7 +30,7 @@ class LinkedStack<A> extends Stack<A> {
       ReprFamily(n-1)
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Repr()
   {
     && ReprDepth == 1
@@ -38,7 +38,7 @@ class LinkedStack<A> extends Stack<A> {
     && size == |list.Model()|
   }
 
-  function Model(): seq<A>
+  ghost function Model(): seq<A>
     reads this, list, list.spine
     requires Valid()
   {

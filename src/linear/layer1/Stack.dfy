@@ -1,7 +1,7 @@
 include "../../../src/ADT.dfy"
 
 trait Stack<A> extends ADT<seq<A>> {
-  predicate Empty?()
+  ghost predicate Empty?()
     reads this, Repr()
     requires Valid()
   { Model() == [] }

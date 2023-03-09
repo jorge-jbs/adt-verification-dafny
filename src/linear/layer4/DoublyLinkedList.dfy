@@ -15,13 +15,13 @@ class DNode<A> {
     this.next := next;
   }
 
-  predicate IsPrevOf(n: DNode<A>)
+  ghost predicate IsPrevOf(n: DNode<A>)
     reads this
   {
     next == n
   }
 
-  predicate IsNextOf(n: DNode<A>)
+  ghost predicate IsNextOf(n: DNode<A>)
     reads this
   {
     prev == n
@@ -32,13 +32,13 @@ class DoublyLinkedList<A> {
   var head: DNode?<A>;
   ghost var spine: seq<DNode<A>>;
 
-  function Repr(): set<object>
+  ghost function Repr(): set<object>
     reads this
   {
     set x | x in spine
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Repr()
   {
     && (forall i | 0 <= i < |spine|-1 ::
@@ -100,7 +100,7 @@ class DoublyLinkedList<A> {
     }
   }
 
-  function Model(): seq<A>
+  ghost function Model(): seq<A>
     reads this, spine
     requires Valid()
   {
@@ -116,7 +116,7 @@ class DoublyLinkedList<A> {
     /*GHOST*/ spine := [];
   }
 
-  function GetIndex(n: DNode<A>): nat
+  ghost function GetIndex(n: DNode<A>): nat
     reads this, spine
     requires Valid()
     requires n in Repr()

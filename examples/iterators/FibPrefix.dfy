@@ -1,9 +1,11 @@
 // Must be verified with -allocated:2
 
+//include "../../src/Utils.dfy"
 include "../../src/linear/layer1/List.dfy"
 include "../../src/linear/layer3/LinkedListImpl.dfy"
 
-function Fib(n: nat): seq<nat>
+ghost function Fib(n: nat): seq<nat>
+  decreases n
   ensures |Fib(n)| == n
 {
   if n <= 2 then
@@ -13,21 +15,25 @@ function Fib(n: nat): seq<nat>
     fib + [fib[n-3] + fib[n-2]]
 }
 
-predicate ValidDistinct(adts: seq<ADT>)
+// TODO: duplicated
+/*
+ghost predicate ValidDistinct(adts: seq<ADT>)
   reads set r | r in adts :: r
-  reads BigUnion(set r | r in adts :: r.Repr())
+  reads Set.BigUnion(set r | r in adts :: r.Repr())
 {
   && (forall r | r in adts :: r.Valid())
   && (forall r, s | r in adts && s in adts && [r, s] <= adts ::
         {r} + r.Repr() !! {s} + s.Repr())
 }
+*/
+
 
 method NextPrefix(pre: List<nat>, n: nat)
   modifies pre, pre.Repr()
   requires allocated(pre.Repr())
   ensures fresh(pre.Repr()-old(pre.Repr()))
-  requires ValidDistinct([pre])
-  ensures ValidDistinct([pre])
+  requires ValidDistinctADTs([pre])
+  ensures ValidDistinctADTs([pre])
 
   requires n >= 2
   requires pre.Model() == Fib(n)
@@ -48,15 +54,15 @@ method Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
   ensures fresh(nl)
   ensures fresh(nl.Repr())
 
-  requires ValidDistinct([l])
-  ensures ValidDistinct([l, nl])
+  requires ValidDistinctADTs([l])
+  ensures ValidDistinctADTs([l, nl])
 
   ensures l.Model() == old(l.Model())
   ensures nl.Model() == l.Model()
 {
   nl := new LinkedListImpl();
   assert forall r, s | [r, s] <= [l, nl] :: [r, s] == [l, nl];
-  assert ValidDistinct([l, nl]);
+  assert ValidDistinctADTs([l, nl]);
   var it := l.First();
   var b := it.HasPeek();
   while b
@@ -66,7 +72,7 @@ method Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
     invariant fresh(nl)
     invariant fresh(nl.Repr())
 
-    invariant ValidDistinct([l, nl])
+    invariant ValidDistinctADTs([l, nl])
     invariant it.Valid()
     invariant it.Parent() == l
     invariant b == it.HasPeek?()
@@ -85,7 +91,7 @@ method FibPrefixes2() returns (pres: List<List<nat>>)  // 45s
   ensures allocated(pres.Repr())
   ensures fresh(pres)
   ensures fresh(pres.Repr())
-  ensures ValidDistinct([pres])
+  ensures ValidDistinctADTs([pres])
   ensures forall pre | pre in pres.Model() ::
     && allocated(pre.Repr())
     && fresh(pre)
@@ -125,7 +131,7 @@ method FibPrefixes(n: nat) returns (pres: List<List<nat>>)
   ensures allocated(pres.Repr())
   ensures fresh(pres)
   ensures fresh(pres.Repr())
-  ensures ValidDistinct([pres])
+  ensures ValidDistinctADTs([pres])
   ensures forall pre | pre in pres.Model() :: allocated(pres.Repr())
   ensures forall r | r in pres.Model() :: r.Valid()
   ensures forall i, j | 0 <= i < j < |pres.Model()| ::
@@ -145,7 +151,7 @@ method FibPrefixes(n: nat) returns (pres: List<List<nat>>)
     invariant allocated(pres.Repr())
     invariant fresh(pres)
     invariant fresh(pres.Repr())
-    invariant ValidDistinct([pres])
+    invariant ValidDistinctADTs([pres])
     invariant forall pre | pre in pres.Model() ::
       && allocated(pre.Repr())
       && fresh(pre)

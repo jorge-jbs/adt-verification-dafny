@@ -6,20 +6,20 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
   var node: DNode?<A>
   ghost var pastTheEnd: bool
 
-  predicate Valid()
-    reads this, parent, parent.Repr()
+  ghost predicate Valid()
+    reads this, Parent(), Parent().Repr()
   {
     && parent.Valid()
     && (node != null ==> node in parent.list.list.spine)
   }
 
-  function Parent(): List<A>
+  ghost function Parent(): List<A>
     reads this
   {
     parent
   }
 
-  function Index(): int
+  ghost function Index(): int
     reads this, parent, parent.Repr()
     requires Valid()
     requires Parent().Valid()
@@ -248,25 +248,25 @@ class LinkedListImpl<A> extends LinkedList<A> {
   var size: nat;
   ghost var iters: set<LinkedListIteratorImpl<A>>;
 
-  function Repr0(): set<object>
+  ghost function Repr0(): set<object>
     reads this
   {
     {list} + iters
   }
 
-  function Repr1(): set<object>
+  ghost function Repr1(): set<object>
     reads this, Repr0()
   {
     Repr0() + {list.list}
   }
 
-  function Repr2(): set<object>
+  ghost function Repr2(): set<object>
     reads this, Repr1()
   {
     Repr1() + list.Repr()
   }
 
-  function ReprFamily(n: nat): set<object>
+  ghost function ReprFamily(n: nat): set<object>
     decreases n
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
@@ -281,7 +281,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
       ReprFamily(n-1)
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Repr()
   {
     && ReprDepth == 2
@@ -290,7 +290,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
     && (forall it | it in iters :: it.parent == this && {it} !! {this})
   }
 
-  function Model(): seq<A>
+  ghost function Model(): seq<A>
     reads this, Repr()
     requires Valid()
   {
@@ -335,7 +335,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
     return size;
   }
 
-  function Iterators(): set<ListIterator<A>>
+  ghost function Iterators(): set<ListIterator<A>>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
@@ -536,7 +536,7 @@ class LinkedListImpl<A> extends LinkedList<A> {
     /*GHOST*/ size := size - 1;
   }
 
-  function method CoerceIter(it: ListIterator<A>): LinkedListIteratorImpl<A>
+  function CoerceIter(it: ListIterator<A>): LinkedListIteratorImpl<A>
     reads this, Repr()
     requires Valid()
     requires it in Iterators()

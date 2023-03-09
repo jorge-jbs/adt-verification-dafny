@@ -1,10 +1,10 @@
 include "../../src/linear/layer1/List.dfy"
 include "../../src/linear/layer2/LinkedList.dfy"
 
-predicate GSorted(xs:seq<int>,c:int,f:int)
+ghost predicate GSorted(xs:seq<int>,c:int,f:int)
   { forall i,j | 0 <= c <= i <= j < f <= |xs| :: xs[i] <= xs[j]}
 
-lemma  SwapMultisetAux(xs:seq<int>,ys:seq<int>, i:int, j:int)
+lemma SwapMultisetAux(xs:seq<int>,ys:seq<int>, i:int, j:int)
 requires 0 <= i < |xs| && 0 <= j < |ys| && i <= j && |xs| == |ys|
 requires forall z | 0 <= z < |xs| && z != i && z != j :: xs[z] == ys[z]
 requires xs[i] == ys[j] && xs[j] == ys[i]

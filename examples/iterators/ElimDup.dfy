@@ -2,14 +2,14 @@ include "../../src/linear/layer1/List.dfy"
 include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
 
-predicate Sorted(xs:seq<int>)
+ghost predicate Sorted(xs:seq<int>)
 { forall i,j | 0 <= i <= j < |xs| :: xs[i] <= xs[j]}
 
 
-predicate StrictSorted(xs:seq<int>)
+ghost predicate StrictSorted(xs:seq<int>)
 { forall i,j | 0 <= i < j < |xs| :: xs[i]<xs[j]}
  
-function ValidIt(xs:seq<int>,i:int):bool
+ghost function ValidIt(xs:seq<int>,i:int):bool
 requires -1 <= i <= |xs|
 ensures i <= 0==> ValidIt(xs,i)
 ensures i == |xs| ==> ValidIt(xs,i)
@@ -21,7 +21,7 @@ ensures 0 < i < |xs| ==> ValidIt(xs,i)==(xs[i]!=xs[i-1])
 
 }
 
-function DelDup(xs:seq<int>,i:int):seq<int>//[0,i)
+ghost function DelDup(xs:seq<int>,i:int):seq<int>//[0,i)
 requires 0 <= i <= |xs|
 ensures i == 0 ==>DelDup(xs,i) == []
 ensures i == 1 ==>DelDup(xs,i) == [xs[0]]

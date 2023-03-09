@@ -4,7 +4,7 @@ include "../extra/LeinoList.dfy"
 class LeinoStack<A> extends Stack<A> {
   var head: LNode?<A>;
 
-  function Repr0(): set<object>
+  ghost function Repr0(): set<object>
     reads this
   {
     if head == null then
@@ -13,7 +13,7 @@ class LeinoStack<A> extends Stack<A> {
       {this, head}
   }
 
-  function Repr1(): set<object>
+  ghost function Repr1(): set<object>
     reads this, Repr0()
   {
     if head == null then
@@ -22,7 +22,7 @@ class LeinoStack<A> extends Stack<A> {
       Repr0() + head.repr
   }
 
-  function ReprFamily(n: nat): set<object>
+  ghost function ReprFamily(n: nat): set<object>
     decreases n
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
@@ -35,14 +35,14 @@ class LeinoStack<A> extends Stack<A> {
       ReprFamily(n-1)
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Repr()
   {
     && ReprDepth == 1
     && (head != null ==> head.Valid())
   }
 
-  function Model(): seq<A>
+  ghost function Model(): seq<A>
     reads this, Repr()
     requires Valid()
   {
@@ -59,7 +59,7 @@ class LeinoStack<A> extends Stack<A> {
     head := null;
   }
 
-  function method Empty(): bool
+  function Empty(): bool
     reads this, Repr()
     requires Valid()
     ensures Empty() <==> Model() == []
@@ -67,7 +67,7 @@ class LeinoStack<A> extends Stack<A> {
     head == null
   }
 
-  function method Top(): A
+  function Top(): A
     reads this, Repr()
     requires Valid()
     requires !Empty()

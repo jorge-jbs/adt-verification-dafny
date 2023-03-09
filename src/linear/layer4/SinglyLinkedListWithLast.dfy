@@ -4,13 +4,13 @@ class SinglyLinkedListWithLast<A> {
   var list: SinglyLinkedList<A>;
   var last: SNode?<A>;
 
-  function Repr(): set<object>
+  ghost function Repr(): set<object>
     reads this, list
   {
     list.Repr()
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, list, Repr()
   {
     && list.Valid()
@@ -21,7 +21,7 @@ class SinglyLinkedListWithLast<A> {
         )
   }
 
-  function Model(): seq<A>
+  ghost function Model(): seq<A>
     reads this, list, Repr()
     requires Valid()
   {
@@ -39,7 +39,7 @@ class SinglyLinkedListWithLast<A> {
     last := null;
   }
 
-  function method Front(): A
+  function Front(): A
     reads this, list, Repr()
     requires Valid()
     requires Model() != []

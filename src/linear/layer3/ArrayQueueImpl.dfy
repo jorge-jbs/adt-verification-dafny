@@ -5,13 +5,13 @@ class ArrayQueueImpl<A> extends Queue<A> {
   var c: nat;
   var nelems: nat;
 
-  function Repr0(): set<object>
+  ghost function Repr0(): set<object>
     reads this
   {
     {this, list}
   }
 
-  function ReprFamily(n: nat): set<object>
+  ghost function ReprFamily(n: nat): set<object>
     decreases n
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
@@ -22,7 +22,7 @@ class ArrayQueueImpl<A> extends Queue<A> {
       ReprFamily(n - 1)
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Repr()
   {
     && ReprDepth == 1
@@ -31,14 +31,14 @@ class ArrayQueueImpl<A> extends Queue<A> {
     && 0 <= nelems <= list.Length
   }
 
-  function Model(): seq<A> // Los elementos estan en [c..(c+nelems)%Length) circularmente
+  ghost function Model(): seq<A> // Los elementos estan en [c..(c+nelems)%Length) circularmente
     reads this, Repr()
     requires Valid()
   {
     ModelAux(list, c, nelems)
   }
 
-  static function ModelAux(a: array<A>, c: nat, nelems: nat): seq<A>
+  static ghost function ModelAux(a: array<A>, c: nat, nelems: nat): seq<A>
     reads a
     requires a.Length != 0 ==> 0 <= c < a.Length
     requires a.Length == 0 ==> c == 0

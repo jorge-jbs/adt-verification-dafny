@@ -1,7 +1,7 @@
 include "../../src/linear/layer1/List.dfy"
 include "../../src/linear/layer2/LinkedList.dfy"
 include "../../src/linear/layer2/ArrayList.dfy"
-include "../../src/UtilsAux.dfy"
+include "../../src/Utils.dfy"
 
 method ElimDup(l:LinkedList<int>)
 //method {:verify true} elimDupA(l:ArrayList<int>) //NO CHANGES
@@ -10,11 +10,11 @@ method ElimDup(l:LinkedList<int>)
   ensures fresh(l.Repr()-old(l.Repr()))
   ensures allocated(l.Repr())
 
-  requires l.Valid() && Sorted(l.Model())
+  requires l.Valid() && Seq.Sorted(l.Model())
   ensures l.Valid()
 
   ensures (set x | x in old(l.Model())) == (set x | x in l.Model())
-  ensures StrictSorted(l.Model())
+  ensures Seq.StrictSorted(l.Model())
 
   ensures l.Iterators() >= old(l.Iterators())
 {
@@ -45,7 +45,7 @@ method ElimDup(l:LinkedList<int>)
       invariant it2.HasPeek?() ==> it1.HasPeek?() && l.Model()[it1.Index()+1] == l.Model()[it2.Index()]
 
       invariant (set x | x in old(l.Model())) == (set x | x in l.Model())
-      invariant Sorted(l.Model()) && StrictSorted(l.Model()[..it2.Index()])
+      invariant Seq.Sorted(l.Model()) && Seq.StrictSorted(l.Model()[..it2.Index()])
       invariant b == it2.HasPeek?()
 
       invariant l.Iterators() >= old(l.Iterators())

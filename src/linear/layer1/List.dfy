@@ -2,20 +2,20 @@ include "../../../src/Utils.dfy"
 include "../../../src/ADT.dfy"
 
 trait ListIterator<A> {
-  function Parent(): List<A>
+  ghost function Parent(): List<A>
     reads this
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Parent(), Parent().Repr()
     ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
 
-  function Index(): int
+  ghost function Index(): int
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
     ensures -1 <= Index() <= |Parent().Model()|
 
-  predicate HasPeek?() 
+  ghost predicate HasPeek?() 
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -149,7 +149,7 @@ trait ListIterator<A> {
 }
 
 trait List<A> extends ADT<seq<A>> {
-  predicate Empty?()
+  ghost predicate Empty?()
     reads this, Repr()
     requires Valid()
   {
@@ -186,7 +186,7 @@ trait List<A> extends ADT<seq<A>> {
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
 
-  function Iterators(): set<ListIterator<A>>
+  ghost function Iterators(): set<ListIterator<A>>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this

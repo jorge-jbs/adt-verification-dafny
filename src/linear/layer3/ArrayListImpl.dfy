@@ -5,11 +5,11 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
   var parent: ArrayListImpl<A>
   var index: int
 
-  function Parent(): List<A>
+  ghost function Parent(): List<A>
     reads this
   { parent }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Parent(), Parent().Repr()
     ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
   {
@@ -18,7 +18,7 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
     && -1 <= index <= parent.size
   }
 
-  function Index(): int
+  ghost function Index(): int
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -194,13 +194,13 @@ class ArrayListImpl<A> extends ArrayList<A> {
   var size: nat;
   ghost var iterators: set<ArrayListIteratorImpl<A>>
 
-  function Repr0(): set<object>
+  ghost function Repr0(): set<object>
     reads this
   {
     {this, elements} + iterators
   }
 
-  function ReprFamily(n: nat): set<object>
+  ghost function ReprFamily(n: nat): set<object>
     decreases n
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
@@ -211,7 +211,7 @@ class ArrayListImpl<A> extends ArrayList<A> {
       ReprFamily(n-1)
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Repr()
   {
     && ReprDepth == 1
@@ -220,14 +220,14 @@ class ArrayListImpl<A> extends ArrayList<A> {
     && forall it | it in iterators :: it.parent == this
   }
 
-  function Model(): seq<A>
+  ghost function Model(): seq<A>
     reads this, Repr()
     requires Valid()
   {
     elements[..size]
   }
 
-  function Iterators(): set<ListIterator<A>>
+  ghost function Iterators(): set<ListIterator<A>>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this

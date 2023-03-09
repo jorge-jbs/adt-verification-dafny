@@ -21,7 +21,7 @@ class Partition {
   function ValidReads(): set<object>
     reads this, classes, Array.elems(classes)
   {
-    BigUnion(set e: EquivClass | e in classes[..] :: e.repr)
+    Set.BigUnion(set e: EquivClass | e in classes[..] :: e.repr)
   }
 
   predicate Valid()
@@ -100,7 +100,7 @@ class Partition {
     requires p in classes[..]
     requires Valid()
     ensures Descendants(p)
-      == {p} + BigUnion(set c
+      == {p} + Set.BigUnion(set c
         | c in classes[..] && c.IsChildOf(p)
         :: Descendants(c))
   {
@@ -142,7 +142,7 @@ class Partition {
           <==> d in classes[..] && d.IsDescOf(c);
       }
       ({p} + set c, d | c in classes[..] && c.IsChildOf(p) && d in Descendants(c) :: d);
-      ({p} + BigUnion(set c
+      ({p} + Set.BigUnion(set c
         | c in classes[..] && c.IsChildOf(p)
         :: Descendants(c)));
     }

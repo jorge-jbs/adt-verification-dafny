@@ -12,7 +12,7 @@ class SNode<A> {
     this.next := next;
   }
 
-  predicate IsPrevOf(n: SNode<A>)
+  ghost predicate IsPrevOf(n: SNode<A>)
     reads this
   {
     next == n
@@ -23,13 +23,13 @@ class SinglyLinkedList<A> {
   var head: SNode?<A>;
   ghost var spine: seq<SNode<A>>;
 
-  function Repr(): set<object>
+  ghost function Repr(): set<object>
     reads this
   {
     set x | x in spine
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Repr()
   {
     // && (forall i | 0 <= i < |spine|-1 :: spine[i].IsPrevOf(spine[i+1]))
@@ -117,7 +117,7 @@ class SinglyLinkedList<A> {
     }
   }
 
-  static function ModelAux(xs: seq<SNode<A>>): seq<A>
+  static ghost function ModelAux(xs: seq<SNode<A>>): seq<A>
     reads set x | x in xs :: x`data
   {
     if xs == [] then
@@ -172,7 +172,7 @@ class SinglyLinkedList<A> {
     ModelRelationWithSpineAux(spine, Model());
   }
 
-  function Model(): seq<A>
+  ghost function Model(): seq<A>
     reads this, spine
     requires Valid()
   {
@@ -180,7 +180,7 @@ class SinglyLinkedList<A> {
   }
 
   // TODO: remove
-  static function ModelUntilAux(xs: seq<SNode<A>>, last: SNode<A>): seq<A>
+  static ghost function ModelUntilAux(xs: seq<SNode<A>>, last: SNode<A>): seq<A>
     reads set x | x in xs :: x`data
   {
     if xs == [] || xs[0] == last then
@@ -192,13 +192,13 @@ class SinglyLinkedList<A> {
   }
 
   // TODO: remove
-  function ModelUntil(last: SNode<A>): seq<A>
+  ghost function ModelUntil(last: SNode<A>): seq<A>
     reads this, spine
   {
     ModelUntilAux(spine, last)
   }
 
-  function GetIndex(n: SNode<A>): nat
+  ghost function GetIndex(n: SNode<A>): nat
     reads this, spine
     requires Valid()
     requires n in Repr()
