@@ -2,8 +2,8 @@ include "../../../src/tree/layer1/UnorderedMultiset.dfy"
 include "../../../src/tree/layer1/OrderedMultisetUtils.dfy"
 
 
-trait OrderedMultisetIterator extends UnorderedMultisetIterator<int>{
-  function Parent(): UnorderedMultiset<int>
+trait OrderedMultisetIterator extends UnorderedMultisetIterator{
+  function Parent(): UnorderedMultiset
     reads this
     ensures Parent() is OrderedMultiset
    
@@ -22,7 +22,7 @@ trait OrderedMultisetIterator extends UnorderedMultisetIterator<int>{
     requires Valid()
     requires Parent().Valid() 
     ensures Traversed() <= Parent().Model()
-    //ensures forall x,y | x in Traversed() && y in Parent().Model()-Traversed() :: x<=y
+    ensures 0 <= |Traversed()| <= |Parent().Model()|
     ensures Index() >= 0 <==> |Traversed()| == Index()
     ensures 0 <= Index() < |Parent().Model()| ==> Traversed() < Parent().Model() && |Traversed()| < |Parent().Model()|
     {
@@ -41,7 +41,6 @@ trait OrderedMultisetIterator extends UnorderedMultisetIterator<int>{
     requires Valid()
     requires Parent().Valid()
     ensures HasPeek?() <==> Traversed() < Parent().Model() &&  |Traversed()| < |Parent().Model()| 
-    //ensures HasPeek?() ==> |Traversed()| < |Parent().Model()| 
     ensures !HasPeek?() ==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()| 
     {
       0 <= Index() < |Parent().Model()|
@@ -65,6 +64,7 @@ trait OrderedMultisetIterator extends UnorderedMultisetIterator<int>{
     ensures Index() == old(Index())//NEW
 
     ensures Traversed() == old(Traversed()) 
+    ensures |Traversed()| == old(|Traversed()|)  
     ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
     ensures b == HasPeek?()
 
@@ -73,6 +73,7 @@ trait OrderedMultisetIterator extends UnorderedMultisetIterator<int>{
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed())
+      && |it.Traversed()| == old(|it.Traversed()|)
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) :: //NEW
@@ -109,12 +110,16 @@ trait OrderedMultisetIterator extends UnorderedMultisetIterator<int>{
     ensures Index() == old(Index()) //NEW 
 
     ensures Traversed() == old(Traversed()) 
+    ensures |Traversed()| == old(|Traversed()|)
     ensures HasPeek?() && Peek?()==old(Peek?()) // no debería ser necesario pero lo es 
     ensures p == Peek?()
+    
+    ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed())
+      && |it.Traversed()| == old(|it.Traversed()|)
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) :: //NEW
@@ -148,6 +153,7 @@ trait OrderedMultisetIterator extends UnorderedMultisetIterator<int>{
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && (it != this ==> it.Traversed() == old(it.Traversed())
+                         && |it.Traversed()| == old(|it.Traversed()|)                                                  && |it.Traversed()| == old(|it.Traversed()|)
                          && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
     
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) &&  it != this:://NEW
@@ -177,13 +183,14 @@ trait OrderedMultisetIterator extends UnorderedMultisetIterator<int>{
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && (it != this ==> it.Traversed() == old(it.Traversed())
+                         && |it.Traversed()| == old(|it.Traversed()|)
                          && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
  
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) &&  it != this:://NEW
       (it is OrderedMultisetIterator && 
       (it as OrderedMultisetIterator).Index() == old((it as OrderedMultisetIterator).Index()) )
 
-  method Copy() returns (it: UnorderedMultisetIterator<int>)
+  method Copy() returns (it: UnorderedMultisetIterator)
      modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
@@ -202,6 +209,7 @@ trait OrderedMultisetIterator extends UnorderedMultisetIterator<int>{
     ensures Index() == old(Index()) //NEW
 
     ensures Traversed() == old(Traversed()) 
+    ensures |Traversed()| == old(|Traversed()|)
     ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
 
     ensures it.Valid()
@@ -216,6 +224,7 @@ trait OrderedMultisetIterator extends UnorderedMultisetIterator<int>{
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed()) 
+      && |it.Traversed()| == old(|it.Traversed()|)
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
     
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) :: //NEW
@@ -227,7 +236,7 @@ trait OrderedMultisetIterator extends UnorderedMultisetIterator<int>{
   
 }
 
-trait OrderedMultiset extends UnorderedMultiset<int>{
+trait OrderedMultiset extends UnorderedMultiset{
   
    //Novelties respect UnorderedSet
    // Last iterator method 
@@ -236,6 +245,53 @@ trait OrderedMultiset extends UnorderedMultiset<int>{
    // Those methods that return iterators do return OrderedSetIterator
    // Methods receiving iterators may be called with OrderedSetIterator
    // The rest remains the same 
+  method Empty() returns (b: bool)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+
+    requires Valid()
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
+    ensures b == Empty?()
+
+    ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Traversed() == old(it.Traversed()) 
+      && |it.Traversed()| == old(|it.Traversed()|) 
+      && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+    
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
+      (it is OrderedMultisetIterator &&
+      (it as OrderedMultisetIterator).Index() == old((it as OrderedMultisetIterator).Index())) 
+
+  method Size() returns (s: nat)
+    modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+    
+    requires Valid()
+    ensures Valid()
+    ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
+    ensures s == |Model()|
+
+    ensures Iterators() >= old(Iterators())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Traversed() == old(it.Traversed()) 
+      && |it.Traversed()| == old(|it.Traversed()|)
+      && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+    
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
+      (it is OrderedMultisetIterator &&
+      (it as OrderedMultisetIterator).Index() == old((it as OrderedMultisetIterator).Index())) 
 
   function Iterators(): set<UnorderedMultisetIterator>
     reads this, Repr()
@@ -244,19 +300,19 @@ trait OrderedMultiset extends UnorderedMultiset<int>{
     ensures forall it | it in Iterators() :: it is OrderedMultisetIterator
 
   method First() returns (it: UnorderedMultisetIterator)
-    modifies this, Repr()
+   modifies this, Repr()
+    requires allocated(Repr())
+    ensures fresh(Repr() - old(Repr()))
+    ensures allocated(Repr())
+    
     requires Valid()
-    requires forall x | x in Repr() :: allocated(x)
     ensures Valid()
     ensures Model() == old(Model())
-
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
+    ensures |Model()| == old(|Model()|)
 
     ensures it is OrderedMultisetIterator
     ensures fresh(it)
-    ensures Iterators() == {it} + old(Iterators())
+    ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
     ensures it.Traversed()==multiset{} 
