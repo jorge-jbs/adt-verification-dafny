@@ -457,7 +457,7 @@ trait OrderedSet extends UnorderedSet{
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + {x}
-    ensures |Model()| == old(|Model()|) + 1
+    ensures if (x in old(Model())) then |Model()| == old(|Model()|) else |Model()| == 1 + old(|Model()|)
 
     requires mid.Valid() 
     //mid just a hint, it is inserted where corresponds

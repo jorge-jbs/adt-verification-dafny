@@ -263,7 +263,7 @@ trait UnorderedSet extends ADT<set<K>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + {x} 
-    ensures |Model()| == 1 + old(|Model()|) 
+    ensures if (x in old(Model())) then |Model()| == old(|Model()|) else |Model()| == 1 + old(|Model()|)
 
     ensures Iterators() >= old(Iterators())
 
@@ -276,7 +276,7 @@ trait UnorderedSet extends ADT<set<K>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) - {x} 
-    ensures |Model()| == old(|Model()|) - 1 
+    ensures if (x in old(Model())) then |Model()| == old(|Model()|) - 1 else |Model()| == old(|Model()|)
 
     ensures Iterators() >= old(Iterators())
 
@@ -314,8 +314,8 @@ trait UnorderedSet extends ADT<set<K>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + {x}
-    ensures |Model()| == old(|Model()|) + 1
-
+    ensures if (x in old(Model())) then |Model()| == old(|Model()|) else |Model()| == 1 + old(|Model()|)
+    
     requires mid.Valid() 
     requires mid.Parent() == this
     requires mid in Iterators()
@@ -340,7 +340,7 @@ trait UnorderedSet extends ADT<set<K>> {
     requires mid in Iterators()
     ensures Valid()
     ensures Model() == old(Model())-{old(mid.Peek?())}
-    ensures |Model()| == old(|Model()|) - 1
+    ensures |Model()| == old(|Model()|) - 1 // old(mid.Peek?()) in old(Model())
 
     ensures fresh(next)
     ensures next.Valid() && next.Parent() == this 
