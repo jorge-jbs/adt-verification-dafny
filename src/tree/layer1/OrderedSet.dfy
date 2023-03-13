@@ -22,7 +22,7 @@ trait OrderedSetIterator extends UnorderedSetIterator{
   // Index(), Traversed() or Peek?()
   //When HasPeek is not true we need Index
 
-   function Index(): K
+   function Index(): int
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
