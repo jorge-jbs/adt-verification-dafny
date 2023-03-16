@@ -86,8 +86,11 @@ trait OrderedMultisetIterator extends UnorderedMultisetIterator{
     requires Parent().Valid() 
     requires HasPeek?()
     ensures Peek?() in Parent().Model() && (Parent().Model()-Traversed())[Peek?()]>0
-  { assume elemth(Parent().Model(),Index()) in Parent().Model();
-    assume (Parent().Model()-Traversed())[elemth(Parent().Model(),Index())]>0;
+  { 
+    lelemth(Parent().Model(),Index());
+    //assert Traversed()[elemth(Parent().Model(),Index())] == Index()-|msmaller(Parent().Model(),elemth(Parent().Model(),Index()))|;
+    //assert (Parent().Model()-Traversed())[elemth(Parent().Model(),Index())] == Parent().Model()[elemth(Parent().Model(),Index())]-Traversed()[elemth(Parent().Model(),Index())];
+    //assert Parent().Model()[elemth(Parent().Model(),Index())] > Traversed()[elemth(Parent().Model(),Index())];
     elemth(Parent().Model(),Index())}
 
 
@@ -316,7 +319,8 @@ trait OrderedMultiset extends UnorderedMultiset{
     ensures it.Valid()
     ensures it.Parent() == this
     ensures it.Traversed()==multiset{}
-    ensures (it as OrderedMultisetIterator).Index() == 0 
+    ensures (it as OrderedMultisetIterator).Index() == 0
+    
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -461,10 +465,10 @@ trait OrderedMultiset extends UnorderedMultiset{
     ensures fresh(newt)
     ensures newt.Valid() && newt.Parent()==this
     ensures newt.HasPeek?() && 
-            msmaller(Model(),x)<=newt.Traversed()<=msmaller(Model(),x)[x:=old(Model()[x])] &&
+            msmaller(Model(),x) <= newt.Traversed() <= msmaller(Model(),x)[x:=old(Model()[x])] &&
             newt.Peek?()==x 
   
-      ensures Iterators() >= {newt}+old(Iterators())
+    ensures Iterators() >= {newt}+old(Iterators())
          //Example: 1,2,2,2,2,3 insert another 2 , Traversed may be 
             //{1} (newt points to the first 2), {1,2}, ..., {1,2,2,2,2} (newt points to the last 2)
     
@@ -492,6 +496,8 @@ trait OrderedMultiset extends UnorderedMultiset{
     ensures next.Traversed()==old(mid.Traversed())  
     ensures |next.Traversed()| == old(|mid.Traversed()|) 
     
+    ensures mid is OrderedMultisetIterator && (next as OrderedMultisetIterator).Index() == old((mid as OrderedMultisetIterator).Index()) 
+
     ensures Iterators() >= {next}+old(Iterators())
 
 }

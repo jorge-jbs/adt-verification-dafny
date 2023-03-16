@@ -167,7 +167,7 @@ requires 0<=k<|s|
 
 lemma {:induction s,k} lelemth(s:multiset<int>,k:int)
 requires 0<=k<|s|
-ensures elemth(s,k) in s && |msmaller(s,elemth(s,k))|<=k<=|msmaller(s,elemth(s,k))|+s[elemth(s,k)]-1
+ensures elemth(s,k) in s && |msmaller(s,elemth(s,k))| <= k <= |msmaller(s,elemth(s,k))|+s[elemth(s,k)]-1
 { lminimum(s);
   if (k==0) { }
   else if (minimum(s)== elemth(s-multiset{minimum(s)},k-1)){}
@@ -204,7 +204,7 @@ ensures x==elemth(s,k)
 }
 
 lemma {:verify true} firstAndLast(s:multiset<int>)
-requires s!=multiset{}
+requires s != multiset{}
 ensures minimum(s)==elemth(s,0)
 ensures maximum(s)==elemth(s,|s|-1)
 { 
@@ -241,7 +241,7 @@ ensures maximum(s)==elemth(s,|s|-1)
 
 
 function isSortedSeq(xs:seq<int>):bool
-{forall i,j::0<=i<j<|xs| ==> xs[i]<=xs[j]}
+{forall i,j::0 <= i < j < |xs| ==> xs[i]<=xs[j]}
 
 
 function seq2Multiset (xs:seq<int>):multiset<int>
