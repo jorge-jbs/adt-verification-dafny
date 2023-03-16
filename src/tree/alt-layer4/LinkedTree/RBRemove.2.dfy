@@ -308,4 +308,285 @@ module LinkedTree.RBRemove {
       assert removedNode.value == minV == RBr.RemoveMin(old(TreeModelRec(sk))).2;
     }
   }
+  
+  method {:verify true} RemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K)
+      returns (newNode: TNode?, ghost newSk: tree<TNode>, removedNode: TNode?)
+    decreases RB.size(TreeModelRec(sk))
+    modifies elems(sk)
+
+    requires ValidRec(node, sk)
+    requires RBr.Remove.requires(TreeModelRec(sk), k)
+
+    ensures ValidRec(newNode, newSk)
+    ensures TreeModelRec(newSk) == RBr.Remove(old(TreeModelRec(sk)), k)
+    ensures elems(newSk) <= elems(sk)
+
+    requires allocated(elems(sk))
+    ensures fresh(elems(newSk)-elems(sk))
+    ensures allocated(elems(newSk))
+  {
+    if node == null {
+      newNode := node;
+      newSk := sk;
+      removedNode := null;
+    } else {
+      newNode := node;
+      newSk := sk;
+      ghost var t := TreeModelRec(newSk);
+      if node.key > k {  // 16'~
+        assume false;
+        var t' :=
+          if RB.isBlack(t.left) && !RB.isRed(t.left.left) then
+            RBr.MoveRedLeftSpec(t);
+            RBr.MoveRedLeft(t)
+          else
+            t;
+        ghost var t'' :=
+          RB.Node(
+            RBr.Remove(t'.left, k),
+            t'.key,
+            t'.value,
+            t'.right,
+            t'.color
+          );
+
+        isBlackProp(newNode.left, newSk.left);
+        if isBlack(newNode.left) {
+          isRedProp(newNode.left.left, newSk.left.left);
+        }
+        if isBlack(newNode.left) && !isRed(newNode.left.left) {
+          RBr.MoveRedLeftSpec(TreeModelRec(newSk));
+          newNode, newSk := MoveRedLeft(newNode, newSk);
+        }
+        assert TreeModelRec(newSk) == t';
+
+        var newNodeLeft;
+        ghost var newSkLeft;
+        label PreRec:
+        assert elems(newSk) <= elems(sk);
+        assert ValidRec(newNode, newSk);
+        assert ValidRec(newNode.left, newSk.left);
+        assert ValidRec(newNode.right, newSk.right);
+        assert newNode !in elems(newSk.right);
+        assert newNode.left !in elems(newSk.right);
+        assert newNode !in elems(newSk.left);
+        assert newNode.right !in elems(newSk.left);
+        assert elems(newSk.left) !! elems(newSk.right);
+        assert allocated(elems(newSk));
+        assert RBr.Remove.requires(TreeModelRec(newSk.left), k);
+
+        RBr.RemoveSpec(TreeModelRec(newSk.left), k);
+        newNodeLeft, newSkLeft, removedNode := RemoveRec(newNode.left, newSk.left, k);
+
+        assert elems(newSk) <= elems(sk);
+        assert unchanged@PreRec(elems(newSk.right));
+        assert ValidRec(newNode.right, newSk.right);
+        assert ValidRec(newNodeLeft, newSkLeft);
+
+        newNode.left := newNodeLeft;
+        newSk := Node(newSkLeft, newNode, newSk.right);
+
+        assert elems(newSk) <= elems(sk);
+        assert allocated(elems(newSk));
+        assert unchanged@PreRec(elems(newSk.right));
+        assert ValidRec(newNode.right, newSk.right);
+        assert ValidRec(newNode, newSk);
+
+        assert TreeModelRec(newSk) == t'';
+
+        newNode, newSk := Restore(newNode, newSk);
+        assert ValidRec(newNode, newSk);
+        assert elems(newSk) <= elems(sk);
+        assert TreeModelRec(newSk) == RBi.Restore(t'') == RBr.Remove(old(TreeModelRec(sk)), k);
+      } else {
+        var t' :=
+          if RB.isRed(t.left) then
+            RBi.RotateRightSpec(t);
+            RBi.RotateRight(t)
+          else
+            t;
+
+        if isRed(newNode.left) {
+          RBi.RotateRightSpec(TreeModelRec(newSk));
+          newNode, newSk := RotateRight(newNode, newSk);
+        }
+
+        assert TreeModelRec(newSk) == t';
+
+        if k == newNode.key && newNode.right == null {
+          removedNode := newNode;
+          newNode := newNode.left;
+          newSk := newSk.left;
+          assert elems(newSk) == elems(sk) - {removedNode};
+          return;
+        }
+
+        isBlackProp(newNode.right, newSk.right);
+        if isBlack(newNode.right) {
+          isRedProp(newNode.right.left, newSk.right.left);
+        }
+        if isBlack(newNode.right) && !isRed(newNode.right.left) {
+          RBr.MoveRedRightSpec(TreeModelRec(newSk));
+          newNode, newSk := MoveRedRight(newNode, newSk);
+        }
+
+        var t'' :=
+          if RB.isBlack(t'.right) && !RB.isRed(t'.right.left) then
+            RBr.MoveRedRightSpec(t');
+            RBr.MoveRedRight(t')
+          else
+            t';
+
+        assert TreeModelRec(newSk) == t'';
+
+        if k != newNode.key {
+          assume false;
+          ghost var t''' :=
+            RB.Node(
+              t''.left,
+              t''.key,
+              t''.value,
+              RBr.Remove(t''.right, k),
+              t''.color
+            );
+
+          label PreRec:
+          assert elems(newSk) <= elems(sk);
+          assert ValidRec(newNode, newSk);
+          assert ValidRec(newNode.left, newSk.left);
+          assert ValidRec(newNode.right, newSk.right);
+          assert newNode !in elems(newSk.right);
+          assert newNode.left !in elems(newSk.right);
+          assert newNode !in elems(newSk.right);
+          assert newNode.right !in elems(newSk.left);
+          assert elems(newSk.left) !! elems(newSk.right);
+          assert allocated(elems(newSk));
+          assert RBr.Remove.requires(TreeModelRec(newSk.right), k);
+
+          var newNodeRight;
+          ghost var newSkRight;
+          newNodeRight, newSkRight, removedNode := RemoveRec(newNode.right, newSk.right, k);
+
+          assert elems(newSk) <= elems(sk);
+          assert unchanged@PreRec(elems(newSk.left));
+          assert ValidRec(newNode.left, newSk.left);
+          assert ValidRec(newNodeRight, newSkRight);
+
+          newNode.right := newNodeRight;
+          newSk := Node(newSk.left, newNode, newSkRight);
+
+          assert elems(newSk) <= elems(sk);
+          assert allocated(elems(newSk));
+          assert unchanged@PreRec(elems(newSk.left));
+          assert ValidRec(newNode.left, newSk.left);
+          assert ValidRec(newNode, newSk);
+          
+          assert TreeModelRec(newSk) == t''';
+
+          newNode, newSk := Restore(newNode, newSk);
+          assert ValidRec(newNode, newSk);
+          assert elems(newSk) <= elems(sk);
+          assert TreeModelRec(newSk) == RBi.Restore(t''') == RBr.Remove(old(TreeModelRec(sk)), k);
+        } else {
+          removedNode := newNode;
+          ghost var oldNewSkLeft := newSk.left;
+          var oldNewNodeLeft := newNode.left;
+          var oldNewNodeColor := newNode.color;
+
+          label PreRec:
+          assert newNode != oldNewNodeLeft == old@PreRec(newNode.left);
+          assert newSk.left.data == newNode.left;
+          assert elems(newSk) <= elems(sk);
+          assert ValidRec(newNode, newSk);
+          assert ValidRec(newNode.left, newSk.left);
+          assert ValidRec(oldNewNodeLeft, newSk.left);
+          assert ValidRec(newNode.right, newSk.right);
+          assert newNode !in elems(newSk.right);
+          assert newNode.left !in elems(newSk.right);
+          assert newNode !in elems(newSk.right);
+          assert newNode.right !in elems(newSk.left);
+          assert elems(newSk.left) !! elems(newSk.right);
+          assert allocated(elems(newSk));
+          assert RBr.Remove.requires(TreeModelRec(newSk.right), k);
+
+          ghost var newSkRight;
+          var newNodeRight;
+          var minNode;
+          newNodeRight, newSkRight, minNode := RemoveMinRec(newNode.right, newSk.right);
+
+          label PostRec:
+          assert minNode != newNodeRight;
+          assert minNode != newNode;
+          assume false;
+          assert newSk.left.data == newNode.left;
+          assert oldNewNodeLeft == old@PreRec(newNode.left);
+          assert newNode != oldNewNodeLeft;
+          assert minNode != oldNewNodeLeft;
+          assert minNode !in elems(newSk.left);
+          assert minNode !in elems(newSkRight);
+          assert elems(newSk.left) !! elems(newSkRight);
+
+          assert elems(newSk) <= elems(sk);
+          assert unchanged@PreRec(elems(newSk.left));
+          assert ValidRec(newNode.left, newSk.left);
+          assert ValidRec(oldNewNodeLeft, newSk.left);
+          assert ValidRec(newNodeRight, newSkRight);
+          assume false;
+
+          ghost var oldNewNodeLeft' := oldNewNodeLeft;
+          assert oldNewNodeLeft' == old@PreRec(newNode.left);
+
+          newNode := minNode;
+          newNode.left := oldNewNodeLeft;
+          newNode.right := newNodeRight;
+          newNode.color := oldNewNodeColor;
+
+          assert elems(newSk) <= elems(sk);
+          assert allocated(oldNewNodeLeft);
+          assert allocated(elems(newSk));
+          assert unchanged@PreRec(elems(newSk.left));
+          assert newSk.left.data == newNode.left;
+          assert ValidRec(newSk.left.data, newSk.left);
+          assume false;
+
+          newSk := Node(newSk.left, newNode, newSkRight);
+
+          assert minNode != oldNewNodeLeft;
+          assert newNode != oldNewNodeLeft;
+          assert unchanged@PreRec(oldNewNodeLeft);
+          //assume false;
+/*
+          assert oldNewNodeLeft == old@PostRec(oldNewNodeLeft);
+          assert oldNewNodeLeft == oldNewNodeLeft';
+          assert oldNewNodeLeft' == old@PreRec(newNode.left);
+          assume false;
+          assert oldNewNodeLeft == old@PostRec(newNode.left);
+          assert oldNewNodeLeft == old@PreRec(newNode.left);
+*/
+          assert elems(newSk) <= elems(sk);
+          assert allocated(oldNewNodeLeft);
+          assert allocated(elems(newSk));
+          assert unchanged@PreRec(elems(newSk.left));
+          assert newSk.left.data == newNode.left;
+          assume false;
+          assert ValidRec(oldNewNodeLeft, newSk.left);
+          //assert newNode.left == old@PreRec(newNode.left);
+          assume false;
+          //assert unchanged@PreRec(newNode.left);
+          assert ValidRec(newNode.left, newSk.left);
+          assume false;
+          //assert ValidRec(newNode, newSk);
+
+          assert newNode !in elems(newSk.left);
+          assert newNode !in elems(newSk.right);
+          assert elems(newSk.left) !! elems(newSk.right);
+          assume false;
+          assert ValidRec(newNode, newSk);
+
+          assume false;
+          newNode, newSk := Restore(newNode, newSk);
+        }
+      }
+    }
+  }
 }

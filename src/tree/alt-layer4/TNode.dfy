@@ -113,6 +113,11 @@ module TNode {
     node != null && node.color.Black?
   }
 
+  lemma isBlackProp(node: TNode?, sk: tree<TNode>)
+    requires ValidRec(node, sk)
+    ensures isBlack(node) <==> RB.isBlack(TreeModelRec(sk))
+  {}
+
   function BlackHeight(sk: tree<TNode>): nat
     reads elems(sk)
   {

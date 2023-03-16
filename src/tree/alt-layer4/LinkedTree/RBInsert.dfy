@@ -95,10 +95,9 @@ module LinkedTree.RBInsert {
   method Restore(node: TNode, ghost sk: tree<TNode>)
     returns (newNode: TNode, ghost newSk: tree<TNode>)
 
-    modifies elems(sk)
-    //modifies set x | x in elems(sk) :: x`left
-    //modifies set x | x in elems(sk) :: x`right
-    //modifies set x | x in elems(sk) :: x`color
+    modifies set x | x in elems(sk) :: x`left
+    modifies set x | x in elems(sk) :: x`right
+    modifies set x | x in elems(sk) :: x`color
 
     requires ValidRec(node, sk)
 
@@ -160,11 +159,10 @@ module LinkedTree.RBInsert {
   method RBInsertRec(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
     returns (newNode: TNode, ghost newSk: tree<TNode>, ghost insertedNode:TNode)
 
-    modifies elems(sk)
-    //modifies set x | x in elems(sk) :: x`left
-    //modifies set x | x in elems(sk) :: x`right
-    //modifies set x | x in elems(sk) :: x`value
-    //modifies set x | x in elems(sk) :: x`color
+    modifies set x | x in elems(sk) :: x`left
+    modifies set x | x in elems(sk) :: x`right
+    modifies set x | x in elems(sk) :: x`value
+    modifies set x | x in elems(sk) :: x`color
 
     requires ValidRec(node, sk)
     ensures ValidRec(newNode, newSk)
@@ -172,8 +170,8 @@ module LinkedTree.RBInsert {
 
     ensures elems(newSk) == elems(sk) + {insertedNode}
     ensures insertedNode.key == k && insertedNode.value == v
-    ensures forall n | n in elems(sk) && old(n.key) != k ::
-      n.key == old(n.key) && n.value == old(n.value)
+    //ensures forall n | n in elems(sk) && old(n.key) != k ::
+      //n.key == old(n.key) && n.value == old(n.value)
 
     requires allocated(elems(sk))
     ensures fresh(elems(newSk)-elems(sk))
@@ -210,11 +208,10 @@ module LinkedTree.RBInsert {
   method RBInsertRoot(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
     returns (newNode: TNode, ghost newSk: tree<TNode>, ghost insertedNode:TNode)
 
-    modifies elems(sk)
-    //modifies set x | x in elems(sk) :: x`left
-    //modifies set x | x in elems(sk) :: x`right
-    //modifies set x | x in elems(sk) :: x`value
-    //modifies set x | x in elems(sk) :: x`color
+    modifies set x | x in elems(sk) :: x`left
+    modifies set x | x in elems(sk) :: x`right
+    modifies set x | x in elems(sk) :: x`value
+    modifies set x | x in elems(sk) :: x`color
 
     requires ValidRec(node, sk)
     ensures ValidRec(newNode, newSk)
