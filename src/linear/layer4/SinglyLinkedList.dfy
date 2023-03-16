@@ -490,7 +490,7 @@ method Append<A>(self: SinglyLinkedList<A>, other: SinglyLinkedList<A>)
   // doesn't work the way you expect it to if you don't keep this precondition
   // in mind. This could have resulted in segmentation faults or buggy code.
   // Another win for formal verification!
-  requires self != other
+  requires {self} + self.Repr() !! {other} + other.Repr()
   ensures self.Valid()
   ensures self.Model() == old(self.Model()) + other.Model()
 {
