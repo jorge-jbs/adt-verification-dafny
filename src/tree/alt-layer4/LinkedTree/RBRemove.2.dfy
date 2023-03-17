@@ -190,13 +190,16 @@ module LinkedTree.RBRemove {
     ensures removedNode.key == RBr.RemoveMin(old(TreeModelRec(sk))).1
     ensures removedNode.value == RBr.RemoveMin(old(TreeModelRec(sk))).2
     ensures removedNode in elems(sk)
+    ensures removedNode !in elems(newSk)
     ensures elems(newSk) == elems(sk) - {removedNode}
+    ensures elems(newSk) <= elems(sk)
 
     //ensures RBi.Restore.requires(TreeModelRec(newSk))
 
     requires allocated(elems(sk))
     ensures fresh(elems(newSk)-elems(sk))
     ensures allocated(elems(newSk))
+    ensures allocated(removedNode)
   {
     ghost var t := TreeModelRec(sk);
     if node.left == null {
@@ -488,18 +491,11 @@ module LinkedTree.RBRemove {
           assert elems(newSk) <= elems(sk);
           assert TreeModelRec(newSk) == RBi.Restore(t''') == RBr.Remove(old(TreeModelRec(sk)), k);
         } else {
-          removedNode := newNode;
-          ghost var oldNewSkLeft := newSk.left;
-          var oldNewNodeLeft := newNode.left;
-          var oldNewNodeColor := newNode.color;
-
           label PreRec:
-          assert newNode != oldNewNodeLeft == old@PreRec(newNode.left);
           assert newSk.left.data == newNode.left;
           assert elems(newSk) <= elems(sk);
           assert ValidRec(newNode, newSk);
           assert ValidRec(newNode.left, newSk.left);
-          assert ValidRec(oldNewNodeLeft, newSk.left);
           assert ValidRec(newNode.right, newSk.right);
           assert newNode !in elems(newSk.right);
           assert newNode.left !in elems(newSk.right);
@@ -511,52 +507,40 @@ module LinkedTree.RBRemove {
 
           ghost var newSkRight;
           var newNodeRight;
-          var minNode;
-          newNodeRight, newSkRight, minNode := RemoveMinRec(newNode.right, newSk.right);
+          newNodeRight, newSkRight, removedNode := RemoveMinRec(newNode.right, newSk.right);
 
           label PostRec:
-          assert minNode != newNodeRight;
-          assert minNode != newNode;
-          assume false;
-          assert newSk.left.data == newNode.left;
-          assert oldNewNodeLeft == old@PreRec(newNode.left);
-          assert newNode != oldNewNodeLeft;
-          assert minNode != oldNewNodeLeft;
-          assert minNode !in elems(newSk.left);
-          assert minNode !in elems(newSkRight);
+          assert newNode !in elems(newSkRight);
+          assert newNode.left !in elems(newSkRight);
+          assert newNode !in elems(newSk.right);
+          assert newNode.right !in elems(newSk.left);
           assert elems(newSk.left) !! elems(newSkRight);
-
           assert elems(newSk) <= elems(sk);
           assert unchanged@PreRec(elems(newSk.left));
           assert ValidRec(newNode.left, newSk.left);
-          assert ValidRec(oldNewNodeLeft, newSk.left);
           assert ValidRec(newNodeRight, newSkRight);
-          assume false;
 
-          ghost var oldNewNodeLeft' := oldNewNodeLeft;
-          assert oldNewNodeLeft' == old@PreRec(newNode.left);
-
-          newNode := minNode;
-          newNode.left := oldNewNodeLeft;
+          newNode.key := removedNode.key;
+          newNode.value := removedNode.value;
           newNode.right := newNodeRight;
-          newNode.color := oldNewNodeColor;
+          ghost var goodSk := Node(newSk.left, newNode, newSkRight);
+          newSk := goodSk;
 
           assert elems(newSk) <= elems(sk);
-          assert allocated(oldNewNodeLeft);
           assert allocated(elems(newSk));
           assert unchanged@PreRec(elems(newSk.left));
-          assert newSk.left.data == newNode.left;
-          assert ValidRec(newSk.left.data, newSk.left);
+          assert unchanged@PostRec(elems(newSk.left));
+          assert newNode.left == old@PostRec(newNode.left);
+          assert old@PostRec(ValidRec(newNode.left, newSk.left));
+          assume false;
+          assert ValidRec(newNode.left, newSk.left);
+          assert ValidRec(newNode.right, newSk.right);
           assume false;
 
-          newSk := Node(newSk.left, newNode, newSkRight);
 
-          assert minNode != oldNewNodeLeft;
-          assert newNode != oldNewNodeLeft;
-          assert unchanged@PreRec(oldNewNodeLeft);
           //assume false;
 /*
-          assert oldNewNodeLeft == old@PostRec(oldNewNodeLeft);
+          assert olºdeLeft);
           assert oldNewNodeLeft == oldNewNodeLeft';
           assert oldNewNodeLeft' == old@PreRec(newNode.left);
           assume false;
@@ -564,12 +548,10 @@ module LinkedTree.RBRemove {
           assert oldNewNodeLeft == old@PreRec(newNode.left);
 */
           assert elems(newSk) <= elems(sk);
-          assert allocated(oldNewNodeLeft);
           assert allocated(elems(newSk));
           assert unchanged@PreRec(elems(newSk.left));
           assert newSk.left.data == newNode.left;
           assume false;
-          assert ValidRec(oldNewNodeLeft, newSk.left);
           //assert newNode.left == old@PreRec(newNode.left);
           assume false;
           //assert unchanged@PreRec(newNode.left);
