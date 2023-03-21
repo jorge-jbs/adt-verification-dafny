@@ -491,6 +491,23 @@ module LinkedTree.RBRemove {
           assert elems(newSk) <= elems(sk);
           assert TreeModelRec(newSk) == RBi.Restore(t''') == RBr.Remove(old(TreeModelRec(sk)), k);
         } else {
+          var (r', minK, minV) := RBr.RemoveMin(t''.right);
+          var t''' := 
+            RB.Node(
+              t''.left,
+              t''.key,
+              t''.value,
+              r',
+              t''.color
+            );
+          var t'''' := 
+            RB.Node(
+              t'''.left,
+              minK,
+              minV,
+              t'''.right,
+              t'''.color
+            );
           label PreRec:
           assert newSk.left.data == newNode.left;
           assert elems(newSk) <= elems(sk);
@@ -509,64 +526,45 @@ module LinkedTree.RBRemove {
           var newNodeRight;
           newNodeRight, newSkRight, removedNode := RemoveMinRec(newNode.right, newSk.right);
 
-          label PostRec:
-          assert newNode !in elems(newSkRight);
-          assert newNode.left !in elems(newSkRight);
-          assert newNode !in elems(newSk.right);
-          assert newNode.right !in elems(newSk.left);
-          assert elems(newSk.left) !! elems(newSkRight);
           assert elems(newSk) <= elems(sk);
           assert unchanged@PreRec(elems(newSk.left));
           assert ValidRec(newNode.left, newSk.left);
           assert ValidRec(newNodeRight, newSkRight);
 
+          assert TreeModelRec(newSkRight) == r';
+          assert removedNode.key == minK;
+          assert removedNode.value == minV;
+
+          newNode.right := newNodeRight;
+          newSk := Node(newSk.left, newNode, newSkRight);
+
+          assert elems(newSk) <= elems(sk);
+          assert allocated(elems(newSk));
+          assert unchanged@PreRec(elems(newSk.left));
+          assert ValidRec(newNode.left, newSk.left);
+          assert ValidRec(newNode, newSk);
+          assert elems(newSk) <= elems(sk);
+
+          assert TreeModelRec(newSk) == t''';
+          assert removedNode.key == minK;
+          assert removedNode.value == minV;
+
           newNode.key := removedNode.key;
           newNode.value := removedNode.value;
-          newNode.right := newNodeRight;
-          ghost var goodSk := Node(newSk.left, newNode, newSkRight);
-          newSk := goodSk;
 
           assert elems(newSk) <= elems(sk);
           assert allocated(elems(newSk));
           assert unchanged@PreRec(elems(newSk.left));
-          assert unchanged@PostRec(elems(newSk.left));
-          assert newNode.left == old@PostRec(newNode.left);
-          assert old@PostRec(ValidRec(newNode.left, newSk.left));
-          assume false;
           assert ValidRec(newNode.left, newSk.left);
-          assert ValidRec(newNode.right, newSk.right);
-          assume false;
-
-
-          //assume false;
-/*
-          assert olºdeLeft);
-          assert oldNewNodeLeft == oldNewNodeLeft';
-          assert oldNewNodeLeft' == old@PreRec(newNode.left);
-          assume false;
-          assert oldNewNodeLeft == old@PostRec(newNode.left);
-          assert oldNewNodeLeft == old@PreRec(newNode.left);
-*/
-          assert elems(newSk) <= elems(sk);
-          assert allocated(elems(newSk));
-          assert unchanged@PreRec(elems(newSk.left));
-          assert newSk.left.data == newNode.left;
-          assume false;
-          //assert newNode.left == old@PreRec(newNode.left);
-          assume false;
-          //assert unchanged@PreRec(newNode.left);
-          assert ValidRec(newNode.left, newSk.left);
-          assume false;
-          //assert ValidRec(newNode, newSk);
-
-          assert newNode !in elems(newSk.left);
-          assert newNode !in elems(newSk.right);
-          assert elems(newSk.left) !! elems(newSk.right);
-          assume false;
           assert ValidRec(newNode, newSk);
+          assert elems(newSk) <= elems(sk);
 
           assume false;
+          assert TreeModelRec(newSk) == t'''';
+
           newNode, newSk := Restore(newNode, newSk);
+          assume TreeModelRec(newSk) == RBr.Remove(old(TreeModelRec(sk)), k);
+          //assume false;
         }
       }
     }
