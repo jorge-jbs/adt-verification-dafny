@@ -6,6 +6,7 @@ module RBTree.RBRemove {
   import opened KeyValue
 
   import opened Base
+  import opened Color
   import opened RBInsert
 
   function method MoveRedLeft(t: rbtree): rbtree
@@ -732,5 +733,49 @@ module RBTree.RBRemove {
         }
       }
     }
+  }
+
+  function method ReddenRoot(t: rbtree): rbtree
+  {
+    match t {
+      case Empty => Empty
+      case Node(l, k, v, r, c) =>
+        if l.Node? && l.color.Red? then
+          Node(l, k, v, r, c)
+        else
+          Node(l, k, v, r, Red)
+    }
+  }
+
+  function method RemoveRoot(t: rbtree, k: K): rbtree
+    requires SearchTree(t)
+    requires RedBlackTreeRoot(t)
+  {
+    BlackenRoot(Remove(ReddenRoot(t), k))
+  }
+
+  lemma RemoveRootSpec(t: rbtree, k: K)
+    decreases size(t)
+
+    requires SearchTree(t)
+    requires RedBlackTreeRoot(t)
+
+    ensures SearchTree(RemoveRoot(t, k))
+    ensures RedBlackTreeRoot(RemoveRoot(t, k))
+    ensures keys(RemoveRoot(t, k)) == keys(t) - {k}
+  {
+    RemoveSpec(ReddenRoot(t), k);
+  }
+  
+  lemma RemoveRootModel(t: rbtree, k: K)
+    decreases size(t)
+
+    requires SearchTree(t)
+    requires RedBlackTreeRoot(t)
+
+    ensures SearchTree(RemoveRoot(t, k))
+    ensures model(RemoveRoot(t, k)) == model(t) - {k}
+  {
+    RemoveModel(ReddenRoot(t), k);
   }
 }

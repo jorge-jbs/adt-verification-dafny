@@ -576,4 +576,54 @@ module LinkedTree.RBRemove {
       }
     }
   }
+  
+  method ReddenRoot(node: TNode?, ghost sk: tree<TNode>)
+    decreases RB.size(TreeModelRec(sk))
+    modifies elems(sk)
+
+    requires ValidRec(node, sk)
+    requires RBr.ReddenRoot.requires(TreeModelRec(sk))
+
+    ensures ValidRec(node, sk)
+    ensures TreeModelRec(sk) == RBr.ReddenRoot(old(TreeModelRec(sk)))
+    ensures elems(sk) <= elems(sk)
+
+    requires allocated(elems(sk))
+    ensures fresh(elems(sk)-elems(sk))
+    ensures allocated(elems(sk))
+  {
+    if node != null {
+      if node.left == null || !node.left.color.Red? {
+        node.color := Red;
+      }
+    }
+  }
+
+  method RemoveRoot(node: TNode?, ghost sk: tree<TNode>, k: K)
+      returns (newNode: TNode?, ghost newSk: tree<TNode>, removedNode: TNode?)
+    decreases RB.size(TreeModelRec(sk))
+    modifies elems(sk)
+
+    requires ValidRec(node, sk)
+    requires RBr.RemoveRoot.requires(TreeModelRec(sk), k)
+
+    ensures ValidRec(newNode, newSk)
+    ensures TreeModelRec(newSk) == RBr.RemoveRoot(old(TreeModelRec(sk)), k)
+    ensures elems(newSk) <= elems(sk)
+
+    requires allocated(elems(sk))
+    ensures fresh(elems(newSk)-elems(sk))
+    ensures allocated(elems(newSk))
+  {
+    ghost var t := TreeModelRec(sk);
+    ReddenRoot(node, sk);
+    assert ValidRec(node, sk);
+    assert TreeModelRec(sk) == RBr.ReddenRoot(t);
+    newNode, newSk, removedNode := RemoveRec(node, sk, k);
+    assert TreeModelRec(newSk) == RBr.Remove(RBr.ReddenRoot(t), k);
+    if newNode != null  {
+      newNode.color := Black;
+    }
+    assert TreeModelRec(newSk) == RBr.RemoveRoot(t, k);
+  }
 }

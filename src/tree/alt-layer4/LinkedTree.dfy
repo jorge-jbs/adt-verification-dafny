@@ -6,17 +6,20 @@ include "../../../src/tree/alt-layer4/KeyValue.dfy"
 include "../../../src/tree/alt-layer4/TNode.dfy"
 include "../../../src/tree/alt-layer4/LinkedTree/SInsert.dfy"
 include "../../../src/tree/alt-layer4/LinkedTree/RBInsert.dfy"
+include "../../../src/tree/alt-layer4/LinkedTree/RBRemove.dfy"
 //include "../../../src/MUtils.dfy"
 
 module LinkedTree {
   import opened TNode
   import RB = RBTree.Base
   import RBi = RBTree.RBInsert
+  import RBr = RBTree.RBRemove
   import RBs = RBTree.SInsert
   import opened T = Tree
   import opened KeyValue
   import opened SInsert
   import opened RBInsert
+  import opened RBRemove
 
   class LinkedTree {
     var root: TNode?;
@@ -100,6 +103,29 @@ module LinkedTree {
       root, skeleton, z := RBInsertRoot(root, skeleton, k, v);
       RBi.RBInsertRootSpec(old(TreeModelRec(skeleton)), k, v);
       RBi.RBInsertRootModel(old(TreeModelRec(skeleton)), k, v);
+    }
+
+    // 45"
+    method RBRemove(k: K)
+      modifies this, Repr()
+
+      requires Valid()
+      requires SearchTree()
+      requires RedBlackTree()
+
+      ensures Valid()
+      ensures SearchTree()
+      ensures RedBlackTree()
+      ensures MapModel() == old(MapModel()) - {k}
+
+      requires allocated(Repr())
+      ensures fresh(Repr()-old(Repr()))
+      ensures allocated(Repr())
+    {
+      ghost var z;
+      root, skeleton, z := RemoveRoot(root, skeleton, k);
+      RBr.RemoveRootSpec(old(TreeModelRec(skeleton)), k);
+      RBr.RemoveRootModel(old(TreeModelRec(skeleton)), k);
     }
   }
 }
