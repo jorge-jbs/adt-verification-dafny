@@ -84,6 +84,12 @@ module TNode {
     }
   }
 
+  lemma TreeModelRecChildren(sk: tree<TNode>)
+    requires sk.Node?
+    ensures TreeModelRec(sk).left == TreeModelRec(sk.left)
+    ensures TreeModelRec(sk).right == TreeModelRec(sk.right)
+  {}
+
   predicate SearchTreeRec(sk: tree<TNode>)
     reads elems(sk)
   {
