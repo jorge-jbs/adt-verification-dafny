@@ -63,14 +63,6 @@ module LinkedTree {
       RBStackRec(stackSk)
     }
 
-/*
-    function RBStack(): seq<RB.rbtree>
-      reads this, BigUnion(set sk | sk in stackSk :: elems(sk))
-    {
-      seq(|stackSk|, i reads this, BigUnion(set sk | sk in stackSk :: elems(sk)) requires 0 <= i < |stackSk| => TreeModelRec(stackSk[i]))
-    }
-    */
-
     predicate Valid()
       reads this, parent, elems(parent.skeleton), BigUnion(set sk | sk in stackSk :: elems(sk))
     {
@@ -119,7 +111,7 @@ module LinkedTree {
     {
       if node != null {
         newStack, newStackSk := DescendAndPush(node.left, sk.left, stack + [node], stackSk + [sk]);
-        //RBStackRecLast(stackSk, sk);  // This is the only line needed to automatically prove the postconditionsl
+        //RBStackRecLast(stackSk, sk);  // This is the only line needed to automatically prove the postconditions
         calc == {
           RBStackRec(newStackSk);
           RBit.DescendAndPush(RBStackRec(stackSk + [sk]), TreeModelRec(sk.left));
@@ -127,112 +119,13 @@ module LinkedTree {
           RBit.DescendAndPush(RBStackRec(stackSk) + [TreeModelRec(sk)], TreeModelRec(sk.left));
           { TreeModelRecChildren(sk); }
           RBit.DescendAndPush(RBStackRec(stackSk) + [TreeModelRec(sk)], TreeModelRec(sk).left);
-        } 
+        }
         DescendAndPushInd(RBStackRec(stackSk), TreeModelRec(sk));
       } else {
         newStack := stack;
         newStackSk := stackSk;
       }
     }
-
-/*
-    method {:verify false} DescendAndPush(node: TNode?, ghost sk: tree<TNode>)
-      modifies this, Parent(), Parent().Repr()
-      requires ValidRec(node, sk)
-      //requires Valid()
-      requires RBit.ValidStack(RBStack())
-      
-      requires node in Parent().Repr()
-      //requires elems(sk) <= elems(parent.skeleton)
-
-      ensures RBit.ValidStack(RBStack())
-      ensures RBStack() == RBit.DescendAndPush(old(RBStack()), old(TreeModelRec(sk)))
-
-      requires allocated(elems(sk))
-      requires allocated(Parent())
-      requires allocated(Parent().Repr())
-      ensures fresh(Parent().Repr() - old(Parent().Repr()))
-      ensures allocated(Parent().Repr())
-    {
-      assert allocated(elems(sk));
-      if node != null {
-        TreeModelRecChildren(sk);
-        //assert TreeModelRec(sk.left) == TreeModelRec(sk).left;
-        //assume false;
-        //assert old(TreeModelRec(sk.left)) == TreeModelRec(sk.left) == TreeModelRec(sk).left == old(TreeModelRec(sk)).left == old(TreeModelRec(sk)).left == old(TreeModelRec(sk).left);
-        ghost var st := RBStack();
-        assert forall k | 0 <= k < |st| :: st[k].Node?;
-        assert forall k | 0 <= k < |stackSk| :: st[k] == TreeModelRec(stackSk[k]);
-        stack := stack + [node];
-        stackSk := stackSk + [sk];
-        st := RBStack();
-        assert RBStack() == st == old(RBStack()) + [TreeModelRec(sk)];
-        assert RBStack() == st == old(RBStack()) + [old(TreeModelRec(sk))];
-        assert forall k | 0 <= k < |stackSk| :: st[k] == TreeModelRec(stackSk[k]);
-        assert forall k | 0 <= k < |stackSk| :: TreeModelRec(stackSk[k]).Node?;
-        assert forall k | 0 <= k < |st| :: st[k].Node?;
-        DescendAndPush(node.left, sk.left);
-        assert RBStack() == RBit.DescendAndPush(st, old(TreeModelRec(sk.left)));
-        //assume false;
-        //assume old(TreeModelRec(sk.left)) == old(TreeModelRec(sk).left);
-        //assume false;
-        assume false;
-        assert RBStack() == RBit.DescendAndPush(st, old(TreeModelRec(sk).left));
-        assert st == old(RBStack()) + [old(TreeModelRec(sk))];
-        DescendAndPushInd(old(RBStack()), old(TreeModelRec(sk)));
-        assert RBit.ValidStack(RBStack());
-        assume false;
-        assert RBStack() == RBit.DescendAndPush(old(RBStack()), old(TreeModelRec(sk)));
-      } else {
-      }
-    }
-    */
-
-/*
-    method DescendAndPush(node: TNode?, ghost sk: tree<TNode>)
-      modifies this, Parent(), Parent().Repr()
-      requires ValidRec(node, sk)
-      requires Valid()
-
-      requires allocated(Parent())
-      requires allocated(Parent().Repr())
-      ensures fresh(Parent().Repr() - old(Parent().Repr()))
-      ensures allocated(Parent().Repr())
-    {
-      ghost var oldStack := RBStack();
-      ghost var oldNode := TreeModelRec(sk);
-      var node := node;
-      ghost var sk := sk;
-      while node != null
-        decreases sk
-        invariant ValidRec(node, sk)
-        invariant RBit.ValidStack(RBStack())
-        //invariant RBStack() <= RBit.DescendAndPush(oldStack, oldNode)
-        //invariant RB.inorder(TreeModelRec(skeleton)) == traversed + RBit.inorderStack(RBStack())
-        invariant allocated(this)
-        invariant allocated(Parent())
-        invariant allocated(Parent().Repr())
-        invariant fresh(Parent().Repr() - old(Parent().Repr()))
-      {
-        var st := RBStack();
-        label init:
-        assert RBit.ValidStack(st);
-        assert forall k | 0 <= k < |st| :: st[k].Node?;
-        assert forall k | 0 <= k < |stackSk| :: st[k] == TreeModelRec(stackSk[k]);
-        stack := stack + [node];
-        stackSk := stackSk + [sk];
-        st := RBStack();
-        assert node != null;
-        assert sk.Node?;
-        assert TreeModelRec(sk).Node?;
-        assert forall k | 0 <= k < |stackSk| :: st[k] == TreeModelRec(stackSk[k]);
-        assert forall k | 0 <= k < |stackSk| :: TreeModelRec(stackSk[k]).Node?;
-        assert forall k | 0 <= k < |st| :: st[k].Node?;
-        node := node.left;
-        sk := sk.left;
-      }
-    }
-  */
   }
 
   class LinkedTree {
