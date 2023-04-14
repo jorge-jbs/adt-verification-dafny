@@ -41,11 +41,15 @@ module LinkedTree.Iterator {
       this.skeleton := skeleton;
       this.traversed := [];
     }
-    
+
     method DescendAndPush(node: TNode?, ghost sk: tree<TNode>)
       modifies this
       requires ValidRec(node, sk)
       requires Valid()
+      requires allocated(Parent())
+      requires allocated(Parent().Repr())
+      ensures fresh(Parent().Repr() - old(Parent().Repr()))
+      ensures allocated(Parent().Repr())
     {
       var node := node;
       ghost var sk := sk;
