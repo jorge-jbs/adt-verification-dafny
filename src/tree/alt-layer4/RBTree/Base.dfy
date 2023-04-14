@@ -24,6 +24,16 @@ module RBTree.Base {
     }
   }
 
+  function method values(t: rbtree): set<K>
+    ensures t.Empty? ==> values(t) == {}
+    ensures !t.Empty? ==> values(t) == values(t.left) + {t.value} + values(t.right)
+  {
+    match t {
+      case Empty => {}
+      case Node(l, k, v, r, c) => values(l) + {v} + values(r)
+    }
+  }
+
   function method size(t: rbtree): nat
     //ensures size(t) == |keys(t)|
   {

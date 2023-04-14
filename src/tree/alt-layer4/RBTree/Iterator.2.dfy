@@ -47,7 +47,7 @@ module RBTree.Iterator {
     }
   }
 
-  function Next(root: rbtree, st: seq<rbtree>): seq<rbtree>
+  function Next(st: seq<rbtree>): seq<rbtree>
     requires st != []  // has next
     requires ValidStack(st)
   {
@@ -60,8 +60,8 @@ module RBTree.Iterator {
     requires ValidStack(st)
     requires inorder(root) == traversed + inorderStack(st)
 
-    ensures ValidStack(Next(root, st))
-    ensures inorder(root) == traversed + [(st[|st|-1].key, st[|st|-1].value)] + inorderStack(Next(root, st))
+    ensures ValidStack(Next(st))
+    ensures inorder(root) == traversed + [(st[|st|-1].key, st[|st|-1].value)] + inorderStack(Next(st))
   {
     var node := st[|st|-1];
     DescendAndPushSpec(root, st[..|st|-1], node.right, traversed + [(node.key, node.value)]);
