@@ -1,5 +1,5 @@
-include "../../../../src/tree/alt-layer4/KeyValue.dfy"
-include "../../../../src/tree/alt-layer4/RBTree/Base.dfy"
+include "../../../../src/tree/layer4/KeyValue.dfy"
+include "../../../../src/tree/layer4/RBTree/Base.dfy"
 
 module RBTree.Iterator {
   import opened KeyValue

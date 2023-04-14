@@ -1,7 +1,7 @@
-include "../../../src/tree/alt-layer4/RBTree/Base.dfy"
-include "../../../src/tree/alt-layer4/Tree.dfy"
-include "../../../src/tree/alt-layer4/KeyValue.dfy"
-include "../../../src/tree/alt-layer4/Color.dfy"
+include "../../../src/tree/layer4/RBTree/Base.dfy"
+include "../../../src/tree/layer4/Tree.dfy"
+include "../../../src/tree/layer4/KeyValue.dfy"
+include "../../../src/tree/layer4/Color.dfy"
 
 module TNode {
   import opened KeyValue

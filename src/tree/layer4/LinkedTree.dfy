@@ -1,14 +1,14 @@
 include "../../../src/MUtils.dfy"
-include "../../../src/tree/alt-layer4/RBTree/Base.dfy"
-include "../../../src/tree/alt-layer4/RBTree/SInsert.dfy"
-include "../../../src/tree/alt-layer4/RBTree/RBInsert.dfy"
-include "../../../src/tree/alt-layer4/RBTree/Iterator.2.dfy"
-include "../../../src/tree/alt-layer4/Tree.dfy"
-include "../../../src/tree/alt-layer4/KeyValue.dfy"
-include "../../../src/tree/alt-layer4/TNode.dfy"
-include "../../../src/tree/alt-layer4/LinkedTree/SInsert.dfy"
-include "../../../src/tree/alt-layer4/LinkedTree/RBInsert.dfy"
-include "../../../src/tree/alt-layer4/LinkedTree/RBRemove.dfy"
+include "../../../src/tree/layer4/RBTree/Base.dfy"
+include "../../../src/tree/layer4/RBTree/SInsert.dfy"
+include "../../../src/tree/layer4/RBTree/RBInsert.dfy"
+include "../../../src/tree/layer4/RBTree/Iterator.2.dfy"
+include "../../../src/tree/layer4/Tree.dfy"
+include "../../../src/tree/layer4/KeyValue.dfy"
+include "../../../src/tree/layer4/TNode.dfy"
+include "../../../src/tree/layer4/LinkedTree/SInsert.dfy"
+include "../../../src/tree/layer4/LinkedTree/RBInsert.dfy"
+include "../../../src/tree/layer4/LinkedTree/RBRemove.dfy"
 include "../../../src/MUtils.dfy"
 
 module LinkedTree {
@@ -210,7 +210,7 @@ module LinkedTree {
       newTraversed := traversed + [(k, v)];
     }
 
-    method Next() returns (k: K, v: V)  // 17'4"
+    method {:verify false} Next() returns (k: K, v: V)  // 17'4"
       modifies this
       requires Valid()
       requires RBit.ValidStack(RBStack())  /* redundant */

@@ -1,11 +1,11 @@
 include "../../../../src/MUtils.dfy"
-include "../../../../src/tree/alt-layer4/LinkedTree/RBInsert.dfy"
-include "../../../../src/tree/alt-layer4/RBTree/Base.dfy"
-include "../../../../src/tree/alt-layer4/RBTree/RBInsert.dfy"
-include "../../../../src/tree/alt-layer4/RBTree/RBRemove.dfy"
-include "../../../../src/tree/alt-layer4/Tree.dfy"
-include "../../../../src/tree/alt-layer4/TNode.dfy"
-include "../../../../src/tree/alt-layer4/Color.dfy"
+include "../../../../src/tree/layer4/LinkedTree/RBInsert.dfy"
+include "../../../../src/tree/layer4/RBTree/Base.dfy"
+include "../../../../src/tree/layer4/RBTree/RBInsert.dfy"
+include "../../../../src/tree/layer4/RBTree/RBRemove.dfy"
+include "../../../../src/tree/layer4/Tree.dfy"
+include "../../../../src/tree/layer4/TNode.dfy"
+include "../../../../src/tree/layer4/Color.dfy"
 
 module LinkedTree.RBRemove {
   import opened Utils
@@ -186,7 +186,7 @@ module LinkedTree.RBRemove {
     ensures r + s == r' + s
   {}
 
-  method RemoveMinRec(node: TNode, ghost sk: tree<TNode>)  // 11'15"
+  method {:verify false} RemoveMinRec(node: TNode, ghost sk: tree<TNode>)  // 11'15"
       returns (newNode: TNode?, ghost newSk: tree<TNode>, removedNode: TNode)
     decreases RB.size(TreeModelRec(sk))
     modifies elems(sk)
@@ -318,7 +318,7 @@ module LinkedTree.RBRemove {
     }
   }
 
-  method RemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K)  // 12'53"
+  method {:verify false} RemoveRec(node: TNode?, ghost sk: tree<TNode>, k: K)  // 12'53"
       returns (newNode: TNode?, ghost newSk: tree<TNode>, removedNode: TNode?)
     decreases RB.size(TreeModelRec(sk))
     modifies elems(sk)

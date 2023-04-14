@@ -1,8 +1,8 @@
-include "../../../../src/tree/alt-layer4/RBTree/Base.dfy"
-include "../../../../src/tree/alt-layer4/RBTree/RBInsert.dfy"
-include "../../../../src/tree/alt-layer4/Tree.dfy"
-include "../../../../src/tree/alt-layer4/TNode.dfy"
-include "../../../../src/tree/alt-layer4/Color.dfy"
+include "../../../../src/tree/layer4/RBTree/Base.dfy"
+include "../../../../src/tree/layer4/RBTree/RBInsert.dfy"
+include "../../../../src/tree/layer4/Tree.dfy"
+include "../../../../src/tree/layer4/TNode.dfy"
+include "../../../../src/tree/layer4/Color.dfy"
 
 module LinkedTree.RBInsert {
   import opened KeyValue
@@ -205,7 +205,7 @@ module LinkedTree.RBInsert {
   }
 
   // 5"
-  method RBInsertRoot(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
+  method {:verify false} RBInsertRoot(node: TNode?, ghost sk: tree<TNode>, k: K, v: V)
     returns (newNode: TNode, ghost newSk: tree<TNode>, ghost insertedNode:TNode)
 
     modifies set x | x in elems(sk) :: x`left

@@ -1,6 +1,6 @@
 include "../../../../src/MUtils.dfy"
-include "../../../../src/tree/alt-layer4/KeyValue.dfy"
-include "../../../../src/tree/alt-layer4/Color.dfy"
+include "../../../../src/tree/layer4/KeyValue.dfy"
+include "../../../../src/tree/layer4/Color.dfy"
 
 module RBTree.Base {
   import opened Utils

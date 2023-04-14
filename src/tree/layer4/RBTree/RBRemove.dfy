@@ -1,6 +1,6 @@
-include "../../../../src/tree/alt-layer4/KeyValue.dfy"
-include "../../../../src/tree/alt-layer4/RBTree/Base.dfy"
-include "../../../../src/tree/alt-layer4/RBTree/RBInsert.dfy"
+include "../../../../src/tree/layer4/KeyValue.dfy"
+include "../../../../src/tree/layer4/RBTree/Base.dfy"
+include "../../../../src/tree/layer4/RBTree/RBInsert.dfy"
 
 module RBTree.RBRemove {
   import opened KeyValue
