@@ -9,7 +9,7 @@ include "../../../src/tree/alt-layer4/TNode.dfy"
 include "../../../src/tree/alt-layer4/LinkedTree/SInsert.dfy"
 include "../../../src/tree/alt-layer4/LinkedTree/RBInsert.dfy"
 include "../../../src/tree/alt-layer4/LinkedTree/RBRemove.dfy"
-//include "../../../src/MUtils.dfy"
+include "../../../src/MUtils.dfy"
 
 module LinkedTree {
   import opened Utils
@@ -129,33 +129,6 @@ module LinkedTree {
       }
     }
 
-    static method Works(s: set<TNode>)
-      modifies {}
-    {
-      assert unchanged(s);
-    }
-
-    static method {:verify false} DoesntWorkSadFace(t: tree<TNode>)
-      modifies {}
-    {
-      assert unchanged(elems(t));
-    }
-
-    static method {:verify false} DoesntWorkNeitherSadFace(node: TNode, sk: tree<TNode>)
-      modifies {}
-      requires ValidRec(node, sk)
-      //requires allocated(elems(sk))
-    {
-      assert unchanged(elems(sk));
-    }
-
-    static method NowItWorksYayHappyFace(sk: tree<TNode>)
-      modifies {}
-      requires allocated(elems(sk))
-    {
-      assert unchanged(elems(sk));
-    }
-
     static lemma RBStackSub(stackSk: seq<tree<TNode>>)
       requires stackSk != []
       requires forall i | 0 <= i < |stackSk| :: stackSk[i].Node?
@@ -167,57 +140,7 @@ module LinkedTree {
       }
     }
 
-    /*
     static method NextAux(
-        stack: seq<TNode>,
-        ghost stackSk: seq<tree<TNode>>,
-        ghost parentSkeleton: tree<TNode>,
-        ghost traversed: seq<(K, V)>
-      )
-      returns (
-        newStack: seq<TNode>, ghost newStackSk: seq<tree<TNode>>,
-        k: K, v: V
-      )
-      
-      requires |stack| == |stackSk|
-      requires (forall i | 0 <= i < |stack| :: ValidRec(stack[i], stackSk[i]))
-      requires RBit.ValidStack(RBStackRec(stackSk))
-      requires RBStackRec(stackSk) != []
-      requires RB.inorder(TreeModelRec(parentSkeleton)) == traversed + RBit.inorderStack(RBStackRec(stackSk));
-
-      ensures |newStack| == |newStackSk|
-      ensures (forall i | 0 <= i < |newStack| :: ValidRec(newStack[i], newStackSk[i]))
-      ensures RBit.ValidStack(RBStackRec(newStackSk))
-      ensures RBStackRec(newStackSk) == RBit.Next(RBStackRec(stackSk))
-      ensures k == stack[|stack|-1].key == TreeModelRec(stackSk[|stackSk|-1]).key
-      ensures v == stack[|stack|-1].value == TreeModelRec(stackSk[|stackSk|-1]).value
-      ensures RB.inorder(TreeModelRec(parentSkeleton)) == traversed + [(k, v)] + RBit.inorderStack(RBStackRec(newStackSk));
-
-      requires forall i | 0 <= i < |stackSk| :: allocated(elems(stackSk[i]))
-      ensures forall i | 0 <= i < |newStackSk| :: allocated(elems(newStackSk[i]))
-    {
-      RBit.NextSpec(TreeModelRec(parentSkeleton), RBStackRec(stackSk), traversed);
-      var node := stack[|stack|-1];
-      k, v := node.key, node.value;
-      ghost var skeleton := stackSk[|stackSk|-1];
-      calc == {
-        RB.inorder(TreeModelRec(parentSkeleton));
-        traversed + RBit.inorderStack(RBStackRec(stackSk));
-      }
-      newStack, newStackSk := DescendAndPush(node.right, skeleton.right, stack[..|stack|-1], stackSk[..|stackSk|-1]);
-      calc == {
-        RBStackRec(newStackSk);
-        RBit.DescendAndPush(RBStackRec(stackSk[..|stackSk|-1]), TreeModelRec(skeleton.right));
-        RBit.DescendAndPush(RBStackRec(stackSk[..|stackSk|-1]), RBStackRec(stackSk)[|stackSk|-1].right);
-        { RBStackSub(stackSk); }
-        RBit.DescendAndPush(RBStackRec(stackSk)[..|RBStackRec(stackSk)|-1], RBStackRec(stackSk)[|RBStackRec(stackSk)|-1].right);
-        RBit.Next(RBStackRec(stackSk));
-      }
-      assume RB.inorder(TreeModelRec(parentSkeleton)) == traversed + [(k, v)] + RBit.inorderStack(RBStackRec(newStackSk));
-    }
-    */
-    
-    static method {:verify false} NextAux(
         stack: seq<TNode>,
         ghost stackSk: seq<tree<TNode>>,
         ghost parentSkeleton: tree<TNode>,
@@ -286,8 +209,8 @@ module LinkedTree {
       }
       newTraversed := traversed + [(k, v)];
     }
-    
-    method Next() returns (k: K, v: V)  // 21'54"
+
+    method Next() returns (k: K, v: V)  // 17'4"
       modifies this
       requires Valid()
       requires RBit.ValidStack(RBStack())  /* redundant */
@@ -327,74 +250,6 @@ module LinkedTree {
       assert RB.inorder(TreeModelRec(parent.skeleton)) == newTraversed + RBit.inorderStack(RBStackRec(stackSk));
       assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStackRec(stackSk));
     }
-
-/*
-    method {:verify false} Next() returns (k: K, v: V)
-      modifies this
-      requires Valid()
-      requires RBit.ValidStack(RBStack())  /* redundant */
-      requires RBStack() != []
-      ensures Valid()
-      //ensures RBStack() == old(RBit.Next(RBStack()))
-
-      requires forall i | 0 <= i < |stackSk| :: allocated(elems(stackSk[i]));
-      ensures forall i | 0 <= i < |stackSk| :: allocated(elems(stackSk[i]))
-    {
-      RBit.NextSpec(TreeModelRec(parent.skeleton), RBStackRec(stackSk), traversed);
-      //RBStackSub(stackSk);
-      var st := RBStackRec(stackSk);
-      assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + [(st[|st|-1].key, st[|st|-1].value)] + RBit.inorderStack(RBit.Next(st));
-      stack, stackSk, k, v := NextAux(stack, stackSk, parent.skeleton, traversed);
-      assert |stack| == |stackSk|;
-      assert (forall i | 0 <= i < |stack| :: ValidRec(stack[i], stackSk[i]));
-      assert RBit.ValidStack(RBStack());
-      calc == {
-        RB.inorder(TreeModelRec(parent.skeleton));
-        { assume false; }
-        traversed + [(k, v)] + RBit.inorderStack(RBStack());
-      }
-      assume false;
-      assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + [(k, v)] + RBit.inorderStack(RBStack());
-      assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStack());
-      assert Valid();
-    }
-    */
-
-    /*
-    method Next()
-      modifies this
-      requires Valid()
-      requires RBit.ValidStack(RBStack())  /* redundant */
-      requires RBStack() != []
-      ensures Valid()
-      //ensures RBStack() == old(RBit.Next(RBStack()))
-
-      requires forall i | 0 <= i < |stackSk| :: allocated(elems(stackSk[i]));
-    {
-      assert RBit.ValidStack(RBStackRec(stackSk[..|stackSk|-1]));
-      ghost var oldStackSk := stackSk;
-
-      var node := stack[|stack|-1];
-      ghost var skeleton := stackSk[|stackSk|-1];
-      //assume TreeModelRec(skeleton) == RBStack()[|RBStack()|-1];
-      var newStack, newStackSk := DescendAndPush(node.right, skeleton.right, stack[..|stack|-1], stackSk[..|stackSk|-1]);
-      assert RBStackRec(newStackSk) == RBit.DescendAndPush(RBStackRec(stackSk[..|stackSk|-1]), TreeModelRec(skeleton.right));
-      assert RBStackRec(newStackSk) == RBit.DescendAndPush(RBStackRec(oldStackSk[..|oldStackSk|-1]), TreeModelRec(skeleton.right));
-      stackSk := newStackSk;
-      assume false;
-      assert RBStackRec(newStackSk) == RBit.DescendAndPush(RBStackRec(oldStackSk[..|oldStackSk|-1]), TreeModelRec(skeleton.right));
-      assume false;
-      assert RBStackRec(stackSk) == RBit.DescendAndPush(RBStackRec(oldStackSk[..|oldStackSk|-1]), TreeModelRec(skeleton.right));
-      assert |stack| == |stackSk|;
-      assert (forall i | 0 <= i < |stack| :: ValidRec(stack[i], stackSk[i]));
-      assert RBit.ValidStack(RBStack());
-      assume false;
-      assert RBStack() == old(RBit.Next(RBStack()));
-      assume false;
-      assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStack());
-      assume false;
-    }
-    */
   }
 
   class LinkedTree {
