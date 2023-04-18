@@ -1,288 +1,444 @@
-include "../../../src/tree/Tree.dfy"
-include "../../../src/tree/SearchTree.dfy"
+include "../../../src/tree/layer4/Tree.dfy"
+include "../../../src/tree/layer4/LinkedTree.dfy"
+include "../../../src/tree/layer4/LinkedTree/RBInsert.dfy"
+include "../../../src/tree/layer4/LinkedTree/RBRemove.dfy"
 include "../../../src/tree/layer1/OrderedMap.dfy"
+include "../../../src/tree/layer4/RBTree/Base.dfy"
 
-class OrderedMapImpl extends OrderedMap {
-  var tree: SearchTree;
-  //ghost var iters: set<OrderedMapIteratorImpl>;
+module OrderedMapImpl {
+  import opened KeyValue
+  import opened T = Tree
+  import opened LinkedTree
+  import opened LinkedTree.SInsert
+  import opened LinkedTree.RBInsert
+  import opened LinkedTree.RBRemove
+  import RB = RBTree.Base
 
-  function Repr0(): set<object>
-    reads this
-  {
-    {tree} // + iters
-  }
+  trait UnorderedMapIterator {}
+  trait OrderedMapIterator {}
+  type pos = n: int | n > 0 witness 1
 
-  function Repr1(): set<object>
-    reads this, Repr0()
-  {
-    Repr0() + {tree.tree}
-  }
+  class OrderedMapImpl /*extends OrderedMap*/ {
+    var tree: LinkedTree;
+    //ghost var iters: set<OrderedMapIteratorImpl>;
+    var size: nat;
 
-  function Repr2(): set<object>
-    reads this, Repr1()
-  {
-    Repr1() + tree.tree.Repr()
-  }
+    ghost const ReprDepth: pos
 
-  function ReprDepth(): nat
-    reads this
-    ensures ReprDepth() > 0
-  { 2 }
+    function Repr(): set<object>
+      reads this, ReprFamily(ReprDepth-1)
+    {
+      ReprFamily(ReprDepth)
+    }
 
-  function ReprFamily(n: nat): set<object>
-    decreases n
-    requires n <= ReprDepth()
-    ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
-    reads this, if n == 0 then {} else ReprFamily(n-1)
-  {
-    if n == 0 then Repr0()
-    else if n == 1 then Repr1()
-    else Repr2()
-  }
+    function Repr0(): set<object>
+      reads this
+    {
+      {tree} // + iters
+    }
 
-  lemma UselessLemma()
-    ensures Repr() == ReprFamily(ReprDepth());
+    function Repr1(): set<object>
+      reads this, Repr0()
+    {
+      Repr0() + tree.Repr()
+    }
 
-  predicate Valid()
-    reads this, Repr()
-  {
-    tree.Valid()
-    //&& (forall it | it in iters :: it.parent == this && {it} !! {this})
-  }
+    function ReprFamily(n: nat): set<object>
+      decreases n
+      ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
+      reads this, if n == 0 then {} else ReprFamily(n-1)
+    {
+      if n == 0 then Repr0()
+      else Repr1()
+    }
 
-  function Model(): map<K,V>
-    reads this, Repr()
-    requires Valid()
-  {
-    tree.tree.Model()
-  }
+    lemma UselessLemma()
+      ensures Repr() == ReprFamily(ReprDepth);
 
-  constructor()
-    ensures Valid()
-    ensures Model() == map[]
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() :: fresh(x)
-    ensures fresh(Repr())
-    ensures forall x | x in Repr() :: allocated(x)
-  {
-    tree := new SearchTree();
-    new;
-    assert Repr() == {tree} + {tree.tree} + tree.tree.Repr();
-    assert fresh(tree.Repr());
-    assert tree.Repr() == tree.tree.Repr();
-    assert fresh(tree.tree.Repr());
-    assert fresh(Repr());
-  }
+    predicate Valid()
+      reads this, Repr()
+    {
+      && ReprDepth == 1
+      && tree.Valid()
+      && tree.SearchTree()
+      && tree.RedBlackTree()
+      //&& size == RB.size(tree.TreeModel())
+      && size == |tree.MapModel()|
+      //&& (forall it | it in iters :: it.parent == this && {it} !! {this})
+    }
 
-  function method Empty(): bool
-    reads this, Repr()
-    requires Valid()
-    ensures Empty() <==> Model() == map[]
-  {
-    tree.tree.isEmpty()
-  }
+    function Model(): map<K,V>
+      reads this, Repr()
+      requires Valid()
+    {
+      tree.MapModel()
+    }
 
- function method Size(): nat
-    reads this, Repr()
-    requires Valid()
-    ensures Size() == |Model()|
-  {
-    tree.tree.Size()
-  }
+    constructor()
+      ensures Valid()
+      ensures Model() == map[]
+      ensures fresh(Repr())
+      ensures allocated(Repr())
+    {
+      tree := new LinkedTree();
+      size := 0;
+      ReprDepth := 1;
+    }
 
- function Iterators(): set<UnorderedMapIterator>
-    reads this, Repr()
-    requires Valid()
-    ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
-    ensures forall it | it in Iterators() :: it is OrderedMapIterator
-  {
-    {} //iters
-  }
+     predicate Empty?()
+      reads this, Repr()
+      requires Valid()
+    {
+      Model() == map[]
+    }
 
-  method First() returns (it: UnorderedMapIterator)
-    modifies this, Repr()
-    requires Valid()
-    requires forall x | x in Repr() :: allocated(x)
+    method Empty() returns (b: bool)
+      modifies this, Repr()
+      requires allocated(Repr())
+      ensures fresh(Repr() - old(Repr()))
+      ensures allocated(Repr())
 
-    ensures Valid()
-    ensures Model() == old(Model())
+      requires Valid()
+      ensures Valid()
+      ensures Model() == old(Model())
+      ensures |Model()| == old(|Model()|)
 
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
+      ensures b == Empty?()
+
+/*
+      ensures Iterators() >= old(Iterators())
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && it.Traversed() == old(it.Traversed())
+        && |it.Traversed()| == old(|it.Traversed()|)
+        && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
+        (it is OrderedSetIterator &&
+        (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()))
+        */
+    {
+      b := tree.root == null;
+      if !b {
+        assert !tree.TreeModel().Empty?;
+        assert tree.MapModel().Keys == RB.keys(tree.TreeModel());
+      }
+    }
+
+    method Size() returns (s: nat)
+      modifies this, Repr()
+      requires allocated(Repr())
+      ensures fresh(Repr() - old(Repr()))
+      ensures allocated(Repr())
+
+      requires Valid()
+      ensures Valid()
+      ensures Model() == old(Model())
+      ensures |Model()| == old(|Model()|)
+      ensures s == |Model()|
+
+/*
+      ensures Iterators() >= old(Iterators())
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && it.Traversed() == old(it.Traversed())
+        && |it.Traversed()| == old(|it.Traversed()|)
+        && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
+        (it is OrderedSetIterator &&
+        (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()))
+        */
+    {
+      RB.SizeKeys(tree.TreeModel());
+      calc == {
+        RB.size(tree.TreeModel());
+        |RB.keys(tree.TreeModel())|;
+        { assert RB.keys(tree.TreeModel()) == tree.MapModel().Keys; }
+        |tree.MapModel().Keys|;
+        |tree.MapModel()|;
+      }
+      return size;
+    }
+
+/*
+   function Iterators(): set<UnorderedMapIterator>
+      reads this, Repr()
+      requires Valid()
+      ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
+      ensures forall it | it in Iterators() :: it is OrderedMapIterator
+    {
+      {} //iters
+    }
+    */
+
+    method First() returns (it: UnorderedMapIterator)
+      modifies this, Repr()
+      requires Valid()
+      requires forall x | x in Repr() :: allocated(x)
+
+      ensures Valid()
+      ensures Model() == old(Model())
+
+      ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+      ensures fresh(Repr()-old(Repr()))
+      ensures forall x | x in Repr() :: allocated(x)
+
+/*
+      ensures it is OrderedMapIterator
+      ensures fresh(it)
+      ensures it.Valid()
+      ensures it.Parent() == this
+      ensures it.Traversed()=={}
+      ensures Model()!=map[] ==> it.HasNext() && key(it.Peek())==elemth(Model().Keys,0)
+      ensures Iterators() == {it} + old(Iterators())
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+        it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
+        */
+    /*
+    {
+      var  iter := new OrderedMapIteratorImpl(this);
+      iters := iters+{iter};
+      it := iter;
+      assume false;
+    }
+    */
 
 
-    ensures it is OrderedMapIterator
-    ensures fresh(it)
-    ensures it.Valid()
-    ensures it.Parent() == this
-    ensures it.Traversed()=={}
-    ensures Model()!=map[] ==> it.HasNext() && key(it.Peek())==elemth(Model().Keys,0)
-    ensures Iterators() == {it} + old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
+    method Last() returns (it: OrderedMapIterator)//iterator to the last element
+      modifies this, Repr()
+      requires Valid()
+      requires forall x | x in Repr() :: allocated(x)
+      ensures Valid()
+      ensures Model() == old(Model())
+
+      ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+      ensures fresh(Repr()-old(Repr()))
+      ensures forall x | x in Repr() :: allocated(x)
+
+/*
+      ensures fresh(it)
+      ensures Iterators() == {it} + old(Iterators())
+      ensures it.Valid()
+      ensures it.Parent() == this
+      ensures Model()!=map[] ==> it.HasNext() && it.Traversed()==Model().Keys-{elemth(Model().Keys,|Model().Keys|-1)} && key(it.Peek())==elemth(Model().Keys,|Model().Keys|-1)
+      ensures Model()==map[] ==> it.Traversed()=={}
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+        it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
+        */
+
+    method Contains(k: K) returns (b: bool)
+      modifies this, Repr()
+      requires allocated(Repr())
+      ensures fresh(Repr() - old(Repr()))
+      ensures allocated(Repr())
+
+      requires Valid()
+      ensures Valid()
+      ensures Model() == old(Model())
+      ensures |Model()| == old(|Model()|)
+      ensures b == (k in Model())
+
   /*
-  {
-    var  iter := new OrderedMapIteratorImpl(this);
-    iters := iters+{iter};
-    it := iter;
-    assume false;
-  }
+      ensures Iterators() >= old(Iterators())
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && it.Traversed() == old(it.Traversed())
+        && |it.Traversed()| == old(|it.Traversed()|)
+        && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+
+      ensures forall it | it in old(Iterators()) && old(it.Valid()):://NEW
+        (it is OrderedSetIterator &&
+        (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()) )    {
+        assert tree.tree.Repr() <= Repr();
+        b := tree.Search(k);
+      }
+        */
+    {
+      var foundNode := tree.Find(k);
+      return foundNode != null;
+    }
+
+    method Find(x: K) returns (newt: UnorderedMapIterator)
+     modifies this, Repr()
+      requires allocated(Repr())
+      ensures fresh(Repr() - old(Repr()))
+      ensures allocated(Repr())
+
+      requires Valid()
+      ensures Valid()
+      ensures Model() == old(Model())
+      ensures |Model()| == old(|Model()|)
+
+  /*
+      ensures newt is OrderedSetIterator
+      ensures fresh(newt)
+      ensures newt.Valid() && newt.Parent()==this
+      ensures x in old(Model()) ==> newt.HasPeek?() && newt.Peek?() == x
+      ensures x !in old(Model()) ==> newt.Traversed() == Model() && |newt.Traversed()| == |Model()|
+
+      ensures x in old(Model()) ==> (newt as OrderedSetIterator).Index() == |smaller(Model(),x)| //NEW
+      ensures x !in old(Model()) ==> (newt as OrderedSetIterator).Index() == |Model()|
+
+      ensures Iterators() >= {newt}+old(Iterators())
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && it.Traversed() == old(it.Traversed())
+        && |it.Traversed()| == old(|it.Traversed()|)
+        && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
+        (it is OrderedSetIterator &&
+        (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()))
+      */
+      {
+        //var foundNode := Find();
+        assume false;
+      }
+
+    method At(k:K) returns (v:V)
+      modifies this, Repr()
+      requires allocated(Repr())
+      ensures fresh(Repr() - old(Repr()))
+      ensures allocated(Repr())
+
+      requires Valid()
+      requires k in Model()
+      ensures Valid()
+      ensures Model() == old(Model())
+      ensures v == Model()[k]
+
+/*
+      ensures Iterators() >= old(Iterators())
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && it.Traversed() == old(it.Traversed())
+        && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+        */
+    {
+      var foundNode := tree.Find(k);
+      return foundNode.value;
+    }
+
+    method Add(k: K, v: V)
+      modifies this, Repr()
+      requires allocated(Repr())
+      ensures fresh(Repr() - old(Repr()))
+      ensures allocated(Repr())
+
+      requires Valid()
+      ensures Valid()
+      ensures Model() == old(Model())[k:=v]
+      ensures if (k in old(Model())) then |Model()| == old(|Model()|) else |Model()| == 1 + old(|Model()|)
+  /*
+      ensures Iterators() >= old(Iterators())
+    */
+    {
+      var b := Contains(k);
+      tree.RBInsert(k, v);
+      if !b {
+        size := size + 1;
+      }
+    }
+
+    lemma MapDiffSize(m: map<K, V>, k: K)
+      ensures k in m && m != map[] ==> |m - {k}| == |m| - 1
+      ensures k !in m ==> |m - {k}| == |m|
+    {
+      assert forall p: map<K, V> :: |p| == |p.Keys|;
+      /*
+      if m == map[] {
+        assert m - {k} == map[];
+      } else if m.Keys == {k} {
+        assert |m| == |m.Keys|;
+        assert |m| == 1;
+        assert m - {k} == map[];
+      } else {
+        var k' :| k' in m && k' != k;
+        MapDiffSize(m - {k'}, k);
+        assume false;
+      }
+      */
+    }
+
+    method Remove(k:K)
+      modifies this, Repr()
+      requires allocated(Repr())
+      ensures fresh(Repr() - old(Repr()))
+      ensures allocated(Repr())
+
+      requires Valid()
+      ensures Valid()
+      //ensures Model() == map k' | k' in old(Model()) && k' != k :: old(Model())[k']
+      ensures Model() == old(Model()) - {k}
+
+/*
+      ensures Iterators() >= old(Iterators())
+    */
+    {
+      MapDiffSize(tree.MapModel(), k);
+      var b := Contains(k);
+      tree.RBRemove(k);
+      assert tree.MapModel() == old(tree.MapModel()) - {k};
+      if b {
+        size := size - 1;
+      }
+    }
+
+
+/*
+    method insert(mid: UnorderedMapIterator, k: K, v : V) returns (newt:UnorderedMapIterator)
+      modifies this, Repr()
+      requires Valid()
+      requires mid.Valid()
+      requires mid.Parent() == this
+      requires mid in Iterators()
+      requires forall x | x in Repr() :: allocated(x)
+      ensures Valid()
+      ensures Model() == old(Model())[k := v]
+
+      ensures newt is OrderedMapIterator
+      ensures fresh(newt)
+      ensures Iterators() == {newt}+old(Iterators())
+      ensures newt.Valid() && newt.Parent()==this
+      ensures newt.HasNext() && newt.Peek()==(k,v) && newt.Traversed()==smaller(Model().Keys,k)
+
+      ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+      ensures fresh(Repr()-old(Repr()))
+      ensures forall x | x in Repr() :: allocated(x)
+
+      //points either to the inserted elemento or to the already existing one
+
+
+
+
+    method erase(mid:UnorderedMapIterator) returns (next: UnorderedMapIterator)
+      modifies this, Repr()
+      requires Valid()
+      requires mid.Valid()
+      requires mid.Parent() == this
+      requires mid.HasNext()
+      requires mid in Iterators()
+      requires forall x | x in Repr() :: allocated(x)
+      ensures Valid()
+      ensures Model()== map k | k in old(Model()) && k!=old(key(mid.Peek()))::old(Model())[k]
+
+      ensures next is OrderedMapIterator
+      ensures fresh(next)
+      ensures Iterators() == {next}+old(Iterators())
+      ensures next.Valid() && next.Parent()==this
+      ensures next.Traversed()==old(mid.Traversed()) &&
+                  (next.HasNext() ==> key(next.Peek())==elemth(Model().Keys,|next.Traversed()|) && value(next.Peek())==Model()[key(next.Peek())])
+
+
+      ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+      ensures fresh(Repr()-old(Repr()))
+      ensures forall x | x in Repr() :: allocated(x)
   */
-
-
-  method Last() returns (it: OrderedMapIterator)//iterator to the last element
-    modifies this, Repr()
-    requires Valid()
-    requires forall x | x in Repr() :: allocated(x)
-    ensures Valid()
-    ensures Model() == old(Model())
-
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-
-    ensures fresh(it)
-    ensures Iterators() == {it} + old(Iterators())
-    ensures it.Valid()
-    ensures it.Parent() == this
-    ensures Model()!=map[] ==> it.HasNext() && it.Traversed()==Model().Keys-{elemth(Model().Keys,|Model().Keys|-1)} && key(it.Peek())==elemth(Model().Keys,|Model().Keys|-1)
-    ensures Model()==map[] ==> it.Traversed()=={}
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
-
-  method contains(k:K) returns (b:bool)
-    requires Valid()
-    requires forall x | x in Repr() :: allocated(x)
-
-    ensures Valid()
-    ensures b==(k in Model())
-
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-
-    ensures Iterators() == old(Iterators())
-  {
-    assert tree.tree.Repr() <= Repr();
-    b := tree.Search(k);
   }
-
-  method at(k:K) returns (v:V)
-    //modifies this,Repr()
-    requires Valid()
-    requires forall x | x in Repr() :: allocated(x)
-    requires k in Model()
-    ensures Valid()
-    //ensures Model()==old(Model())
-    ensures v == Model()[k]
-
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-
-    ensures Iterators() == old(Iterators())
-  {
-    assert tree.tree.Repr() <= Repr();
-    v := tree.Get(k);
-  }
-
-
-  method add(k: K, v: V)
-    modifies this, Repr()
-    requires Valid()
-    ensures Valid()
-    ensures Model() == old(Model())[k := v]
-
-    requires forall x | x in Repr() :: allocated(x)
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-
-    ensures Iterators() == old(Iterators())
-  {
-    tree.Insert(k, v);
-  }
-
-  method remove(k:int)
-    modifies this,Repr()
-    requires Valid()
-    requires forall x | x in Repr() :: allocated(x)
-    ensures Valid()
-    ensures Model()== map k' | k' in old(Model()) && k'!=k::old(Model())[k']
-
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-
-    ensures Iterators() == old(Iterators())
-  {
-    tree.Remove(k);
-  }
-
-  method find(k:K) returns (newt:UnorderedMapIterator)
-    modifies this, Repr()
-    requires Valid()
-    requires forall x | x in Repr() :: allocated(x)
-    ensures Valid()
-    ensures Model()==old(Model())
-
-    ensures newt is OrderedMapIterator
-    ensures fresh(newt)
-    ensures newt.Valid() && newt.Parent()==this
-    ensures k in old(Model()) ==> newt.HasNext() && key(newt.Peek())==k
-    ensures k !in old(Model()) ==> newt.Traversed()==Model().Keys
-
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-
-    ensures Iterators() == {newt}+old(Iterators())
-
-  method insert(mid: UnorderedMapIterator, k: K, v : V) returns (newt:UnorderedMapIterator)
-    modifies this, Repr()
-    requires Valid()
-    requires mid.Valid()
-    requires mid.Parent() == this
-    requires mid in Iterators()
-    requires forall x | x in Repr() :: allocated(x)
-    ensures Valid()
-    ensures Model() == old(Model())[k := v]
-
-    ensures newt is OrderedMapIterator
-    ensures fresh(newt)
-    ensures Iterators() == {newt}+old(Iterators())
-    ensures newt.Valid() && newt.Parent()==this
-    ensures newt.HasNext() && newt.Peek()==(k,v) && newt.Traversed()==smaller(Model().Keys,k)
-
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
-
-    //points either to the inserted elemento or to the already existing one
-
-
-
-
-  method erase(mid:UnorderedMapIterator) returns (next: UnorderedMapIterator)
-    modifies this, Repr()
-    requires Valid()
-    requires mid.Valid()
-    requires mid.Parent() == this
-    requires mid.HasNext()
-    requires mid in Iterators()
-    requires forall x | x in Repr() :: allocated(x)
-    ensures Valid()
-    ensures Model()== map k | k in old(Model()) && k!=old(key(mid.Peek()))::old(Model())[k]
-
-    ensures next is OrderedMapIterator
-    ensures fresh(next)
-    ensures Iterators() == {next}+old(Iterators())
-    ensures next.Valid() && next.Parent()==this
-    ensures next.Traversed()==old(mid.Traversed()) &&
-                (next.HasNext() ==> key(next.Peek())==elemth(Model().Keys,|next.Traversed()|) && value(next.Peek())==Model()[key(next.Peek())])
-
-
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
-    ensures fresh(Repr()-old(Repr()))
-    ensures forall x | x in Repr() :: allocated(x)
 }

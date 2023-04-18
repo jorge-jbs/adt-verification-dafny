@@ -133,6 +133,51 @@ module RBTree.Base {
     }
   }
 
+  lemma DisjointBranches(t: rbtree)
+    requires SearchTree(t)
+    requires t.Node?
+    ensures t.key !in keys(t.left)
+    ensures t.key !in keys(t.right)
+    ensures keys(t.left) !! keys(t.right)
+  {
+    var k := t.key;
+    var l := t.left;
+    var r := t.right;
+    assert forall m | m in keys(l) :: m < k;
+    assert forall m | m in keys(r) :: k < m;
+    assert forall p, q | p in keys(l) && q in keys(r) :: p < k < q;
+    assert keys(l) !! keys(r);
+  }
+
+  lemma SizeKeys(t: rbtree)
+    requires SearchTree(t)
+    ensures size(t) == |keys(t)|
+  {
+    match t {
+      case Empty => {}
+      case Node(l, k, v, r, c) => {
+        calc == {
+          size(t);
+          1 + size(l) + size(r);
+          {
+            SizeKeys(l);
+            SizeKeys(r);
+          }
+          1 + |keys(l)| + |keys(r)|;
+          |keys(l)| + |{k}| + |keys(r)|;
+          {
+            assert k !in keys(l);
+            assert k !in keys(r);
+            DisjointBranches(t);
+            assert keys(l) !! keys(r);
+          }
+          |keys(l) + {k} + keys(r)|;
+          |keys(t)|;
+        }
+      }
+    }
+  }
+
   function method toMap''(t: rbtree): map<K, V>
     requires SearchTree(t)
   {

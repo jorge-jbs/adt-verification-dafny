@@ -6,6 +6,7 @@ include "../../../src/tree/layer4/RBTree/Iterator.2.dfy"
 include "../../../src/tree/layer4/Tree.dfy"
 include "../../../src/tree/layer4/KeyValue.dfy"
 include "../../../src/tree/layer4/TNode.dfy"
+include "../../../src/tree/layer4/LinkedTree/Find.dfy"
 include "../../../src/tree/layer4/LinkedTree/SInsert.dfy"
 include "../../../src/tree/layer4/LinkedTree/RBInsert.dfy"
 include "../../../src/tree/layer4/LinkedTree/RBRemove.dfy"
@@ -21,6 +22,7 @@ module LinkedTree {
   import RBit = RBTree.Iterator
   import opened T = Tree
   import opened KeyValue
+  import opened Find
   import opened SInsert
   import opened RBInsert
   import opened RBRemove
@@ -140,7 +142,7 @@ module LinkedTree {
       }
     }
 
-    static method NextAux(
+    static method {:verify false} NextAux(
         stack: seq<TNode>,
         ghost stackSk: seq<tree<TNode>>,
         ghost parentSkeleton: tree<TNode>,
@@ -268,6 +270,18 @@ module LinkedTree {
       ValidRec(root, skeleton)
     }
 
+    constructor()
+      ensures Valid()
+      ensures TreeModel().Empty?
+      ensures SearchTree()
+      ensures RedBlackTree()
+      ensures fresh(Repr())
+      ensures allocated(Repr())
+    {
+      root := null;
+      skeleton := Empty;
+    }
+
     predicate SearchTree()
       reads this, Repr()
       requires Valid()
@@ -287,6 +301,20 @@ module LinkedTree {
       requires SearchTree()
     {
       RB.model(TreeModel())
+    }
+
+    method Find(k: K) returns (foundNode: TNode?)
+      requires Valid()
+      requires SearchTree()
+
+      ensures foundNode != null <==> k in RB.keys(TreeModel())
+      ensures foundNode != null ==> foundNode.key == k
+      ensures foundNode != null ==> foundNode.value == RB.Get(TreeModel(), k)
+
+      requires allocated(Repr())
+      ensures allocated(Repr())
+    {
+      foundNode := FindRec(root, skeleton, k);
     }
 
     method {:verify false} Insert(k: K, v: V)
