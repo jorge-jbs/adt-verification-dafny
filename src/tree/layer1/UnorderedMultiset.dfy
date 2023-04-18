@@ -22,7 +22,8 @@ trait UnorderedMultisetIterator {
     requires Valid()
     requires Parent().Valid() 
     requires HasPeek?()
-    ensures Peek?() in Parent().Model() && (Parent().Model()-Traversed())[Peek?()]>0
+    ensures Peek?() in Parent().Model()
+    ensures Peek?() in (Parent().Model()-Traversed())//[Peek?()]>0
 
   predicate HasPeek?()
     reads this, Parent(), Parent().Repr()

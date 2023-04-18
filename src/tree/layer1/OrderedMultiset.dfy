@@ -85,7 +85,8 @@ trait OrderedMultisetIterator extends UnorderedMultisetIterator{
     requires Valid()
     requires Parent().Valid() 
     requires HasPeek?()
-    ensures Peek?() in Parent().Model() && (Parent().Model()-Traversed())[Peek?()]>0
+    ensures Peek?() in Parent().Model() 
+    ensures Peek?() in Parent().Model()-Traversed()//&& (Parent().Model()-Traversed())[Peek?()]>0
   { 
     lelemth(Parent().Model(),Index());
     //assert Traversed()[elemth(Parent().Model(),Index())] == Index()-|msmaller(Parent().Model(),elemth(Parent().Model(),Index()))|;

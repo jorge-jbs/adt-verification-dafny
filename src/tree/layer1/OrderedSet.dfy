@@ -68,7 +68,10 @@ trait OrderedSetIterator extends UnorderedSetIterator{
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
-    ensures HasPeek?() <==> Traversed() < Parent().Model() &&  |Traversed()| < |Parent().Model()| 
+    //ensures HasPeek?() <==> Traversed() < Parent().Model() &&  |Traversed()| < |Parent().Model()| 
+    ensures HasPeek?() ==> Traversed() < Parent().Model() &&  |Traversed()| < |Parent().Model()| 
+    ensures Traversed() < Parent().Model() ==> HasPeek?()
+    ensures |Traversed()| < |Parent().Model()| ==> HasPeek?()
     ensures !HasPeek?() ==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()| 
     { 
       0 <= Index() < |Parent().Model()|
