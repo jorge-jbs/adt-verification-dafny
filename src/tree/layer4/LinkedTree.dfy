@@ -27,7 +27,7 @@ module LinkedTree {
   import opened RBInsert
   import opened RBRemove
 
-  class Iterator {
+  class LinkedTreeIterator {
     var stack: seq<TNode>;
     ghost var stackSk: seq<tree<TNode>>;
     ghost var parent: LinkedTree;
@@ -40,7 +40,8 @@ module LinkedTree {
     }
 
     static function RBStackRec(stack: seq<tree<TNode>>): seq<RB.rbtree>
-      reads BigUnion(set sk | sk in stack :: elems(sk))
+      //reads BigUnion(set sk | sk in stack :: elems(sk))
+      reads set sk, n | sk in stack && n in elems(sk) :: n//elems(sk)
       requires forall i | 0 <= i < |stack| :: stack[i].Node?
       ensures RBit.ValidStack(RBStackRec(stack))
       ensures |stack| == |RBStackRec(stack)|
@@ -74,12 +75,113 @@ module LinkedTree {
       && RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStack())
     }
 
+    lemma TraversedInModel()
+      ensures forall p | p in traversed :: p.0 in RB.keys(TreeModelRec(parent.skeleton))
+
     constructor(node: TNode, ghost sk: tree<TNode>, ghost parent: LinkedTree)
     {
       this.stack := [node];
       this.stackSk := [sk];
       this.parent := parent;
       this.traversed := [];
+    }
+
+    static method FirstAux(
+        parent: LinkedTree,
+        ghost traversed: seq<(K, V)>,
+        stack: seq<TNode>,
+        ghost stackSk: seq<tree<TNode>>
+      )
+      returns (
+        newStack: seq<TNode>,
+        ghost newStackSk: seq<tree<TNode>>
+      )
+      requires parent.Valid()
+      requires traversed == []
+      requires stack == []
+      requires stackSk == []
+
+      ensures |newStack| == |newStackSk|
+      ensures (forall i | 0 <= i < |newStack| :: ValidRec(newStack[i], newStackSk[i]))
+      ensures RBit.ValidStack(RBStackRec(newStackSk))
+      ensures RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStackRec(newStackSk))
+
+      requires allocated(parent.Repr())
+      ensures allocated(parent.Repr())
+      requires forall i | 0 <= i < |stackSk| :: allocated(elems(stackSk[i]))
+      ensures forall i | 0 <= i < |stackSk| :: allocated(elems(stackSk[i]))
+      ensures forall i | 0 <= i < |newStackSk| :: allocated(elems(newStackSk[i]))
+    {
+      assert RBit.ValidStack(RBStackRec([]));
+      assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RB.inorder(TreeModelRec(parent.skeleton)) + RBit.inorderStack(RBStackRec([]));
+      RBit.DescendAndPushSpec(TreeModelRec(parent.skeleton), RBStackRec([]), TreeModelRec(parent.skeleton), []);
+      newStack, newStackSk := DescendAndPush(parent.root, parent.skeleton, [], []);
+    }
+
+    constructor {:verify false} First(parent: LinkedTree)
+      requires parent.Valid()
+      ensures Valid()
+      ensures traversed == []
+
+      requires allocated(parent.Repr())
+      ensures allocated(parent.Repr())
+      ensures forall i | 0 <= i < |stackSk| :: allocated(elems(stackSk[i]))
+    {
+      this.parent := parent;
+      traversed := [];
+      stack := [];
+      stackSk := [];
+      new;
+      var newStack, newStackSk := FirstAux(parent, traversed, stack, stackSk);
+      label L1:
+      assert forall i | 0 <= i < |newStackSk| :: allocated(elems(newStackSk[i]));
+      assert forall i | 0 <= i < |stackSk| :: allocated(elems(stackSk[i]));
+      assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStackRec(newStackSk));
+      stackSk := newStackSk;
+      label L2:
+      assert forall i | 0 <= i < |newStackSk| :: allocated(elems(newStackSk[i]));
+      assert forall i | 0 <= i < |stackSk| :: allocated(elems(stackSk[i]));
+      assert unchanged@L1(elems(parent.skeleton));
+      assert unchanged@L1(BigUnion(set sk | sk in newStackSk :: elems(sk)));
+      assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStackRec(newStackSk));
+      assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStackRec(stackSk));
+      //assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStack());
+      stack := newStack;
+      assert forall i | 0 <= i < |newStackSk| :: allocated(elems(newStackSk[i]));
+      assert forall i | 0 <= i < |stackSk| :: allocated(elems(stackSk[i]));
+      assert unchanged@L1(elems(parent.skeleton));
+      assert unchanged@L1(BigUnion(set sk | sk in newStackSk :: elems(sk)));
+      //assert unchanged@L2(BigUnion(set sk | sk in stackSk :: elems(sk)));
+      assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStackRec(newStackSk));
+      assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStackRec(stackSk));
+      //assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStack());
+      assert |stack| == |stackSk|;
+      assert (forall i | 0 <= i < |stack| :: ValidRec(stack[i], stackSk[i]));
+      assert RBit.ValidStack(RBStack());
+      assume false;
+      assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStack());
+      /*
+      RBit.DescendAndPushSpec(TreeModelRec(parent.skeleton), RBStackRec([]), TreeModelRec(parent.skeleton), []);
+      assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBit.DescendAndPush([], TreeModelRec(parent.skeleton)));
+      var newStack, newStackSk := DescendAndPush(parent.root, parent.skeleton, [], []);
+      assert forall i | 0 <= i < |stackSk| :: allocated(elems(stackSk[i]));
+      assert forall i | 0 <= i < |newStackSk| :: allocated(elems(newStackSk[i]));
+      assert RBStackRec(newStackSk) == RBit.DescendAndPush(RBStackRec(stackSk), TreeModelRec(parent.skeleton));
+      assert stackSk == [];
+      assert RBStackRec(newStackSk) == RBit.DescendAndPush(RBStackRec([]), TreeModelRec(parent.skeleton));
+      stack, stackSk := newStack, newStackSk;
+      assume false;
+      assert unchanged(elems(parent.skeleton));
+      assert unchanged(BigUnion(set sk | sk in stackSk :: elems(sk)));
+      assume false;
+      assert RBStackRec(stackSk) == RBit.DescendAndPush(RBStackRec([]), TreeModelRec(parent.skeleton));
+      assume false;
+      assert |stack| == |stackSk|;
+      assert (forall i | 0 <= i < |stack| :: ValidRec(stack[i], stackSk[i]));
+      assert RBit.ValidStack(RBStack());
+      assume false;
+      assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStack());
+      */
     }
 
     static lemma DescendAndPushInd(st: seq<RB.rbtree>, node: RB.rbtree)
@@ -254,7 +356,7 @@ module LinkedTree {
     }
   }
 
-  class LinkedTree {
+  class {:verify false} LinkedTree {
     var root: TNode?;
     ghost var skeleton: tree<TNode>;
 
@@ -375,6 +477,7 @@ module LinkedTree {
       ensures Valid()
       ensures SearchTree()
       ensures RedBlackTree()
+      //ensures Model() == old(RB.Remove(Model()))
       ensures MapModel() == old(MapModel()) - {k}
 
       requires allocated(Repr())

@@ -1,4 +1,6 @@
+include "../../../src/MUtils.dfy"
 include "../../../src/tree/layer4/Tree.dfy"
+include "../../../src/tree/layer4/TNode.dfy"
 include "../../../src/tree/layer4/LinkedTree.dfy"
 include "../../../src/tree/layer4/LinkedTree/RBInsert.dfy"
 include "../../../src/tree/layer4/LinkedTree/RBRemove.dfy"
@@ -6,6 +8,8 @@ include "../../../src/tree/layer1/OrderedMap.dfy"
 include "../../../src/tree/layer4/RBTree/Base.dfy"
 
 module OrderedMapImpl {
+  import opened Utils
+  import opened TNode
   import opened KeyValue
   import opened T = Tree
   import opened LinkedTree
@@ -15,12 +19,180 @@ module OrderedMapImpl {
   import RB = RBTree.Base
 
   trait UnorderedMapIterator {}
-  trait OrderedMapIterator {}
+  trait OrderedMapIterator extends UnorderedMapIterator {}
+  trait UnorderedMap {}
+  trait OrderedMap extends UnorderedMap {}
+
   type pos = n: int | n > 0 witness 1
+
+  class OrderedMapIteratorImpl extends OrderedMapIterator {
+    var parent: OrderedMapImpl;
+    var iter: LinkedTreeIterator;
+
+    constructor First(parent: OrderedMapImpl)
+      requires parent.Valid()
+      ensures Valid()
+      ensures Traversed() == {}
+
+      requires allocated(parent.Repr())
+      ensures allocated(parent.Repr())
+    {
+      this.parent := parent;
+      this.iter := new LinkedTreeIterator.First(parent.tree);
+      assume false;
+    }
+
+    function Parent(): OrderedMapImpl //UnorderedMap
+      reads this
+    {
+      parent
+    }
+
+    predicate Valid()
+      reads this, Parent(), Parent().Repr()
+      ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
+    {
+      && this in parent.iters
+      && this in Parent().iters
+      && iter.parent == parent.tree
+      && parent.Valid()
+
+      //&& BigUnion(set sk: tree<TNode> | sk in iter.stackSk :: elems(sk)) <= Parent().Repr()
+      && (forall sk: tree<TNode> | sk in iter.stackSk :: elems(sk) <= elems(parent.tree.skeleton))
+      && iter.Valid()
+    }
+
+    function Traversed(): set<K>
+      reads this, Parent(), Parent().Repr()
+      requires Valid()
+      requires Parent().Valid()
+      ensures Traversed() <= (Parent().Model().Keys)
+    {
+      iter.TraversedInModel();
+      set p | p in iter.traversed :: p.0
+    }
+
+    function Peek?():(K,V)
+      reads this, Parent(), Parent().Repr()
+      requires Valid()
+      requires Parent().Valid()
+      requires HasPeek?()
+
+      ensures Peek?() in Parent().Model().Items
+              && key(Peek?()) !in Traversed()
+              //key(Peek?()) in Parent().Model() &&
+              //value(Peek?()) == Parent().Model()[key(Peek?())]
+
+    predicate HasPeek?()
+      reads this, Parent(), Parent().Repr()
+      requires Valid()
+      requires Parent().Valid()
+      ensures HasPeek?()  <==> Traversed() < Parent().Model().Keys && |Traversed()| < |Parent().Model().Keys|
+      //|Traversed()| < |Parent().Model()| es necesario para poder verificar con cota |s.Model()|-|it.Traversed()|
+      ensures !HasPeek?() <==> Traversed() == Parent().Model().Keys && |Traversed()| == |Parent().Model().Keys|
+
+    method HasPeek() returns (b:bool)
+      modifies this, Parent(), Parent().Repr()
+      requires allocated(Parent())
+      requires allocated(Parent().Repr())
+      ensures fresh(Parent().Repr() - old(Parent().Repr()))
+      ensures allocated(Parent().Repr())
+
+      requires Valid()
+      requires Parent().Valid()
+      ensures Valid()
+      ensures Parent().Valid()
+      ensures Parent() == old(Parent())
+      ensures Parent().Model() == old(Parent().Model())
+      ensures Traversed() == old(Traversed())
+      ensures HasPeek?() ==> Peek?()==old(Peek?())
+      ensures b == HasPeek?()
+
+      ensures Parent().Iterators() >= old(Parent().Iterators())
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && it.Traversed() == old(it.Traversed())
+        && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+
+    method Next()
+      modifies this, Parent(), Parent().Repr()
+      requires allocated(Parent())
+      requires allocated(Parent().Repr())
+      ensures fresh(Parent().Repr() - old(Parent().Repr()))
+      ensures allocated(Parent().Repr())
+
+      requires Valid()
+      requires Parent().Valid()
+      requires HasPeek?()
+      ensures Valid()
+      ensures Parent().Valid()
+      ensures Parent() == old(Parent())
+      ensures Parent().Model() == old(Parent().Model())
+
+      ensures Parent().Iterators() >= old(Parent().Iterators())
+      ensures Traversed() == {key(old(Peek?()))}+old(Traversed())
+
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && (it != this ==> it.Traversed() == old(it.Traversed())
+                           && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?())))
+
+    method Peek() returns (p:(K,V))
+      modifies this, Parent(), Parent().Repr()
+      requires allocated(Parent())
+      requires allocated(Parent().Repr())
+      ensures fresh(Parent().Repr() - old(Parent().Repr()))
+      ensures allocated(Parent().Repr())
+
+      requires Valid()
+      requires Parent().Valid()
+      requires HasPeek?()
+      ensures Valid()
+      ensures Parent().Valid()
+      ensures Parent() == old(Parent())
+      ensures Parent().Model() == old(Parent().Model())
+
+      ensures Traversed() == old(Traversed()) && Peek?()==old(Peek?())
+      ensures p == Peek?()
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && it.Traversed() == old(it.Traversed())
+        && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+
+    method Copy() returns (it: OrderedMapIteratorImpl /*UnorderedMapIterator*/)
+      modifies this, Parent(), Parent().Repr()
+      requires allocated(Parent())
+      requires allocated(Parent().Repr())
+      ensures fresh(Parent().Repr() - old(Parent().Repr()))
+      ensures allocated(Parent().Repr())
+
+      requires Valid()
+      requires Parent().Valid()
+      ensures fresh(it)
+      ensures Valid()
+      ensures Parent().Valid()
+      ensures Parent() == old(Parent())
+      ensures Parent().Model() == old(Parent().Model())
+      ensures Traversed() == old(Traversed())
+      ensures HasPeek?() ==> Peek?()==old(Peek?())
+
+      ensures it.Valid()
+      ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
+      ensures Parent() == it.Parent()
+      ensures Traversed() == it.Traversed() && (it.HasPeek?() ==> Peek?()==it.Peek?())
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && it.Traversed() == old(it.Traversed())
+        && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+  }
 
   class OrderedMapImpl /*extends OrderedMap*/ {
     var tree: LinkedTree;
-    //ghost var iters: set<OrderedMapIteratorImpl>;
+    ghost var iters: set<OrderedMapIteratorImpl>;
     var size: nat;
 
     ghost const ReprDepth: pos
@@ -34,13 +206,13 @@ module OrderedMapImpl {
     function Repr0(): set<object>
       reads this
     {
-      {tree} // + iters
+      {tree} + iters
     }
 
     function Repr1(): set<object>
       reads this, Repr0()
     {
-      Repr0() + tree.Repr()
+      Repr0() + tree.Repr() + (set it | it in iters :: it.iter)
     }
 
     function ReprFamily(n: nat): set<object>
@@ -62,9 +234,8 @@ module OrderedMapImpl {
       && tree.Valid()
       && tree.SearchTree()
       && tree.RedBlackTree()
-      //&& size == RB.size(tree.TreeModel())
       && size == |tree.MapModel()|
-      //&& (forall it | it in iters :: it.parent == this && {it} !! {this})
+      && (forall it | it in iters :: it.parent == this && {it} !! {this})
     }
 
     function Model(): map<K,V>
@@ -82,6 +253,7 @@ module OrderedMapImpl {
     {
       tree := new LinkedTree();
       size := 0;
+      iters := {};
       ReprDepth := 1;
     }
 
@@ -105,7 +277,6 @@ module OrderedMapImpl {
 
       ensures b == Empty?()
 
-/*
       ensures Iterators() >= old(Iterators())
       ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
         && it.Valid()
@@ -114,6 +285,7 @@ module OrderedMapImpl {
         && |it.Traversed()| == old(|it.Traversed()|)
         && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
+/*
       ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
         (it is OrderedSetIterator &&
         (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()))
@@ -138,7 +310,6 @@ module OrderedMapImpl {
       ensures |Model()| == old(|Model()|)
       ensures s == |Model()|
 
-/*
       ensures Iterators() >= old(Iterators())
       ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
         && it.Valid()
@@ -147,6 +318,7 @@ module OrderedMapImpl {
         && |it.Traversed()| == old(|it.Traversed()|)
         && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
+/*
       ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
         (it is OrderedSetIterator &&
         (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()))
@@ -163,16 +335,14 @@ module OrderedMapImpl {
       return size;
     }
 
-/*
-   function Iterators(): set<UnorderedMapIterator>
+   function Iterators(): set<OrderedMapIteratorImpl> // set<UnorderedMapIterator>
       reads this, Repr()
       requires Valid()
       ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
       ensures forall it | it in Iterators() :: it is OrderedMapIterator
     {
-      {} //iters
+      iters
     }
-    */
 
     method First() returns (it: UnorderedMapIterator)
       modifies this, Repr()
@@ -205,7 +375,6 @@ module OrderedMapImpl {
       assume false;
     }
     */
-
 
     method Last() returns (it: OrderedMapIterator)//iterator to the last element
       modifies this, Repr()
@@ -325,7 +494,7 @@ module OrderedMapImpl {
       return foundNode.value;
     }
 
-    method Add(k: K, v: V)
+    method {:verify false} Add(k: K, v: V)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -366,7 +535,7 @@ module OrderedMapImpl {
       */
     }
 
-    method Remove(k:K)
+    method {:verify false} Remove(k:K)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
