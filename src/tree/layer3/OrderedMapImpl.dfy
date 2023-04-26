@@ -19,7 +19,20 @@ module OrderedMapImpl {
   import RB = RBTree.Base
 
   trait UnorderedMapIterator {}
-  trait OrderedMapIterator extends UnorderedMapIterator {}
+  trait OrderedMapIterator extends UnorderedMapIterator {
+    function Parent(): OrderedMapImpl //UnorderedMap
+      reads this
+
+    predicate Valid()
+      reads this, Parent(), Parent().Repr()
+      ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
+
+    function Traversed(): set<K>
+      reads this, Parent(), Parent().Repr()
+      requires Valid()
+      requires Parent().Valid()
+      ensures Traversed() <= (Parent().Model().Keys)
+  }
   trait UnorderedMap {}
   trait OrderedMap extends UnorderedMap {}
 
@@ -31,15 +44,18 @@ module OrderedMapImpl {
 
     constructor First(parent: OrderedMapImpl)
       requires parent.Valid()
-      ensures Valid()
-      ensures Traversed() == {}
+      ensures this.parent == parent
+      ensures iter.parent == parent.tree
+      ensures parent.Valid()
+      ensures (set p | p in iter.traversed :: p.0) == {}
+      ensures iter.Valid()
+      ensures fresh(iter)
 
       requires allocated(parent.Repr())
       ensures allocated(parent.Repr())
     {
       this.parent := parent;
       this.iter := new LinkedTreeIterator.First(parent.tree);
-      assume false;
     }
 
     function Parent(): OrderedMapImpl //UnorderedMap
@@ -344,37 +360,41 @@ module OrderedMapImpl {
       iters
     }
 
-    method First() returns (it: UnorderedMapIterator)
+    method {:verify false} First() returns (it: OrderedMapIterator/*UnorderedMapIterator*/)  // 43"
       modifies this, Repr()
-      requires Valid()
-      requires forall x | x in Repr() :: allocated(x)
 
+      requires Valid()
       ensures Valid()
       ensures Model() == old(Model())
 
-      ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
+      requires allocated(Repr())
       ensures fresh(Repr()-old(Repr()))
-      ensures forall x | x in Repr() :: allocated(x)
+      ensures allocated(Repr())
 
-/*
       ensures it is OrderedMapIterator
       ensures fresh(it)
       ensures it.Valid()
       ensures it.Parent() == this
-      ensures it.Traversed()=={}
+      ensures it.Traversed() == {}
+/*
       ensures Model()!=map[] ==> it.HasNext() && key(it.Peek())==elemth(Model().Keys,0)
       ensures Iterators() == {it} + old(Iterators())
       ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
         it.Valid() && it.Traversed() == old(it.Traversed()) && (it.HasNext() ==> it.Peek()==old(it.Peek()))
         */
-    /*
     {
-      var  iter := new OrderedMapIteratorImpl(this);
+      var iter := new OrderedMapIteratorImpl.First(this);
       iters := iters+{iter};
       it := iter;
-      assume false;
+      calc == {
+        Repr();
+        Repr1();
+        Repr0() + tree.Repr() + (set it | it in iters :: it.iter);
+        iters + {tree} + tree.Repr() + (set it | it in iters :: it.iter);
+        old(iters) + {iter} + old({tree}) + old(tree.Repr()) + (set it | it in old(iters) :: it.iter) + {iter.iter};
+        old(Repr()) + {iter} + {iter.iter};
+      }
     }
-    */
 
     method Last() returns (it: OrderedMapIterator)//iterator to the last element
       modifies this, Repr()
