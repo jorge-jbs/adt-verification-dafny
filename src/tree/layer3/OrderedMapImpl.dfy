@@ -99,6 +99,25 @@ module OrderedMapImpl {
               //key(Peek?()) in Parent().Model() &&
               //value(Peek?()) == Parent().Model()[key(Peek?())]
 
+    lemma SubSetCardinality(xs: set<K>, ys: set<K>)
+      requires xs < ys
+      ensures |xs| < |ys|
+    {
+      if |xs| == 0 {
+      } else {
+        var x :| x in xs;
+        SubSetCardinality(xs - {x}, ys - {x});
+      }
+    }
+
+    lemma SubSetCardinalityImp(xs: set<K>, ys: set<K>)
+      ensures xs < ys ==> |xs| < |ys|
+    {
+      if xs < ys {
+        SubSetCardinality(xs, ys);
+      }
+    }
+
     predicate HasPeek?()
       reads this, Parent(), Parent().Repr()
       requires Valid()
@@ -106,6 +125,11 @@ module OrderedMapImpl {
       ensures HasPeek?()  <==> Traversed() < Parent().Model().Keys && |Traversed()| < |Parent().Model().Keys|
       //|Traversed()| < |Parent().Model()| es necesario para poder verificar con cota |s.Model()|-|it.Traversed()|
       ensures !HasPeek?() <==> Traversed() == Parent().Model().Keys && |Traversed()| == |Parent().Model().Keys|
+    {
+      iter.HasPeekCondition();
+      SubSetCardinalityImp(Traversed(), Parent().Model().Keys);
+      LinkedTreeIterator.RBStackRec(iter.stackSk) != []
+    }
 
     method HasPeek() returns (b:bool)
       modifies this, Parent(), Parent().Repr()
@@ -141,6 +165,7 @@ module OrderedMapImpl {
       requires Valid()
       requires Parent().Valid()
       requires HasPeek?()
+      /*
       ensures Valid()
       ensures Parent().Valid()
       ensures Parent() == old(Parent())
@@ -154,6 +179,10 @@ module OrderedMapImpl {
         && it.Parent() == old(it.Parent())
         && (it != this ==> it.Traversed() == old(it.Traversed())
                            && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?())))
+    {
+      var _, _ := iter.Next();
+    }
+                           */
 
     method Peek() returns (p:(K,V))
       modifies this, Parent(), Parent().Repr()

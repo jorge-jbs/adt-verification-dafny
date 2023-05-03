@@ -33,7 +33,7 @@ module RBTree.SInsert {
   lemma {:verify false} SInsertModel(t: rbtree, k: K, v: V)
     requires SearchTree(t)
     requires SearchTree(SInsert(t, k, v))
-    ensures model(t)[k := v] == model(SInsert(t, k, v))
+    ensures toMap(t)[k := v] == toMap(SInsert(t, k, v))
   {
     match t {
       case Empty => {
@@ -45,14 +45,14 @@ module RBTree.SInsert {
         } else if k < k' {
           SInsertSpec(l, k, v);
           calc == {
-            model(SInsert(Node(l, k', v', r, c), k, v));
-            model(Node(SInsert(l, k, v), k', v', r, c));
-            { toMap''Lemmas(Node(SInsert(l, k, v), k', v', r, c)); }
-            model(SInsert(l, k, v)) + map[k' := v'] + model(r);
-            model(l)[k := v] + map[k' := v'] + model(r);
-            model(l) + map[k := v] + map[k' := v'] + model(r);
-            model(l) + map[k' := v'] + model(r) + map[k := v];
-            model(t) + map[k := v];
+            toMap(SInsert(Node(l, k', v', r, c), k, v));
+            toMap(Node(SInsert(l, k, v), k', v', r, c));
+            { toMapLemmas(Node(SInsert(l, k, v), k', v', r, c)); }
+            toMap(SInsert(l, k, v)) + map[k' := v'] + toMap(r);
+            toMap(l)[k := v] + map[k' := v'] + toMap(r);
+            toMap(l) + map[k := v] + map[k' := v'] + toMap(r);
+            toMap(l) + map[k' := v'] + toMap(r) + map[k := v];
+            toMap(t) + map[k := v];
           }
         } else {
         }

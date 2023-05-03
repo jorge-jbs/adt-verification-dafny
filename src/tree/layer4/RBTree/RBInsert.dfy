@@ -332,11 +332,11 @@ module RBTree.RBInsert {
     requires t.right.Node?
     requires SearchTree(t)
     requires SearchTree(FlipColors(t))
-    ensures model(t) == model(FlipColors(t))
+    ensures toMap(t) == toMap(FlipColors(t))
   {
     calc == {
-      model(FlipColors(t));
-      model(
+      toMap(FlipColors(t));
+      toMap(
         Node(
           Node(t.left.left, t.left.key, t.left.value, t.left.right, NegColor(t.left.color)),
           t.key,
@@ -345,16 +345,16 @@ module RBTree.RBInsert {
           NegColor(t.color)
         )
       );
-      model(Node(t.left.left, t.left.key, t.left.value, t.left.right, NegColor(t.left.color)))
+      toMap(Node(t.left.left, t.left.key, t.left.value, t.left.right, NegColor(t.left.color)))
         + map[t.key := t.value]
-        + model(Node(t.right.left, t.right.key, t.right.value, t.right.right, NegColor(t.right.color)));
-      model(t.left.left) + map[t.left.key := t.left.value] + model(t.left.right)
+        + toMap(Node(t.right.left, t.right.key, t.right.value, t.right.right, NegColor(t.right.color)));
+      toMap(t.left.left) + map[t.left.key := t.left.value] + toMap(t.left.right)
         + map[t.key := t.value]
-        + model(t.right.left) + map[t.right.key := t.right.value] + model(t.right.right);
-      model(Node(t.left.left, t.left.key, t.left.value, t.left.right, t.left.color))
+        + toMap(t.right.left) + map[t.right.key := t.right.value] + toMap(t.right.right);
+      toMap(Node(t.left.left, t.left.key, t.left.value, t.left.right, t.left.color))
         + map[t.key := t.value]
-        + model(Node(t.right.left, t.right.key, t.right.value, t.right.right, t.right.color));
-      model(
+        + toMap(Node(t.right.left, t.right.key, t.right.value, t.right.right, t.right.color));
+      toMap(
         Node(
           Node(t.left.left, t.left.key, t.left.value, t.left.right, t.left.color),
           t.key,
@@ -363,7 +363,7 @@ module RBTree.RBInsert {
           t.color
         )
       );
-      model(t);
+      toMap(t);
     }
   }
 
@@ -372,11 +372,11 @@ module RBTree.RBInsert {
     requires t.right.Node?
     requires SearchTree(t)
     requires SearchTree(RotateLeft(t))
-    ensures model(t) == model(RotateLeft(t))
+    ensures toMap(t) == toMap(RotateLeft(t))
   {
     calc == {
-      model(RotateLeft(t));
-      model(
+      toMap(RotateLeft(t));
+      toMap(
         Node(
           Node(t.left, t.key, t.value, t.right.left, Red),
           t.right.key,
@@ -385,18 +385,18 @@ module RBTree.RBInsert {
           t.color
         )
       );
-      model(Node(t.left, t.key, t.value, t.right.left, Red))
+      toMap(Node(t.left, t.key, t.value, t.right.left, Red))
         + map[t.right.key := t.right.value]
-        + model(t.right.right);
-      model(t.left)
+        + toMap(t.right.right);
+      toMap(t.left)
         + map[t.key := t.value]
-        + model(t.right.left)
+        + toMap(t.right.left)
         + map[t.right.key := t.right.value]
-        + model(t.right.right);
-      model(t.left)
+        + toMap(t.right.right);
+      toMap(t.left)
         + map[t.key := t.value]
-        + model(t.right);
-      model(t);
+        + toMap(t.right);
+      toMap(t);
     }
   }
 
@@ -405,11 +405,11 @@ module RBTree.RBInsert {
     requires t.left.Node?
     requires SearchTree(t)
     requires SearchTree(RotateRight(t))
-    ensures model(t) == model(RotateRight(t))
+    ensures toMap(t) == toMap(RotateRight(t))
   {
     calc == {
-      model(RotateRight(t));
-      model(
+      toMap(RotateRight(t));
+      toMap(
         Node(
           t.left.left,
           t.left.key,
@@ -418,18 +418,18 @@ module RBTree.RBInsert {
           t.color
         )
       );
-      model(t.left.left)
+      toMap(t.left.left)
         + map[t.left.key := t.left.value]
-        + model(Node(t.left.right, t.key, t.value, t.right, Red));
-      model(t.left.left)
+        + toMap(Node(t.left.right, t.key, t.value, t.right, Red));
+      toMap(t.left.left)
         + map[t.left.key := t.left.value]
-        + model(t.left.right)
+        + toMap(t.left.right)
         + map[t.key := t.value]
-        + model(t.right);
-      model(t.left)
+        + toMap(t.right);
+      toMap(t.left)
         + map[t.key := t.value]
-        + model(t.right);
-      model(t);
+        + toMap(t.right);
+      toMap(t);
     }
   }
 
@@ -453,7 +453,7 @@ module RBTree.RBInsert {
     requires RedBlackTree(t.right)
 
     ensures SearchTree(Restore(t))
-    ensures model(t) == model(Restore(t))
+    ensures toMap(t) == toMap(Restore(t))
   {
     RestoreSpec(t);
     var t' :=
@@ -475,21 +475,21 @@ module RBTree.RBInsert {
 
     if isRed(t.right) {
       RotateLeftModel(t);
-      assert model(RotateLeft(t)) == model(t);
+      assert toMap(RotateLeft(t)) == toMap(t);
     }
-    assert model(t) == model(t');
+    assert toMap(t) == toMap(t');
 
     if isRed(t'.left) && isRed(t'.left.left) {
       RotateRightModel(t');
-      assert model(RotateRight(t')) == model(t');
+      assert toMap(RotateRight(t')) == toMap(t');
     }
-    assert model(t') == model(t'');
+    assert toMap(t') == toMap(t'');
 
     if isRed(t''.left) && isRed(t''.right) {
       FlipColorsModel(t'');
-      assert model(FlipColors(t'')) == model(t'');
+      assert toMap(FlipColors(t'')) == toMap(t'');
     }
-    assert model(t'') == model(t''');
+    assert toMap(t'') == toMap(t''');
 
     assert t''' == Restore(t);
   }
@@ -500,7 +500,7 @@ module RBTree.RBInsert {
     requires RedBlackTree(t)
     requires !(isRed(t) && isRed(t.left))
     requires SearchTree(RBInsert(t, k', v'))
-    ensures model(t)[k' := v'] == model(RBInsert(t, k', v'))
+    ensures toMap(t)[k' := v'] == toMap(RBInsert(t, k', v'))
   {
     match t {
       case Empty => {
@@ -509,29 +509,29 @@ module RBTree.RBInsert {
         if k < k' {
           RBInsertSpec(r, k', v');
           calc == {
-            model(RBInsert(Node(l, k, v, r, c), k', v'));
-            model(Restore(Node(l, k, v, RBInsert(r, k', v'), c)));
+            toMap(RBInsert(Node(l, k, v, r, c), k', v'));
+            toMap(Restore(Node(l, k, v, RBInsert(r, k', v'), c)));
             { RestoreModel(Node(l, k, v, RBInsert(r, k', v'), c)); }
-            model(Node(l, k, v, RBInsert(r, k', v'), c));
-            { toMap''Lemmas(Node(l, k, v, RBInsert(r, k', v'), c)); }
-            model(l) + map[k := v] + model(RBInsert(r, k', v'));
-            model(l) + map[k := v] + model(r)[k' := v'];
-            model(l) + map[k := v] + model(r) + map[k' := v'];
-            model(t) + map[k' := v'];
+            toMap(Node(l, k, v, RBInsert(r, k', v'), c));
+            { toMapLemmas(Node(l, k, v, RBInsert(r, k', v'), c)); }
+            toMap(l) + map[k := v] + toMap(RBInsert(r, k', v'));
+            toMap(l) + map[k := v] + toMap(r)[k' := v'];
+            toMap(l) + map[k := v] + toMap(r) + map[k' := v'];
+            toMap(t) + map[k' := v'];
           }
         } else if k' < k {
           RBInsertSpec(l, k', v');
           calc == {
-            model(RBInsert(Node(l, k, v, r, c), k', v'));
-            model(Restore(Node(RBInsert(l, k', v'), k, v, r, c)));
+            toMap(RBInsert(Node(l, k, v, r, c), k', v'));
+            toMap(Restore(Node(RBInsert(l, k', v'), k, v, r, c)));
             { RestoreModel(Node(RBInsert(l, k', v'), k, v, r, c)); }
-            model(Node(RBInsert(l, k', v'), k, v, r, c));
-            { toMap''Lemmas(Node(RBInsert(l, k', v'), k, v, r, c)); }
-            model(RBInsert(l, k', v')) + map[k := v] + model(r);
-            model(l)[k' := v'] + map[k := v] + model(r);
-            model(l) + map[k' := v'] + map[k := v] + model(r);
-            model(l) + map[k := v] + model(r) + map[k' := v'];
-            model(t) + map[k' := v'];
+            toMap(Node(RBInsert(l, k', v'), k, v, r, c));
+            { toMapLemmas(Node(RBInsert(l, k', v'), k, v, r, c)); }
+            toMap(RBInsert(l, k', v')) + map[k := v] + toMap(r);
+            toMap(l)[k' := v'] + map[k := v] + toMap(r);
+            toMap(l) + map[k' := v'] + map[k := v] + toMap(r);
+            toMap(l) + map[k := v] + toMap(r) + map[k' := v'];
+            toMap(t) + map[k' := v'];
           }
         } else {
         }
@@ -553,7 +553,7 @@ module RBTree.RBInsert {
     requires SearchTree(t)
     requires RedBlackTreeRoot(t)
     requires SearchTree(RBInsertRoot(t, k, v))
-    ensures model(t)[k := v] == model(RBInsertRoot(t, k, v))
+    ensures toMap(t)[k := v] == toMap(RBInsertRoot(t, k, v))
   {
     RBInsertModel(t, k, v);
   }

@@ -129,7 +129,7 @@ module RBTree.RBRemove {
     requires !isRed(t.left.left)
 
     ensures SearchTree(MoveRedLeft(t))
-    ensures model(MoveRedLeft(t)) == model(t)
+    ensures toMap(MoveRedLeft(t)) == toMap(t)
   {
     MoveRedLeftSpec(t);
     var t' := FlipColors(t);
@@ -150,16 +150,16 @@ module RBTree.RBRemove {
       FlipColorsSpec(RotateLeft(t''));
       FlipColorsModel(RotateLeft(t''));
       calc == {
-        model(MoveRedLeft(t));
-        model(FlipColors(RotateLeft(t'')));
-        model(RotateLeft(t''));
-        model(t'');
-        { modelLemmas(t''); }
-        model(t'.left) + map[t'.key := t'.value] + model(RotateRight(t'.right));
-        model(t'.left) + map[t'.key := t'.value] + model(t'.right);
-        { modelLemmas(t'); }
-        model(t');
-        model(t);
+        toMap(MoveRedLeft(t));
+        toMap(FlipColors(RotateLeft(t'')));
+        toMap(RotateLeft(t''));
+        toMap(t'');
+        { toMapLemmas(t''); }
+        toMap(t'.left) + map[t'.key := t'.value] + toMap(RotateRight(t'.right));
+        toMap(t'.left) + map[t'.key := t'.value] + toMap(t'.right);
+        { toMapLemmas(t'); }
+        toMap(t');
+        toMap(t);
       }
     } else {
     }
@@ -243,7 +243,7 @@ module RBTree.RBRemove {
     requires !isRed(t.right.left)
 
     ensures SearchTree(MoveRedRight(t))
-    ensures model(MoveRedRight(t)) == model(t)
+    ensures toMap(MoveRedRight(t)) == toMap(t)
   {
     MoveRedRightSpec(t);
     var t' := FlipColors(t);
@@ -266,15 +266,15 @@ module RBTree.RBRemove {
       RotateLeftSpec(t''.right);
       RotateLeftModel(t''.right);
       calc == {
-        model(MoveRedRight(t));
-        model(t''');
-        { modelLemmas(t'''); }
-        model(t''.left) + map[t''.key := t''.value] + model(RotateLeft(t''.right));
-        model(t''.left) + map[t''.key := t''.value] + model(t''.right);
-        { modelLemmas(t''); }
-        model(t'');
-        model(t');
-        model(t);
+        toMap(MoveRedRight(t));
+        toMap(t''');
+        { toMapLemmas(t'''); }
+        toMap(t''.left) + map[t''.key := t''.value] + toMap(RotateLeft(t''.right));
+        toMap(t''.left) + map[t''.key := t''.value] + toMap(t''.right);
+        { toMapLemmas(t''); }
+        toMap(t'');
+        toMap(t');
+        toMap(t);
       }
     }
   }
@@ -394,9 +394,9 @@ module RBTree.RBRemove {
     requires isRed(t) || isRed(t.left)
 
     ensures SearchTree(RemoveMin(t).0)
-    ensures model(RemoveMin(t).0) == model(t) - {RemoveMin(t).1}
-    ensures RemoveMin(t).1 in model(t)
-    ensures model(t)[RemoveMin(t).1] == RemoveMin(t).2
+    ensures toMap(RemoveMin(t).0) == toMap(t) - {RemoveMin(t).1}
+    ensures RemoveMin(t).1 in toMap(t)
+    ensures toMap(t)[RemoveMin(t).1] == RemoveMin(t).2
   {
     RemoveMinSpec(t);
     if t.left.Empty? {
@@ -410,7 +410,7 @@ module RBTree.RBRemove {
       if isBlack(t.left) && !isRed(t.left.left) {
         MoveRedLeftModel(t);
       }
-      assert model(t) == model(t');
+      assert toMap(t) == toMap(t');
       RemoveMinModel(t'.left);
       var (l', minK, minV) := RemoveMin(t'.left);
       var t'' :=
@@ -425,21 +425,21 @@ module RBTree.RBRemove {
       RestoreSpec(t'');
       RestoreModel(t'');
       calc == {
-        model(RemoveMin(t).0);
-        model(t''');
-        model(t'');
-        { modelLemmas(t''); }
-        model(l') + map[t'.key := t'.value] + model(t'.right);
-        (model(t'.left) - {minK}) + map[t'.key := t'.value] + model(t'.right);
-        model(t'.left) - {minK} + map[t'.key := t'.value] + model(t'.right);
-        { MapDiffComm(model(t'.left), minK, map[t'.key := t'.value]); }
-        (model(t'.left) + map[t'.key := t'.value]) - {minK} + model(t'.right);
-        { MapDiffComm(model(t'.left) + map[t'.key := t'.value], minK, model(t'.right)); }
-        //{ MapSubMove(model(t'.left), minK, map[t'.key := t'.value] + model(t'.right)); }
-        model(t'.left) + map[t'.key := t'.value] + model(t'.right) - {minK};
-        { modelLemmas(t'); }
-        model(t') - {minK};
-        model(t) - {minK};
+        toMap(RemoveMin(t).0);
+        toMap(t''');
+        toMap(t'');
+        { toMapLemmas(t''); }
+        toMap(l') + map[t'.key := t'.value] + toMap(t'.right);
+        (toMap(t'.left) - {minK}) + map[t'.key := t'.value] + toMap(t'.right);
+        toMap(t'.left) - {minK} + map[t'.key := t'.value] + toMap(t'.right);
+        { MapDiffComm(toMap(t'.left), minK, map[t'.key := t'.value]); }
+        (toMap(t'.left) + map[t'.key := t'.value]) - {minK} + toMap(t'.right);
+        { MapDiffComm(toMap(t'.left) + map[t'.key := t'.value], minK, toMap(t'.right)); }
+        //{ MapSubMove(toMap(t'.left), minK, map[t'.key := t'.value] + toMap(t'.right)); }
+        toMap(t'.left) + map[t'.key := t'.value] + toMap(t'.right) - {minK};
+        { toMapLemmas(t'); }
+        toMap(t') - {minK};
+        toMap(t) - {minK};
       }
     }
   }
@@ -610,7 +610,7 @@ module RBTree.RBRemove {
     requires !(isRed(t) && isRed(t.left))
 
     ensures SearchTree(Remove(t, k))
-    ensures model(Remove(t, k)) == model(t) - {k}
+    ensures toMap(Remove(t, k)) == toMap(t) - {k}
   {
     RemoveSpec(t, k);
     if t.Empty? {
@@ -640,19 +640,19 @@ module RBTree.RBRemove {
         RestoreSpec(t'');
         RestoreModel(t'');
         calc == {
-          model(Remove(t, k));
-          model(t''');
-          model(t'');
-          { modelLemmas(t''); }
-          model(Remove(t'.left, k)) + map[t'.key := t'.value] + model(t'.right);
-          model(t'.left) - {k} + map[t'.key := t'.value] + model(t'.right);
-          { MapDiffComm(model(t'.left), k, map[t'.key := t'.value]); }
-          model(t'.left) + map[t'.key := t'.value] - {k} + model(t'.right);
-          { MapDiffComm(model(t'.left) + map[t'.key := t'.value], k, model(t'.right)); }
-          model(t'.left) + map[t'.key := t'.value] + model(t'.right) - {k};
-          { modelLemmas(t'); }
-          model(t') - {k};
-          model(t) - {k};
+          toMap(Remove(t, k));
+          toMap(t''');
+          toMap(t'');
+          { toMapLemmas(t''); }
+          toMap(Remove(t'.left, k)) + map[t'.key := t'.value] + toMap(t'.right);
+          toMap(t'.left) - {k} + map[t'.key := t'.value] + toMap(t'.right);
+          { MapDiffComm(toMap(t'.left), k, map[t'.key := t'.value]); }
+          toMap(t'.left) + map[t'.key := t'.value] - {k} + toMap(t'.right);
+          { MapDiffComm(toMap(t'.left) + map[t'.key := t'.value], k, toMap(t'.right)); }
+          toMap(t'.left) + map[t'.key := t'.value] + toMap(t'.right) - {k};
+          { toMapLemmas(t'); }
+          toMap(t') - {k};
+          toMap(t) - {k};
         }
       } else {
         var t' :=
@@ -690,18 +690,18 @@ module RBTree.RBRemove {
             RestoreSpec(t''');
             RestoreModel(t''');
             calc == {
-              model(Remove(t, k));
-              model(t'''');
-              model(t''');
-              { modelLemmas(t'''); }
-              model(t''.left) + map[t''.key := t''.value] + model(Remove(t''.right, k));
-              model(t''.left) + map[t''.key := t''.value] + (model(t''.right) - {k});
-              { MapDiffAssoc(model(t''.left) + map[t''.key := t''.value], model(t''.right), k); }
-              (model(t''.left) + map[t''.key := t''.value] + model(t''.right)) - {k};
-              { modelLemmas(t''); }
-              model(t'') - {k};
-              model(t') - {k};
-              model(t) - {k};
+              toMap(Remove(t, k));
+              toMap(t'''');
+              toMap(t''');
+              { toMapLemmas(t'''); }
+              toMap(t''.left) + map[t''.key := t''.value] + toMap(Remove(t''.right, k));
+              toMap(t''.left) + map[t''.key := t''.value] + (toMap(t''.right) - {k});
+              { MapDiffAssoc(toMap(t''.left) + map[t''.key := t''.value], toMap(t''.right), k); }
+              (toMap(t''.left) + map[t''.key := t''.value] + toMap(t''.right)) - {k};
+              { toMapLemmas(t''); }
+              toMap(t'') - {k};
+              toMap(t') - {k};
+              toMap(t) - {k};
             }
           } else {
             var (r', minK, minV) := RemoveMin(t''.right);
@@ -719,15 +719,15 @@ module RBTree.RBRemove {
             RestoreSpec(t''');
             RestoreModel(t''');
             calc == {
-              model(Remove(t, k));
-              model(t'''');
-              model(t''');
-              { modelLemmas(t'''); }
-              model(t''.left) + map[minK := minV] + model(r');
-              model(t''.left) + map[minK := minV] + (model(t''.right) - {minK});
-              model(t''.left) + (map[minK := minV] + (model(t''.right) - {minK}));
-              { assert minK in model(t''.right); assert model(t''.right)[minK] == minV; MapDiffCancel(minK, minV, model(t''.right)); }
-              model(t''.left) + model(t''.right);
+              toMap(Remove(t, k));
+              toMap(t'''');
+              toMap(t''');
+              { toMapLemmas(t'''); }
+              toMap(t''.left) + map[minK := minV] + toMap(r');
+              toMap(t''.left) + map[minK := minV] + (toMap(t''.right) - {minK});
+              toMap(t''.left) + (map[minK := minV] + (toMap(t''.right) - {minK}));
+              { assert minK in toMap(t''.right); assert toMap(t''.right)[minK] == minV; MapDiffCancel(minK, minV, toMap(t''.right)); }
+              toMap(t''.left) + toMap(t''.right);
             }
           }
         }
@@ -774,7 +774,7 @@ module RBTree.RBRemove {
     requires RedBlackTreeRoot(t)
 
     ensures SearchTree(RemoveRoot(t, k))
-    ensures model(RemoveRoot(t, k)) == model(t) - {k}
+    ensures toMap(RemoveRoot(t, k)) == toMap(t) - {k}
   {
     RemoveModel(ReddenRoot(t), k);
   }

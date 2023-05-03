@@ -76,11 +76,45 @@ module LinkedTree {
       && (forall i | 0 <= i < |stack| :: ValidRec(stack[i], stackSk[i]))
       && (forall sk | sk in stackSk :: elems(sk) <= elems(parent.skeleton))
       && RBit.ValidStack(RBStack())
-      && RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStack())
+      && RB.inorder(parent.TreeModel()) == traversed + RBit.inorderStack(RBStack())
+    }
+
+    static lemma InorderKeys(t: RB.rbtree)
+      ensures RB.keys(t) == set p | p in RB.inorder(t) :: p.0
+    {}
+
+    lemma TraversedInModelOne(k: K, n: nat)
+      requires n < |traversed|
+      requires k == traversed[n].0
+      requires forall i | 0 <= i < |stackSk| :: stackSk[i].Node?
+      requires RB.inorder(parent.TreeModel()) == traversed + RBit.inorderStack(RBStack())
+      ensures k in RB.keys(parent.TreeModel())
+    {
+      InorderKeys(parent.TreeModel());
     }
 
     lemma TraversedInModel()
-      ensures forall p | p in traversed :: p.0 in RB.keys(TreeModelRec(parent.skeleton))
+      requires forall i | 0 <= i < |stackSk| :: stackSk[i].Node?
+      requires RB.inorder(parent.TreeModel()) == traversed + RBit.inorderStack(RBStack())
+      ensures forall p | p in traversed :: p.0 in RB.keys(parent.TreeModel())
+      ensures (set p | p in traversed :: p.0) <= RB.keys(parent.TreeModel())
+    {
+      forall p | p in traversed
+        ensures p.0 in RB.keys(parent.TreeModel())
+      {
+        var n :| 0 <= n < |traversed| && traversed[n] == p;
+        TraversedInModelOne(p.0, n);
+      }
+    }
+
+    lemma HasPeekCondition()
+      requires Valid()
+      requires parent.Valid()
+      requires parent.SearchTree()
+      ensures stackSk != [] <==> RB.orderKeysToSet(traversed) < parent.MapModel().Keys
+    {
+      RB.HasPeekCondition(parent.TreeModel(), traversed, RBit.inorderStack(RBStack()));
+    }
 
     constructor(node: TNode, ghost sk: tree<TNode>, ghost parent: LinkedTree)
     {
@@ -319,7 +353,7 @@ module LinkedTree {
       requires Valid()
       requires SearchTree()
     {
-      RB.model(TreeModel())
+      RB.toMap(TreeModel())
     }
 
     method Find(k: K) returns (foundNode: TNode?)

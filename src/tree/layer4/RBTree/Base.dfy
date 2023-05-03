@@ -43,11 +43,11 @@ module RBTree.Base {
     }
   }
 
-  function method toMap(t: rbtree): map<K, V>
+  function method toMapRec(t: rbtree): map<K, V>
   {
     match t {
       case Empty => map[]
-      case Node(l, k, v, r, c) => toMap(l) + toMap(r) + map[k := v]
+      case Node(l, k, v, r, c) => toMapRec(l) + toMapRec(r) + map[k := v]
     }
   }
 
@@ -55,7 +55,7 @@ module RBTree.Base {
   {
     match t {
       case Empty => []
-      case Node(l, k, v, r, c) =>  [(k, v)] + inorder(l) + inorder(r)
+      case Node(l, k, v, r, c) =>  [(k, v)] + preorder(l) + preorder(r)
     }
   }
 
@@ -67,24 +67,164 @@ module RBTree.Base {
     }
   }
 
-  function method seqToMap(s: seq<(K, V)>): map<K, V>
+  function orderKeysToSet(s: seq<(K, V)>): set<K>
+  {
+    set p | p in s :: p.0
+  }
+
+  /*
+  lemma NonEmptySet<A>(s: set<K>, P: A -> bool, F: A -> K)
+    requires s == (set x | P(x) :: F(x))
+    */
+
+  lemma NonEmptyOrderKeysToSet(s: seq<(K, V)>)
+    requires s != []
+    ensures orderKeysToSet(s) != {}
+  {
+    assert s[0] in s;
+    assert s[0].0 in orderKeysToSet(s);
+      /*
+    if orderKeysToSet(s) == {} {
+      assert !exists p :: p in s;
+      //assert forall p :: (p in s);
+      assume false;
+    }
+    */
+  }
+
+  function orderKeysToSeq(s: seq<(K, V)>): seq<K>
+  {
+    seq(|s|, i requires 0 <= i < |s| => s[i].0)
+  }
+
+  lemma OrderKeysIsTreeKeys(t: rbtree)
+    ensures orderKeysToSet(inorder(t)) == keys(t)
+  {}
+
+  lemma KeySetSeq(s: seq<(K, V)>)
+    ensures orderKeysToSet(s)
+      == (set k | k in orderKeysToSeq(s))
+      == (set i | 0 <= i < |s| :: orderKeysToSeq(s)[i])
+    ensures forall k ::
+      && (k in orderKeysToSet(s)
+        <==> k in orderKeysToSeq(s))
+      && (k in orderKeysToSet(s)
+        <==> exists i | 0 <= i < |s| :: orderKeysToSeq(s)[i] == k)
+  {
+    forall k
+      ensures (k in orderKeysToSet(s)
+        <==> k in orderKeysToSeq(s))
+      ensures (k in orderKeysToSet(s)
+        <==> exists i | 0 <= i < |s| :: orderKeysToSeq(s)[i] == k)
+    {
+      if k in orderKeysToSet(s) {
+        var v :| (k, v) in s;
+        var n :| 0 <= n < |s| && s[n] == (k, v);
+        assert orderKeysToSeq(s)[n] == k;
+      } else {
+      }
+    }
+  }
+
+  lemma KeyInOrder(t: rbtree, k': K)
+    requires k' in keys(t)
+    ensures exists i :: 0 <= i < |inorder(t)| && inorder(t)[i].0 == k'
+  {
+    match t {
+      case Empty => {}
+      case Node(l, k, v, r, c) => {
+        if k' in keys(l) {
+          KeyInOrder(l, k');
+          var i :| 0 <= i < |inorder(l)| && inorder(l)[i].0 == k';
+          assert inorder(t)[i].0 == k';
+        } else if k' in keys(r) {
+          KeyInOrder(r, k');
+          var i :| 0 <= i < |inorder(r)| && inorder(r)[i].0 == k';
+          var j := i+|inorder(l)|+1;
+          assert 0 <= j < |inorder(t)|;
+          assert inorder(t)[j].0 == k';
+        } else {
+          assert k == k';
+          assert inorder(t)[|inorder(l)|].0 == k';
+        }
+      }
+    }
+  }
+
+  lemma KeysAndValuesInOrder(t: rbtree)
+    ensures forall k | k in keys(t) :: (exists i :: 0 <= i < |inorder(t)| && inorder(t)[i].0 == k)
+  {
+    forall k | k in keys(t)
+      ensures (exists i :: 0 <= i < |inorder(t)| && inorder(t)[i].0 == k)
+    {
+      KeyInOrder(t, k);
+    }
+    assert forall k | k in keys(t) :: (exists i :: 0 <= i < |inorder(t)| && inorder(t)[i].0 == k);
+  }
+
+  lemma OrderInKeysAndValues(t: rbtree)
+    ensures forall i | 0 <= i < |inorder(t)| ::
+      && inorder(t)[i].0 in keys(t)
+      && inorder(t)[i].1 in values(t)
+  {
+  }
+
+  lemma KeySetIsOrderKeysR(t: rbtree, P: K -> bool)
+    requires forall k | k in keys(t) :: P(k)
+    ensures forall i | 0 <= i < |inorder(t)| :: P(inorder(t)[i].0)
+  {
+    forall i | 0 <= i < |inorder(t)|
+      ensures P(inorder(t)[i].0)
+    {
+      OrderInKeysAndValues(t);
+      assert inorder(t)[i].0 in keys(t);
+    }
+  }
+
+  lemma KeySetIsOrderKeys(t: rbtree, P: K -> bool)
+    ensures
+      (forall k | k in keys(t) :: P(k))
+        ==> (forall i | 0 <= i < |inorder(t)| :: P(inorder(t)[i].0))
+    ensures
+      (forall i | 0 <= i < |inorder(t)| :: P(inorder(t)[i].0))
+        ==> (forall k | k in keys(t) :: P(k))
+  {
+    if (forall k | k in keys(t) :: P(k)) {
+      forall i | 0 <= i < |inorder(t)|
+        ensures P(inorder(t)[i].0)
+      {
+        OrderInKeysAndValues(t);
+        assert inorder(t)[i].0 in keys(t);
+      }
+    }
+    if (forall i | 0 <= i < |inorder(t)| :: P(inorder(t)[i].0)) {
+      forall k | k in keys(t)
+        ensures P(k)
+      {
+        KeysAndValuesInOrder(t);
+        assert (exists i :: 0 <= i < |inorder(t)| && inorder(t)[i].0 == k);
+      }
+    }
+  }
+
+  function method orderToMap(s: seq<(K, V)>): map<K, V>
   {
     if s == [] then
       map[]
     else
-      map[s[0].0 := s[0].1] + seqToMap(s[1..])
+      map[s[0].0 := s[0].1] + orderToMap(s[1..])
   }
 
-  function method seqToMap'(s: seq<(K, V)>): map<K, V>
+  function method orderToMap'(s: seq<(K, V)>): map<K, V>
     requires forall i, j | 0 <= i < j < |s| :: s[i].0 != s[j].0
   {
     map t: (K, V) | t in s :: t.0 := t.1
     //map i: int | 0 <= i < |s| :: s[i].0 := s[i].1
   }
 
-  function method toMap'(t: rbtree): map<K, V>
+  function method toMapSeq(t: rbtree): map<K, V>
   {
-    seqToMap(preorder(t))
+    orderToMap(preorder(t))
   }
 
   function method SearchTree(t: rbtree): bool
@@ -115,22 +255,27 @@ module RBTree.Base {
     }
   }
 
-  lemma {:induction} SearchImpliesUnique(t: rbtree)
+  lemma SearchImpliesOrdered(t: rbtree)
     requires SearchTree(t)
-    ensures forall i, j | 0 <= i < j < |preorder(t)| ::
-      preorder(t)[i].0 != preorder(t)[j].0
+    ensures forall i, j | 0 <= i < j < |inorder(t)| ::
+      inorder(t)[i].0 < inorder(t)[j].0
   {
     match t {
       case Empty => {
       }
       case Node(l, k, v, r, c) => {
-        SearchImpliesUnique(l);
-        SearchImpliesUnique(r);
-        assume {:axiom} false;
-        assert preorder(t) == [(k, v)] + preorder(l) + preorder(r);
-        assume {:axiom} false;
+        KeySetIsOrderKeysR(l, m => m < k);
+        KeySetIsOrderKeysR(r, m => k < m);
       }
     }
+  }
+
+  lemma SearchImpliesUnique(t: rbtree)
+    requires SearchTree(t)
+    ensures forall i, j | 0 <= i < j < |inorder(t)| ::
+      inorder(t)[i].0 != inorder(t)[j].0
+  {
+    SearchImpliesOrdered(t);
   }
 
   lemma DisjointBranches(t: rbtree)
@@ -178,34 +323,52 @@ module RBTree.Base {
     }
   }
 
-  function method toMap''(t: rbtree): map<K, V>
+  function method toMap(t: rbtree): map<K, V>
     requires SearchTree(t)
   {
     map k: K | k in keys(t) :: Get(t, k)
   }
 
-  function method model(t: rbtree): map<K, V>
+  lemma toMapLemmas(t: rbtree)
     requires SearchTree(t)
+    ensures t.Node? ==>
+      && toMap(t) == toMap(t.left) + toMap(t.right) + map[t.key := t.value]
+      && toMap(t) == toMap(t.left) + map[t.key := t.value] + toMap(t.right)
+  {}
+
+  lemma OrderKeysIsMapKeys(t: rbtree)
+    requires SearchTree(t)
+    ensures orderKeysToSet(inorder(t)) == toMap(t).Keys
   {
-    toMap''(t)
+    OrderKeysIsTreeKeys(t);
   }
 
-  lemma toMap''Lemmas(t: rbtree)
+  lemma HasPeekCondition(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
     requires SearchTree(t)
-    ensures t.Node? ==>
-      toMap''(t) == toMap''(t.left) + toMap''(t.right) + map[t.key := t.value]
-  {}
-
-  lemma modelLemmas(t: rbtree)
-    requires SearchTree(t)
-    ensures t.Node? ==>
-      //model(t) == model(t.left) + model(t.right) + map[t.key := t.value]
-      model(t) == model(t.left) + map[t.key := t.value] + model(t.right)
-  {}
-
-  function method toMap'''(t: rbtree): map<K, V>
+    requires inorder(t) == traversed + st
+    ensures st != [] <==> orderKeysToSet(traversed) < toMap(t).Keys
   {
-    seqToMap(preorder(t))
+    if st != [] {
+      SearchImpliesUnique(t);
+      assert orderKeysToSet(traversed) <= orderKeysToSet(inorder(t));
+      assert forall i | 0 <= i < |traversed| ::
+        inorder(t)[i].0 == traversed[i].0;
+      assert forall i | 0 <= i < |st| ::
+         inorder(t)[|traversed| + i].0 == st[i].0;
+      assert forall i, j | 0 <= i < |traversed| && 0 <= j < |st| ::
+        traversed[i].0 != st[j].0;
+      assert orderKeysToSet(traversed) !! orderKeysToSet(st);
+      assert orderKeysToSet(st) != {} by {
+        NonEmptyOrderKeysToSet(st);
+      }
+      assert orderKeysToSet(inorder(t)) == orderKeysToSet(traversed) + orderKeysToSet(st);
+      assert orderKeysToSet(traversed) < orderKeysToSet(inorder(t));
+      assert orderKeysToSet(inorder(t)) == toMap(t).Keys by {
+        OrderKeysIsMapKeys(t);
+      }
+    } else {
+      OrderKeysIsMapKeys(t);
+    }
   }
 
   function method isRed(t: rbtree): bool
