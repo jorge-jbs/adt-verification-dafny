@@ -47,6 +47,7 @@ module LinkedTree {
       ensures |stackSk| == |RBStackRec(stackSk)|
       ensures forall i | 0 <= i < |stackSk| :: RBStackRec(stackSk)[i] == TreeModelRec(stackSk[i])
     {
+      //seq(|stackSk|, i requires 0 <= i < |stackSk| reads elems(stackSk[i]) => TreeModelRec(stackSk[i]))
       seq(|stackSk|, i requires 0 <= i < |stackSk| reads BigUnion(set sk | sk in stackSk :: elems(sk)) => TreeModelRec(stackSk[i]))
       /*
       if stackSk == [] then
@@ -114,6 +115,29 @@ module LinkedTree {
       ensures stackSk != [] <==> RB.orderKeysToSet(traversed) < parent.MapModel().Keys
     {
       RB.HasPeekCondition(parent.TreeModel(), traversed, RBit.inorderStack(RBStack()));
+    }
+
+    lemma PeekInModel()
+      requires Valid()
+      requires parent.Valid()
+      requires parent.SearchTree()
+      requires stackSk != []
+      ensures (stackSk[|stackSk|-1].data.key, stackSk[|stackSk|-1].data.value) in parent.MapModel().Items
+    {
+      assert (stackSk[|stackSk|-1].data.key, stackSk[|stackSk|-1].data.value) == RBit.inorderStack(RBStack())[0];
+      RB.PeekInModel(parent.TreeModel(), traversed, RBit.inorderStack(RBStack()));
+    }
+
+    lemma PeekNotInTraversed()
+      requires Valid()
+      requires parent.Valid()
+      requires parent.SearchTree()
+      requires stackSk != []
+      ensures (stackSk[|stackSk|-1].data.key, stackSk[|stackSk|-1].data.value) !in traversed
+      ensures stackSk[|stackSk|-1].data.key !in RB.orderKeysToSeq(traversed)
+      ensures stackSk[|stackSk|-1].data.key !in RB.orderKeysToSet(traversed)
+    {
+      RB.PeekNotInTraversed(parent.TreeModel(), traversed, RBit.inorderStack(RBStack()));
     }
 
     constructor(node: TNode, ghost sk: tree<TNode>, ghost parent: LinkedTree)
@@ -267,6 +291,8 @@ module LinkedTree {
       ensures v == stack[|stack|-1].value == TreeModelRec(stackSk[|stackSk|-1]).value
       ensures RB.inorder(TreeModelRec(parentSkeleton)) == traversed + [(k, v)] + RBit.inorderStack(RBStackRec(newStackSk));
       ensures RB.inorder(TreeModelRec(parentSkeleton)) == newTraversed + RBit.inorderStack(RBStackRec(newStackSk));
+      ensures newTraversed == traversed + [(k, v)]
+      ensures RB.orderToSet(newTraversed) == RB.orderToSet(traversed) + {(k, v)}
 
       requires allocated(elems(parentSkeleton))
       requires forall i | 0 <= i < |stackSk| :: allocated(elems(stackSk[i]))
@@ -287,15 +313,31 @@ module LinkedTree {
       }
       RBit.NextSpec(TreeModelRec(parentSkeleton), RBStackRec(stackSk), traversed);
       newTraversed := traversed + [(k, v)];
+      calc ==  {
+        RB.orderToSet(newTraversed);
+        RB.orderToSet(traversed + [(k, v)]);
+        RB.orderToSet(traversed) + RB.orderToSet([(k, v)]);
+        {
+          RB.SingletonSet(RB.orderToSet([(k, v)]), (k, v));
+          assert RB.orderToSet([(k, v)]) == {(k, v)};
+        }
+        RB.orderToSet(traversed) + {(k, v)};
+      }
     }
 
-    method {:verify false} Next() returns (k: K, v: V)  // 5'10"
+    method {:verify true} Next() returns (k: K, v: V)  // 5'10"
       modifies this
       requires Valid()
       requires RBit.ValidStack(RBStack())  /* redundant */
       requires RBStack() != []
       ensures Valid()
       ensures RBStack() == old(RBit.Next(RBStack()))
+      ensures parent == old(parent)
+      ensures old(parent.Valid()) ==> parent.Valid()
+      ensures traversed == old(traversed) + [(k, v)]
+      ensures RB.orderToSet(traversed) == old(RB.orderToSet(traversed)) + {(k, v)}
+      ensures k == old(stack[|stack|-1].key) // == old(TreeModelRec(stackSk[|stackSk|-1]).key)
+      ensures v == old(stack[|stack|-1].value) // == old(TreeModelRec(stackSk[|stackSk|-1]).value)
 
       requires allocated(elems(parent.skeleton));
       requires forall i | 0 <= i < |stackSk| :: allocated(elems(stackSk[i]));

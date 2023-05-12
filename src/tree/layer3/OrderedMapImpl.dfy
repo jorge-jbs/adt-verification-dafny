@@ -85,19 +85,8 @@ module OrderedMapImpl {
       ensures Traversed() <= (Parent().Model().Keys)
     {
       iter.TraversedInModel();
-      set p | p in iter.traversed :: p.0
+      RB.orderKeysToSet(iter.traversed)
     }
-
-    function Peek?():(K,V)
-      reads this, Parent(), Parent().Repr()
-      requires Valid()
-      requires Parent().Valid()
-      requires HasPeek?()
-
-      ensures Peek?() in Parent().Model().Items
-              && key(Peek?()) !in Traversed()
-              //key(Peek?()) in Parent().Model() &&
-              //value(Peek?()) == Parent().Model()[key(Peek?())]
 
     lemma SubSetCardinality(xs: set<K>, ys: set<K>)
       requires xs < ys
@@ -154,8 +143,30 @@ module OrderedMapImpl {
         && it.Parent() == old(it.Parent())
         && it.Traversed() == old(it.Traversed())
         && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+    {
+      b := iter.stack != [];
+    }
 
-    method Next()
+    function Peek?(): (K,V)
+      reads this, Parent(), Parent().Repr()
+      requires Valid()
+      requires Parent().Valid()
+      requires HasPeek?()
+
+      ensures Peek?() in Parent().Model().Items
+              && key(Peek?()) !in Traversed()
+              && key(Peek?()) in Parent().Model()
+              && value(Peek?()) == Parent().Model()[key(Peek?())]
+    {
+      var p := (iter.stackSk[|iter.stackSk|-1].data.key, iter.stackSk[|iter.stackSk|-1].data.value);
+      iter.PeekInModel();
+      iter.PeekNotInTraversed();
+      assert p in Parent().Model().Items;
+      assert p.0 !in Traversed();
+      p
+    }
+
+    method {:verify true} Next()
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -165,7 +176,6 @@ module OrderedMapImpl {
       requires Valid()
       requires Parent().Valid()
       requires HasPeek?()
-      /*
       ensures Valid()
       ensures Parent().Valid()
       ensures Parent() == old(Parent())
@@ -177,12 +187,13 @@ module OrderedMapImpl {
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
         && it.Valid()
         && it.Parent() == old(it.Parent())
+      /*
         && (it != this ==> it.Traversed() == old(it.Traversed())
                            && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?())))
+                           */
     {
       var _, _ := iter.Next();
     }
-                           */
 
     method Peek() returns (p:(K,V))
       modifies this, Parent(), Parent().Repr()

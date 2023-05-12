@@ -26,10 +26,7 @@ module RBTree.Iterator {
       []
     else
       var node := st[|st|-1];
-      if node.Empty? then
-        inorderStack(st[..|st|-1])
-      else
-        [(node.key, node.value)] + inorder(node.right) + inorderStack(st[..|st|-1])
+      [(node.key, node.value)] + inorder(node.right) + inorderStack(st[..|st|-1])
   }
 
   lemma DescendAndPushSpec(root: rbtree, st: seq<rbtree>, node: rbtree, traversed: seq<(K, V)>)

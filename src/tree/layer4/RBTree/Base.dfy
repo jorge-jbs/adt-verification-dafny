@@ -34,6 +34,16 @@ module RBTree.Base {
     }
   }
 
+  function method pairs(t: rbtree): set<(K, V)>
+    ensures t.Empty? ==> pairs(t) == {}
+    ensures !t.Empty? ==> pairs(t) == pairs(t.left) + {(t.key, t.value)} + pairs(t.right)
+  {
+    match t {
+      case Empty => {}
+      case Node(l, k, v, r, c) => pairs(l) + {(k, v)} + pairs(r)
+    }
+  }
+
   function method size(t: rbtree): nat
     //ensures size(t) == |keys(t)|
   {
@@ -99,6 +109,10 @@ module RBTree.Base {
 
   lemma OrderKeysIsTreeKeys(t: rbtree)
     ensures orderKeysToSet(inorder(t)) == keys(t)
+  {}
+
+  lemma OrderSetIsTreePairs(t: rbtree)
+    ensures orderToSet(inorder(t)) == pairs(t)
   {}
 
   lemma KeySetSeq(s: seq<(K, V)>)
@@ -343,6 +357,51 @@ module RBTree.Base {
     OrderKeysIsTreeKeys(t);
   }
 
+  function orderToSet(s: seq<(K, V)>): set<(K, V)>
+  {
+    set p | p in s :: p
+  }
+
+  lemma SingletonSet<A>(s: set<A>, x: A)
+    requires x in s
+    requires forall y | y in s :: y == x
+    ensures s == {x}
+  {}
+
+  lemma SingletonMapItems(k: K, v: V)
+    ensures map[k := v].Items == {(k, v)}
+  {
+    assert forall p | p in map[k := v].Items :: p == (k, v);
+    SingletonSet(map[k := v].Items, (k, v));
+  }
+
+  lemma OrderSetIsMapItems(t: rbtree)
+    requires SearchTree(t)
+    ensures orderToSet(inorder(t)) == toMap(t).Items
+  {
+    match t {
+      case Empty => {}
+      case Node(l, k, v, r, c) => {
+        OrderSetIsMapItems(l);
+        OrderSetIsMapItems(r);
+        assert orderToSet(inorder(l)) == toMap(l).Items;
+        assert orderToSet(inorder(r)) == toMap(r).Items;
+        toMapLemmas(t);
+        calc == {
+          toMap(t).Items;
+          toMap(l).Items + map[k := v].Items + toMap(r).Items;
+          {
+            SingletonMapItems(k, v);
+            assert map[k := v].Items == {(k, v)};
+          }
+          toMap(l).Items + {(k, v)} + toMap(r).Items;
+          orderToSet(inorder(l)) + {(k, v)} + orderToSet(inorder(r));
+          orderToSet(inorder(t));
+        }
+      }
+    }
+  }
+
   lemma HasPeekCondition(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
     requires SearchTree(t)
     requires inorder(t) == traversed + st
@@ -369,6 +428,47 @@ module RBTree.Base {
     } else {
       OrderKeysIsMapKeys(t);
     }
+  }
+
+  lemma PeekInModel(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
+    requires SearchTree(t)
+    requires st != []
+    requires inorder(t) == traversed + st
+    ensures st[0] in toMap(t).Items
+  {
+    OrderSetIsMapItems(t);
+  }
+
+  lemma IndexIn<A>(x: A, s: seq<A>) returns (i: nat)
+    requires x in s
+    ensures 0 <= i < |s|
+    ensures s[i] == x
+  {
+    i :| 0 <= i < |s| && s[i] == x;
+  }
+
+  lemma PeekNotInTraversed(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
+    requires SearchTree(t)
+    requires st != []
+    requires inorder(t) == traversed + st
+    ensures st[0] !in traversed
+    ensures st[0].0 !in orderKeysToSeq(traversed)
+    ensures st[0].0 !in orderKeysToSet(traversed)
+  {
+    SearchImpliesUnique(t);
+    assert st[0] == inorder(t)[|traversed|];
+    assert forall i | 0 <= i < |traversed| :: inorder(t)[i] != inorder(t)[|traversed|];
+    if inorder(t)[|traversed|] in traversed {
+      var i := IndexIn(inorder(t)[|traversed|], traversed);
+      assert inorder(t)[i] != inorder(t)[|traversed|];
+      assert false;
+    }
+    if inorder(t)[|traversed|].0 in orderKeysToSeq(traversed) {
+      var i := IndexIn(inorder(t)[|traversed|].0, orderKeysToSeq(traversed));
+      assert inorder(t)[i].0 != inorder(t)[|traversed|].0;
+      assert false;
+    }
+    KeySetSeq(traversed);
   }
 
   function method isRed(t: rbtree): bool
