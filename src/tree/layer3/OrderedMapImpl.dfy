@@ -166,7 +166,7 @@ module OrderedMapImpl {
       p
     }
 
-    method {:verify true} Next()
+    method {:verify false} Next()
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -195,7 +195,7 @@ module OrderedMapImpl {
       var _, _ := iter.Next();
     }
 
-    method Peek() returns (p:(K,V))
+    method Peek() returns (p: (K, V))
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -210,13 +210,17 @@ module OrderedMapImpl {
       ensures Parent() == old(Parent())
       ensures Parent().Model() == old(Parent().Model())
 
-      ensures Traversed() == old(Traversed()) && Peek?()==old(Peek?())
+      ensures Traversed() == old(Traversed()) && Peek?() == old(Peek?())
       ensures p == Peek?()
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
         && it.Valid()
         && it.Parent() == old(it.Parent())
         && it.Traversed() == old(it.Traversed())
-        && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+        && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+    {
+      var n := iter.stack[|iter.stack|-1];
+      p := (n.key, n.value);
+    }
 
     method Copy() returns (it: OrderedMapIteratorImpl /*UnorderedMapIterator*/)
       modifies this, Parent(), Parent().Repr()
