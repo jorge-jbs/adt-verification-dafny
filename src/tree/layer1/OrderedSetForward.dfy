@@ -69,8 +69,8 @@ trait OrderedSetIteratorForward extends UnorderedSetIterator{
     requires Parent().Valid()
     //ensures HasPeek?() <==> Traversed() < Parent().Model() &&  |Traversed()| < |Parent().Model()| 
     ensures HasPeek?() ==> Traversed() < Parent().Model() &&  |Traversed()| < |Parent().Model()| 
-    ensures Traversed() < Parent().Model() ==> HasPeek?()
-    ensures |Traversed()| < |Parent().Model()| ==> HasPeek?()
+    /*ensures Traversed() < Parent().Model() ==> HasPeek?() 
+    ensures |Traversed()| < |Parent().Model()| ==> HasPeek?()*/
     ensures !HasPeek?() ==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()| 
     { 
       0 <= Index() < |Parent().Model()|
@@ -207,15 +207,15 @@ method Copy() returns (it: UnorderedSetIterator)
 
 
     ensures it.Valid()
-    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures Parent() == it.Parent()
 
     ensures it is OrderedSetIteratorForward
     ensures  (it as OrderedSetIteratorForward).Index() == Index()
     ensures Traversed() == it.Traversed() 
     ensures |Traversed()| == |it.Traversed()|
-    
     ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
+    
+    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -309,11 +309,13 @@ trait OrderedSetForward extends UnorderedSet{
 
     ensures it is OrderedSetIteratorForward
     ensures fresh(it)
-    ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
     ensures it.Traversed() == {} 
+
     ensures (it as OrderedSetIteratorForward).Index() == 0
+    
+    ensures Iterators() >= {it} + old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -397,7 +399,8 @@ trait OrderedSetForward extends UnorderedSet{
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + {x}
-    ensures if (x in old(Model())) then |Model()| == old(|Model()|) else |Model()| == 1 + old(|Model()|)
+    ensures if (x in old(Model())) then |Model()| == old(|Model()|) 
+            else |Model()| == 1 + old(|Model()|)
 
     requires mid.Valid() 
     //mid just a hint, it is inserted where corresponds

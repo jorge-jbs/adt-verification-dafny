@@ -77,9 +77,6 @@ trait OrderedSetIterator extends UnorderedSetIterator{
       0 <= Index() < |Parent().Model()|
     }
 
-
-    
-
   method HasPeek() returns (b:bool)
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
@@ -239,15 +236,14 @@ method Copy() returns (it: UnorderedSetIterator)
 
 
     ensures it.Valid()
-    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures Parent() == it.Parent()
-
     ensures it is OrderedSetIterator
     ensures  (it as OrderedSetIterator).Index() == Index()
     ensures Traversed() == it.Traversed() 
     ensures |Traversed()| == |it.Traversed()|
-    
     ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
+    
+    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -341,11 +337,12 @@ trait OrderedSet extends UnorderedSet{
 
     ensures it is OrderedSetIterator 
     ensures fresh(it)
-    ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
     ensures it.Traversed() == {} 
     ensures (it as OrderedSetIterator).Index() == 0
+
+    ensures Iterators() >= {it} + old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -371,11 +368,11 @@ trait OrderedSet extends UnorderedSet{
   
     ensures it is OrderedSetIterator
     ensures fresh(it)
-    ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
-
     ensures it.Index() ==  |Model()|-1
+    
+    ensures Iterators() >= {it} + old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 

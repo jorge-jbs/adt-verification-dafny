@@ -29,8 +29,6 @@ function Peek?():(K,V)
     
     ensures Peek?() in Parent().Model().Items 
     ensures key(Peek?()) in Parent().Model() - Traversed() 
-            //key(Peek?()) in Parent().Model() && 
-            //value(Peek?()) == Parent().Model()[key(Peek?())]
   
 predicate HasPeek?()
     reads this, Parent(), Parent().Repr()
@@ -88,6 +86,7 @@ method HasPeek() returns (b:bool)
 
     ensures p == Peek?()
     ensures HasPeek?() && Peek?()==old(Peek?()) // no debería ser necesario pero lo es 
+    
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
@@ -132,7 +131,6 @@ method HasPeek() returns (b:bool)
 
     requires Valid()
     requires Parent().Valid()
-    ensures fresh(it)
     ensures Valid()
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
@@ -142,13 +140,14 @@ method HasPeek() returns (b:bool)
     ensures |Traversed()| == |old(Traversed())|
     ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
 
+    ensures fresh(it)
     ensures it.Valid()
-    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures Parent() == it.Parent()
     ensures Traversed() == it.Traversed() 
     ensures |Traversed()| == |it.Traversed()| 
-
     ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
+    
+    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -225,10 +224,11 @@ trait UnorderedMap extends ADT<map<K,V>>{ //<K (==),V> extends ADT<map<K,V>> {
     ensures |Model()| == old(|Model()|)
 
     ensures fresh(it)
-    ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
     ensures it.Traversed() == {} 
+
+    ensures Iterators() >= {it} + old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -287,7 +287,8 @@ method At(k:K) returns (v:V)
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())[k:=v] 
-    ensures if (k in old(Model())) then |Model()| == old(|Model()|) else |Model()| == 1 + old(|Model()|)
+    ensures if (k in old(Model())) then |Model()| == old(|Model()|) 
+            else |Model()| == 1 + old(|Model()|)
 
     ensures Iterators() >= old(Iterators())
 
@@ -301,7 +302,8 @@ method Remove(k:K)
   requires Valid()
   ensures Valid()
   ensures Model() == old(Model()) - {k}
-  ensures if (k in old(Model())) then |Model()| == old(|Model()|) - 1 else |Model()| == old(|Model()|)
+  ensures if (k in old(Model())) then |Model()| == old(|Model()|) - 1 
+          else |Model()| == old(|Model()|)
 
   ensures Iterators() >= old(Iterators())
 

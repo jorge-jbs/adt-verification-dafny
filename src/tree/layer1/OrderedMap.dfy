@@ -124,15 +124,7 @@ predicate HasPeek?()
 
     ensures p == Peek?()
     ensures HasPeek?() && Peek?()==old(Peek?()) // no debería ser necesario pero lo es 
-
-    /*ensures Peek() in Parent().Model().Items &&
-            key(Peek()) !in Traversed() 
-    ensures key(Peek())==elemth(Parent().Model().Keys,|Traversed()|)  &&
-            value(Peek()) == Parent().Model()[key(Peek())]      
-    ensures forall k | k in Traversed() :: k < key(Peek())
-    ensures forall k | k in Parent().Model().Keys-Traversed()-{key(Peek())} :: key(Peek()) < k
-    ensures forall k | k in Parent().Model().Keys-Traversed() :: key(Peek()) <= k
-*/
+    
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
@@ -147,7 +139,7 @@ predicate HasPeek?()
 
 
   method Next() 
-        modifies this, Parent(), Parent().Repr()
+    modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
     ensures fresh(Parent().Repr() - old(Parent().Repr()))
@@ -196,7 +188,6 @@ predicate HasPeek?()
 
     ensures Index() == old(Index()) - 1
 
-
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
@@ -210,26 +201,14 @@ predicate HasPeek?()
       (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
 
   method Copy() returns (it: UnorderedMapIterator)
-    modifies Parent(), Parent().Repr()
-    requires Valid()
-    requires Parent().Valid()
-    requires allocated(Parent())
-    requires forall it | it in Parent().Iterators() :: allocated(it)
-    ensures fresh(it)
-    ensures Valid()
-    ensures Parent() == old(Parent())
-    ensures Parent().Valid()
-    ensures Parent().Model() == old(Parent().Model())
-
-       modifies this, Parent(), Parent().Repr()
+modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
     ensures fresh(Parent().Repr() - old(Parent().Repr()))
     ensures allocated(Parent().Repr())
 
-    requires Valid()
+   requires Valid()
     requires Parent().Valid()
-    ensures fresh(it)
     ensures Valid()
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
@@ -243,17 +222,16 @@ predicate HasPeek?()
 
     ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
 
-
+    ensures fresh(it)
     ensures it.Valid()
-    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures Parent() == it.Parent()
-
     ensures it is OrderedMapIterator
     ensures  (it as OrderedMapIterator).Index() == Index()
     ensures Traversed() == it.Traversed() 
     ensures |Traversed()| == |it.Traversed()|
-    
     ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
+    
+    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -342,13 +320,12 @@ method First() returns (it: UnorderedMapIterator)
     
     ensures it is OrderedMapIterator 
     ensures fresh(it)
-    ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
     ensures it.Traversed() == {} 
-    
     ensures (it as OrderedMapIterator).Index() == 0
-
+    
+    ensures Iterators() >= {it} + old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -373,11 +350,12 @@ method First() returns (it: UnorderedMapIterator)
   
     ensures it is OrderedMapIterator
     ensures fresh(it)
-    ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
 
     ensures it.Index() ==  |Model()|-1
+    
+    ensures Iterators() >= {it} + old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -484,7 +462,8 @@ method At(k:K) returns (v:V)
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())[k:=v]
-    ensures if (k in old(Model())) then |Model()| == old(|Model()|) else |Model()| == 1 + old(|Model()|)
+    ensures if (k in old(Model())) then |Model()| == old(|Model()|) 
+            else |Model()| == 1 + old(|Model()|)
 
     requires mid.Valid() 
     requires mid.Parent() == this

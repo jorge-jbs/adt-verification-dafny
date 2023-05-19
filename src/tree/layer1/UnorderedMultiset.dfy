@@ -23,7 +23,7 @@ trait UnorderedMultisetIterator {
     requires Parent().Valid() 
     requires HasPeek?()
     ensures Peek?() in Parent().Model()
-    ensures Peek?() in (Parent().Model()-Traversed())//[Peek?()]>0
+    ensures Peek?() in (Parent().Model()-Traversed())
 
   predicate HasPeek?()
     reads this, Parent(), Parent().Repr()
@@ -139,12 +139,12 @@ trait UnorderedMultisetIterator {
     ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
 
     ensures it.Valid()
-    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures Parent() == it.Parent()
     ensures Traversed() == it.Traversed()
     ensures |Traversed()| == |it.Traversed()| 
-    
     ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
+        
+    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -220,10 +220,11 @@ trait UnorderedMultiset extends ADT<multiset<K>> {
     ensures |Model()| == old(|Model()|)
 
     ensures fresh(it)
-    ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
-    ensures it.Traversed() == multiset{} 
+    ensures it.Traversed() == multiset{}
+    
+    ensures Iterators() >= {it} + old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -294,7 +295,8 @@ trait UnorderedMultiset extends ADT<multiset<K>> {
     requires Valid()
     ensures Valid()
     ensures Model()== old(Model()) - multiset{x} 
-    ensures if (x in old(Model())) then |Model()| == old(|Model()|) - 1 else |Model()| == old(|Model()|)
+    ensures if (x in old(Model())) then |Model()| == old(|Model()|) - 1 
+            else |Model()| == old(|Model()|)
 
     ensures Iterators() >= old(Iterators())
 
@@ -353,7 +355,8 @@ trait UnorderedMultiset extends ADT<multiset<K>> {
 
     ensures fresh(newt)
     ensures newt.Valid() && newt.Parent() == this  
-    ensures newt.HasPeek?() && newt.Peek?()==x  
+    ensures newt.HasPeek?() && newt.Peek?()==x
+
     ensures Iterators() >= {newt}+old(Iterators())
      //points either to the inserted elemento or to the already existing one
  

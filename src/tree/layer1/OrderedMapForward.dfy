@@ -163,25 +163,14 @@ predicate HasPeek?()
       && (it != this ==> it.Traversed() == old(it.Traversed())
                          && |it.Traversed()| == old(|it.Traversed()|)
                          && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
+    
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this:://NEW
       (it is OrderedMapIteratorForward && 
       (it as OrderedMapIteratorForward).Index() == old((it as OrderedMapIteratorForward).Index()) )
 
-
   
   method Copy() returns (it: UnorderedMapIterator)
-    modifies Parent(), Parent().Repr()
-    requires Valid()
-    requires Parent().Valid()
-    requires allocated(Parent())
-    requires forall it | it in Parent().Iterators() :: allocated(it)
-    ensures fresh(it)
-    ensures Valid()
-    ensures Parent() == old(Parent())
-    ensures Parent().Valid()
-    ensures Parent().Model() == old(Parent().Model())
-
-       modifies this, Parent(), Parent().Repr()
+    modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
     ensures fresh(Parent().Repr() - old(Parent().Repr()))
@@ -189,7 +178,6 @@ predicate HasPeek?()
 
     requires Valid()
     requires Parent().Valid()
-    ensures fresh(it)
     ensures Valid()
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
@@ -203,17 +191,16 @@ predicate HasPeek?()
 
     ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
 
-
+    ensures fresh(it)
     ensures it.Valid()
-    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures Parent() == it.Parent()
-
     ensures it is OrderedMapIteratorForward
     ensures  (it as OrderedMapIteratorForward).Index() == Index()
     ensures Traversed() == it.Traversed() 
     ensures |Traversed()| == |it.Traversed()|
-    
     ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
+    
+    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -302,13 +289,13 @@ method First() returns (it: UnorderedMapIterator)
     
     ensures it is OrderedMapIteratorForward 
     ensures fresh(it)
-    ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
     ensures it.Traversed() == {} 
     
     ensures (it as OrderedMapIteratorForward).Index() == 0
 
+    ensures Iterators() >= {it} + old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 

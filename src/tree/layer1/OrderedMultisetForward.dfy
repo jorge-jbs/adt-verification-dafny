@@ -147,12 +147,11 @@ trait OrderedMultisetIteratorForward extends UnorderedMultisetIterator{
     ensures Parent().Model() == old(Parent().Model())
     ensures |Parent().Model()| == old(|Parent().Model()|)
 
-    ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures Traversed() == multiset{old(Peek?())}+old(Traversed()) 
     ensures |Traversed()| == 1 + |old(Traversed())|
     ensures Index() == old(Index()) + 1 //NEW 
 
-
+    ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -188,13 +187,13 @@ trait OrderedMultisetIteratorForward extends UnorderedMultisetIterator{
     ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
 
     ensures it.Valid()
-    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures Parent() == it.Parent()
-
     ensures it is OrderedMultisetIteratorForward
     ensures  (it as OrderedMultisetIteratorForward).Index() == Index()
     ensures Traversed() == it.Traversed() 
     ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
+
+    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -286,12 +285,12 @@ trait OrderedMultisetForward extends UnorderedMultiset{
 
     ensures it is OrderedMultisetIteratorForward
     ensures fresh(it)
-    ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
     ensures it.Traversed()==multiset{}
     ensures (it as OrderedMultisetIteratorForward).Index() == 0
     
+    ensures Iterators() >= {it} + old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 

@@ -31,7 +31,6 @@ trait UnorderedSetIterator {
     ensures HasPeek?() ==> Traversed() < Parent().Model() &&  |Traversed()| < |Parent().Model()| 
     ensures !HasPeek?() ==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()| 
 
-  
 
   method HasPeek() returns (b:bool)
     modifies this, Parent(), Parent().Repr()
@@ -77,10 +76,10 @@ trait UnorderedSetIterator {
     ensures Parent().Model() == old(Parent().Model())
     ensures |Parent().Model()| == old(|Parent().Model()|)
 
-    ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures Traversed() == {old(Peek?())}+old(Traversed()) 
     ensures |Traversed()| == 1 + old(|Traversed()|)
-
+    
+    ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -139,12 +138,12 @@ trait UnorderedSetIterator {
     ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
 
     ensures it.Valid()
-    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures Parent() == it.Parent()
     ensures Traversed() == it.Traversed()
     ensures |Traversed()| == |it.Traversed()|
-
     ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
+    
+    ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -205,7 +204,7 @@ trait UnorderedSet extends ADT<set<K>> {
       && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
 
-   function Iterators(): set<UnorderedSetIterator>
+  function Iterators(): set<UnorderedSetIterator>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
@@ -222,10 +221,11 @@ trait UnorderedSet extends ADT<set<K>> {
     ensures |Model()| == old(|Model()|)
 
     ensures fresh(it)
-    ensures Iterators() >= {it} + old(Iterators())
     ensures it.Valid()
     ensures it.Parent() == this
     ensures it.Traversed() == {} 
+
+    ensures Iterators() >= {it} + old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -263,7 +263,8 @@ trait UnorderedSet extends ADT<set<K>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + {x} 
-    ensures if (x in old(Model())) then |Model()| == old(|Model()|) else |Model()| == 1 + old(|Model()|)
+    ensures if (x in old(Model())) then |Model()| == old(|Model()|) 
+            else |Model()| == 1 + old(|Model()|)
 
     ensures Iterators() >= old(Iterators())
 
@@ -276,7 +277,8 @@ trait UnorderedSet extends ADT<set<K>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) - {x} 
-    ensures if (x in old(Model())) then |Model()| == old(|Model()|) - 1 else |Model()| == old(|Model()|)
+    ensures if (x in old(Model())) then |Model()| == old(|Model()|) - 1 
+            else |Model()| == old(|Model()|)
 
     ensures Iterators() >= old(Iterators())
 
@@ -314,7 +316,8 @@ trait UnorderedSet extends ADT<set<K>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model()) + {x}
-    ensures if (x in old(Model())) then |Model()| == old(|Model()|) else |Model()| == 1 + old(|Model()|)
+    ensures if (x in old(Model())) then |Model()| == old(|Model()|) 
+            else |Model()| == 1 + old(|Model()|)
     
     requires mid.Valid() 
     requires mid.Parent() == this
