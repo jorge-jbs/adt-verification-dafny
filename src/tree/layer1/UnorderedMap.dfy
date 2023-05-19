@@ -1,9 +1,13 @@
 include "KeyValue.dfy"
 include "../../../src/ADT.dfy"
 
-trait UnorderedMapIterator<K,V>{
+type K = int
+type V = int
+type pairKV= (K,V)
 
-function Parent(): UnorderedMap<K,V>
+trait UnorderedMapIterator{
+
+function Parent(): UnorderedMap
     reads this
 
 predicate Valid()
@@ -15,6 +19,7 @@ function Traversed():set<K>
     requires Valid()
     requires Parent().Valid() 
     ensures Traversed() <= (Parent().Model().Keys)
+    ensures 0 <= |Traversed()| <= |Parent().Model().Keys|
 
 function Peek?():(K,V)
     reads this, Parent(), Parent().Repr()
@@ -23,7 +28,7 @@ function Peek?():(K,V)
     requires HasPeek?()
     
     ensures Peek?() in Parent().Model().Items 
-            && key(Peek?()) !in Traversed() 
+    ensures key(Peek?()) in Parent().Model() - Traversed() 
             //key(Peek?()) in Parent().Model() && 
             //value(Peek?()) == Parent().Model()[key(Peek?())]
   
@@ -31,9 +36,9 @@ predicate HasPeek?()
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
-    ensures HasPeek?()  <==> Traversed() < Parent().Model().Keys && |Traversed()| < |Parent().Model().Keys|
+    ensures HasPeek?()  ==> Traversed() < Parent().Model().Keys && |Traversed()| < |Parent().Model().Keys|
     //|Traversed()| < |Parent().Model()| es necesario para poder verificar con cota |s.Model()|-|it.Traversed()|
-    ensures !HasPeek?() <==> Traversed() == Parent().Model().Keys && |Traversed()| == |Parent().Model().Keys|
+    ensures !HasPeek?() ==> Traversed() == Parent().Model().Keys && |Traversed()| == |Parent().Model().Keys|
 
 method HasPeek() returns (b:bool)
     modifies this, Parent(), Parent().Repr()
@@ -48,8 +53,11 @@ method HasPeek() returns (b:bool)
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model()) 
+    ensures |Parent().Model()| == old(|Parent().Model()|) 
     ensures Traversed() == old(Traversed()) 
-    ensures HasPeek?() ==> Peek?()==old(Peek?())
+    ensures |Traversed()| == old(|Traversed()|) 
+    
+    ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
     ensures b == HasPeek?()
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
@@ -57,7 +65,35 @@ method HasPeek() returns (b:bool)
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed())
-      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+      && |it.Traversed()| == old(|it.Traversed()|)
+      && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+  
+  method Peek() returns (p:(K,V)) 
+    modifies this, Parent(), Parent().Repr()
+    requires allocated(Parent())
+    requires allocated(Parent().Repr())
+    ensures fresh(Parent().Repr() - old(Parent().Repr()))
+    ensures allocated(Parent().Repr())
+
+    requires Valid()
+    requires Parent().Valid()
+    requires HasPeek?() 
+    ensures Valid()
+    ensures Parent().Valid()
+    ensures Parent() == old(Parent())
+    ensures Parent().Model() == old(Parent().Model())
+    ensures |Parent().Model()| == old(|Parent().Model()|)
+    ensures Traversed() == old(Traversed()) && Peek?()==old(Peek?()) 
+    ensures |Traversed()| == old(|Traversed()|)
+
+    ensures p == Peek?()
+    ensures HasPeek?() && Peek?()==old(Peek?()) // no debería ser necesario pero lo es 
+    ensures Parent().Iterators() >= old(Parent().Iterators())
+    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && |it.Traversed()| == old(|it.Traversed()|)
+      && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
   method Next() 
     modifies this, Parent(), Parent().Repr()
@@ -73,40 +109,21 @@ method HasPeek() returns (b:bool)
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
+    ensures |Parent().Model()| == old(|Parent().Model()|)
+
+    ensures Traversed() == {key(old(Peek?()))} + old(Traversed())
+    ensures |Traversed()| == 1 + old(|Traversed()|)
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
-    ensures Traversed() == {key(old(Peek?()))}+old(Traversed())
-    
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && (it != this ==> it.Traversed() == old(it.Traversed())
-                         && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?())))
+                         && |it.Traversed()| == old(|it.Traversed()|)
+                         && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
 
-  method Peek() returns (p:(K,V)) 
-    modifies this, Parent(), Parent().Repr()
-    requires allocated(Parent())
-    requires allocated(Parent().Repr())
-    ensures fresh(Parent().Repr() - old(Parent().Repr()))
-    ensures allocated(Parent().Repr())
-
-    requires Valid()
-    requires Parent().Valid()
-    requires HasPeek?() 
-    ensures Valid()
-    ensures Parent().Valid()
-    ensures Parent() == old(Parent())
-    ensures Parent().Model() == old(Parent().Model())
-
-    ensures Traversed() == old(Traversed()) && Peek?()==old(Peek?()) 
-    ensures p == Peek?()
-    ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      && it.Valid() 
-      && it.Parent() == old(it.Parent()) 
-      && it.Traversed() == old(it.Traversed())
-      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
-
-  method Copy() returns (it: UnorderedMapIterator<K,V>)
+  
+  method Copy() returns (it: UnorderedMapIterator)
     modifies this, Parent(), Parent().Repr()
     requires allocated(Parent())
     requires allocated(Parent().Repr())
@@ -120,22 +137,28 @@ method HasPeek() returns (b:bool)
     ensures Parent().Valid()
     ensures Parent() == old(Parent())
     ensures Parent().Model() == old(Parent().Model())
+    ensures |Parent().Model()| == old(|Parent().Model()|)
     ensures Traversed() == old(Traversed()) 
-    ensures HasPeek?() ==> Peek?()==old(Peek?())
+    ensures |Traversed()| == |old(Traversed())|
+    ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
 
     ensures it.Valid()
     ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
     ensures Parent() == it.Parent()
-    ensures Traversed() == it.Traversed() && (it.HasPeek?() ==> Peek?()==it.Peek?())
+    ensures Traversed() == it.Traversed() 
+    ensures |Traversed()| == |it.Traversed()| 
+
+    ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed()) 
-      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+      && |it.Traversed()| == old(|it.Traversed()|)
+      && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
 }
 
-trait UnorderedMap<K (==),V> extends ADT<map<K,V>> {
+trait UnorderedMap extends ADT<map<K,V>>{ //<K (==),V> extends ADT<map<K,V>> {
 
   predicate Empty?()
     reads this, Repr()
@@ -153,6 +176,7 @@ trait UnorderedMap<K (==),V> extends ADT<map<K,V>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
     ensures b == Empty?()
 
     ensures Iterators() >= old(Iterators())
@@ -160,7 +184,8 @@ trait UnorderedMap<K (==),V> extends ADT<map<K,V>> {
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed()) 
-      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+      && |it.Traversed()| == old(|it.Traversed()|) 
+      && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
   method Size() returns (s: nat)
     modifies this, Repr()
@@ -171,6 +196,7 @@ trait UnorderedMap<K (==),V> extends ADT<map<K,V>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
     ensures s == |Model()|
 
     ensures Iterators() >= old(Iterators())
@@ -178,15 +204,16 @@ trait UnorderedMap<K (==),V> extends ADT<map<K,V>> {
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed()) 
-      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+      && |it.Traversed()| == old(|it.Traversed()|)
+      && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
 
-  function Iterators(): set<UnorderedMapIterator<K,V>>
+  function Iterators(): set<UnorderedMapIterator>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
 
-  method First() returns (it: UnorderedMapIterator<K,V>)
+  method First() returns (it: UnorderedMapIterator)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -195,6 +222,7 @@ trait UnorderedMap<K (==),V> extends ADT<map<K,V>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
 
     ensures fresh(it)
     ensures Iterators() >= {it} + old(Iterators())
@@ -205,7 +233,8 @@ trait UnorderedMap<K (==),V> extends ADT<map<K,V>> {
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed()) 
-      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+      && |it.Traversed()| == old(|it.Traversed()|) 
+      && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
  method Contains(k:K) returns (b:bool)
     modifies this, Repr()
@@ -216,6 +245,7 @@ trait UnorderedMap<K (==),V> extends ADT<map<K,V>> {
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
     ensures b == (k in Model())
 
     ensures Iterators() >= old(Iterators())
@@ -223,7 +253,8 @@ trait UnorderedMap<K (==),V> extends ADT<map<K,V>> {
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed()) 
-      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+      && |it.Traversed()| == old(|it.Traversed()|)  
+      && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
 method At(k:K) returns (v:V)
     modifies this, Repr()
@@ -235,6 +266,7 @@ method At(k:K) returns (v:V)
     requires k in Model()
     ensures Valid()
     ensures Model() == old(Model())
+    ensures |Model()| == old(|Model()|)
     ensures v == Model()[k] 
 
     ensures Iterators() >= old(Iterators())
@@ -242,7 +274,8 @@ method At(k:K) returns (v:V)
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed()) 
-      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+      && |it.Traversed()| == old(|it.Traversed()|)  
+      && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
 
  method Add(k:K,v:V)
@@ -254,8 +287,9 @@ method At(k:K) returns (v:V)
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())[k:=v] 
+    ensures if (k in old(Model())) then |Model()| == old(|Model()|) else |Model()| == 1 + old(|Model()|)
 
-    ensures Iterators() == old(Iterators())
+    ensures Iterators() >= old(Iterators())
 
 
 method Remove(k:K) 
@@ -266,11 +300,12 @@ method Remove(k:K)
 
   requires Valid()
   ensures Valid()
-  ensures Model() == map k' | k' in old(Model()) && k' != k :: old(Model())[k']
+  ensures Model() == old(Model()) - {k}
+  ensures if (k in old(Model())) then |Model()| == old(|Model()|) - 1 else |Model()| == old(|Model()|)
 
   ensures Iterators() >= old(Iterators())
 
-method Find(k:K) returns (newt:UnorderedMapIterator<K,V>)
+method Find(k:K) returns (newt:UnorderedMapIterator)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -279,20 +314,22 @@ method Find(k:K) returns (newt:UnorderedMapIterator<K,V>)
     requires Valid()
     ensures Valid()
     ensures Model()==old(Model())
+    ensures |Model()| == old(|Model()|)
     
     ensures fresh(newt) 
     ensures newt.Valid() && newt.Parent()==this
     ensures k in old(Model()) ==> newt.HasPeek?() && key(newt.Peek?()) == k
-    ensures k !in old(Model()) ==> newt.Traversed() == Model().Keys
+    ensures k !in old(Model()) ==> newt.Traversed() == Model().Keys && |newt.Traversed()| == |Model().Keys|
 
     ensures Iterators() >= {newt}+old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
       && it.Traversed() == old(it.Traversed()) 
-      && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?()))
+      && |it.Traversed()| == old(|it.Traversed()|)
+      && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-  method Insert(mid: UnorderedMapIterator, k: K, v : V) returns (newt:UnorderedMapIterator<K,V>)
+  method Insert(mid: UnorderedMapIterator, k: K, v : V) returns (newt:UnorderedMapIterator)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -301,13 +338,13 @@ method Find(k:K) returns (newt:UnorderedMapIterator<K,V>)
     requires Valid()
     ensures Valid()
     ensures Model() == old(Model())[k:=v]
+    ensures if (k in old(Model())) then |Model()| == old(|Model()|) else |Model()| == 1 + old(|Model()|)
 
     requires mid.Valid() 
     requires mid.Parent() == this
     requires mid in Iterators()
 
     ensures fresh(newt)
-    ensures Iterators() == {newt}+old(Iterators())
     ensures newt.Valid() && newt.Parent() == this  
     ensures newt.HasPeek?() && newt.Peek?() == (k,v)
 
@@ -315,7 +352,7 @@ method Find(k:K) returns (newt:UnorderedMapIterator<K,V>)
     
  //points either to the inserted elemento or to the already existing one
  
-  method Erase(mid:UnorderedMapIterator<K,V>) returns (next: UnorderedMapIterator<K,V>)
+  method Erase(mid:UnorderedMapIterator) returns (next: UnorderedMapIterator)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -327,17 +364,19 @@ method Find(k:K) returns (newt:UnorderedMapIterator<K,V>)
     requires mid.HasPeek?()
     requires mid in Iterators()
     ensures Valid()
-    ensures Model()== map k | k in old(Model()) && k != key(old(mid.Peek?()))::old(Model())[k]
+    ensures Model()== old(Model())- {key(old(mid.Peek?()))} //map k | k in old(Model()) && k != key(old(mid.Peek?()))::old(Model())[k]
     ensures |Model()|==|old(Model())|-1
 
     ensures fresh(next)
     ensures next.Valid() && next.Parent() == this 
     ensures next.Traversed() == old(mid.Traversed()) 
+    ensures |next.Traversed()| == old(|mid.Traversed()|) 
+    
     ensures Iterators() >= {next}+old(Iterators())
 }
 
 
-method {:verify true} main(s:UnorderedMap<int,int>)
+method {:verify true} main(s:UnorderedMap)
  modifies s, s.Repr()
  requires allocated(s.Repr())
  ensures fresh(s.Repr()-old(s.Repr()))

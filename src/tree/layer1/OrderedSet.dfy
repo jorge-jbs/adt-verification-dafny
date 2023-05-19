@@ -130,11 +130,11 @@ trait OrderedSetIterator extends UnorderedSetIterator{
     ensures Parent().Model() == old(Parent().Model())
     ensures |Parent().Model()| == old(|Parent().Model()|)
 
-    ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures Traversed() == {old(Peek?())}+old(Traversed()) 
     ensures |Traversed()| == 1 + |old(Traversed())|
     ensures Index() == old(Index()) + 1 //NEW 
     
+    ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
@@ -200,8 +200,9 @@ trait OrderedSetIterator extends UnorderedSetIterator{
     ensures Parent().Model() == old(Parent().Model())
     ensures |Parent().Model()| == old(|Parent().Model()|)
 
-    ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures Index() == old(Index()) - 1
+
+    ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
       && it.Valid() 
       && it.Parent() == old(it.Parent()) 
