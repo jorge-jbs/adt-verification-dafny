@@ -5,7 +5,7 @@ include "../../../src/tree/layer1/OrderedSetUtils.dfy"
 trait OrderedSetIteratorForward extends UnorderedSetIterator{
    function Parent(): UnorderedSet
     reads this
-    ensures Parent() is OrderedSetFoward
+    ensures Parent() is OrderedSetForward
   
    predicate Valid()
     reads this, Parent(), Parent().Repr()
@@ -229,7 +229,7 @@ method Copy() returns (it: UnorderedSetIterator)
 
 }
 
-trait OrderedSetFoward extends UnorderedSet{
+trait OrderedSetForward extends UnorderedSet{
   
 
    //Novelties respect UnorderedSet
@@ -447,7 +447,7 @@ trait OrderedSetFoward extends UnorderedSet{
 
 
 
-method {:verify false} {:timeLimitMultiplier 100} try(s:OrderedSetFoward)
+method {:verify false} {:timeLimitMultiplier 100} try(s:OrderedSetForward)
 modifies s, s.Repr()
 requires s.Valid() && s.Empty?()
 requires allocated(s.Repr())
@@ -482,7 +482,7 @@ ensures  allocated(s.Repr())
    assert s.Model()=={0,1,2,7,10};
   var it2 :=s.Find(2) ;
   assert it2 is OrderedSetIteratorForward;
-  assert s is OrderedSetFoward;
+  assert s is OrderedSetForward;
   assert 2 in s.Model();
   assert it2.Peek?()==2;
   assert it2.Peek?()!=5;
