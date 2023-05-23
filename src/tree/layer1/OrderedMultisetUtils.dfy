@@ -278,10 +278,54 @@ ensures seq2Multiset(multiset2Seq(s)) == s
   }
 }
 
-function sort(xs:seq<int>):seq<int>
-ensures seq2Multiset(xs)==seq2Multiset(sort(xs)) && isSortedSeq(sort(xs))
-ensures |xs|==|sort(xs)|
+function insert(x: int, xs: seq<int>): seq<int>
+  requires isSortedSeq(xs)
+  ensures multiset(insert(x, xs)) == multiset{x} + multiset(xs)
+  ensures isSortedSeq(insert(x, xs))
+  ensures |insert(x, xs)| == 1 + |xs|
+{
+  if xs == [] then
+    [x]
+  else if x <= xs[0] then
+    [x] + xs
+  else
+    calc == {
+      multiset([xs[0]] + insert(x, xs[1..]));
+      multiset([xs[0]]) + multiset(insert(x, xs[1..]));
+      multiset([xs[0]]) + multiset{x} + multiset(xs[1..]);
+      multiset{x} + multiset([xs[0]]) + multiset(xs[1..]);
+      multiset{x} + multiset([xs[0]] + xs[1..]);
+      { assert [xs[0]] + xs[1..] == xs; }
+      multiset{x} + multiset(xs);
+    }
+    assert isSortedSeq(xs);
+    assert isSortedSeq(xs[1..]);
+    assert isSortedSeq(insert(x, xs[1..]));
+    assert xs[0] <= x;
+    assert forall j | 0 <= j < |xs|-1 :: xs[0] <= xs[1..][j];
+    assert forall j | 0 <= j < |xs| ::
+        insert(x, xs[1..])[j] in multiset{x} + multiset(xs[1..]);
+    [xs[0]] + insert(x, xs[1..])
+}
 
+function {:opaque} sort(xs: seq<int>):seq<int>
+  ensures multiset(xs) == multiset(sort(xs))
+  ensures isSortedSeq(sort(xs))
+  ensures |xs| == |sort(xs)|
+{
+  if xs == [] then
+    []
+  else
+    calc == {
+      multiset(insert(xs[0], sort(xs[1..])));
+      multiset{xs[0]} + multiset(sort(xs[1..]));
+      multiset{xs[0]} + multiset(xs[1..]);
+      multiset([xs[0]] + xs[1..]);
+      { assert [xs[0]] + xs[1..] == xs; }
+      multiset(xs);
+    }
+    insert(xs[0], sort(xs[1..]))
+}
 function multiset2SortedSeq(s:multiset<int>):seq<int>
 ensures multiset2SortedSeq(s)==sort(multiset2Seq(s))
 {sort(multiset2Seq(s))
