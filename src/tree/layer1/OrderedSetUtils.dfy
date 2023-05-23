@@ -49,20 +49,16 @@ lemma sizesContained(s1:set<int>,s2:set<int>)
  }
 }
 
-
-lemma sizesStrictContained(s1:set<int>,s2:set<int>)
-  requires s1 < s2
-  ensures |s1| < |s2|
+lemma sizesStrictContained(xs: set<int>, ys: set<int>)
+  requires xs < ys
+  ensures |xs| < |ys|
 {
-  if (s1=={}) { assert s2!={};}
-  else {
-    var z:=Pick(s1);
-    sizesStrictContained(s1-{z},s2-{z});
+  if |xs| == 0 {
+  } else {
+    var x :| x in xs;
+    sizesStrictContained(xs - {x}, ys - {x});
   }
 }
-
-
-
 //MINIMUM DEFINITION:
 
 function {:induction s} minimum(s:set<int>):int
@@ -186,8 +182,7 @@ lemma max2Elems(s:set<int>)
 lemma {:verify true} lMaxMinOne(s:set<int>)
   requires s != {} && |s|==1
   ensures maximum(s)==minimum(s)
-{ //var x :| s=={x};
-}
+{}
 
 function smaller(s:set<int>,x:int):set<int>
   ensures forall z | z in smaller(s,x) :: z in s && z < x
@@ -434,13 +429,18 @@ function isSet(xs: seq<int>):bool
   forall i, j | 0 <= i < j < |xs| :: xs[i] != xs[j]
 }
 
-lemma emptyset(xs: seq<int>)
+
+lemma emptyset(xs:seq<int>)
   ensures xs == [] <==> seq2Set(xs)=={}
 {
-  if xs != [] {
-    assert xs[0] in xs;
-    assert xs[0] in (set x | x in xs::x);
-    assert xs[0] in seq2Set(xs);
+  if xs == [] {
+  }
+  if seq2Set(xs) == {} {
+    assert forall x :: x !in seq2Set(xs);
+    if xs != [] {
+      assert xs[0] in seq2Set(xs);
+      assert false;
+    }
   }
 }
 

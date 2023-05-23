@@ -7,14 +7,14 @@ type pairKV= (K,V)
 
 trait UnorderedMapIterator{
 
-function Parent(): UnorderedMap
+  function Parent(): UnorderedMap
     reads this
 
-predicate Valid()
+  predicate Valid()
     reads this, Parent(), Parent().Repr()
     ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
 
-function Traversed():set<K>
+  function Traversed(): set<K>
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid() 
@@ -405,8 +405,8 @@ method {:verify true} main(s:UnorderedMap)
  var b := it.HasPeek(); 
   while (b)
      decreases |s.Model()|
-    //decreases |s.Model()-it.Model().0|
-    //decreases s.Model()-it.Traversed()
+    //decreases |s.Model() - it.Model().0|
+    //decreases s.Model() - it.Traversed()
      invariant s.Valid() 
      invariant it.Valid() && it in s.Iterators() && it.Parent() == s  
      invariant allocated(s.Repr())
