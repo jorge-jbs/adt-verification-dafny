@@ -27,5 +27,11 @@ jobs:
           echo $PWD/dafny/ >> $GITHUB_PATH
           PATH=$PATH:$PWD/dafny/ dafny --version
 
-      - name: Check library
-        run: ./check.sh
+      - name: Install Ninja
+        run: sudo apt-get install ninja-build
+
+      - name: Configure
+        run: ./configure
+
+      - name: Build
+        run: ninja
