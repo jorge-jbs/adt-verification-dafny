@@ -29,6 +29,13 @@ module RBTree.Iterator {
       [(node.key, node.value)] + inorder(node.right) + inorderStack(st[..|st|-1])
   }
 
+  lemma InorderStackFirst(st: seq<rbtree>)
+    requires ValidStack(st)
+    requires st != []
+    ensures st[|st|-1].key == inorderStack(st)[0].0;
+    ensures st[|st|-1].value == inorderStack(st)[0].1;
+  {}
+
   lemma DescendAndPushSpec(root: rbtree, st: seq<rbtree>, node: rbtree, traversed: seq<(K, V)>)
     decreases node
 

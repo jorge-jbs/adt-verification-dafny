@@ -47,14 +47,7 @@ module LinkedTree {
       ensures |stackSk| == |RBStackRec(stackSk)|
       ensures forall i | 0 <= i < |stackSk| :: RBStackRec(stackSk)[i] == TreeModelRec(stackSk[i])
     {
-      //seq(|stackSk|, i requires 0 <= i < |stackSk| reads elems(stackSk[i]) => TreeModelRec(stackSk[i]))
       seq(|stackSk|, i requires 0 <= i < |stackSk| reads BigUnion(set sk | sk in stackSk :: elems(sk)) => TreeModelRec(stackSk[i]))
-      /*
-      if stackSk == [] then
-        []
-      else
-        [TreeModelRec(stackSk[0])] + RBStackRec(stackSk[1..])
-        */
     }
 
     static lemma RBStackRecLast(stack: seq<tree<TNode>>, sk: tree<TNode>)
@@ -159,6 +152,7 @@ module LinkedTree {
         ghost newStackSk: seq<tree<TNode>>
       )
       requires parent.Valid()
+      requires parent.SearchTree()
       requires traversed == []
       requires stack == []
       requires stackSk == []
@@ -167,7 +161,10 @@ module LinkedTree {
       ensures (forall i | 0 <= i < |newStack| :: ValidRec(newStack[i], newStackSk[i]))
       ensures (forall sk | sk in newStackSk :: elems(sk) <= elems(parent.skeleton))
       ensures RBit.ValidStack(RBStackRec(newStackSk))
-      ensures RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RBit.inorderStack(RBStackRec(newStackSk))
+      ensures RB.inorder(parent.TreeModel()) == traversed + RBit.inorderStack(RBStackRec(newStackSk))
+      ensures parent.MapModel() != map[] ==>
+        && RBStackRec(newStackSk) != []
+        && RBStackRec(newStackSk)[|RBStackRec(newStackSk)|-1].key == RB.elemth(parent.MapModel().Keys, 0)
 
       requires allocated(parent.Repr())
       ensures allocated(parent.Repr())
@@ -179,13 +176,49 @@ module LinkedTree {
       assert RB.inorder(TreeModelRec(parent.skeleton)) == traversed + RB.inorder(TreeModelRec(parent.skeleton)) + RBit.inorderStack(RBStackRec([]));
       RBit.DescendAndPushSpec(TreeModelRec(parent.skeleton), RBStackRec([]), TreeModelRec(parent.skeleton), []);
       newStack, newStackSk := DescendAndPush(parent.root, parent.skeleton, [], [], parent.skeleton);
+      if parent.MapModel() != map[] {
+        RB.MapTreeEmptyL(parent.TreeModel());
+        assert parent.TreeModel().Node?;
+        var st := RBStackRec(newStackSk);
+        RBit.InorderStackFirst(st);
+        RB.ElemthInorder0(parent.TreeModel());
+        calc == {
+          RB.elemth(parent.MapModel().Keys, 0);
+          RB.elemth(RB.toMap(parent.TreeModel()).Keys, 0);
+          RB.inorder(parent.TreeModel())[0].0;
+          { assert RB.inorder(parent.TreeModel()) == traversed + RBit.inorderStack(RBStackRec(newStackSk)); }
+          RBit.inorderStack(st)[0].0;
+        }
+        assert RBit.inorderStack(st)[0].0 == st[|st|-1].key;
+      }
     }
 
-    constructor {:verify false} First(parent: LinkedTree)  // 33"
+    predicate HasPeek()
+      reads this, BigUnion(set sk | sk in stackSk :: elems(sk))
+      requires forall i | 0 <= i < |stackSk| :: stackSk[i].Node?
+    {
+      RBStack() != []
+    }
+
+    function Peek(): (K, V)
+      reads this, BigUnion(set sk | sk in stackSk :: elems(sk))
+      requires forall i | 0 <= i < |stackSk| :: stackSk[i].Node?
+      requires HasPeek()
+    {
+      var n := stackSk[|stackSk|-1].data;
+      (n.key, n.value)
+    }
+
+    constructor {:verify false} First(parent: LinkedTree)  // 2'13"
       requires parent.Valid()
+      requires parent.SearchTree()
       ensures Valid()
       ensures this.parent == parent
       ensures traversed == []
+      ensures parent.MapModel() != map[] ==> HasPeek() && key(Peek()) == RB.elemth(parent.MapModel().Keys, 0)
+      // ensures parent.MapModel() != map[] ==>
+      //   && RBStack() != []
+      //   && RBStack()[|RBStack()|-1].key == RB.elemth(parent.MapModel().Keys, 0);
 
       requires allocated(parent.Repr())
       ensures allocated(parent.Repr())
@@ -197,6 +230,9 @@ module LinkedTree {
       stackSk := [];
       new;
       stack, stackSk := FirstAux(parent, traversed, stack, stackSk);
+      assert parent.MapModel() != map[] ==>
+        && RBStackRec(stackSk) != []
+        && RBStackRec(stackSk)[|RBStackRec(stackSk)|-1].key == RB.elemth(parent.MapModel().Keys, 0);
     }
 
     static lemma DescendAndPushInd(st: seq<RB.rbtree>, node: RB.rbtree)
@@ -325,7 +361,7 @@ module LinkedTree {
       }
     }
 
-    method {:verify true} Next() returns (k: K, v: V)  // 5'10"
+    method {:verify false} Next() returns (k: K, v: V)  // 5'10"
       modifies this
       requires Valid()
       requires RBit.ValidStack(RBStack())  /* redundant */

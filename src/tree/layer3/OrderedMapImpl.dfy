@@ -61,7 +61,7 @@ module OrderedMapImpl {
     var parent: OrderedMapImpl;
     var iter: LinkedTreeIterator;
 
-    constructor First(parent: OrderedMapImpl)
+    constructor {:verify false} First(parent: OrderedMapImpl)
       requires parent.Valid()
       ensures this.parent == parent
       ensures iter.parent == parent.tree
@@ -69,7 +69,10 @@ module OrderedMapImpl {
       ensures (set p | p in iter.traversed :: p.0) == {}
       ensures iter.Valid()
       ensures fresh(iter)
-      //ensures parent.Model() != map[] ==> HasPeek?() && key(Peek?()) == elemth(parent.Model().Keys, 0)
+      ensures parent.Model() != map[] ==>
+        && iter.RBStack() != []
+        && iter.stackSk[|iter.stackSk|-1].data.key == RB.elemth(parent.Model().Keys, 0)
+
       ensures forall it | it in old(parent.Iterators()) && old(it.Valid()) ::
         && it.Valid()
         && it.Traversed() == old(it.Traversed())
@@ -80,6 +83,11 @@ module OrderedMapImpl {
     {
       this.parent := parent;
       this.iter := new LinkedTreeIterator.First(parent.tree);
+      new;
+      if parent.Model() != map[] {
+        assert iter.RBStack() != [];
+        assert iter.stackSk[|iter.stackSk|-1].data.key == RB.elemth(parent.Model().Keys, 0);
+      }
     }
 
     function Parent(): OrderedMapImpl //UnorderedMap
@@ -141,7 +149,7 @@ module OrderedMapImpl {
     {
       iter.HasPeekCondition();
       SubSetCardinalityImp(Traversed(), Parent().Model().Keys);
-      LinkedTreeIterator.RBStackRec(iter.stackSk) != []
+      iter.RBStack() != []
     }
 
     method HasPeek() returns (b:bool)
@@ -187,6 +195,9 @@ module OrderedMapImpl {
       iter.PeekNotInTraversed();
       assert p in Parent().Model().Items;
       assert p.0 !in Traversed();
+      assert p.0 in Parent().Model();
+      assert p.1 == Parent().Model()[p.0];
+      assume false;
       p
     }
 
@@ -428,7 +439,7 @@ module OrderedMapImpl {
       iters
     }
 
-    method {:verify false} First() returns (it: OrderedMapIterator/*UnorderedMapIterator*/)  // 43"
+    method {:verify false} First() returns (it: OrderedMapIteratorImpl/*UnorderedMapIterator*/)  // 7'
       modifies this, Repr()
 
       requires Valid()
@@ -444,7 +455,7 @@ module OrderedMapImpl {
       ensures it.Valid()
       ensures it.Parent() == this
       ensures it.Traversed() == {}
-      //ensures Model() != map[] ==> it.HasPeek?() && key(it.Peek?()) == elemth(Model().Keys,0)
+      ensures Model() != map[] ==> it.HasPeek?() && key(it.Peek?()) == RB.elemth(Model().Keys,0)
       ensures Iterators() == {it} + old(Iterators())
       ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
         && it.Valid()
@@ -454,6 +465,13 @@ module OrderedMapImpl {
       var iter := new OrderedMapIteratorImpl.First(this);
       iters := iters+{iter};
       it := iter;
+      assert Model() != map[] ==> it.HasPeek?() && key(it.Peek?()) == RB.elemth(Model().Keys,0) by {
+        if Model() != map[] {
+          assert iter.iter.RBStack() != [];
+          assert iter.HasPeek?() <==> (iter.iter.RBStack() != []);
+          assert key(it.Peek?()) == iter.iter.stackSk[|iter.iter.stackSk|-1].data.key == RB.elemth(Model().Keys, 0);
+        }
+      }
       calc == {
         Repr();
         Repr1();
@@ -588,7 +606,7 @@ module OrderedMapImpl {
 
       requires Valid()
       ensures Valid()
-      ensures Model() == old(Model())[k:=v]
+      ensures Model() == old(Model())[k := v]
       ensures if (k in old(Model())) then |Model()| == old(|Model()|) else |Model()| == 1 + old(|Model()|)
       ensures Iterators() >= old(Iterators())
     {

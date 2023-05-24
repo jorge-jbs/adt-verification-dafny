@@ -7,6 +7,46 @@ module RBTree.Base {
   import opened KeyValue
   import opened Color
 
+  function Pick(s: set<int>): int
+    requires s != {}
+  {
+    var x :| x in s; x
+  }
+
+  function {:induction s} minimum(s:set<int>):int
+    requires s != {}
+    ensures minimum(s) in s
+    ensures forall x | x in s :: minimum(s) <= x
+  {
+    var x := Pick(s);
+    if s - {x} == {} then
+      assert s == {x};
+      x
+    else if x < minimum(s-{x}) then
+      assert forall y | y in s - {x} :: x < minimum(s - {x}) <= y;
+      assert forall y | y in s - {x} :: x <= y;
+      assert x <= x;
+      assert forall y | y in s - {x} || y == x :: x <= y;
+      assert forall y :: (y in s - {x} || y == x) <==> y in s;
+      assert forall y | y in s :: x <= y;
+      x
+    else
+      assert forall y | y in s - {x} :: minimum(s - {x}) <= y;
+      assert minimum(s - {x}) <= x;
+      assert forall y | y in s - {x} || y == x :: minimum(s - {x}) <= y;
+      assert forall y :: (y in s - {x} || y == x) <==> y in s;
+      assert forall y | y in s :: minimum(s - {x}) <= y;
+      minimum(s-{x})
+  }
+
+  function elemth(s: set<int>, k: int): int
+    requires 0<=k<|s|
+  {
+    var minim := minimum(s);
+    if k == 0 then minim
+    else elemth(s - {minim},k-1)
+  }
+
   datatype rbtree = Empty | Node(left: rbtree, key: K, value: V, right: rbtree, color: Color)
 
   function method Leaf(k: K, v: V): rbtree
@@ -355,6 +395,54 @@ module RBTree.Base {
     ensures orderKeysToSet(inorder(t)) == toMap(t).Keys
   {
     OrderKeysIsTreeKeys(t);
+  }
+
+  lemma MapTreeEmpty(t: rbtree)
+    requires SearchTree(t)
+    ensures t.Empty? <==> toMap(t) == map[]
+    ensures t.Node? <==> toMap(t) != map[]
+  {
+    if t.Empty? {
+      assert toMap(t) == map[];
+    } else {
+      assert t.key in toMap(t).Keys;
+      assert toMap(t) != map[];
+    }
+  }
+
+  lemma MapTreeEmptyL(t: rbtree)
+    requires SearchTree(t)
+    ensures t.Empty? <== toMap(t) == map[]
+    ensures t.Node? <== toMap(t) != map[]
+  {
+    MapTreeEmpty(t);
+  }
+
+  lemma ElemthInorder0(t: rbtree)
+    requires SearchTree(t)
+    requires toMap(t) != map[] || t.Node?
+    ensures elemth(toMap(t).Keys, 0) == inorder(t)[0].0
+  {
+    assert elemth(toMap(t).Keys, 0) == minimum(toMap(t).Keys);
+    SearchImpliesOrdered(t);
+    var s := inorder(t);
+    assert forall x | x in s :: s[0].0 <= x.0;
+    assert forall x | x in orderKeysToSet(s) :: s[0].0 <= x;
+    assert forall x | x in toMap(t).Keys :: minimum(toMap(t).Keys) <= x;
+    OrderKeysIsTreeKeys(t);
+    assert orderKeysToSet(s) == toMap(t).Keys;
+    if minimum(toMap(t).Keys) != s[0].0 {
+      assert s[0].0 in toMap(t).Keys;
+      assert minimum(toMap(t).Keys) <= s[0].0;
+
+      assert minimum(toMap(t).Keys) in orderKeysToSet(s);
+      assert s[0].0 <= minimum(toMap(t).Keys);
+
+      assert minimum(toMap(t).Keys) < s[0].0;
+      assert s[0].0 < minimum(toMap(t).Keys);
+
+      assert false;
+    }
   }
 
   function orderToSet(s: seq<(K, V)>): set<(K, V)>
