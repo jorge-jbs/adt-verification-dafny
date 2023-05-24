@@ -1,6 +1,6 @@
 include "../../../src/tree/layer4/RBTree/Base.dfy"
 include "../../../src/tree/layer4/Tree.dfy"
-include "../../../src/tree/layer4/KeyValue.dfy"
+include "../../../src/tree/KeyValue.dfy"
 include "../../../src/tree/layer4/Color.dfy"
 
 module TNode {

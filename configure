@@ -8,35 +8,36 @@ files=(
     src/Utils.dfy
     src/MUtils.dfy
 
-    src/linear/layer1/Deque.dfy
-    src/linear/layer1/List.dfy
-    src/linear/layer1/Queue.dfy
-    src/linear/layer1/Stack.dfy
+#    src/linear/layer1/Deque.dfy
+#    src/linear/layer1/List.dfy
+#    src/linear/layer1/Queue.dfy
+#    src/linear/layer1/Stack.dfy
+#
+#    src/linear/layer2/ArrayList.dfy
+#    src/linear/layer2/LinkedList.dfy
+#
+#    src/linear/layer3/ArrayQueueImpl.dfy
+#    src/linear/layer3/ArrayDequeImpl.dfy
+#    src/linear/layer3/LinkedDequeImpl.dfy
+#    src/linear/layer3/SinglyLinkedQueueImpl.dfy
+#    src/linear/layer3/LinkedStackImpl.dfy
+#    src/linear/layer3/ArrayStackImpl.dfy
+#    src/linear/layer3/ArrayListImpl.dfy
+#    src/linear/layer3/DoublyLinkedQueueImpl.dfy
+#    src/linear/layer3/LinkedListImpl.dfy
+#
+#    src/linear/layer4/SinglyLinkedList.dfy
+#    src/linear/layer4/DoublyLinkedListWithLast.dfy
+#    src/linear/layer4/SinglyLinkedListWithLast.dfy
+#    src/linear/layer4/DoublyLinkedList.dfy
+#    #src/linear/layer4/CircularDoublyLinkedList.dfy
 
-    src/linear/layer2/ArrayList.dfy
-    src/linear/layer2/LinkedList.dfy
-
-    src/linear/layer3/ArrayQueueImpl.dfy
-    src/linear/layer3/ArrayDequeImpl.dfy
-    src/linear/layer3/LinkedDequeImpl.dfy
-    src/linear/layer3/SinglyLinkedQueueImpl.dfy
-    src/linear/layer3/LinkedStackImpl.dfy
-    src/linear/layer3/ArrayStackImpl.dfy
-    src/linear/layer3/ArrayListImpl.dfy
-    src/linear/layer3/DoublyLinkedQueueImpl.dfy
-    src/linear/layer3/LinkedListImpl.dfy
-
-    src/linear/layer4/SinglyLinkedList.dfy
-    src/linear/layer4/DoublyLinkedListWithLast.dfy
-    src/linear/layer4/SinglyLinkedListWithLast.dfy
-    src/linear/layer4/DoublyLinkedList.dfy
-    #src/linear/layer4/CircularDoublyLinkedList.dfy
+    src/tree/KeyValue.dfy
 
     src/tree/layer1/OrderedSetUtils.dfy
     src/tree/layer1/UnorderedSet.dfy
     src/tree/layer1/UnorderedMultiset.dfy
     src/tree/layer1/OrderedSet.dfy
-    src/tree/layer1/KeyValue.dfy
     src/tree/layer1/OrderedMultisetUtils.dfy
     src/tree/layer1/OrderedSetL.dfy
     src/tree/layer1/OrderedMap.dfy
@@ -56,7 +57,6 @@ files=(
 
     src/tree/layer4/LinkedTree.dfy
     src/tree/layer4/Color.dfy
-    src/tree/layer4/KeyValue.dfy
     src/tree/layer4/RBTree.dfy
     src/tree/layer4/LinkedTree/RBInsert.dfy
     src/tree/layer4/LinkedTree/SInsert.dfy
