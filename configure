@@ -38,10 +38,13 @@ files=(
     src/tree/layer1/UnorderedSet.dfy
     src/tree/layer1/UnorderedMultiset.dfy
     src/tree/layer1/OrderedSet.dfy
+    src/tree/layer1/OrderedSetForward.dfy
     src/tree/layer1/OrderedMultisetUtils.dfy
     src/tree/layer1/OrderedSetL.dfy
     src/tree/layer1/OrderedMap.dfy
+    src/tree/layer1/OrderedMapForward.dfy
     src/tree/layer1/OrderedMultiset.dfy
+    src/tree/layer1/OrderedMultisetForward.dfy
     src/tree/layer1/UnorderedMap.dfy
 
     #src/tree/layer2/UnorderedSetArrayList.dfy
@@ -49,7 +52,7 @@ files=(
 
     #src/tree/layer3/OrderedMultisetImpl.dfy
     #src/tree/layer3/OrderedMapImplIter.dfy
-    #src/tree/layer3/OrderedMapImpl.dfy
+    src/tree/layer3/OrderedMapImpl.dfy
     #src/tree/layer3/IterTestImpl.dfy
     #src/tree/layer3/PruebaAbsurda.dfy
     #src/tree/layer3/UnorderedSetImplLinkedList.dfy

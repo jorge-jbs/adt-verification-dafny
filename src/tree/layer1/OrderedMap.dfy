@@ -7,7 +7,7 @@ module OrderedMapSpec {
   import opened UnorderedMapSpec
   import opened OrderedSetUtils
 
-  trait OrderedMapIterator extends UnorderedMapIterator {
+  trait {:termination false} OrderedMapIterator extends UnorderedMapIterator {
     function Parent(): UnorderedMap
       reads this
 
@@ -156,7 +156,6 @@ module OrderedMapSpec {
       ensures Parent().Model() == old(Parent().Model())
       ensures |Parent().Model()| == old(|Parent().Model()|)
 
-
       ensures Traversed() == {key(old(Peek?()))} + old(Traversed())
       ensures |Traversed()| == 1 + old(|Traversed()|)
 
@@ -246,7 +245,7 @@ module OrderedMapSpec {
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
   }
 
-  trait OrderedMap extends UnorderedMap {
+  trait {:termination false} OrderedMap extends UnorderedMap {
     method Empty() returns (b: bool)
       modifies this, Repr()
       requires allocated(Repr())
