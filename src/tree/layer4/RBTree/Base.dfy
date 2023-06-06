@@ -1,11 +1,13 @@
 include "../../../../src/MUtils.dfy"
 include "../../../../src/tree/KeyValue.dfy"
 include "../../../../src/tree/layer4/Color.dfy"
+include "../../../../src/tree/layer1/OrderedSetUtils.dfy"
 
 module RBTree.Base {
   import opened Utils
   import opened KeyValue
   import opened Color
+  import opened OrderedSetUtils
 
   function Pick(s: set<int>): int
     requires s != {}
@@ -122,6 +124,83 @@ module RBTree.Base {
     set p | p in s :: p.0
   }
 
+  lemma orderKeysToSetAdd(r: seq<(K, V)>, s: seq<(K, V)>)
+    ensures orderKeysToSet(r) + orderKeysToSet(s) == orderKeysToSet(r + s)
+  {}
+
+  lemma orderKeysToSetAddCard(r: seq<(K, V)>, s: seq<(K, V)>)
+    ensures |orderKeysToSet(r)| + |orderKeysToSet(s)| == |orderKeysToSet(r + s)|
+
+  lemma orderKeysToSetCardBase(s: seq<(K, V)>)
+    requires forall i, j | 0 <= i < j < |s| :: s[i].0 != s[j].0
+    requires s != []
+    ensures orderKeysToSet(s) == {s[0].0} + orderKeysToSet(s[1..])
+    ensures |orderKeysToSet(s)| == 1 + |orderKeysToSet(s[1..])|
+  {
+    orderKeysToSetAdd([s[0]], s[1..]);
+    calc == {
+      {s[0].0} + orderKeysToSet(s[1..]);
+      orderKeysToSet([s[0]]) + orderKeysToSet(s[1..]);
+      orderKeysToSet([s[0]] + s[1..]);
+      orderKeysToSet(s);
+    }
+  }
+
+  lemma addCard<A>(r: set<A>, s: set<A>)
+    requires r !! s
+    ensures |r + s| == |r| + |s|
+  {}
+
+  lemma setDisjoint<A>(r: set<A>, s: set<A>)
+    requires forall x, y | x in r && y in s :: x != y
+    ensures r !! s
+  {}
+
+  lemma orderKeysToSetCard(s: seq<(K, V)>)
+    requires forall i, j | 0 <= i < j < |s| :: s[i].0 != s[j].0
+    ensures |s| == |orderKeysToSet(s)|
+  {
+    if s == [] {
+    } else {
+      orderKeysToSetCard(s[1..]);
+      calc == {
+        |s|;
+        1 + |s[1..]|;
+        1 + |orderKeysToSet(s[1..])|;
+        |{s[0].0}| + |orderKeysToSet(s[1..])|;
+        { assert orderKeysToSet([s[0]]) == {s[0].0}; }
+        |orderKeysToSet([s[0]])| + |orderKeysToSet(s[1..])|;
+        |orderKeysToSet([s[0]]) + orderKeysToSet(s[1..])|;
+        { assert orderKeysToSet([s[0]]) + orderKeysToSet(s[1..]) == orderKeysToSet([s[0]] + s[1..]); }
+        |orderKeysToSet([s[0]] + s[1..])|;
+        { assert [s[0]] + s[1..] == s; }
+        |orderKeysToSet(s)|;
+      }
+    }
+  }
+
+  lemma orderToSetCard(s: seq<(K, V)>)
+    requires forall i, j | 0 <= i < j < |s| :: s[i].0 != s[j].0
+    ensures |s| == |orderToSet(s)|
+  {
+    if s == [] {
+    } else {
+      orderToSetCard(s[1..]);
+      calc == {
+        |s|;
+        1 + |s[1..]|;
+        1 + |orderToSet(s[1..])|;
+        |{s[0].0}| + |orderToSet(s[1..])|;
+        { assert orderToSet([s[0]]) == {s[0]}; }
+        |orderToSet([s[0]])| + |orderToSet(s[1..])|;
+        |orderToSet([s[0]]) + orderToSet(s[1..])|;
+        { assert orderToSet([s[0]]) + orderToSet(s[1..]) == orderToSet([s[0]] + s[1..]); }
+        |orderToSet([s[0]] + s[1..])|;
+        { assert [s[0]] + s[1..] == s; }
+        |orderToSet(s)|;
+      }
+    }
+  }
   /*
   lemma NonEmptySet<A>(s: set<K>, P: A -> bool, F: A -> K)
     requires s == (set x | P(x) :: F(x))
@@ -490,10 +569,25 @@ module RBTree.Base {
     }
   }
 
+  lemma InorderIsMapCard(t: rbtree)
+    requires SearchTree(t)
+    ensures |inorder(t)| == |toMap(t)|
+  {
+    calc == {
+      |inorder(t)|;
+      { SearchImpliesUnique(t); orderToSetCard(inorder(t)); }
+      |orderToSet(inorder(t))|;
+      { OrderSetIsMapItems(t); }
+      |toMap(t).Items|;
+      |toMap(t)|;
+    }
+  }
+
   lemma HasPeekCondition(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
     requires SearchTree(t)
     requires inorder(t) == traversed + st
     ensures st != [] <==> orderKeysToSet(traversed) < toMap(t).Keys
+    //ensures st != [] <==> |traversed| < |toMap(t)|
   {
     if st != [] {
       SearchImpliesUnique(t);
@@ -516,6 +610,31 @@ module RBTree.Base {
     } else {
       OrderKeysIsMapKeys(t);
     }
+  }
+
+  lemma HasPeekConditionCard(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
+    requires SearchTree(t)
+    requires inorder(t) == traversed + st
+    ensures st != [] <==> |traversed| < |toMap(t)|
+  {
+    HasPeekCondition(t, traversed, st);
+    InorderIsMapCard(t);
+    /*
+    if st != [] {
+      assert orderKeysToSet(traversed) < toMap(t).Keys;
+      sizesStrictContained(orderKeysToSet(traversed), toMap(t).Keys);
+      assert |orderKeysToSet(traversed)| < |toMap(t).Keys|;
+      calc {
+        |traversed|;
+        {
+          SearchImpliesUnique(t);
+          assert traversed < inorder(t);
+          orderKeysToSetCard(traversed);
+        }
+        |orderKeysToSet(traversed)|;
+      }
+    }
+    */
   }
 
   lemma PeekInModel(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)

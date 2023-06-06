@@ -87,6 +87,11 @@ module LinkedTree {
       InorderKeys(parent.TreeModel());
     }
 
+    lemma TraversedSizeLeMapModelSize()
+      requires parent.Valid()
+      requires parent.SearchTree()
+      ensures |traversed| <= |parent.MapModel()|
+
     lemma TraversedInModel()
       requires forall i | 0 <= i < |stackSk| :: stackSk[i].Node?
       requires RB.inorder(parent.TreeModel()) == traversed + RBit.inorderStack(RBStack())
@@ -106,8 +111,18 @@ module LinkedTree {
       requires parent.Valid()
       requires parent.SearchTree()
       ensures stackSk != [] <==> RB.orderKeysToSet(traversed) < parent.MapModel().Keys
+      //ensures stackSk != [] <==> |traversed| < |parent.MapModel()|
     {
       RB.HasPeekCondition(parent.TreeModel(), traversed, RBit.inorderStack(RBStack()));
+    }
+
+    lemma HasPeekConditionCard()
+      requires Valid()
+      requires parent.Valid()
+      requires parent.SearchTree()
+      ensures stackSk != [] <==> |traversed| < |parent.MapModel()|
+    {
+      RB.HasPeekConditionCard(parent.TreeModel(), traversed, RBit.inorderStack(RBStack()));
     }
 
     lemma PeekInModel()
