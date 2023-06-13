@@ -9,6 +9,7 @@ include "../../../src/tree/layer4/LinkedTree/RBInsert.dfy"
 include "../../../src/tree/layer4/LinkedTree/RBRemove.dfy"
 include "../../../src/tree/layer1/OrderedMap.dfy"
 include "../../../src/tree/layer4/RBTree/Base.dfy"
+include "../../../src/tree/layer4/RBTree/RemoveElemth.dfy"
 
 module OrderedMapImpl {
   import opened Utils
@@ -23,6 +24,7 @@ module OrderedMapImpl {
   import opened LinkedTree.RBInsert
   import opened LinkedTree.RBRemove
   import RB = RBTree.Base
+  import RBelemth = RBTree.RemoveElemth
 
   type pos = n: int | n > 0 witness 1
 
@@ -42,7 +44,7 @@ module OrderedMapImpl {
       ensures fresh(iter)
       ensures parent.Model() != map[] ==>
         && iter.RBStack() != []
-        && iter.stackSk[|iter.stackSk|-1].data.key == RB.elemth(parent.Model().Keys, 0)
+        && iter.stackSk[|iter.stackSk|-1].data.key == elemth(parent.Model().Keys, 0)
 
       ensures forall it | it in old(parent.Iterators()) && old(it.Valid()) ::
         && it.Valid()
@@ -57,7 +59,7 @@ module OrderedMapImpl {
       new;
       if parent.Model() != map[] {
         assert iter.RBStack() != [];
-        assert iter.stackSk[|iter.stackSk|-1].data.key == RB.elemth(parent.Model().Keys, 0);
+        assert iter.stackSk[|iter.stackSk|-1].data.key == elemth(parent.Model().Keys, 0);
       }
     }
 
@@ -134,21 +136,42 @@ module OrderedMapImpl {
                 && it.Traversed() == old(it.Traversed())
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+                (it is OrderedMapForwardIterator &&
+                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()) )
     {
       b := iter.stack != [];
       assert b == HasPeek?() by {
-        calc {
-          0;
-          <= |iter.traversed|;
-          == Index();
+        iter.HasPeekConditionCard();
+      }
+    }
+    
+    lemma TraversedTraversed()
+      requires Valid()
+      requires Parent().Valid()
+      ensures Traversed() == RB.orderKeysToSet(iter.traversed)
+    {
+      if |iter.traversed| == |parent.Model()| {
+        assume parent.Model().Keys == RB.orderKeysToSet(RB.inorder(iter.parent.TreeModel()));
+        calc == {
+          Traversed();
+          { assert Index() == |iter.traversed|; }
+          parent.Model().Keys;
+          { RB.OrderKeysIsMapKeys(iter.parent.TreeModel()); }
+          RB.orderKeysToSet(RB.inorder(iter.parent.TreeModel()));
+          { RB.SizeLemmas(iter.parent.TreeModel()); }
+          RB.orderKeysToSet(iter.traversed);
         }
-        assume false;
-        assert 0 <= |iter.traversed| < |Parent().Model()|;
-        assert 0 <= Index() < |Parent().Model()|;
+      } else {
+        RB.OrderKeysIsMapKeys(iter.parent.TreeModel());
+        RB.SizeLemmas(iter.parent.TreeModel());
+        iter.HasPeekConditionCard();
+        iter.TraversedSmaller();
       }
     }
 
-    method {:verify false} Next()
+    method Next()
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -162,19 +185,75 @@ module OrderedMapImpl {
       ensures Parent().Valid()
       ensures Parent() == old(Parent())
       ensures Parent().Model() == old(Parent().Model())
+      ensures |Parent().Model()| == old(|Parent().Model()|)
+
+      ensures Traversed() == {key(old(Peek?()))} + old(Traversed())
+      ensures |Traversed()| == 1 + old(|Traversed()|)
 
       ensures Parent().Iterators() >= old(Parent().Iterators())
-      ensures Traversed() == {key(old(Peek?()))}+old(Traversed())
-
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-        && it.Valid()
-        && it.Parent() == old(it.Parent())
-      /*
-        && (it != this ==> it.Traversed() == old(it.Traversed())
-                           && (it.HasPeek?() ==> it.Peek?()==old(it.Peek?())))
-                           */
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && (it != this ==> it.Traversed() == old(it.Traversed())
+                                   && |it.Traversed()| == old(|it.Traversed()|)
+                                   && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
+
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this:://NEW
+                (it is OrderedMapForwardIterator &&
+                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()) )
     {
-      var _, _ := iter.Next();
+      assert iter.RBStack() != [] by {
+        assert 0 <= Index() == |iter.traversed| < |Parent().Model()|;
+        iter.HasPeekConditionCard();
+        assert |iter.traversed| < |iter.parent.MapModel()|;
+        assert iter.stackSk != [];
+      }
+      assert key(Peek?()) == iter.stack[|iter.stack|-1].key by {
+        iter.PeekElemth();
+        calc == {
+          iter.stack[|iter.stack|-1].key;
+          iter.stackSk[|iter.stackSk|-1].data.key;
+          elemth(iter.parent.MapModel().Keys, |iter.traversed|);
+          elemth(Parent().Model().Keys, Index());
+          key(Peek?());
+        }
+      }
+      /*
+      assert Traversed() == RB.orderKeysToSet(iter.traversed) by {
+        TraversedTraversed();
+      }
+      */
+      var k, v := iter.Next();
+      assert fresh(Parent().Repr() - old(Parent().Repr()));
+      assert allocated(Parent().Repr());
+      assert Valid();
+      assert Parent().Valid();
+      assert Parent() == old(Parent());
+      assert Parent().Model() == old(Parent().Model());
+      assert |Parent().Model()| == old(|Parent().Model()|);
+
+      assert k == key(old(Peek?()));
+      assert Traversed() == RB.orderKeysToSet(iter.traversed) by {
+        TraversedTraversed();
+      }
+      assert old(Traversed()) == old(RB.orderKeysToSet(iter.traversed)) by {
+        assume false;
+      }
+      assert Traversed() == {key(old(Peek?()))} + old(Traversed());
+      assert |Traversed()| == 1 + old(|Traversed()|);
+
+      assert Parent().Iterators() >= old(Parent().Iterators());
+      assume false;
+      assert forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && (it != this ==> it.Traversed() == old(it.Traversed())
+                                   && |it.Traversed()| == old(|it.Traversed()|)
+                                   && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())));
+
+      assert forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this::
+                (it is OrderedMapForwardIterator &&
+                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()));
     }
 
     method {:verify false} Peek() returns (p: (K, V))

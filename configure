@@ -34,17 +34,17 @@ files=(
 
     src/tree/KeyValue.dfy
 
-    src/tree/layer1/OrderedSetUtils.dfy
-    src/tree/layer1/UnorderedSet.dfy
-    src/tree/layer1/UnorderedMultiset.dfy
-    src/tree/layer1/OrderedSet.dfy
-    src/tree/layer1/OrderedSetForward.dfy
-    src/tree/layer1/OrderedMultisetUtils.dfy
-    src/tree/layer1/OrderedSetL.dfy
+    #src/tree/layer1/OrderedSetUtils.dfy
+    #src/tree/layer1/UnorderedSet.dfy
+    #src/tree/layer1/UnorderedMultiset.dfy
+    #src/tree/layer1/OrderedSet.dfy
+    #src/tree/layer1/OrderedSetForward.dfy
+    #src/tree/layer1/OrderedMultisetUtils.dfy
+    #src/tree/layer1/OrderedSetL.dfy
     src/tree/layer1/OrderedMap.dfy
     src/tree/layer1/OrderedMapForward.dfy
-    src/tree/layer1/OrderedMultiset.dfy
-    src/tree/layer1/OrderedMultisetForward.dfy
+    #src/tree/layer1/OrderedMultiset.dfy
+    #src/tree/layer1/OrderedMultisetForward.dfy
     src/tree/layer1/UnorderedMap.dfy
 
     #src/tree/layer2/UnorderedSetArrayList.dfy

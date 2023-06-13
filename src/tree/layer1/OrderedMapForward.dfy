@@ -30,10 +30,11 @@ module OrderedMapForwardSpec {
       ensures |Traversed()| == Index()
       ensures 0 <= Index() < |Parent().Model()| ==> Traversed() < Parent().Model().Keys && |Traversed()| < |Parent().Model().Keys|
     {
-      if (Index() == |Parent().Model()|) then Parent().Model().Keys
+      if Index() == |Parent().Model()| then
+        Parent().Model().Keys
       else
         lelemth(Parent().Model().Keys,Index());
-        smaller(Parent().Model().Keys,elemth(Parent().Model().Keys,Index()))
+        smaller(Parent().Model().Keys, elemth(Parent().Model().Keys, Index()))
     }
     //ensures forall x,y | x in Traversed() && y in Parent().Model().Keys-Traversed() :: x < y
 
@@ -166,7 +167,7 @@ module OrderedMapForwardSpec {
 
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this:://NEW
                 (it is OrderedMapForwardIterator &&
-                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()) )
+                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()))
 
     method Copy() returns (it: UnorderedMapIterator)
       modifies this, Parent(), Parent().Repr()
