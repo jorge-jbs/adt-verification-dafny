@@ -65,6 +65,7 @@ module OrderedSetUtils {
 
   function {:induction s} minimum(s:set<int>):int
     requires s != {}
+    ensures minimum(s) in s
     //ensures forall x | x in s :: minimum(s)<=x
   {
     //var x :| x in s;
@@ -76,8 +77,8 @@ module OrderedSetUtils {
   }
 
   // Minimum is smaller or equal than all the set elements
-  lemma lmin(s:set<int>,x:int)
-    requires s!={} && x in s
+  lemma lmin(s: set<int>, x: int)
+    requires s != {} && x in s
     ensures x >= minimum(s)
   {
     var y:=Pick(s);
@@ -218,6 +219,7 @@ module OrderedSetUtils {
 
   function elemth(s:set<int>,k:int):int
     requires 0<=k<|s|
+    ensures elemth(s,k) in s //&& |smaller(s,elemth(s,k))|==k
     //ensures elemth(s,k) in s && |smaller(s,elemth(s,k))|==k
   {
     var minim:=minimum(s);
