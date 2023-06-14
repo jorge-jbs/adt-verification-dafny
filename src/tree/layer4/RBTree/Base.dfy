@@ -88,9 +88,6 @@ module RBTree.Base {
     ensures orderKeysToSet(r) + orderKeysToSet(s) == orderKeysToSet(r + s)
   {}
 
-  lemma orderKeysToSetAddCard(r: seq<(K, V)>, s: seq<(K, V)>)
-    ensures |orderKeysToSet(r)| + |orderKeysToSet(s)| == |orderKeysToSet(r + s)|
-
   lemma orderKeysToSetCardBase(s: seq<(K, V)>)
     requires forall i, j | 0 <= i < j < |s| :: s[i].0 != s[j].0
     requires s != []
@@ -422,6 +419,12 @@ module RBTree.Base {
       == |keys(t)|
       == |toMap(t).Keys|
       == |toMap(t)|
+  {
+    SizeInorder(t);
+    SizeKeys(t);
+    assert keys(t) == toMap(t).Keys;
+    assert |toMap(t).Keys| == |toMap(t)|;
+  }
 
   function method toMap(t: rbtree): map<K, V>
     requires SearchTree(t)

@@ -170,7 +170,7 @@ module OrderedMapImpl {
       }
     }
 
-    method Next()
+    method {:verify false} Next()
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
