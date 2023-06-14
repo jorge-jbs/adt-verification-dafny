@@ -153,7 +153,6 @@ module OrderedMapImpl {
       ensures Traversed() == RB.orderKeysToSet(iter.traversed)
     {
       if |iter.traversed| == |parent.Model()| {
-        assume parent.Model().Keys == RB.orderKeysToSet(RB.inorder(iter.parent.TreeModel()));
         calc == {
           Traversed();
           { assert Index() == |iter.traversed|; }
@@ -218,11 +217,9 @@ module OrderedMapImpl {
           key(Peek?());
         }
       }
-      /*
-      assert Traversed() == RB.orderKeysToSet(iter.traversed) by {
+      assert OldTraversedTraversed: Traversed() == RB.orderKeysToSet(iter.traversed) by {
         TraversedTraversed();
       }
-      */
       var k, v := iter.Next();
       assert fresh(Parent().Repr() - old(Parent().Repr()));
       assert allocated(Parent().Repr());
@@ -237,21 +234,20 @@ module OrderedMapImpl {
         TraversedTraversed();
       }
       assert old(Traversed()) == old(RB.orderKeysToSet(iter.traversed)) by {
-        assume false;
+        reveal OldTraversedTraversed;
       }
       assert Traversed() == {key(old(Peek?()))} + old(Traversed());
       assert |Traversed()| == 1 + old(|Traversed()|);
 
       assert Parent().Iterators() >= old(Parent().Iterators());
-      assume false;
-      assert forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+      assume forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
                 && it.Valid()
                 && it.Parent() == old(it.Parent())
                 && (it != this ==> it.Traversed() == old(it.Traversed())
                                    && |it.Traversed()| == old(|it.Traversed()|)
                                    && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())));
 
-      assert forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this::
+      assume forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this::
                 (it is OrderedMapForwardIterator &&
                  (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()));
     }
@@ -570,11 +566,10 @@ module OrderedMapImpl {
       ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
         (it is OrderedSetIterator &&
         (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()))
-      */
     {
-      //var foundNode := Find();
-      assume {:axiom} false;
+      var foundNode := Find();
     }
+      */
 
     method {:verify false} At(k: K) returns (v: V)
       modifies this, Repr()

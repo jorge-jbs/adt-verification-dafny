@@ -217,8 +217,8 @@ module OrderedSetUtils {
   { lminimum(s);
     sizeOfSet(s,minimum(s));}
 
-  function elemth(s:set<int>,k:int):int
-    requires 0<=k<|s|
+  function elemth(s: set<int>, k: int): int
+    requires 0 <= k < |s|
     ensures elemth(s,k) in s //&& |smaller(s,elemth(s,k))|==k
     //ensures elemth(s,k) in s && |smaller(s,elemth(s,k))|==k
   {
