@@ -91,16 +91,11 @@ module LinkedTree {
       InorderKeys(parent.TreeModel());
     }
 
-    lemma TraversedSizeLeMapModelSize()
-      requires parent.Valid()
-      requires parent.SearchTree()
-      ensures |traversed| <= |parent.MapModel()|
-
     lemma TraversedInModel()
       requires forall i | 0 <= i < |stackSk| :: stackSk[i].Node?
       requires RB.inorder(parent.TreeModel()) == traversed + RBit.inorderStack(RBStack())
       ensures forall p | p in traversed :: p.0 in RB.keys(parent.TreeModel())
-      ensures (set p | p in traversed :: p.0) <= RB.keys(parent.TreeModel())
+      ensures RB.orderKeysToSet(traversed) <= RB.keys(parent.TreeModel())
     {
       forall p | p in traversed
         ensures p.0 in RB.keys(parent.TreeModel())
@@ -110,12 +105,45 @@ module LinkedTree {
       }
     }
 
+    lemma TraversedSizeLeMapModelSize()
+      requires Valid()
+      requires parent.Valid()
+      requires parent.SearchTree()
+      ensures |traversed| <= |parent.MapModel()|
+    {
+      calc {
+        |traversed|;
+          ==
+          {
+            RB.SearchImpliesUnique(parent.TreeModel());
+            assert RB.inorder(parent.TreeModel()) == traversed + RBit.inorderStack(RBStack());
+            assert traversed <= RB.inorder(parent.TreeModel());
+            RB.orderKeysToSetCard(traversed);
+          }
+        |RB.orderKeysToSet(traversed)|;
+          <=
+          {
+            sizesContained(
+              RB.orderKeysToSet(traversed),
+              RB.orderKeysToSet(RB.inorder(parent.TreeModel()))
+            );
+          }
+        |RB.orderKeysToSet(RB.inorder(parent.TreeModel()))|;
+          {
+            RB.SearchImpliesUnique(parent.TreeModel());
+            RB.orderKeysToSetCard(RB.inorder(parent.TreeModel()));
+          }
+        |RB.inorder(parent.TreeModel())|;
+          { RB.SizeLemmas(parent.TreeModel()); }
+        |parent.MapModel()|;
+      }
+    }
+
     lemma HasPeekCondition()
       requires Valid()
       requires parent.Valid()
       requires parent.SearchTree()
       ensures stackSk != [] <==> RB.orderKeysToSet(traversed) < parent.MapModel().Keys
-      //ensures stackSk != [] <==> |traversed| < |parent.MapModel()|
     {
       RB.HasPeekCondition(parent.TreeModel(), traversed, RBit.inorderStack(RBStack()));
     }

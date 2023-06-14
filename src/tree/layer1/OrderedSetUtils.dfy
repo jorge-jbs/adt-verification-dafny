@@ -3,7 +3,7 @@ include "../../../src/MUtils.dfy"
 module OrderedSetUtils {
   import opened Utils
 
-  function Pick(s: set<int>): int
+  function Pick<A>(s: set<A>): A
     requires s != {}
   {
     var x :| x in s; x
@@ -34,21 +34,22 @@ module OrderedSetUtils {
      }}
   }
 
-  lemma sizesContained(s1:set<int>,s2:set<int>)
+  lemma sizesContained<A>(s1: set<A>, s2: set<A>)
     requires s1 <= s2
     ensures |s1| <= |s2|
-  {if (s1=={}) {}
-   else{
-     assert forall x | x in s1 :: x in s1;
-     var z:=Pick(s1);
-     calc  {
-       |s1|; ==
-       1+|s1-{z}|; <=
-       {sizesContained(s1-{z},s2-{z});assert z in s2;}
-       1 + |s2-{z}|; ==
-       |s2|;
-     }
-   }
+  {
+    if s1 == {} {
+    } else {
+      assert forall x | x in s1 :: x in s1;
+      var z := Pick(s1);
+      calc  {
+        |s1|; ==
+        1+|s1-{z}|; <=
+        { sizesContained(s1-{z}, s2-{z}); assert z in s2; }
+        1 + |s2-{z}|; ==
+        |s2|;
+      }
+    }
   }
 
   lemma sizesStrictContained(xs: set<int>, ys: set<int>)

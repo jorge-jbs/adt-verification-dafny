@@ -9,14 +9,14 @@ module RBTree.RemoveElemth {
   import opened Base
   import opened OrderedSetUtils
 
-  function method RemoveMin(t: rbtree): (rbtree, K, V)
+  function method SRemoveMin(t: rbtree): (rbtree, K, V)
     requires t.Node?
     requires SearchTree(t)
   {
     if t.left.Empty? then
       (t.right, t.key, t.value)
     else
-      var (l', minK, minV) := RemoveMin(t.left);
+      var (l', minK, minV) := SRemoveMin(t.left);
       ( Node(
           l',
           t.key,
@@ -28,49 +28,49 @@ module RBTree.RemoveElemth {
       , minV
       )
   }
-  
-  lemma RemoveMinSpec(t: rbtree)
+
+  lemma SRemoveMinSpec(t: rbtree)
     requires t.Node?
     requires SearchTree(t)
 
-    ensures keys(RemoveMin(t).0) == keys(t) - {RemoveMin(t).1}
-    ensures inorder(t) == [(RemoveMin(t).1, RemoveMin(t).2)] + inorder(RemoveMin(t).0)
-    ensures |inorder(RemoveMin(t).0)| == |inorder(t)| - 1;
-    ensures RemoveMin(t).1 in keys(t)
-    ensures RemoveMin(t).1 !in keys(RemoveMin(t).0)
-    ensures forall k | k in keys(RemoveMin(t).0) :: RemoveMin(t).1 < k
+    ensures keys(SRemoveMin(t).0) == keys(t) - {SRemoveMin(t).1}
+    ensures inorder(t) == [(SRemoveMin(t).1, SRemoveMin(t).2)] + inorder(SRemoveMin(t).0)
+    ensures |inorder(SRemoveMin(t).0)| == |inorder(t)| - 1;
+    ensures SRemoveMin(t).1 in keys(t)
+    ensures SRemoveMin(t).1 !in keys(SRemoveMin(t).0)
+    ensures forall k | k in keys(SRemoveMin(t).0) :: SRemoveMin(t).1 < k
 
-    ensures SearchTree(RemoveMin(t).0)
+    ensures SearchTree(SRemoveMin(t).0)
   {
     if t.left.Empty? {
     } else {
-      RemoveMinSpec(t.left);
+      SRemoveMinSpec(t.left);
     }
   }
 
-  lemma RemoveMinMinimum(t: rbtree)
+  lemma SRemoveMinMinimum(t: rbtree)
     requires t.Node?
     requires SearchTree(t)
-    ensures minimum(toMap(t).Keys) == minimum(keys(t)) == RemoveMin(t).1
+    ensures minimum(toMap(t).Keys) == minimum(keys(t)) == SRemoveMin(t).1
   {
     assert toMap(t).Keys == keys(t);
-    RemoveMinSpec(t);
-    lminimumrev(keys(t), RemoveMin(t).1);
+    SRemoveMinSpec(t);
+    lminimumrev(keys(t), SRemoveMin(t).1);
   }
 
-  lemma RemoveMinCard(t: rbtree)
+  lemma SRemoveMinCard(t: rbtree)
     requires t.Node?
     requires SearchTree(t)
-    requires SearchTree(RemoveMin(t).0)
+    requires SearchTree(SRemoveMin(t).0)
 
-    ensures |keys(RemoveMin(t).0)| == |keys(t)| - 1;
-    ensures |toMap(RemoveMin(t).0)| == |toMap(t)| - 1;
+    ensures |keys(SRemoveMin(t).0)| == |keys(t)| - 1;
+    ensures |toMap(SRemoveMin(t).0)| == |toMap(t)| - 1;
   {
-    RemoveMinSpec(t);
+    SRemoveMinSpec(t);
     calc == {
-      |toMap(RemoveMin(t).0)|;
-      { toMapCard(RemoveMin(t).0); }
-      |keys(RemoveMin(t).0)|;
+      |toMap(SRemoveMin(t).0)|;
+      { toMapCard(SRemoveMin(t).0); }
+      |keys(SRemoveMin(t).0)|;
       |keys(t)| - 1;
       { toMapCard(t); }
       |toMap(t)| - 1;
@@ -96,17 +96,16 @@ module RBTree.RemoveElemth {
     } else if i == 0 {
       ElemthInorder0(t);
     } else {
-      var (t', minK, minV) := RemoveMin(t);
-      RemoveMinSpec(t);
+      var (t', minK, minV) := SRemoveMin(t);
+      SRemoveMinSpec(t);
       assert |inorder(t')| == |inorder(t)| - 1;
-      RemoveMinCard(t);
+      SRemoveMinCard(t);
       assert |toMap(t')| == |toMap(t)| - 1;
-      ElemthInorder(t', i-1);
       calc == {
         elemth(toMap(t).Keys, i);
         elemth(toMap(t).Keys - {minimum(toMap(t).Keys)}, i-1);
         {
-          RemoveMinMinimum(t);
+          SRemoveMinMinimum(t);
           assert minK == minimum(toMap(t).Keys);
         }
         elemth(toMap(t).Keys - {minK}, i-1);
@@ -119,9 +118,10 @@ module RBTree.RemoveElemth {
           }
         }
         elemth(toMap(t').Keys, i-1);
-        inorder(RemoveMin(t).0)[i-1].0;
-        { Drop1Index([inorder(t)[0]] + inorder(RemoveMin(t).0), i); }
-        ([inorder(t)[0]] + inorder(RemoveMin(t).0))[i].0;
+        { ElemthInorder(t', i-1); }
+        inorder(SRemoveMin(t).0)[i-1].0;
+        { Drop1Index([inorder(t)[0]] + inorder(SRemoveMin(t).0), i); }
+        ([inorder(t)[0]] + inorder(SRemoveMin(t).0))[i].0;
         ([inorder(t)[0]] + inorder(t)[1..])[i].0;
         inorder(t)[i].0;
       }
@@ -192,7 +192,7 @@ module RBTree.RemoveElemth {
           assert k in keys(t);
           KeyInOrder(t, k);
           var i :| 0 <= i < |inorder(t)| && inorder(t)[i].0 == k;
-          
+
           ElemthInorder(t, i);
           var a := elemth(toMap(t).Keys, i);
           assert a == inorder(t)[i].0;
