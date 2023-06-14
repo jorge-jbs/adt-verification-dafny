@@ -166,10 +166,6 @@ module RBTree.Base {
       }
     }
   }
-  /*
-  lemma NonEmptySet<A>(s: set<K>, P: A -> bool, F: A -> K)
-    requires s == (set x | P(x) :: F(x))
-    */
 
   lemma NonEmptyOrderKeysToSet(s: seq<(K, V)>)
     requires s != []
@@ -177,13 +173,6 @@ module RBTree.Base {
   {
     assert s[0] in s;
     assert s[0].0 in orderKeysToSet(s);
-      /*
-    if orderKeysToSet(s) == {} {
-      assert !exists p :: p in s;
-      //assert forall p :: (p in s);
-      assume false;
-    }
-    */
   }
 
   function orderKeysToSeq(s: seq<(K, V)>): seq<K>

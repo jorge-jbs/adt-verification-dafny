@@ -34,7 +34,6 @@ module RBTree.RemoveElemth {
     requires SearchTree(t)
 
     ensures keys(RemoveMin(t).0) == keys(t) - {RemoveMin(t).1}
-    //ensures |toMap(RemoveMin(t).0)| == |toMap(t)| - 1;
     ensures inorder(t) == [(RemoveMin(t).1, RemoveMin(t).2)] + inorder(RemoveMin(t).0)
     ensures |inorder(RemoveMin(t).0)| == |inorder(t)| - 1;
     ensures RemoveMin(t).1 in keys(t)
@@ -48,6 +47,17 @@ module RBTree.RemoveElemth {
       RemoveMinSpec(t.left);
     }
   }
+
+  lemma RemoveMinMinimum(t: rbtree)
+    requires t.Node?
+    requires SearchTree(t)
+    ensures minimum(toMap(t).Keys) == minimum(keys(t)) == RemoveMin(t).1
+  {
+    assert toMap(t).Keys == keys(t);
+    RemoveMinSpec(t);
+    lminimumrev(keys(t), RemoveMin(t).1);
+  }
+
   lemma RemoveMinCard(t: rbtree)
     requires t.Node?
     requires SearchTree(t)
@@ -59,10 +69,10 @@ module RBTree.RemoveElemth {
     RemoveMinSpec(t);
     calc == {
       |toMap(RemoveMin(t).0)|;
-      { assume false; toMapCard(RemoveMin(t).0);}
+      { toMapCard(RemoveMin(t).0); }
       |keys(RemoveMin(t).0)|;
       |keys(t)| - 1;
-      { assume false; toMapCard(t); }
+      { toMapCard(t); }
       |toMap(t)| - 1;
     }
   }
@@ -83,7 +93,7 @@ module RBTree.RemoveElemth {
     ensures elemth(toMap(t).Keys, i) == inorder(t)[i].0
   {
     if t.Empty? {
-    } else if i == 0{
+    } else if i == 0 {
       ElemthInorder0(t);
     } else {
       var (t', minK, minV) := RemoveMin(t);
@@ -94,8 +104,21 @@ module RBTree.RemoveElemth {
       ElemthInorder(t', i-1);
       calc == {
         elemth(toMap(t).Keys, i);
-        { assume false; }
-        elemth(toMap(RemoveMin(t).0).Keys, i-1);
+        elemth(toMap(t).Keys - {minimum(toMap(t).Keys)}, i-1);
+        {
+          RemoveMinMinimum(t);
+          assert minK == minimum(toMap(t).Keys);
+        }
+        elemth(toMap(t).Keys - {minK}, i-1);
+        {
+          calc == {
+            toMap(t').Keys;
+            keys(t');
+            keys(t) - {minK};
+            toMap(t).Keys - {minK};
+          }
+        }
+        elemth(toMap(t').Keys, i-1);
         inorder(RemoveMin(t).0)[i-1].0;
         { Drop1Index([inorder(t)[0]] + inorder(RemoveMin(t).0), i); }
         ([inorder(t)[0]] + inorder(RemoveMin(t).0))[i].0;
