@@ -135,7 +135,7 @@ module OrderedMapForwardSpec {
 
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()):://NEW
                 (it is OrderedMapForwardIterator &&
-                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()) )
+                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()))
 
     method Next()
       modifies this, Parent(), Parent().Repr()

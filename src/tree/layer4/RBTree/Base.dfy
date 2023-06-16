@@ -47,7 +47,6 @@ module RBTree.Base {
   }
 
   function method size(t: rbtree): nat
-    //ensures size(t) == |keys(t)|
   {
     match t {
       case Empty => 0
@@ -235,8 +234,9 @@ module RBTree.Base {
     }
   }
 
-  lemma KeysAndValuesInOrder(t: rbtree)
-    ensures forall k | k in keys(t) :: (exists i :: 0 <= i < |inorder(t)| && inorder(t)[i].0 == k)
+  lemma ForallKeyInOrder(t: rbtree)
+    ensures forall k | k in keys(t) ::
+      exists i :: 0 <= i < |inorder(t)| && inorder(t)[i].0 == k
   {
     forall k | k in keys(t)
       ensures (exists i :: 0 <= i < |inorder(t)| && inorder(t)[i].0 == k)
@@ -250,8 +250,7 @@ module RBTree.Base {
     ensures forall i | 0 <= i < |inorder(t)| ::
       && inorder(t)[i].0 in keys(t)
       && inorder(t)[i].1 in values(t)
-  {
-  }
+  {}
 
   lemma KeySetIsOrderKeysR(t: rbtree, P: K -> bool)
     requires forall k | k in keys(t) :: P(k)
@@ -285,7 +284,7 @@ module RBTree.Base {
       forall k | k in keys(t)
         ensures P(k)
       {
-        KeysAndValuesInOrder(t);
+        ForallKeyInOrder(t);
         assert (exists i :: 0 <= i < |inorder(t)| && inorder(t)[i].0 == k);
       }
     }
@@ -327,15 +326,32 @@ module RBTree.Base {
     requires k in keys(t)
     requires SearchTree(t)
   {
-    match t {
-      case Empty => assert false; 0
-      case Node(l, k', v, r, c) =>
-        if k < k' then
-          Get(l, k)
-        else if k' < k then
-          Get(r, k)
-        else
-          v
+    if k < t.key then
+      Get(t.left, k)
+    else if t.key < k then
+      Get(t.right, k)
+    else
+      t.value
+  }
+
+  lemma GetInorder(t: rbtree, i: nat)
+    requires 0 <= i < |inorder(t)|
+    requires SearchTree(t)
+    ensures keys(t) == orderKeysToSet(inorder(t))
+    ensures Get(t, inorder(t)[i].0) == inorder(t)[i].1
+  {
+    var k := inorder(t)[i].0;
+    SearchImpliesOrdered(t);
+    OrderKeysIsTreeKeys(t);
+    assert t.key == inorder(t)[|inorder(t.left)|].0;
+    if i < |inorder(t.left)| {
+      assert k < t.key;
+    } else if |inorder(t.left)| < i {
+      assert t.key < k;
+      GetInorder(t.right, i - |inorder(t.left)| - 1);
+    } else {
+      assert i == |inorder(t.left)|;
+      assert k == t.key;
     }
   }
 
@@ -412,20 +428,6 @@ module RBTree.Base {
     ensures size(t) == |inorder(t)|
   {}
 
-  lemma SizeLemmas(t: rbtree)
-    requires SearchTree(t)
-    ensures size(t)
-      == |inorder(t)|
-      == |keys(t)|
-      == |toMap(t).Keys|
-      == |toMap(t)|
-  {
-    SizeInorder(t);
-    SizeKeys(t);
-    assert keys(t) == toMap(t).Keys;
-    assert |toMap(t).Keys| == |toMap(t)|;
-  }
-
   function method toMap(t: rbtree): map<K, V>
     requires SearchTree(t)
   {
@@ -439,16 +441,18 @@ module RBTree.Base {
       && toMap(t) == toMap(t.left) + map[t.key := t.value] + toMap(t.right)
   {}
 
-  lemma toMapCard(t: rbtree)
+  lemma SizeLemmas(t: rbtree)
     requires SearchTree(t)
-    ensures |toMap(t)| == |keys(t)|
+    ensures size(t)
+      == |inorder(t)|
+      == |keys(t)|
+      == |toMap(t).Keys|
+      == |toMap(t)|
   {
-    calc == {
-      |toMap(t)|;
-      |toMap(t).Keys|;
-      { assert toMap(t).Keys == keys(t); }
-      |keys(t)|;
-    }
+    SizeInorder(t);
+    SizeKeys(t);
+    assert keys(t) == toMap(t).Keys;
+    assert |toMap(t).Keys| == |toMap(t)|;
   }
 
   lemma OrderKeysIsMapKeys(t: rbtree)
@@ -551,20 +555,6 @@ module RBTree.Base {
     }
   }
 
-  lemma InorderIsMapCard(t: rbtree)
-    requires SearchTree(t)
-    ensures |inorder(t)| == |toMap(t)|
-  {
-    calc == {
-      |inorder(t)|;
-      { SearchImpliesUnique(t); orderToSetCard(inorder(t)); }
-      |orderToSet(inorder(t))|;
-      { OrderSetIsMapItems(t); }
-      |toMap(t).Items|;
-      |toMap(t)|;
-    }
-  }
-
   lemma HasPeekCondition(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
     requires SearchTree(t)
     requires inorder(t) == traversed + st
@@ -600,23 +590,7 @@ module RBTree.Base {
     ensures st != [] <==> |traversed| < |toMap(t)|
   {
     HasPeekCondition(t, traversed, st);
-    InorderIsMapCard(t);
-    /*
-    if st != [] {
-      assert orderKeysToSet(traversed) < toMap(t).Keys;
-      sizesStrictContained(orderKeysToSet(traversed), toMap(t).Keys);
-      assert |orderKeysToSet(traversed)| < |toMap(t).Keys|;
-      calc {
-        |traversed|;
-        {
-          SearchImpliesUnique(t);
-          assert traversed < inorder(t);
-          orderKeysToSetCard(traversed);
-        }
-        |orderKeysToSet(traversed)|;
-      }
-    }
-    */
+    SizeLemmas(t);
   }
 
   lemma PeekInModel(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)

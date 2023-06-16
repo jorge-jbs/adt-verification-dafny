@@ -73,6 +73,7 @@ files=(
     src/tree/layer4/RBTree/Iterator.1.dfy
     src/tree/layer4/RBTree/Iterator.2.dfy
     src/tree/layer4/RBTree/Base.dfy
+    src/tree/layer4/RBTree/RemoveElemth.dfy
 
     #examples/reordenando-la-cola.dfy
     #examples/accidentes-aereos.dfy
