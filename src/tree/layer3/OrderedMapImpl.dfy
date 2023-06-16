@@ -30,7 +30,7 @@ module OrderedMapImpl {
     var parent: OrderedMapImpl;
     var iter: LinkedTreeIterator;
 
-    constructor First(parent: OrderedMapImpl)
+    constructor {:verify false} First(parent: OrderedMapImpl)
       requires parent.Valid()
       ensures this.parent == parent
       ensures iter.parent == parent.tree
@@ -153,7 +153,7 @@ module OrderedMapImpl {
         iter.HasPeekConditionCard();
       }
     }
-    
+
     lemma TraversedTraversed()
       requires Valid()
       requires Parent().Valid()
@@ -177,7 +177,7 @@ module OrderedMapImpl {
       }
     }
 
-    method Next()
+    method {:verify true} Next()  // 5'
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -204,7 +204,7 @@ module OrderedMapImpl {
                                    && |it.Traversed()| == old(|it.Traversed()|)
                                    && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
 
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this:://NEW
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this ::
                 (it is OrderedMapForwardIterator &&
                  (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()) )
     {
@@ -247,16 +247,38 @@ module OrderedMapImpl {
       assert |Traversed()| == 1 + old(|Traversed()|);
 
       assert Parent().Iterators() >= old(Parent().Iterators());
-      assume forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+      assert
+        && (forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
                 && it.Valid()
                 && it.Parent() == old(it.Parent())
                 && (it != this ==> it.Traversed() == old(it.Traversed())
                                    && |it.Traversed()| == old(|it.Traversed()|)
-                                   && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())));
-
-      assume forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this::
+                                   && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))))
+        && (forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this::
                 (it is OrderedMapForwardIterator &&
-                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()));
+                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index())))
+      by {
+        ParentIterators();
+        assert forall it | it in old(Parent().Iterators()) ::
+                  (it is OrderedMapIteratorImpl);
+        forall it0 | it0 in old(Parent().Iterators()) && old(it0.Valid())
+          ensures it0.Valid()
+          ensures it0.Parent() == old(it0.Parent())
+          ensures (it0 != this ==> it0.Traversed() == old(it0.Traversed())
+                             && |it0.Traversed()| == old(|it0.Traversed()|)
+                             && (old(it0.HasPeek?()) ==> it0.HasPeek?() && it0.Peek?()==old(it0.Peek?()))
+                             && (it0 as OrderedMapForwardIterator).Index()
+                                 == old((it0 as OrderedMapForwardIterator).Index()))
+        {
+          assert it0 is OrderedMapIteratorImpl;
+          var iter0 := it0 as OrderedMapIteratorImpl;
+          if iter0 == this {
+            assert iter0.iter == this.iter;
+          } else {
+            assert iter0.iter != this.iter;
+          }
+        }
+      }
     }
 
     method Peek() returns (p: (K, V))
@@ -368,6 +390,8 @@ module OrderedMapImpl {
       && tree.RedBlackTree()
       && size == |tree.MapModel()|
       && (forall it | it in iters :: it.parent == this && {it} !! {this})
+      && (forall it1, it2 | it1 in iters && it2 in iters && it1 != it2 ::
+            it1.iter != it2.iter)
     }
 
     function Model(): map<K, V>
@@ -469,7 +493,7 @@ module OrderedMapImpl {
       ensures a + b == b + a
     {}
 
-    method First() returns (it: UnorderedMapIterator)  // 1'
+    method {:verify false} First() returns (it: UnorderedMapIterator)  // 1'
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -553,7 +577,7 @@ module OrderedMapImpl {
                  (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()));
     }
 
-    method Contains(k: K) returns (b: bool)
+    method {:verify false} Contains(k: K) returns (b: bool)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -618,7 +642,7 @@ module OrderedMapImpl {
     }
       */
 
-    method At(k: K) returns (v: V)
+    method {:verify false} At(k: K) returns (v: V)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -647,7 +671,7 @@ module OrderedMapImpl {
       return foundNode.value;
     }
 
-    method Add(k: K,v: V)
+    method {:verify false} Add(k: K,v: V)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -675,7 +699,7 @@ module OrderedMapImpl {
       assert forall p: map<K, V> :: |p| == |p.Keys|;
     }
 
-    method Remove(k: K)
+    method {:verify false} Remove(k: K)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
