@@ -69,10 +69,10 @@ module RBTree.RemoveElemth {
     SRemoveMinSpec(t);
     calc == {
       |toMap(SRemoveMin(t).0)|;
-      { toMapCard(SRemoveMin(t).0); }
+      { SizeLemmas(SRemoveMin(t).0); }
       |keys(SRemoveMin(t).0)|;
       |keys(t)| - 1;
-      { toMapCard(t); }
+      { SizeLemmas(t); }
       |toMap(t)| - 1;
     }
   }
@@ -128,7 +128,7 @@ module RBTree.RemoveElemth {
     }
   }
 
-  lemma PeekElemth(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
+  lemma PeekKeyElemth(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
     requires SearchTree(t)
     requires inorder(t) == traversed + st
     requires st != []
@@ -138,7 +138,7 @@ module RBTree.RemoveElemth {
     assert SearchTree(t);
     assert toMap(t) != map[] || t.Node?;
     assert |traversed| < |inorder(t)|;
-    toMapCard(t);
+    SizeLemmas(t);
     assert |traversed| < |keys(t)| == |toMap(t)|;
     ElemthInorder(t, |traversed|);
     calc == {
@@ -148,6 +148,18 @@ module RBTree.RemoveElemth {
       inorder(t)[|traversed|].0;
       st[0].0;
     }
+  }
+
+  lemma PeekElemth(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
+    requires SearchTree(t)
+    requires inorder(t) == traversed + st
+    requires st != []
+    requires |keys(t)| == |inorder(t)|
+    ensures st[0].0 == elemth(keys(t), |traversed|)
+    ensures st[0].1 == toMap(t)[st[0].0]
+  {
+    PeekKeyElemth(t, traversed, st);
+    GetInorder(t, |traversed|);
   }
 
   lemma TraversedSmaller(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)

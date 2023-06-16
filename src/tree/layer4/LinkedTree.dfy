@@ -187,6 +187,7 @@ module LinkedTree {
       requires stackSk != []
       ensures |traversed| < |parent.MapModel().Keys|
       ensures stackSk[|stackSk|-1].data.key == elemth(parent.MapModel().Keys, |traversed|)
+      ensures stackSk[|stackSk|-1].data.value == parent.MapModel()[stackSk[|stackSk|-1].data.key]
     {
       calc == {
         |RB.keys(parent.TreeModel())|;

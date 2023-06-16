@@ -26,13 +26,11 @@ module OrderedMapImpl {
   import RB = RBTree.Base
   import RBelemth = RBTree.RemoveElemth
 
-  type pos = n: int | n > 0 witness 1
-
   class OrderedMapIteratorImpl extends OrderedMapForwardIterator {
     var parent: OrderedMapImpl;
     var iter: LinkedTreeIterator;
 
-    constructor {:verify false} First(parent: OrderedMapImpl)
+    constructor {:verify true} First(parent: OrderedMapImpl)
       requires parent.Valid()
       ensures this.parent == parent
       ensures iter.parent == parent.tree
@@ -57,8 +55,17 @@ module OrderedMapImpl {
       this.parent := parent;
       this.iter := new LinkedTreeIterator.First(parent.tree);
       new;
+      assert FirstPost: iter.parent.MapModel() != map[] ==> iter.HasPeek() && key(iter.Peek()) == elemth(iter.parent.MapModel().Keys, 0);
+      assume forall it | it in old(parent.Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Traversed() == old(it.Traversed())
+        && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()));
       if parent.Model() != map[] {
+        assert iter.parent.MapModel() != map[];
         assert iter.RBStack() != [];
+        assert key(iter.Peek()) == elemth(iter.parent.MapModel().Keys, 0) by {
+          reveal FirstPost;
+        }
         assert iter.stackSk[|iter.stackSk|-1].data.key == elemth(parent.Model().Keys, 0);
       }
     }
@@ -252,7 +259,7 @@ module OrderedMapImpl {
                  (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()));
     }
 
-    method {:verify false} Peek() returns (p: (K, V))
+    method Peek() returns (p: (K, V))
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -266,17 +273,35 @@ module OrderedMapImpl {
       ensures Parent().Valid()
       ensures Parent() == old(Parent())
       ensures Parent().Model() == old(Parent().Model())
+      ensures |Parent().Model()| == old(|Parent().Model()|)
 
-      ensures Traversed() == old(Traversed()) && Peek?() == old(Peek?())
+      ensures Index() == old(Index())
+
+      ensures Traversed() == old(Traversed()) && Peek?()==old(Peek?())
+      ensures |Traversed()| == old(|Traversed()|)
+
       ensures p == Peek?()
+      ensures HasPeek?() && Peek?() == old(Peek?())
+
+      ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-        && it.Valid()
-        && it.Parent() == old(it.Parent())
-        && it.Traversed() == old(it.Traversed())
-        && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())
+                && |it.Traversed()| == old(|it.Traversed()|)
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()):://NEW
+                (it is OrderedMapForwardIterator &&
+                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()))
     {
+      iter.HasPeekConditionCard();
       var n := iter.stack[|iter.stack|-1];
       p := (n.key, n.value);
+
+      assert p == Peek?() by {
+        iter.PeekElemth();
+      }
     }
 
     method Copy() returns (it: UnorderedMapIterator)
@@ -440,7 +465,11 @@ module OrderedMapImpl {
       iters
     }
 
-    method {:verify false} First() returns (it: UnorderedMapIterator)  // 4'
+    lemma AddSetComm<A>(a: set<A>, b: set<A>)
+      ensures a + b == b + a
+    {}
+
+    method {:verify true} First() returns (it: UnorderedMapIterator)  // 1'
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -478,14 +507,23 @@ module OrderedMapImpl {
         Repr();
         Repr1();
         Repr0() + tree.Repr() + (set it | it in iters :: it.iter);
+        { AddSetComm({tree}, iters); assert Repr0() == {tree} + iters == iters + {tree}; }
         iters + {tree} + tree.Repr() + (set it | it in iters :: it.iter);
+        {
+          assert iters == old(iters) + {iter};
+          assert {tree} == old({tree});
+          assert tree.Repr() == old(tree.Repr());
+          assert (set it | it in iters :: it.iter) == (set it | it in old(iters) :: it.iter) + {iter.iter};
+        }
         old(iters) + {iter} + old({tree}) + old(tree.Repr()) + (set it | it in old(iters) :: it.iter) + {iter.iter};
         old(Repr()) + {iter} + {iter.iter};
       }
+      assert Repr() - old(Repr()) == {iter} + {iter.iter};
+      assert fresh(Repr() - old(Repr()));
+      assert allocated(Repr());
       assert Valid();
       assert Model() == old(Model());
       assert |Model()| == old(|Model()|);
-
       assert it is OrderedMapForwardIterator;
       assert fresh(it);
       assert it.Valid() by {
@@ -497,8 +535,22 @@ module OrderedMapImpl {
         assert iter.Valid();
       }
       assert it.Parent() == this;
-      assert iter.Index() == 0;
+      assert iter.Index() == 0 by {
+        iter.iter.HasPeekConditionCard();
+      }
       assert it.Traversed() == {};
+
+      assume Iterators() >= {it} + old(Iterators());
+      assume forall it | it in old(Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())
+                && |it.Traversed()| == old(|it.Traversed()|)
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()));
+
+      assume forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
+                (it is OrderedMapForwardIterator &&
+                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()));
     }
 
     method {:verify false} Contains(k: K) returns (b: bool)
