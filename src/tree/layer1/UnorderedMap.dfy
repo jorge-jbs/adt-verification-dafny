@@ -274,7 +274,7 @@ module UnorderedMapSpec {
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-    method Add(k:K,v:V)
+    method Add(k: K,v: V)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -288,7 +288,7 @@ module UnorderedMapSpec {
 
       ensures Iterators() >= old(Iterators())
 
-    method Remove(k:K)
+    method Remove(k: K)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))

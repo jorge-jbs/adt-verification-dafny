@@ -300,7 +300,7 @@ module OrderedMapForwardSpec {
                 (it is OrderedMapForwardIterator &&
                  (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()))
 
-    method Contains(k:K) returns (b:bool)
+    method Contains(k: K) returns (b: bool)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -322,9 +322,9 @@ module OrderedMapForwardSpec {
 
       ensures forall it | it in old(Iterators()) && old(it.Valid()):://NEW
                 (it is OrderedMapForwardIterator &&
-                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()) )
+                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()))
 
-    method At(k:K) returns (v:V)
+    method At(k: K) returns (v: V)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -347,7 +347,7 @@ module OrderedMapForwardSpec {
 
       ensures forall it | it in old(Iterators()) && old(it.Valid()):://NEW
                 (it is OrderedMapForwardIterator &&
-                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()) )
+                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()))
 
     method Find(k:K) returns (newt:UnorderedMapIterator)
       modifies this, Repr()
