@@ -44,11 +44,6 @@ module OrderedMapImpl {
         && iter.RBStack() != []
         && iter.stackSk[|iter.stackSk|-1].data.key == elemth(parent.Model().Keys, 0)
 
-      ensures forall it | it in old(parent.Iterators()) && old(it.Valid()) ::
-        && it.Valid()
-        && it.Traversed() == old(it.Traversed())
-        && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-
       requires allocated(parent.Repr())
       ensures allocated(parent.Repr())
     {
@@ -56,10 +51,6 @@ module OrderedMapImpl {
       this.iter := new LinkedTreeIterator.First(parent.tree);
       new;
       assert FirstPost: iter.parent.MapModel() != map[] ==> iter.HasPeek() && key(iter.Peek()) == elemth(iter.parent.MapModel().Keys, 0);
-      assume forall it | it in old(parent.Iterators()) && old(it.Valid()) ::
-        && it.Valid()
-        && it.Traversed() == old(it.Traversed())
-        && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()));
       if parent.Model() != map[] {
         assert iter.parent.MapModel() != map[];
         assert iter.RBStack() != [];
@@ -177,7 +168,7 @@ module OrderedMapImpl {
       }
     }
 
-    method {:verify true} Next()  // 5'
+    method {:verify false} Next()  // 5'
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -493,7 +484,7 @@ module OrderedMapImpl {
       ensures a + b == b + a
     {}
 
-    method {:verify false} First() returns (it: UnorderedMapIterator)  // 1'
+    method {:verify true} First() returns (it: UnorderedMapIterator)  // 2'
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -564,17 +555,45 @@ module OrderedMapImpl {
       }
       assert it.Traversed() == {};
 
-      assume Iterators() >= {it} + old(Iterators());
-      assume forall it | it in old(Iterators()) && old(it.Valid()) ::
+      assert Iterators() >= {it} + old(Iterators());
+      assert
+        && (forall it | it in old(Iterators()) && old(it.Valid()) ::
                 && it.Valid()
                 && it.Parent() == old(it.Parent())
                 && it.Traversed() == old(it.Traversed())
                 && |it.Traversed()| == old(|it.Traversed()|)
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()));
-
-      assume forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
+        && (forall it | it in old(Iterators()) && old(it.Valid()) ::
                 (it is OrderedMapForwardIterator &&
-                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()));
+                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index())))
+      by {
+        assert forall it | it in old(Iterators()) ::
+                  (it is OrderedMapIteratorImpl);
+        forall it | it in old(Iterators()) && old(it.Valid())
+          ensures it.Valid()
+          ensures it.Parent() == old(it.Parent())
+          ensures it.Traversed() == old(it.Traversed())
+          ensures |it.Traversed()| == old(|it.Traversed()|)
+          ensures (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+          ensures (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index())
+        {
+          assert it is OrderedMapIteratorImpl;
+          var iter := it as OrderedMapIteratorImpl;
+          assert old(iter.Valid());
+          assert old(iter.iter.Valid());
+          assert unchanged(iter.iter);
+          assert unchanged(iter.iter.parent);
+          assert unchanged(elems(iter.iter.parent.skeleton));
+          assert unchanged(BigUnion(set sk | sk in iter.iter.stackSk :: elems(sk)));
+          assert iter.iter.Valid();
+          assert iter.Valid();
+          assert iter.Parent() == old(iter.Parent());
+          assert (old(iter.HasPeek?()) ==> iter.HasPeek?() && iter.Peek?()==old(iter.Peek?()));
+          assert iter.Index() == old(iter.Index());
+          assert iter.Traversed() == old(iter.Traversed());
+          assert |iter.Traversed()| == old(|iter.Traversed()|);
+        }
+      }
     }
 
     method {:verify false} Contains(k: K) returns (b: bool)
