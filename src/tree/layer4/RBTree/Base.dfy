@@ -634,6 +634,126 @@ module RBTree.Base {
     KeySetSeq(traversed);
   }
 
+  predicate Subtree(node: rbtree, root: rbtree)
+    ensures Subtree(node, root) ==> keys(node) <= keys(root)
+    ensures Subtree(node, root) && SearchTree(root) ==> SearchTree(node)
+  {
+    root == node || (root.Node? && (Subtree(node, root.left) || Subtree(node, root.right)))
+  }
+
+  lemma SubtreeChildren(node: rbtree, root: rbtree)
+    requires node.Node?
+    requires Subtree(node, root)
+    ensures Subtree(node.left, root)
+    ensures Subtree(node.right, root)
+  {}
+
+  function smallerInorder(t: rbtree, k': K): seq<(K, V)>
+  {
+    match t {
+      case Empty => []
+      case Node(l, k, v, r, c) =>
+        if k < k' then
+          inorder(l) + [(k, v)] + smallerInorder(r, k')
+        else if k' < k then
+          smallerInorder(l, k')
+        else
+          inorder(l)
+    }
+  }
+
+  lemma InorderSmallerInorder(t: rbtree, k: K)
+    ensures |smallerInorder(t, k)| <= |inorder(t)|
+    ensures smallerInorder(t, k) == inorder(t)[..|smallerInorder(t, k)|]
+  {}
+
+  lemma SmallerInorderRightInd(root: rbtree, node: rbtree)
+    requires SearchTree(root)
+    requires Subtree(node, root)
+    requires node.Node?
+    requires node.right.Node?
+    ensures |smallerInorder(root, node.right.key)| <= |inorder(root)|
+    ensures |smallerInorder(root, node.key)| <= |inorder(root)|
+    ensures smallerInorder(root, node.right.key)
+      == smallerInorder(root, node.key) + [(node.key, node.value)] + inorder(node.right.left);
+  {
+    SearchImpliesOrdered(root);
+    if root == node {
+      calc == {
+        smallerInorder(root, node.right.key);
+        smallerInorder(node, node.right.key);
+        inorder(node.left) + [(node.key, node.value)] + smallerInorder(node.right, node.right.key);
+        inorder(node.left) + [(node.key, node.value)] + inorder(node.right.left);
+        smallerInorder(node, node.key) + [(node.key, node.value)] + inorder(node.right.left);
+        smallerInorder(root, node.key) + [(node.key, node.value)] + inorder(node.right.left);
+      }
+    } else {
+      match root {
+        case Empty => {}
+        case Node(l, k, v, r, c) => {
+          if k < node.right.key {
+            SmallerInorderRightInd(r, node);
+            calc == {
+              smallerInorder(root, node.right.key);
+              inorder(l) + [(k, v)] + smallerInorder(r, node.right.key);
+              inorder(l) + [(k, v)] + smallerInorder(r, node.key) + [(node.key, node.value)] + inorder(node.right.left);
+              (inorder(l) + [(k, v)] + smallerInorder(r, node.key)) + [(node.key, node.value)] + inorder(node.right.left);
+              { assert k < node.key; }
+              smallerInorder(root, node.key) + [(node.key, node.value)] + inorder(node.right.left);
+            }
+          } else if node.right.key < k {
+            SmallerInorderRightInd(root.left, node);
+          } else {
+          }
+        }
+      }
+    }
+  }
+
+  lemma SmallerInorderLeftInd(root: rbtree, node: rbtree)
+    requires SearchTree(root)
+    requires Subtree(node, root)
+    requires node.Node?
+    requires node.left.Node?
+    ensures |smallerInorder(root, node.left.key)| <= |inorder(root)|
+    ensures |smallerInorder(root, node.key)| <= |inorder(root)|
+    ensures smallerInorder(root, node.key)
+      == smallerInorder(root, node.left.key) + [(node.left.key, node.left.value)] + inorder(node.left.right);
+  {
+    SearchImpliesOrdered(root);
+    if root == node {
+      calc == {
+        smallerInorder(root, node.key);
+        smallerInorder(node, node.key);
+        inorder(node.left);
+        inorder(node.left.left) + [(node.left.key, node.left.value)] + inorder(node.left.right);
+        smallerInorder(node.left, node.left.key) + [(node.left.key, node.left.value)] + inorder(node.left.right);
+        smallerInorder(node, node.left.key) + [(node.left.key, node.left.value)] + inorder(node.left.right);
+        smallerInorder(root, node.left.key) + [(node.left.key, node.left.value)] + inorder(node.left.right);
+      }
+    } else {
+      match root {
+        case Empty => {}
+        case Node(l, k, v, r, c) => {
+          if k < node.left.key {
+            SmallerInorderLeftInd(r, node);
+            calc == {
+              smallerInorder(root, node.key);
+              { assert root.key < node.key; }
+              inorder(l) + [(k, v)] + smallerInorder(r, node.key);
+              inorder(l) + [(k, v)] + (smallerInorder(r, node.left.key) + [(node.left.key, node.left.value)] + inorder(node.left.right));
+              inorder(l) + [(k, v)] + smallerInorder(r, node.left.key) + [(node.left.key, node.left.value)] + inorder(node.left.right);
+              smallerInorder(root, node.left.key) + [(node.left.key, node.left.value)] + inorder(node.left.right);
+            }
+          } else if node.left.key < k {
+            SmallerInorderLeftInd(root.left, node);
+          } else {
+          }
+        }
+      }
+    }
+  }
+
   function method isRed(t: rbtree): bool
   {
     t.Node? && t.color.Red?
