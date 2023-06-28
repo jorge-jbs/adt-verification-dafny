@@ -70,4 +70,79 @@ module RBTree.Iterator {
     var node := st[|st|-1];
     DescendAndPushSpec(root, st[..|st|-1], node.right, traversed + [(node.key, node.value)]);
   }
+
+  function SearchAndPush(st: seq<rbtree>, node: rbtree, k: K): seq<rbtree>
+    decreases node
+    requires SearchTree(node)
+    requires k in keys(node)
+  {
+    if node.key == k then
+      st + [node]
+    else if node.key < k then
+      SearchAndPush(st, node.right, k)
+    else
+      SearchAndPush(st + [node], node.left, k)
+  }
+
+  lemma Associativity1()
+    ensures forall a: seq<(K, V)>, b, c, d, e, f ::
+      a + b + (c + d + e) + f == a + b + c + d + e + f
+  {}
+
+  lemma Associativity2()
+    ensures forall a: seq<(K, V)>, b, c, d ::
+      a + b + c + d == a + (b + c + d)
+  {}
+
+  lemma SearchAndPushSpec(root: rbtree, st: seq<rbtree>, node: rbtree, k: K)
+    decreases node
+
+    requires SearchTree(root)
+    requires Subtree(node, root)
+    requires k in keys(node)
+
+    requires ValidStack(st)
+    requires inorder(root)
+      == smallerInorder(root, node.key) + [(node.key, node.value)] + inorder(node.right) + inorderStack(st)
+
+    ensures ValidStack(SearchAndPush(st, node, k))
+    ensures inorder(root) == smallerInorder(root, k) + inorderStack(SearchAndPush(st, node, k))
+  {
+    SubtreeChildren(node, root);
+    if node.key == k {
+      calc == {
+        inorder(root);
+        smallerInorder(root, node.key) + [(node.key, node.value)] + inorder(node.right) + inorderStack(st);
+        smallerInorder(root, k) + [(node.key, node.value)] + inorder(node.right) + inorderStack(st);
+        { Associativity2(); }
+        smallerInorder(root, k) + ([(node.key, node.value)] + inorder(node.right) + inorderStack(st));
+        smallerInorder(root, k) + inorderStack(st + [node]);
+        smallerInorder(root, k) + inorderStack(SearchAndPush(st, node, k));
+      }
+    } else if node.key < k {
+      calc == {
+        inorder(root);
+        smallerInorder(root, node.key) + [(node.key, node.value)] + inorder(node.right) + inorderStack(st);
+        smallerInorder(root, node.key) + [(node.key, node.value)] + (inorder(node.right.left) + [(node.right.key, node.right.value)] + inorder(node.right.right)) + inorderStack(st);
+        { Associativity1(); }
+        smallerInorder(root, node.key) + [(node.key, node.value)] + inorder(node.right.left) + [(node.right.key, node.right.value)] + inorder(node.right.right) + inorderStack(st);
+        { SmallerInorderRightInd(root, node); }
+        smallerInorder(root, node.right.key) + [(node.right.key, node.right.value)] + inorder(node.right.right) + inorderStack(st);
+      }
+      SearchAndPushSpec(root, st, node.right, k);
+    } else {
+      assert k < node.key;
+      calc == {
+        inorder(root);
+        smallerInorder(root, node.key) + [(node.key, node.value)] + inorder(node.right) + inorderStack(st);
+        { Associativity2(); }
+        smallerInorder(root, node.key) + ([(node.key, node.value)] + inorder(node.right) + inorderStack(st));
+        { SmallerInorderLeftInd(root, node); }
+        (smallerInorder(root, node.left.key) + [(node.left.key, node.left.value)] + inorder(node.left.right)) + ([(node.key, node.value)] + inorder(node.right) + inorderStack(st));
+        smallerInorder(root, node.left.key) + [(node.left.key, node.left.value)] + inorder(node.left.right) + ([(node.key, node.value)] + inorder(node.right) + inorderStack(st));
+        smallerInorder(root, node.left.key) + [(node.left.key, node.left.value)] + inorder(node.left.right) + inorderStack(st + [node]);
+      }
+      SearchAndPushSpec(root, st + [node], node.left, k);
+    }
+  }
 }
