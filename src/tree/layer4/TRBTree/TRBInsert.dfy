@@ -18,19 +18,19 @@ module TRBTree.TRBInsert {
   {
     Node(
       Child(Node(
-        t.left.child.left, 
-        t.left.child.key, 
-        t.left.child.value, 
-        t.left.child.right, 
+        t.left.child.left,
+        t.left.child.key,
+        t.left.child.value,
+        t.left.child.right,
         NegColor(t.left.child.color)
       )),
       t.key,
       t.value,
       Child(Node(
-        t.right.child.left, 
-        t.right.child.key, 
-        t.right.child.value, 
-        t.right.child.right, 
+        t.right.child.left,
+        t.right.child.key,
+        t.right.child.value,
+        t.right.child.right,
         NegColor(t.right.child.color)
       )),
       NegColor(t.color)
