@@ -335,7 +335,7 @@ module LinkedTree.TRBInsert {
   // 1'33"
   method {:verify false} TRBInsertRec(prev: TTNode?, node: TTNode?, next: TTNode?, ghost sk: ttree<TTNode>, k: K, v: V)
     returns (newNode: TTNode, ghost newSk: ttree<TTNode>, ghost insertedNode:TTNode)
-   
+
     decreases sk
 
     modifies set x | x in elems(sk) :: x`isThreadLeft
