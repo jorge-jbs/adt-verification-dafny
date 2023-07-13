@@ -126,9 +126,7 @@ module TRBTree.TRBInsert {
     }
   }
 
-/*
   function method BlackenRoot(t: rbtree): rbtree
-    requires !t.Thread?
   {
     match t {
       case Empty => Empty
@@ -138,11 +136,9 @@ module TRBTree.TRBInsert {
   }
 
   function method TRBInsertRoot(t: rbtree, k: K, v: V): rbtree
-    requires !t.Thread?
   {
-    BlackenRoot(TRBInsert(Nothing, t, Nothing, k, v))
+    BlackenRoot(TRBInsert(Child(Empty), t, Child(Empty), k, v))
   }
-  */
 
   lemma FlipColorsSpec(t: rbtree)
     requires t.Node?
@@ -698,35 +694,32 @@ module TRBTree.TRBInsert {
       }
     }
   }
+  */
 
   lemma TRBInsertRootSpec(t: rbtree, k': K, v': V)
-    requires !t.Thread?
     requires SearchTree(t)
     requires RedBlackTreeRoot(t)
     ensures keys(t) + {k'} == keys(TRBInsertRoot(t, k', v'))
     ensures SearchTree(TRBInsertRoot(t, k', v'))
     ensures RedBlackTreeRoot(TRBInsertRoot(t, k', v'))
   {
-    TRBInsertSpec(Nothing, t, Nothing, k', v');
+    TRBInsertSpec(Child(Empty), t, Child(Empty), k', v');
   }
 
   lemma TRBInsertRootThreaded(t: rbtree, k': K, v': V)
     decreases t
-    requires !t.Thread?
-    requires ThreadedTreeRoot'(t)
-    requires ThreadedTreeRoot'(TRBInsertRoot(t, k', v'))
+    requires ThreadedTreeRoot(t)
+    ensures ThreadedTreeRoot(TRBInsertRoot(t, k', v'))
   {
-    if t.Node? {
-      TRBInsertThreaded(Nothing, t, Nothing, k', v');
-    }
+    TRBInsertThreaded(Child(Empty), t, Child(Empty), k', v');
   }
 
   lemma TRBInsertRootModel(t: rbtree, k: K, v: V)
-    requires !t.Thread?
     requires SearchTree(t)
     requires RedBlackTreeRoot(t)
     requires SearchTree(TRBInsertRoot(t, k, v))
     ensures toMap(t)[k := v] == toMap(TRBInsertRoot(t, k, v))
+/*
   {
     TRBInsertModel(Nothing, t, Nothing, k, v);
   }
