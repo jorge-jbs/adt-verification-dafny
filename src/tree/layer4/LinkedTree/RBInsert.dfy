@@ -170,8 +170,6 @@ module LinkedTree.RBInsert {
 
     ensures elems(newSk) == elems(sk) + {insertedNode}
     ensures insertedNode.key == k && insertedNode.value == v
-    //ensures forall n | n in elems(sk) && old(n.key) != k ::
-      //n.key == old(n.key) && n.value == old(n.value)
 
     requires allocated(elems(sk))
     ensures fresh(elems(newSk)-elems(sk))

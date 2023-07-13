@@ -349,7 +349,7 @@ module OrderedMapForwardSpec {
                 (it is OrderedMapForwardIterator &&
                  (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()))
 
-    method Find(k:K) returns (newt:UnorderedMapIterator)
+    method Find(k: K) returns (newt: UnorderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -377,9 +377,9 @@ module OrderedMapForwardSpec {
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-      ensures forall it | it in old(Iterators()) && old(it.Valid()):://NEW
+      ensures forall it | it in old(Iterators()) && old(it.Valid())::
                 (it is OrderedMapForwardIterator &&
-                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()) )
+                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()))
 
     method Insert(mid: UnorderedMapIterator, k: K, v : V) returns (newt:UnorderedMapIterator)
       modifies this, Repr()
