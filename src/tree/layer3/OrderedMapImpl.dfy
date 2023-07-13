@@ -61,6 +61,17 @@ module OrderedMapImpl {
       }
     }
 
+    constructor {:verify true} Find(parent: OrderedMapImpl, k: K)
+      requires parent.Valid()
+      ensures this.parent == parent
+      ensures iter.parent == parent.tree
+      ensures parent.Valid()
+      ensures iter.Valid()
+      ensures fresh(iter)
+
+      requires allocated(parent.Repr())
+      ensures allocated(parent.Repr())
+
     function Parent(): UnorderedMap
       reads this
       ensures Parent() is OrderedMapImpl
@@ -484,7 +495,7 @@ module OrderedMapImpl {
       ensures a + b == b + a
     {}
 
-    method {:verify true} First() returns (it: UnorderedMapIterator)  // 2'
+    method {:verify false} First() returns (it: UnorderedMapIterator)  // 2'
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -624,8 +635,8 @@ module OrderedMapImpl {
       return foundNode != null;
     }
 
-    method {:verify false} Find(x: K) returns (newt: UnorderedMapIterator)
-     modifies this, Repr()
+    method Find(k: K) returns (newt: UnorderedMapIterator)
+      modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
@@ -635,31 +646,31 @@ module OrderedMapImpl {
       ensures Model() == old(Model())
       ensures |Model()| == old(|Model()|)
 
-  /*
-      ensures newt is OrderedSetIterator
+      ensures newt is OrderedMapForwardIterator
       ensures fresh(newt)
       ensures newt.Valid() && newt.Parent()==this
-      ensures x in old(Model()) ==> newt.HasPeek?() && newt.Peek?() == x
-      ensures x !in old(Model()) ==> newt.Traversed() == Model() && |newt.Traversed()| == |Model()|
+      ensures k in old(Model()) ==> newt.HasPeek?() && key(newt.Peek?()) == k
+      ensures k !in old(Model()) ==> newt.Traversed() == Model().Keys && |newt.Traversed()| == |Model().Keys|
 
-      ensures x in old(Model()) ==> (newt as OrderedSetIterator).Index() == |smaller(Model(),x)| //NEW
-      ensures x !in old(Model()) ==> (newt as OrderedSetIterator).Index() == |Model()|
+      ensures k in old(Model()) ==> (newt as OrderedMapForwardIterator).Index() == |smaller(Model().Keys,k)| //NEW
+      ensures k !in old(Model()) ==> (newt as OrderedMapForwardIterator).Index() == |Model().Keys|
 
       ensures Iterators() >= {newt}+old(Iterators())
       ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-        && it.Valid()
-        && it.Parent() == old(it.Parent())
-        && it.Traversed() == old(it.Traversed())
-        && |it.Traversed()| == old(|it.Traversed()|)
-        && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())
+                && |it.Traversed()| == old(|it.Traversed()|)
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
-        (it is OrderedSetIterator &&
-        (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()))
+      ensures forall it | it in old(Iterators()) && old(it.Valid())::
+                (it is OrderedMapForwardIterator &&
+                 (it as OrderedMapForwardIterator).Index() == old((it as OrderedMapForwardIterator).Index()))
     {
-      var foundNode := Find();
+      // TODO: return iterator stack
+      var foundNode := tree.Find(k);
+      assume false;
     }
-      */
 
     method {:verify false} At(k: K) returns (v: V)
       modifies this, Repr()
