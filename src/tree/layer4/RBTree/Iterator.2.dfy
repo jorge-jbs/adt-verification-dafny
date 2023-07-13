@@ -145,4 +145,21 @@ module RBTree.Iterator {
       SearchAndPushSpec(root, st + [node], node.left, k);
     }
   }
+
+  function SearchAndPushRoot(root: rbtree, k: K): seq<rbtree>
+    requires SearchTree(root)
+    requires k in keys(root)
+  {
+    SearchAndPush([], root, k)
+  }
+
+  lemma SearchAndPushRootSpec(root: rbtree, k: K)
+    requires SearchTree(root)
+    requires k in keys(root)
+
+    ensures ValidStack(SearchAndPushRoot(root, k))
+    ensures inorder(root) == smallerInorder(root, k) + inorderStack(SearchAndPushRoot(root, k))
+  {
+    SearchAndPushSpec(root, [], root, k);
+  }
 }
