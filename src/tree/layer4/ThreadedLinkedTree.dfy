@@ -107,20 +107,36 @@ module ThreadedLinkedTree {
       TRBit.Peek(ItModel(), parent.TreeModel())
     }
 
-    static function SkGet'(node: TTNode, root: TTNode?, rootSk: ttree<TTNode>): ttree<TTNode>
+    static function SkGetP(node: TTNode, root: TTNode?, rootSk: ttreePointer<TTNode>): ttree<TTNode>
+      reads elemsP(rootSk)
+      requires ValidRecP(root, rootSk, false) || ValidRecP(root, rootSk, true)
+      requires node in elemsP(rootSk)
+      requires TRB.PointerSearchTree(TreeModelRecP(rootSk))
+      ensures ValidRec(node, SkGetP(node, root, rootSk))
+      ensures node.key in TRB.pointerKeys(TreeModelRecP(rootSk))
+      ensures TreeModelRec(SkGetP(node, root, rootSk)) == TRB.PointerGetSubtree(TreeModelRecP(rootSk), node.key)
+    {
+      match rootSk {
+        case Child(_) => SkGet(node, root, rootSk.child)
+      }
+    }
+
+    static function SkGet(node: TTNode, root: TTNode?, rootSk: ttree<TTNode>): ttree<TTNode>
       reads elems(rootSk)
       requires ValidRec(root, rootSk)
       requires node in elems(rootSk)
       requires TRB.SearchTree(TreeModelRec(rootSk))
-      ensures ValidRec(node, SkGet'(node, root, rootSk))
+      ensures ValidRec(node, SkGet(node, root, rootSk))
       ensures node.key in TRB.keys(TreeModelRec(rootSk))
-      ensures TreeModelRec(SkGet'(node, root, rootSk)) == TRB.GetSubtree(TreeModelRec(rootSk), node.key)
-
-    static function SkGet(sk: ttree<TTNode>, k: K): ttree<TTNode>
-      reads elems(sk)
-      requires TRB.SearchTree(TreeModelRec(sk))
-      requires k in TRB.keys(TreeModelRec(sk))
-      ensures TreeModelRec(SkGet(sk, k)) == TRB.GetSubtree(TreeModelRec(sk), k)
+      ensures TreeModelRec(SkGet(node, root, rootSk)) == TRB.GetSubtree(TreeModelRec(rootSk), node.key)
+    {
+      if node in elemsP(rootSk.left) then
+        SkGetP(node, root.left, rootSk.left)
+      else if node in elemsP(rootSk.right) then
+        SkGetP(node, root.right, rootSk.right)
+      else
+        rootSk
+    }
 
     method Next()
       modifies this
@@ -147,7 +163,7 @@ module ThreadedLinkedTree {
           }
         }
         node := node.right;
-        sk := SkGet'(node, parent.root, parent.skeleton);
+        sk := SkGet(node, parent.root, parent.skeleton);
         /*
         calc == {
           ItModel();
