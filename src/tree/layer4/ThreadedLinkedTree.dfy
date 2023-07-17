@@ -42,7 +42,7 @@ module ThreadedLinkedTree {
     predicate Valid()
       reads this, elems(sk), parent, parent.Repr()
     {
-      && (node != null ==> elems(sk) <= elems(parent.skeleton))
+      && (node != null ==> node in elems(parent.skeleton))
       && ValidRec(node, sk)
       && TRBit.Valid(ItModel(), parent.TreeModel())
     }
@@ -128,6 +128,7 @@ module ThreadedLinkedTree {
       requires HasPeek()
       requires parent.Valid()
       requires parent.SearchTree()
+      requires parent.Threaded()
       ensures Valid()
       ensures ItModel() == TRBit.Next(old(ItModel()), old(parent.TreeModel()))
     {
@@ -137,22 +138,29 @@ module ThreadedLinkedTree {
         assert TreeModelRecP(sk.right).Thread?;
         assert node.right != null;
         assert node.right in elems(parent.skeleton) by {
-          assert node in elems(parent.skeleton);
-          assert elems(sk) <= elems(parent.skeleton);
-          assert elems(sk.right.child) <= elemsP(sk.right) <= elems(sk);
-          assert node.right in elems(sk);
+          assert node.right in elemsAndThreadsP(sk.right);
+          calc {
+            elemsAndThreadsP(sk.right);
+            <= elemsAndThreads(sk);
+            <= {parent.SubtreeOfInElems(node, sk);} elemsAndThreads(parent.skeleton);
+            == {parent.ElemsOfThread();} elems(parent.skeleton);
+          }
         }
-        assume false;
         node := node.right;
-        /*
-        assert node.key in TRB.keys(TreeModelRec(sk)) by {
-          assume false;
-        }
-        sk := SkGet(parent.skeleton, node.key);
-        */
-        assert node in elems(parent.skeleton);
         sk := SkGet'(node, parent.root, parent.skeleton);
-        assume false;
+        /*
+        calc == {
+          ItModel();
+          TRBit.Link(TreeModelRec(SkGet'(node, parent.root, parent.skeleton)));
+          TRBit.Link(TreeModelRec(SkGet'(node, parent.root, parent.skeleton)));
+          TRBit.Link(TRB.GetSubtree(TreeModelRec(parent.skeleton), node.key));
+          { assert TreeModelRec(parent.skeleton) == old(parent.TreeModel()); }
+          TRBit.Link(TRB.GetSubtree(old(parent.TreeModel()), node.key));
+          { assert node.key == old(node.right.key); }
+          TRBit.Link(TRB.GetSubtree(old(parent.TreeModel()), old(node.right.key)));
+          TRBit.Next(old(ItModel()), old(parent.TreeModel()));
+        }
+        */
       } else if node.right == null {
         assert ValidRecP(node.right, sk.right, node.isThreadRight);
         assert TreeModelRecP(sk.right) == TRB.Child(TRB.Empty());
@@ -198,6 +206,13 @@ module ThreadedLinkedTree {
       requires Valid()
     {
       SearchTreeRec(skeleton)
+    }
+
+    predicate Threaded()
+      reads this, Repr()
+      requires Valid()
+    {
+      ThreadedRoot(root, skeleton)
     }
 
     function TreeModel(): RB.rbtree
@@ -254,6 +269,24 @@ module ThreadedLinkedTree {
       reads this, elems(skeleton)
     {
       RB.ThreadedTreeRoot(TreeModelRec(skeleton))
+    }
+
+    lemma ElemsOfThread()
+      requires Valid()
+      requires Threaded()
+      ensures elems(skeleton) == elemsAndThreads(skeleton)
+    {
+      ElemsOfThreadRoot(root, skeleton);
+    }
+
+    lemma SubtreeOfInElems(node: TTNode?, sk: ttree<TTNode>)
+      requires ValidRec(node, sk)
+      requires Valid()
+      requires node in elems(skeleton)
+      ensures T.Subtree(sk, skeleton)
+      ensures elemsAndThreads(sk) <= elemsAndThreads(skeleton)
+    {
+      SubtreeOfInElemsRoot(node, sk, root, skeleton);
     }
 
     predicate RedBlackTree()
