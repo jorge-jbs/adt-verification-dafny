@@ -4,7 +4,7 @@ include "../../../../src/tree/layer4/TTree1.dfy"
 include "../../../../src/tree/layer4/TTNode1.dfy"
 include "../../../../src/tree/layer4/Color.dfy"
 
-module LinkedTree.TRBInsert {
+module ThreadedLinkedTree.TRBInsert {
   import opened KeyValue
   import TRB = TRBTree.Base
   import TRBi = TRBTree.TRBInsert
@@ -259,14 +259,6 @@ module LinkedTree.TRBInsert {
     assert TreeModelRec(newSk) == t''';
   }
 
-  function method nodeToPointer(node: TTNode?): TRB.threadOrEmpty
-  {
-    if node == null then
-      TRB.Child(TRB.Empty)
-    else
-      TRB.Thread(node.key)
-  }
-
   method TRBInsertRecP(prev: TTNode?, node: TTNode?, isThread: bool, next: TTNode?, ghost sk: ttreePointer<TTNode>, k: K, v: V)
     returns (newNode: TTNode, newIsThread: bool, ghost newSk: ttreePointer<TTNode>, ghost insertedNode:TTNode)
 
@@ -401,13 +393,14 @@ module LinkedTree.TRBInsert {
     }
   }
 
-/*
   // 5"
   method TRBInsertRoot(node: TTNode?, ghost sk: ttree<TTNode>, k: K, v: V)
     returns (newNode: TTNode, ghost newSk: ttree<TTNode>, ghost insertedNode:TTNode)
 
     modifies set x | x in elems(sk) :: x`left
+    modifies set x | x in elems(sk) :: x`isThreadLeft
     modifies set x | x in elems(sk) :: x`right
+    modifies set x | x in elems(sk) :: x`isThreadRight
     modifies set x | x in elems(sk) :: x`value
     modifies set x | x in elems(sk) :: x`color
 
@@ -417,15 +410,12 @@ module LinkedTree.TRBInsert {
 
     ensures elems(newSk) == elems(sk) + {insertedNode}
     ensures insertedNode.key == k && insertedNode.value == v
-    ensures forall n | n in elems(sk) && old(n.key) != k ::
-      n.key == old(n.key) && n.value == old(n.value)
 
     requires allocated(elems(sk))
     ensures fresh(elems(newSk)-elems(sk))
     ensures allocated(elems(newSk))
   {
-    newNode, newSk, insertedNode := TRBInsertRec(node, sk, k, v);
+    newNode, newSk, insertedNode := TRBInsertRec(null, node, null, sk, k, v);
     newNode.color := Black;
   }
-  */
 }

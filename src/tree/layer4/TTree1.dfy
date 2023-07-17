@@ -6,10 +6,11 @@ module Tree {
   datatype ttree<A> = Empty | Node(left: ttreePointer<A>, data: A, right: ttreePointer<A>)
   datatype ttreePointer<A> = Child(child: ttree<A>) | Thread(thread: A)
 
-  function method elemsP<A>(t: ttreePointer<A>): set<A>
+  function method elemsP<A>(p: ttreePointer<A>): set<A>
+    ensures p.Child? ==> elemsP(p) == elems(p.child)
   {
-    match t {
-      case Child(t) => elems(t)
+    match p {
+      case Child(p) => elems(p)
       case Thread(_) => {}
     }
   }
@@ -22,6 +23,42 @@ module Tree {
       case Empty => {}
       case Node(l, x, r) => elemsP(l) + {x} + elemsP(r)
     }
+  }
+
+  function method elemsAndThreadsP<A>(t: ttreePointer<A>): set<A>
+  {
+    match t {
+      case Child(t) => elemsAndThreads(t)
+      case Thread(x) => {x}
+    }
+  }
+
+  function method elemsAndThreads<A>(t: ttree<A>): set<A>
+  {
+    match t {
+      case Empty => {}
+      case Node(l, x, r) => elemsAndThreadsP(l) + {x} + elemsAndThreadsP(r)
+    }
+  }
+
+  predicate SubtreeP<A>(node: ttree<A>, proot: ttreePointer<A>)
+    ensures SubtreeP(node, proot) ==> elems(node) <= elemsP(proot)
+    ensures SubtreeP(node, proot) ==> elemsAndThreads(node) <= elemsAndThreadsP(proot)
+  {
+    match proot {
+      case Child(root) => Subtree(node, root)
+      case Thread(_) => false
+    }
+  }
+
+  predicate Subtree<A>(node: ttree<A>, root: ttree<A>)
+    ensures Subtree(node, root) ==> elems(node) <= elems(root)
+    ensures Subtree(node, root) ==> elemsAndThreads(node) <= elemsAndThreads(root)
+  {
+    || root == node
+    || (
+      && root.Node?
+      && (SubtreeP(node, root.left) || SubtreeP(node, root.right)))
   }
 
 /*
