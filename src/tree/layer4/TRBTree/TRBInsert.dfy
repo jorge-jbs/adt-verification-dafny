@@ -165,8 +165,8 @@ module TRBTree.TRBInsert {
     ensures BlackHeight(RotateLeft(t)) == BlackHeight(t)
   {
     if t.right.child.left.Thread? {
-      assert PointerSearchTree(RotateLeft(t).left.child.right);
-      assert PointerBlackHeight(RotateLeft(t).left.child.right) == PointerBlackHeight(t.right.child.left);
+      assert SearchTreeP(RotateLeft(t).left.child.right);
+      assert BlackHeightP(RotateLeft(t).left.child.right) == BlackHeightP(t.right.child.left);
     }
   }
 
@@ -197,8 +197,8 @@ module TRBTree.TRBInsert {
     ensures BlackHeight(RotateRight(t)) == BlackHeight(t)
   {
     if t.left.child.right.Thread? {
-      assert PointerSearchTree(RotateRight(t).right.child.left);
-      assert PointerBlackHeight(RotateRight(t).right.child.left) == PointerBlackHeight(t.left.child.right);
+      assert SearchTreeP(RotateRight(t).right.child.left);
+      assert BlackHeightP(RotateRight(t).right.child.left) == BlackHeightP(t.left.child.right);
     }
   }
 
@@ -282,9 +282,9 @@ module TRBTree.TRBInsert {
       && isRedP(t.left)
       && isRedP(t.left.child.left)
     )
-    requires PointerBlackHeight(t.left) == PointerBlackHeight(t.right)
-    requires PointerRedBlackTree(t.left)
-    requires PointerRedBlackTree(t.right)
+    requires BlackHeightP(t.left) == BlackHeightP(t.right)
+    requires RedBlackTreeP(t.left)
+    requires RedBlackTreeP(t.right)
 
     ensures keys(t) == keys(Restore(t))
     ensures SearchTree(Restore(t))
@@ -356,15 +356,15 @@ module TRBTree.TRBInsert {
 
   lemma TRBInsertPSpec(prev: threadOrEmpty, p: pointer, next: threadOrEmpty, k': K, v': V)
     decreases p
-    requires PointerSearchTree(p)
-    requires PointerRedBlackTree(p)
+    requires SearchTreeP(p)
+    requires RedBlackTreeP(p)
     requires !(isRedP(p) && isRedP(p.child.left))
     ensures isBlackP(p) && isRed(Restore(p.child)) ==>
       !isRedP(Restore(p.child).left)
-    ensures pointerKeys(p) + {k'} == pointerKeys(TRBInsertP(prev, p, next, k', v'))
-    ensures PointerSearchTree(TRBInsertP(prev, p, next, k', v'))
-    ensures PointerRedBlackTree(TRBInsertP(prev, p, next, k', v'))
-    ensures PointerBlackHeight(p) == PointerBlackHeight(TRBInsertP(prev, p, next, k', v'))
+    ensures keysP(p) + {k'} == keysP(TRBInsertP(prev, p, next, k', v'))
+    ensures SearchTreeP(TRBInsertP(prev, p, next, k', v'))
+    ensures RedBlackTreeP(TRBInsertP(prev, p, next, k', v'))
+    ensures BlackHeightP(p) == BlackHeightP(TRBInsertP(prev, p, next, k', v'))
   {
     match p {
       case Child(t) => {
