@@ -399,7 +399,6 @@ module TRBTree.Base {
 
   function method minSubtreeP(p: pointer): rbtree
     requires p.Child? && p.child.Node?
-    requires PointerSearchTree(p)
   {
     match p {
       case Child(t) => minSubtree(t)
@@ -408,7 +407,6 @@ module TRBTree.Base {
 
   function method minSubtree(t: rbtree): rbtree
     requires keys(t) != {}
-    requires SearchTree(t)
     ensures Subtree(minSubtree(t), t)
     ensures minSubtree(t).Node?
   {
@@ -1103,6 +1101,54 @@ module TRBTree.Base {
     }
   }
   */
+
+  lemma SubtreeChildren(a: rbtree, b: rbtree)
+    requires a.Node?
+    requires Subtree(a, b)
+    ensures a.left.Child? ==> Subtree(a.left.child, b)
+    ensures a.right.Child? ==> Subtree(a.right.child, b)
+  {
+    if a == b {
+    } else {
+      if PointerSubtree(a, b.left) {
+        if b.left.Child? {
+          SubtreeChildren(a, b.left.child);
+        }
+      } else if PointerSubtree(a, b.right) {
+        if b.right.Child? {
+          SubtreeChildren(a, b.right.child);
+        }
+      } else {
+        assert false;
+      }
+    }
+  }
+
+  lemma SubtreeTrans(a: rbtree, b: rbtree, c: rbtree)
+    requires Subtree(a, b)
+    requires Subtree(b, c)
+    ensures Subtree(a, c)
+  {
+    if a == b {
+    } else {
+      if PointerSubtree(a, b.left) {
+        if b.left.Child? {
+          assert Subtree(a, b.left.child);
+          assert Subtree(b.left.child, c) by {
+            SubtreeChildren(b, c);
+          }
+          SubtreeTrans(a, b.left.child, c);
+        }
+      } else if PointerSubtree(a, b.right) {
+        if b.right.Child? {
+          SubtreeChildren(b, c);
+          SubtreeTrans(a, b.right.child, c);
+        }
+      } else {
+        assert false;
+      }
+    }
+  }
 
   /* Threaded Tree */
 
