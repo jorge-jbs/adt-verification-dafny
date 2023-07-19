@@ -1,14 +1,14 @@
 include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 include "../../../../src/tree/layer4/TRBTree/TRBInsert.dfy"
-include "../../../../src/tree/layer4/TTree1.dfy"
-include "../../../../src/tree/layer4/TTNode1.dfy"
+include "../../../../src/tree/layer4/TTree.dfy"
+include "../../../../src/tree/layer4/TTNode.dfy"
 include "../../../../src/tree/layer4/Color.dfy"
 
 module ThreadedLinkedTree.TRBInsert {
   import opened KeyValue
   import TRB = TRBTree.Base
   import TRBi = TRBTree.TRBInsert
-  import opened T = Tree
+  import opened T = TTree
   import opened TTNode
   import opened Color
 

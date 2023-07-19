@@ -1,6 +1,6 @@
 include "../../../src/MUtils.dfy"
 
-module Tree {
+module TTree {
   import opened Utils
 
   datatype ttree<A> = Empty | Node(left: ttreePointer<A>, data: A, right: ttreePointer<A>)
