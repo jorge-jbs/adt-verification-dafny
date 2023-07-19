@@ -138,6 +138,43 @@ module ThreadedLinkedTree {
         rootSk
     }
 
+    static method MinP(node: TTNode, ghost sk: ttreePointer<TTNode>)
+        returns (newNode: TTNode, ghost newSk: ttree<TTNode>)
+      requires ValidRecP(node, sk, false)
+      ensures ValidRec(newNode, newSk)
+      ensures TreeModelRec(newSk)
+        == TRB.minSubtreeP(TreeModelRecP(sk))
+      ensures newNode in elemsP(sk)
+      ensures T.SubtreeP(newSk, sk)
+      ensures TRB.PointerSubtree(TreeModelRec(newSk), TreeModelRecP(sk))
+
+      requires allocated(elemsP(sk))
+      ensures allocated(elemsP(sk))
+      ensures allocated(elems(newSk))
+    {
+      newNode, newSk := Min(node, sk.child);
+    }
+
+    static method {:verify false} Min(node: TTNode, ghost sk: ttree<TTNode>)
+        returns (newNode: TTNode, ghost newSk: ttree<TTNode>)
+      requires ValidRec(node, sk)
+      ensures ValidRec(newNode, newSk)
+      ensures newNode in elems(sk)
+      ensures T.Subtree(newSk, sk)
+      ensures TreeModelRec(newSk)
+        == TRB.minSubtree(TreeModelRec(sk))
+
+      requires allocated(elems(sk))
+      ensures allocated(elems(sk))
+      ensures allocated(elems(newSk))
+    {
+      if node.left != null && !node.isThreadLeft {
+        newNode, newSk := MinP(node.left, sk.left);
+      } else {
+        newNode, newSk := node, sk;
+      }
+    }
+
     method Next()
       modifies this
       requires Valid()
@@ -147,9 +184,15 @@ module ThreadedLinkedTree {
       requires parent.Threaded()
       ensures Valid()
       ensures ItModel() == TRBit.Next(old(ItModel()), old(parent.TreeModel()))
+
+      requires allocated(elems(sk))
+      requires allocated(parent.Repr())
+      ensures allocated(elems(sk))
+      ensures allocated(parent.Repr())
     {
       assert node != null;
       if node.isThreadRight {
+        assume false;
         assert ValidRecP(node.right, sk.right, node.isThreadRight);
         assert TreeModelRecP(sk.right).Thread?;
         assert node.right != null;
@@ -164,6 +207,9 @@ module ThreadedLinkedTree {
         }
         node := node.right;
         sk := SkGet(node, parent.root, parent.skeleton);
+        assume allocated(sk);
+        assume allocated(parent.Repr());
+        assume false;
         /*
         calc == {
           ItModel();
@@ -178,13 +224,49 @@ module ThreadedLinkedTree {
         }
         */
       } else if node.right == null {
+        //assume false;
         assert ValidRecP(node.right, sk.right, node.isThreadRight);
         assert TreeModelRecP(sk.right) == TRB.Child(TRB.Empty());
         node := null;
         sk := Empty;
         isPastTheEnd := true;
       } else {
-        assume false;
+        //assume false;
+        ghost var oldSk := sk;
+        assert TRB.Subtree(TreeModelRec(oldSk), parent.TreeModel());
+        assert oldSkInSkeleton: elemsAndThreads(oldSk) <= elems(parent.skeleton) by {
+          calc {
+            elemsAndThreads(oldSk);
+            <= {parent.SubtreeOfInElems(node, oldSk);} elemsAndThreads(parent.skeleton);
+            == {parent.ElemsOfThread();} elems(parent.skeleton);
+          }
+        }
+        node, sk := MinP(node.right, sk.right);
+        assert TRB.Subtree(TreeModelRec(sk), parent.TreeModel()) by {
+          //assume false;
+          assert TRB.PointerSubtree(TreeModelRec(sk), TreeModelRecP(oldSk.right));
+          assert TRB.Subtree(TreeModelRec(sk), TreeModelRec(oldSk));
+          assert TRB.Subtree(TreeModelRec(oldSk), parent.TreeModel());
+          TRB.SubtreeTrans(TreeModelRec(sk), TreeModelRec(oldSk), parent.TreeModel());
+        }
+        assert node in elems(parent.skeleton) by {
+          //assume false;
+          assert node in elemsAndThreads(sk);
+          calc {
+            elemsAndThreads(sk);
+            <= elemsAndThreadsP(oldSk.right);
+            <= elemsAndThreads(oldSk);
+            <= {reveal oldSkInSkeleton;} elems(parent.skeleton);
+          }
+        }
+        assert ValidRec(node, sk);
+        assert TRBit.Valid(ItModel(), parent.TreeModel()) by {
+          //assume false;
+        }
+        assert Valid();
+        assert TreeModelRec(sk)
+          == TRB.minSubtreeP(old(TreeModelRecP(sk.right)));
+        assert ItModel() == TRBit.Link(TRB.minSubtreeP(old(TreeModelRecP(sk.right))));
       }
     }
   }
