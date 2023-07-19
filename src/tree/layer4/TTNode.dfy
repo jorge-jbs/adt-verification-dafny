@@ -211,6 +211,24 @@ module TTNode {
     }
   }
 
+  function GetSk(node: TTNode, root: TTNode?, rootSk: ttree<TTNode>): ttree<TTNode>
+    reads elems(rootSk)
+    requires ValidRec(root, rootSk)
+    requires node in elems(rootSk)
+    requires SearchTree(TreeModelRec(rootSk))
+    ensures ValidRec(node, GetSk(node, root, rootSk))
+    ensures node.key in keys(TreeModelRec(rootSk))
+    ensures TreeModelRec(GetSk(node, root, rootSk)) == GetSubtree(TreeModelRec(rootSk), node.key)
+  {
+    if node in elemsP(rootSk.left) then
+      GetSk(node, root.left, rootSk.left.child)
+    else if node in elemsP(rootSk.right) then
+      GetSk(node, root.right, rootSk.right.child)
+    else
+      rootSk
+  }
+
+
   lemma EqOfValid(node: TTNode?, sk: ttree<TTNode>, sk': ttree<TTNode>)
     requires ValidRec(node, sk)
     requires ValidRec(node, sk')
@@ -249,7 +267,7 @@ module TTNode {
   function TreeModelRecP(sk: ttreePointer<TTNode>): pointer
     reads elemsP(sk)
     ensures sk.Child? ==> (TreeModelRecP(sk) == RB.Child(TreeModelRec(sk.child)))
-    ensures (set n | n in elemsP(sk) :: n.key) == pointerKeys(TreeModelRecP(sk))
+    ensures (set n | n in elemsP(sk) :: n.key) == keysP(TreeModelRecP(sk))
   {
     match sk {
       case Child(t) => RB.Child(TreeModelRec(t))

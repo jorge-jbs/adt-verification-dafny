@@ -32,6 +32,10 @@ module Utils {
     }
   }
 
+  lemma Allocated(s: set<object>)
+    ensures allocated(s)
+  {}
+
   module Array {
     function method elems<A>(l: array<A>): set<A>
       reads l

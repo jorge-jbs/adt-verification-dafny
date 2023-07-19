@@ -26,7 +26,7 @@ module TRBTree.Base {
     }
   }
  
-  function method optionToPointer(o: option<K>): pointer
+  function method optionTo(oP: option<K>): pointer
   {
     match o {
       case Nothing => Child(Empty())
@@ -43,8 +43,8 @@ module TRBTree.Base {
     }
   }
 
-  function method pointerKeys(p: pointer): set<K>
-    ensures p.Child? ==> keys(p.child) == pointerKeys(p)
+  function method keysP(p: pointer): set<K>
+    ensures p.Child? ==> keys(p.child) == keysP(p)
   {
     match p {
       case Child(t) => keys(t)
@@ -54,16 +54,16 @@ module TRBTree.Base {
 
   function method keys(t: rbtree): set<K>
     ensures t.Node? ==>
-      keys(t) == pointerKeys(t.left) + {t.key} + pointerKeys(t.right)
+      keys(t) == keysP(t.left) + {t.key} + keysP(t.right)
   {
     match t {
       case Empty => {}
-      case Node(l, k, v, r, c) => pointerKeys(l) + {k} + pointerKeys(r)
+      case Node(l, k, v, r, c) => keysP(l) + {k} + keysP(r)
     }
   }
   
-  function method pointerKeysAndThreads(p: pointer): set<K>
-    ensures p.Child? ==> keysAndThreads(p.child) == pointerKeysAndThreads(p)
+  function method keysAndThreadsP(p: pointer): set<K>
+    ensures p.Child? ==> keysAndThreads(p.child) == keysAndThreadsP(p)
   {
     match p {
       case Child(t) => keysAndThreads(t)
@@ -73,17 +73,17 @@ module TRBTree.Base {
 
   function method keysAndThreads(t: rbtree): set<K>
     ensures t.Node? ==>
-      keysAndThreads(t) == pointerKeysAndThreads(t.left) + {t.key} + pointerKeysAndThreads(t.right)
+      keysAndThreads(t) == keysAndThreadsP(t.left) + {t.key} + keysAndThreadsP(t.right)
   {
     match t {
       case Empty => {}
-      case Node(l, k, v, r, c) => pointerKeysAndThreads(l) + {k} + pointerKeysAndThreads(r)
+      case Node(l, k, v, r, c) => keysAndThreadsP(l) + {k} + keysAndThreadsP(r)
     }
   }
   
   lemma KeysLemmasAll()
     ensures forall p: pointer | p.Child? ::
-      && (keys(p.child) == pointerKeys(p))
+      && (keys(p.child) == keysP(p))
       && (p.child.Node? && p.child.left.Child? && p.child.right.Child? ==>
         keys(p.child) == keys(p.child.left.child) + {p.child.key} + keys(p.child.right.child))
       && (p.child.Node? && p.child.left.Child? && p.child.right.Thread? ==>
@@ -115,7 +115,7 @@ module TRBTree.Base {
         keys(t) == {t.key})
   {}
 
-  function method pointerValues(p: pointer): set<K>
+  function method valuesP(p: pointer): set<K>
   {
     match p {
       case Child(t) => values(t)
@@ -127,11 +127,11 @@ module TRBTree.Base {
   {
     match t {
       case Empty => {}
-      case Node(l, k, v, r, c) => pointerValues(l) + {v} + pointerValues(r)
+      case Node(l, k, v, r, c) => valuesP(l) + {v} + valuesP(r)
     }
   }
 
-  function method pointerPairs(p: pointer): set<(K, V)>
+  function method pairsP(p: pointer): set<(K, V)>
   {
     match p {
       case Child(t) => pairs(t)
@@ -143,11 +143,11 @@ module TRBTree.Base {
   {
     match t {
       case Empty => {}
-      case Node(l, k, v, r, c) => pointerPairs(l) + {(k, v)} + pointerPairs(r)
+      case Node(l, k, v, r, c) => pairsP(l) + {(k, v)} + pairsP(r)
     }
   }
 
-  function method pointerSize(p: pointer): nat
+  function method sizeP(p: pointer): nat
   {
     match p {
       case Child(t) => size(t)
@@ -159,7 +159,7 @@ module TRBTree.Base {
   {
     match t {
       case Empty => 0
-      case Node(l, k, v, r, c) => 1 + pointerSize(l) + pointerSize(r)
+      case Node(l, k, v, r, c) => 1 + sizeP(l) + sizeP(r)
     }
   }
 
@@ -173,7 +173,7 @@ module TRBTree.Base {
   }
   */
 
-  function method pointerPreorder(p: pointer): seq<(K, V)>
+  function method preorderP(p: pointer): seq<(K, V)>
   {
     match p {
       case Child(t) => preorder(t)
@@ -185,12 +185,12 @@ module TRBTree.Base {
   {
     match t {
       case Empty => []
-      case Node(l, k, v, r, c) =>  [(k, v)] + pointerPreorder(l) + pointerPreorder(r)
+      case Node(l, k, v, r, c) =>  [(k, v)] + preorderP(l) + preorderP(r)
     }
   }
 
-  function method pointerInorder(p: pointer): seq<(K, V)>
-    ensures p.Child? ==> inorder(p.child) == pointerInorder(p)
+  function method inorderP(p: pointer): seq<(K, V)>
+    ensures p.Child? ==> inorder(p.child) == inorderP(p)
   {
     match p {
       case Child(t) => inorder(t)
@@ -202,11 +202,11 @@ module TRBTree.Base {
   {
     match t {
       case Empty => []
-      case Node(l, k, v, r, c) => pointerInorder(l) + [(k, v)] + pointerInorder(r)
+      case Node(l, k, v, r, c) => inorderP(l) + [(k, v)] + inorderP(r)
     }
   }
   
-  function pointerSmallerInorder(p: pointer, k': K): seq<(K, V)>
+  function smallerInorderP(p: pointer, k': K): seq<(K, V)>
   {
     match p {
       case Child(t) => smallerInorder(t, k')
@@ -220,15 +220,15 @@ module TRBTree.Base {
       case Empty => []
       case Node(l, k, v, r, c) =>
         if k < k' then
-          pointerInorder(l) + [(k, v)] + pointerSmallerInorder(r, k')
+          inorderP(l) + [(k, v)] + smallerInorderP(r, k')
         else if k' < k then
-          pointerSmallerInorder(l, k')
+          smallerInorderP(l, k')
         else
-          pointerInorder(l)
+          inorderP(l)
     }
   }
 
-  function pointerSmallerKeys(p: pointer, k': K): set<K>
+  function smallerKeysP(p: pointer, k': K): set<K>
   {
     match p {
       case Child(t) => smallerKeys(t, k')
@@ -242,15 +242,15 @@ module TRBTree.Base {
       case Empty => {}
       case Node(l, k, v, r, c) =>
         if k < k' then
-          pointerKeys(l) + {k} + pointerSmallerKeys(r, k')
+          keysP(l) + {k} + smallerKeysP(r, k')
         else if k' < k then
-          pointerSmallerKeys(l, k')
+          smallerKeysP(l, k')
         else
-          pointerKeys(l)
+          keysP(l)
     }
   }
 
-  function pointerSizeSmaller(p: pointer, k': K): nat
+  function sizeSmallerP(p: pointer, k': K): nat
   {
     match p {
       case Child(t) => sizeSmaller(t, k')
@@ -264,16 +264,16 @@ module TRBTree.Base {
       case Empty => 0
       case Node(l, k, v, r, c) =>
         if k < k' then
-          1 + pointerSize(l) + pointerSizeSmaller(r, k')
+          1 + sizeP(l) + sizeSmallerP(r, k')
         else if k' < k then
-          pointerSizeSmaller(l, k')
+          sizeSmallerP(l, k')
         else
-          pointerSize(l)
+          sizeP(l)
     }
   }
 
-  function pointerMinimum(p: pointer): K
-    requires pointerKeys(p) != {}
+  function minimumP(p: pointer): K
+    requires keysP(p) != {}
   {
     match p {
       case Child(t) => minimum(t)
@@ -287,7 +287,7 @@ module TRBTree.Base {
       case Node(Thread(_), k, v, r, c) => k
       case Node(Child(Empty()), k, v, r, c) => k
       case Node(l, k, v, r, c) =>
-        pointerMinimum(l)
+        minimumP(l)
     }
   }
 
@@ -326,9 +326,9 @@ module TRBTree.Base {
     orderToMap(preorder(t))
   }
 
-  function method PointerSearchTree(p: pointer): bool
-    ensures p.Child? ==> (PointerSearchTree(p) <==> SearchTree(p.child))
-    //ensures p.Thread? ==> PointerSearchTree(p)
+  function method SearchTreeP(p: pointer): bool
+    ensures p.Child? ==> (SearchTreeP(p) <==> SearchTree(p.child))
+    //ensures p.Thread? ==> SearchTreeP(p)
   {
     match p {
       case Child(t) => SearchTree(t)
@@ -337,21 +337,21 @@ module TRBTree.Base {
   }
 
   function method SearchTree(t: rbtree): bool
-    ensures t.Node? && SearchTree(t) ==> (PointerSearchTree(t.left) && PointerSearchTree(t.right))
+    ensures t.Node? && SearchTree(t) ==> (SearchTreeP(t.left) && SearchTreeP(t.right))
   {
     match t {
       case Empty => true
       case Node(l, k, v, r, c) =>
-        && (forall m | m in pointerKeys(l) :: m < k)
-        && (forall m | m in pointerKeys(r) :: k < m)
-        && PointerSearchTree(l)
-        && PointerSearchTree(r)
+        && (forall m | m in keysP(l) :: m < k)
+        && (forall m | m in keysP(r) :: k < m)
+        && SearchTreeP(l)
+        && SearchTreeP(r)
     }
   }
 
-  function method PointerGet(p: pointer, k: K): V
-    requires k in pointerKeys(p)
-    requires PointerSearchTree(p)
+  function method GetP(p: pointer, k: K): V
+    requires k in keysP(p)
+    requires SearchTreeP(p)
   {
     match p {
       case Child(t) => Get(t, k)
@@ -363,18 +363,18 @@ module TRBTree.Base {
     requires SearchTree(t)
   {
     if k < t.key then
-      assert k !in pointerKeys(t.right);
-      PointerGet(t.left, k)
+      assert k !in keysP(t.right);
+      GetP(t.left, k)
     else if t.key < k then
-      assert k !in pointerKeys(t.left);
-      PointerGet(t.right, k)
+      assert k !in keysP(t.left);
+      GetP(t.right, k)
     else
       t.value
   }
 
-  function method PointerGetSubtree(p: pointer, k: K): rbtree
-    requires k in pointerKeys(p)
-    requires PointerSearchTree(p)
+  function method GetSubtreeP(p: pointer, k: K): rbtree
+    requires k in keysP(p)
+    requires SearchTreeP(p)
   {
     match p {
       case Child(t) => GetSubtree(t, k)
@@ -388,11 +388,11 @@ module TRBTree.Base {
     ensures GetSubtree(t, k).Node?
   {
     if k < t.key then
-      assert k !in pointerKeys(t.right);
-      PointerGetSubtree(t.left, k)
+      assert k !in keysP(t.right);
+      GetSubtreeP(t.left, k)
     else if t.key < k then
-      assert k !in pointerKeys(t.left);
-      PointerGetSubtree(t.right, k)
+      assert k !in keysP(t.left);
+      GetSubtreeP(t.right, k)
     else
       t
   }
@@ -418,7 +418,7 @@ module TRBTree.Base {
 
   function method maxSubtreeP(p: pointer): rbtree
     requires p.Child? && p.child.Node?
-    requires PointerSearchTree(p)
+    requires SearchTreeP(p)
   {
     match p {
       case Child(t) => maxSubtree(t)
@@ -443,10 +443,10 @@ module TRBTree.Base {
     map k: K | k in keys(t) :: Get(t, k)
   }
 
-  predicate PointerSubtree(node: rbtree, proot: pointer)
-    ensures PointerSubtree(node, proot) ==> keys(node) <= pointerKeys(proot)
-    ensures PointerSubtree(node, proot) ==> keysAndThreads(node) <= pointerKeysAndThreads(proot)
-    ensures PointerSubtree(node, proot) && PointerSearchTree(proot) ==> SearchTree(node)
+  predicate SubtreeP(node: rbtree, proot: pointer)
+    ensures SubtreeP(node, proot) ==> keys(node) <= keysP(proot)
+    ensures SubtreeP(node, proot) ==> keysAndThreads(node) <= keysAndThreadsP(proot)
+    ensures SubtreeP(node, proot) && SearchTreeP(proot) ==> SearchTree(node)
   {
     match proot {
       case Child(root) => Subtree(node, root)
@@ -462,7 +462,7 @@ module TRBTree.Base {
     || root == node
     || (
       && root.Node?
-      && (PointerSubtree(node, root.left) || PointerSubtree(node, root.right)))
+      && (SubtreeP(node, root.left) || SubtreeP(node, root.right)))
   }
 
   lemma orderKeysToSetAdd(r: seq<(K, V)>, s: seq<(K, V)>)
@@ -586,13 +586,13 @@ module TRBTree.Base {
     }
   }
 
-  lemma PointerKeyInOrder(p: pointer, k': K)
-    requires k' in pointerKeys(p)
-    ensures exists i :: 0 <= i < |pointerInorder(p)| && pointerInorder(p)[i].0 == k'
+  lemma KeyInOrderP(p: pointer, k': K)
+    requires k' in keysP(p)
+    ensures exists i :: 0 <= i < |inorderP(p)| && inorderP(p)[i].0 == k'
   {
     match p {
       case Child(t) => {
-        assert pointerInorder(p) == inorder(t);
+        assert inorderP(p) == inorder(t);
         KeyInOrder(t, k');
       }
       case Thread(_) => {}
@@ -606,19 +606,19 @@ module TRBTree.Base {
     match t {
       case Empty => {}
       case Node(l, k, v, r, c) => {
-        if k' in pointerKeys(l) {
-          PointerKeyInOrder(l, k');
-          var i :| 0 <= i < |pointerInorder(l)| && pointerInorder(l)[i].0 == k';
+        if k' in keysP(l) {
+          KeyInOrderP(l, k');
+          var i :| 0 <= i < |inorderP(l)| && inorderP(l)[i].0 == k';
           assert inorder(t)[i].0 == k';
-        } else if k' in pointerKeys(r) {
-          PointerKeyInOrder(r, k');
-          var i :| 0 <= i < |pointerInorder(r)| && pointerInorder(r)[i].0 == k';
-          var j := i+|pointerInorder(l)|+1;
+        } else if k' in keysP(r) {
+          KeyInOrderP(r, k');
+          var i :| 0 <= i < |inorderP(r)| && inorderP(r)[i].0 == k';
+          var j := i+|inorderP(l)|+1;
           assert 0 <= j < |inorder(t)|;
           assert inorder(t)[j].0 == k';
         } else {
           assert k == k';
-          assert inorder(t)[|pointerInorder(l)|].0 == k';
+          assert inorder(t)[|inorderP(l)|].0 == k';
         }
       }
     }
@@ -690,11 +690,11 @@ module TRBTree.Base {
       }
       case Node(l, k, v, r, c) => {
         if l.Child? {
-          assert pointerKeys(l) == keys(l.child);
+          assert keysP(l) == keys(l.child);
           KeySetIsOrderKeysR(l.child, m => m < k);
         }
         if r.Child? {
-          assert pointerKeys(r) == keys(r.child);
+          assert keysP(r) == keys(r.child);
           KeySetIsOrderKeysR(r.child, m => k < m);
         }
       }
@@ -742,22 +742,22 @@ module TRBTree.Base {
   lemma DisjointBranches(t: rbtree)
     requires SearchTree(t)
     requires t.Node?
-    ensures t.key !in pointerKeys(t.left)
-    ensures t.key !in pointerKeys(t.right)
-    ensures pointerKeys(t.left) !! pointerKeys(t.right)
+    ensures t.key !in keysP(t.left)
+    ensures t.key !in keysP(t.right)
+    ensures keysP(t.left) !! keysP(t.right)
   {
     var k := t.key;
     var l := t.left;
     var r := t.right;
-    assert forall m | m in pointerKeys(l) :: m < k;
-    assert forall m | m in pointerKeys(r) :: k < m;
-    assert forall p, q | p in pointerKeys(l) && q in pointerKeys(r) :: p < k < q;
-    assert pointerKeys(l) !! pointerKeys(r);
+    assert forall m | m in keysP(l) :: m < k;
+    assert forall m | m in keysP(r) :: k < m;
+    assert forall p, q | p in keysP(l) && q in keysP(r) :: p < k < q;
+    assert keysP(l) !! keysP(r);
   }
 
-  lemma PointerSizeKeys(p: pointer)
-    requires PointerSearchTree(p)
-    ensures pointerSize(p) == |pointerKeys(p)|
+  lemma SizeKeysP(p: pointer)
+    requires SearchTreeP(p)
+    ensures sizeP(p) == |keysP(p)|
 
   lemma SizeKeys(t: rbtree)
     requires SearchTree(t)
@@ -768,20 +768,20 @@ module TRBTree.Base {
       case Node(l, k, v, r, c) => {
         calc == {
           size(t);
-          1 + pointerSize(l) + pointerSize(r);
+          1 + sizeP(l) + sizeP(r);
           {
-            PointerSizeKeys(l);
-            PointerSizeKeys(r);
+            SizeKeysP(l);
+            SizeKeysP(r);
           }
-          1 + |pointerKeys(l)| + |pointerKeys(r)|;
-          |pointerKeys(l)| + |{k}| + |pointerKeys(r)|;
+          1 + |keysP(l)| + |keysP(r)|;
+          |keysP(l)| + |{k}| + |keysP(r)|;
           {
-            assert k !in pointerKeys(l);
-            assert k !in pointerKeys(r);
+            assert k !in keysP(l);
+            assert k !in keysP(r);
             DisjointBranches(t);
-            assert pointerKeys(l) !! pointerKeys(r);
+            assert keysP(l) !! keysP(r);
           }
-          |pointerKeys(l) + {k} + pointerKeys(r)|;
+          |keysP(l) + {k} + keysP(r)|;
           |keys(t)|;
         }
       }
@@ -789,9 +789,9 @@ module TRBTree.Base {
   }
 
   lemma SizeSmallerP(p: pointer, k: K)
-    ensures pointerSizeSmaller(p, k) <= pointerSize(p)
-    ensures PointerSearchTree(p) && k in pointerKeys(p) ==>
-      pointerSizeSmaller(p, k) < pointerSize(p)
+    ensures sizeSmallerP(p, k) <= sizeP(p)
+    ensures SearchTreeP(p) && k in keysP(p) ==>
+      sizeSmallerP(p, k) < sizeP(p)
   {
     if p.Child? {
       SizeSmaller(p.child, k);
@@ -1110,11 +1110,11 @@ module TRBTree.Base {
   {
     if a == b {
     } else {
-      if PointerSubtree(a, b.left) {
+      if SubtreeP(a, b.left) {
         if b.left.Child? {
           SubtreeChildren(a, b.left.child);
         }
-      } else if PointerSubtree(a, b.right) {
+      } else if SubtreeP(a, b.right) {
         if b.right.Child? {
           SubtreeChildren(a, b.right.child);
         }
@@ -1131,7 +1131,7 @@ module TRBTree.Base {
   {
     if a == b {
     } else {
-      if PointerSubtree(a, b.left) {
+      if SubtreeP(a, b.left) {
         if b.left.Child? {
           assert Subtree(a, b.left.child);
           assert Subtree(b.left.child, c) by {
@@ -1139,7 +1139,7 @@ module TRBTree.Base {
           }
           SubtreeTrans(a, b.left.child, c);
         }
-      } else if PointerSubtree(a, b.right) {
+      } else if SubtreeP(a, b.right) {
         if b.right.Child? {
           SubtreeChildren(b, c);
           SubtreeTrans(a, b.right.child, c);
@@ -1283,8 +1283,8 @@ module TRBTree.Base {
     p.Child? && p.child.Node? && p.child.color.Black?
   }
 
-  function method PointerBlackHeight(p: pointer): nat
-    ensures p.Child? ==> (PointerBlackHeight(p) == BlackHeight(p.child))
+  function method BlackHeightP(p: pointer): nat
+    ensures p.Child? ==> (BlackHeightP(p) == BlackHeight(p.child))
   {
     match p {
       case Child(t) => BlackHeight(t)
@@ -1298,9 +1298,9 @@ module TRBTree.Base {
       case Empty => 0
       case Node(l, k, v, r, c) =>
         if c.Black? then
-          1 + Utils.max(PointerBlackHeight(l), PointerBlackHeight(r))
+          1 + Utils.max(BlackHeightP(l), BlackHeightP(r))
         else
-          Utils.max(PointerBlackHeight(l), PointerBlackHeight(r))
+          Utils.max(BlackHeightP(l), BlackHeightP(r))
     }
   }
 
@@ -1309,8 +1309,8 @@ module TRBTree.Base {
     p.Child? && p.child.Node?
   }
 
-  function method PointerRedBlackTree(p: pointer): bool
-    ensures p.Child? ==> (PointerRedBlackTree(p) <==> RedBlackTree(p.child))
+  function method RedBlackTreeP(p: pointer): bool
+    ensures p.Child? ==> (RedBlackTreeP(p) <==> RedBlackTree(p.child))
   {
     match p {
       case Child(t) => RedBlackTree(t)
@@ -1328,10 +1328,10 @@ module TRBTree.Base {
         // No node has two red links connected to it:
         && (isRedP(l) && isNode(l.child.left) ==> isBlackP(l.child.left))
         // Perfect black balance:
-        && PointerBlackHeight(l) == PointerBlackHeight(r)
+        && BlackHeightP(l) == BlackHeightP(r)
 
-        && PointerRedBlackTree(l)
-        && PointerRedBlackTree(r)
+        && RedBlackTreeP(l)
+        && RedBlackTreeP(r)
     }
   }
 
