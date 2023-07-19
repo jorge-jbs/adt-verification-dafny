@@ -1,12 +1,12 @@
 include "../../../src/tree/layer4/TRBTree/Base.dfy"
-include "../../../src/tree/layer4/TTree1.dfy"
+include "../../../src/tree/layer4/TTree.dfy"
 include "../../../src/tree/KeyValue.dfy"
 include "../../../src/tree/layer4/Color.dfy"
 
 module TTNode {
   import opened KeyValue
   import opened RB = TRBTree.Base
-  import opened T = Tree
+  import opened T = TTree
   import opened Color
 
   class TTNode {

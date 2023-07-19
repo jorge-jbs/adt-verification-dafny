@@ -3,10 +3,10 @@ include "../../../src/tree/layer1/OrderedSetUtils.dfy"
 include "../../../src/tree/layer4/TRBTree/Base.dfy"
 include "../../../src/tree/layer4/TRBTree/Iterator.dfy"
 include "../../../src/tree/layer4/TRBTree/TRBInsert.dfy"
-include "../../../src/tree/layer4/TTree1.dfy"
+include "../../../src/tree/layer4/TTree.dfy"
 include "../../../src/tree/KeyValue.dfy"
-include "../../../src/tree/layer4/TTNode1.dfy"
-include "../../../src/tree/layer4/ThreadedLinkedTree1/TRBInsert.dfy"
+include "../../../src/tree/layer4/TTNode.dfy"
+include "../../../src/tree/layer4/ThreadedLinkedTree/TRBInsert.dfy"
 include "../../../src/MUtils.dfy"
 
 module ThreadedLinkedTree {
@@ -15,7 +15,7 @@ module ThreadedLinkedTree {
   import TRB = TRBTree.Base
   import TRBi = TRBTree.TRBInsert
   import TRBit = TRBTree.Iterator
-  import opened T = Tree
+  import opened T = TTree
   import opened KeyValue
   import opened TRBInsert
   import opened OrderedSetUtils
