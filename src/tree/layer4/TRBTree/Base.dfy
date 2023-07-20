@@ -1385,28 +1385,6 @@ module TRBTree.Base {
     SmallerKeys(t, t.key);
   }
 
-  lemma MaxOfRightThread(node: rbtree, prev: threadOrEmpty, root: rbtree, next: threadOrEmpty)
-    requires root.Node?
-    requires ThreadedTreeRec(prev, root, next)
-    requires SearchTree(root)
-    requires Subtree(node, root)
-    requires node.Node?
-    requires node.right.Thread?
-    requires node.right.thread == root.key
-    ensures node.right.thread in keys(root)
-    ensures node == maxSubtree(GetSubtree(root, node.right.thread))
-    ensures Subtree(node, GetSubtree(root, node.right.thread))
-
-  lemma MaxOfRightThreadRoot(node: rbtree, root: rbtree)
-    requires ThreadedTreeRoot(root)
-    requires SearchTree(root)
-    requires Subtree(node, root)
-    requires node.Node?
-    requires node.right.Thread?
-    ensures node.right.thread in keys(root)
-    ensures node == maxSubtree(GetSubtree(root, node.right.thread))
-    ensures Subtree(node, GetSubtree(root, node.right.thread))
-
   lemma RightThreadIsBiggerRec(node: rbtree, prev: threadOrEmpty, root: rbtree, next: threadOrEmpty)
     decreases root
     requires SearchTree(root)
@@ -1441,65 +1419,6 @@ module TRBTree.Base {
   {
     RightThreadIsBiggerRec(node, Child(Empty), root, Child(Empty));
   }
-
-  lemma ThreadedKeysBetweenRec(prev: threadOrEmpty, root: rbtree, next: threadOrEmpty)
-    decreases root
-    requires SearchTree(root)
-    requires root.Node?
-    requires ThreadedTreeRec(prev, root, next)
-    ensures next.Thread? ==> forall k | k in keys(root) :: k < next.thread
-    ensures prev.Thread? ==> forall k | k in keys(root) :: prev.thread < k
-
-  lemma LeftRightRec(it: rbtree, left: set<K>, prev: threadOrEmpty, node: rbtree, next: threadOrEmpty, right: set<K>, root: rbtree)
-    decreases node
-    requires SearchTree(node)
-    requires node.Node?
-    requires ThreadedTreeRec(prev, node, next)
-    requires Subtree(it, node)
-    requires forall k | k in left :: k < node.key
-    requires forall k | k in right :: node.key < k
-    requires keys(root) == left + keys(node) + right
-    requires it.Node?
-    requires it.right.Thread?
-    ensures forall k | k in keys(root) && k != it.key && k != it.right.thread ::
-      k < it.key || it.right.thread < k
-
-/*
-  lemma LeftRightRec(prev: threadOrEmpty, node: rbtree, next: threadOrEmpty, left: set<K>, root: rbtree, right: set<K>)
-    decreases root
-    requires SearchTree(root)
-    requires root.Node?
-    requires ThreadedTreeRec(prev, node, next)
-    requires Subtree(node, root)
-    requires forall k | k in left :: k < node.key
-    requires forall k | k in right :: node.key < k
-    requires keys(root) == left + keys(node) + right
-    requires node.Node?
-    requires node.right.Thread?
-    ensures forall k | k in keys(root) :: k < node.key || node.right.thread < k
-  {
-    if node.key < root.key {
-      if root.left.Child? {
-        RightThreadIsBiggerRec(node, prev, root.left.child, Thread(root.key));
-      }
-    } else if root.key < node.key {
-      if root.right.Child? {
-        RightThreadIsBiggerRec(node, Thread(root.key), root.right.child, next);
-      }
-    } else {
-      assert node == root;
-    }
-  }
-    */
-
-  lemma NoKeyBetweenNodeAndRightThreadRoot(node: rbtree, root: rbtree)
-    requires SearchTree(root)
-    requires ThreadedTreeRoot(root)
-    requires Subtree(node, root)
-    requires node.Node?
-    requires node.right.Thread?
-    ensures node.key < node.right.thread
-    ensures forall k | k in keys(root) :: k < node.key || node.right.thread < k
 
   lemma ThreadedInorderRec(it: rbtree, left: seq<(K, V)>, right: seq<(K, V)>, prev: threadOrEmpty, node: rbtree, next: threadOrEmpty, root: rbtree)
       returns (i: nat)
@@ -1582,34 +1501,6 @@ module TRBTree.Base {
       smallerKeys(root, node.key) + {node.key};
     }
   }
-
-/*
-  lemma SmallerKeysOfThreadedRoot(node: rbtree, root: rbtree)
-    requires SearchTree(root)
-    requires ThreadedTreeRoot(root)
-    requires Subtree(node, root)
-    requires node.Node?
-    requires node.right.Thread?
-    ensures smallerKeys(root, node.right.thread)
-      == smallerKeys(root, node.key) + {node.key}
-  {
-    assume node.key < node.right.thread;
-    ThreadedKeys(root);
-    var nextNode := GetSubtree(root, node.right.thread);
-    assert Subtree(nextNode, root);
-    assume Subtree(node, nextNode);
-    assume node.key < node.right.thread;
-    assume nextNode.left.Child?;
-    assume nextNode.left.child.Node?;
-    if nextNode.left.child == node {
-      assume false;
-    } else {
-      assume smallerKeys(root, nextNode.key)
-        == smallerKeys(root, nextNode.left.child.key) + {nextNode.left.child.key} + keysP(nextNode.left.child.right);
-      assume false;
-    }
-  }
-  */
 
   function ThreadedTreeExample1(): rbtree {
     Node(
