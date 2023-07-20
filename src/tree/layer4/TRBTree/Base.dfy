@@ -386,6 +386,7 @@ module TRBTree.Base {
     requires SearchTree(t)
     ensures Subtree(GetSubtree(t, k), t)
     ensures GetSubtree(t, k).Node?
+    ensures GetSubtree(t, k).key == k
   {
     if k < t.key then
       assert k !in keysP(t.right);
@@ -553,6 +554,10 @@ module TRBTree.Base {
     assert s[0].0 in orderKeysToSet(s);
   }
 
+  lemma OrderKeysIsTreeKeysP(p: pointer)
+    ensures orderKeysToSet(inorderP(p)) == keysP(p)
+  {}
+
   lemma OrderKeysIsTreeKeys(t: rbtree)
     ensures orderKeysToSet(inorder(t)) == keys(t)
   {}
@@ -560,6 +565,36 @@ module TRBTree.Base {
   lemma OrderSetIsTreePairs(t: rbtree)
     ensures orderToSet(inorder(t)) == pairs(t)
   {}
+
+  lemma SmallerOrderKeysIsTreeKeysP(p: pointer, k': K)
+    ensures orderKeysToSet(smallerInorderP(p, k')) == smallerKeysP(p, k')
+  {
+    if p.Child? {
+      SmallerOrderKeysIsTreeKeys(p.child, k');
+    }
+  }
+
+  lemma SmallerOrderKeysIsTreeKeys(t: rbtree, k': K)
+    ensures orderKeysToSet(smallerInorder(t, k')) == smallerKeys(t, k')
+  {
+    match t {
+      case Empty => {
+      }
+      case Node(l, k, v, r, c) => {
+        if k < k' {
+          //keysP(l) + {k} + smallerKeysP(r, k')
+          OrderKeysIsTreeKeysP(l);
+          SmallerOrderKeysIsTreeKeysP(r, k');
+        } else if k' < k {
+          //smallerKeysP(l, k')
+          SmallerOrderKeysIsTreeKeysP(l, k');
+        } else {
+          //keysP(l)
+          OrderKeysIsTreeKeysP(l);
+        }
+      }
+    }
+  }
 
   lemma KeySetSeq(s: seq<(K, V)>)
     ensures orderKeysToSet(s)
@@ -722,6 +757,7 @@ module TRBTree.Base {
       assert k == t.key;
     }
   }
+  */
 
   lemma SearchImpliesUnique(t: rbtree)
     requires SearchTree(t)
@@ -731,6 +767,7 @@ module TRBTree.Base {
     SearchImpliesOrdered(t);
   }
 
+/*
   lemma toMapLemmas(t: rbtree)
     requires SearchTree(t)
     ensures t.Node? ==>
@@ -1008,12 +1045,86 @@ module TRBTree.Base {
     ensures Subtree(node.left, root)
     ensures Subtree(node.right, root)
   {}
+  */
+
+  lemma InorderSmallerInorderP(p: pointer, k: K)
+    ensures |smallerInorderP(p, k)| <= |inorderP(p)|
+    ensures smallerInorderP(p, k) == inorderP(p)[..|smallerInorderP(p, k)|]
+  {
+    if p.Child? {
+      InorderSmallerInorder(p.child, k);
+    }
+  }
 
   lemma InorderSmallerInorder(t: rbtree, k: K)
     ensures |smallerInorder(t, k)| <= |inorder(t)|
     ensures smallerInorder(t, k) == inorder(t)[..|smallerInorder(t, k)|]
-  {}
+  {
+    if t.Node? {
+      InorderSmallerInorderP(t.left, k);
+      InorderSmallerInorderP(t.right, k);
+    }
+  }
 
+    /*
+  lemma SmallerInorderIndex(t: rbtree, k: K, i: nat)
+    requires SearchTree(t)
+    requires i < |inorder(t)|
+    requires inorder(t)[i].0 == k
+    ensures i == |smallerInorder(t, k)|
+  {
+    assume false;
+    SearchImpliesOrdered(t);
+    SearchImpliesUnique(t);
+    InorderSmallerInorder(t, k);
+    assert forall j | 0 <= j < i < |inorder(t)| :: inorder(t)[j].0 < inorder(t)[i].0;
+    assert forall j | 0 <= i < j < |inorder(t)| :: inorder(t)[i].0 < inorder(t)[j].0;
+    //assert inorder(t)[|smallerInorder(t, k)|].0 == k;
+    if t.Node? {
+      if t.left.Child? && i < |inorderP(t.left)| {
+        SmallerInorderIndex(t.left.child, k, i);
+        assert i == |smallerInorder(t.left.child, k)| == |smallerInorder(t, k)|;
+      }
+      if t.right.Child? && i > |inorderP(t.left)| {
+        SmallerInorderIndex(t.right.child, k, i - |inorderP(t.left)| - 1);
+      }
+    }
+  }
+    */
+
+  lemma SmallerInorderIndex(t: rbtree, k': K, i: nat)
+    requires SearchTree(t)
+    requires i < |inorder(t)|
+    requires inorder(t)[i].0 == k'
+    ensures i == |smallerInorder(t, k')|
+  {
+    SearchImpliesOrdered(t);
+    match t {
+      case Empty => {
+      }
+      case Node(l, k, v, r, c) => {
+        assert inorder(t)[|inorderP(l)|].0 == k;
+        if k < k' {
+          //inorderP(l) + [(k, v)] + smallerInorderP(r, k')
+          assert |inorderP(l)| < i;
+          if t.right.Child? {
+            SmallerInorderIndex(t.right.child, k', i - |inorderP(l)| - 1);
+          }
+        } else if k' < k {
+          //smallerInorderP(l, k')
+          assert i < |inorderP(l)|;
+          if t.left.Child? {
+            SmallerInorderIndex(t.left.child, k', i);
+          }
+        } else {
+          //inorderP(l)
+          assert i == |inorderP(l)|;
+        }
+      }
+    }
+  }
+
+  /*
   lemma SmallerInorderRightInd(root: rbtree, node: rbtree)
     requires SearchTree(root)
     requires Subtree(node, root)
@@ -1234,6 +1345,271 @@ module TRBTree.Base {
   lemma ThreadedKeys(t: rbtree)
     requires ThreadedTreeRoot(t)
     ensures keys(t) == keysAndThreads(t)
+
+  lemma SmallerKeysP(p: pointer, k': K)
+    requires SearchTreeP(p)
+    ensures smallerKeysP(p, k') == set k | k in keysP(p) && k < k'
+  {
+    match p {
+      case Child(t) => {
+        SmallerKeys(t, k');
+      }
+      case Thread(_) => {
+      }
+    }
+  }
+
+  lemma SmallerKeys(t: rbtree, k': K)
+    requires SearchTree(t)
+    ensures smallerKeys(t, k') == set k | k in keys(t) && k < k'
+  {
+    match t {
+      case Empty => {
+      }
+      case Node(l, k, v, r, c) =>
+        if k < k' {
+          SmallerKeysP(r, k');
+        } else if k' < k {
+          SmallerKeysP(l, k');
+        } else {
+        }
+    }
+  }
+
+  lemma SmallerKeysLeft(t: rbtree)
+    requires SearchTree(t)
+    requires t.Node?
+    requires t.left.Child?
+    ensures smallerKeys(t, t.key) == keys(t.left.child)
+  {
+    SmallerKeys(t, t.key);
+  }
+
+  lemma MaxOfRightThread(node: rbtree, prev: threadOrEmpty, root: rbtree, next: threadOrEmpty)
+    requires root.Node?
+    requires ThreadedTreeRec(prev, root, next)
+    requires SearchTree(root)
+    requires Subtree(node, root)
+    requires node.Node?
+    requires node.right.Thread?
+    requires node.right.thread == root.key
+    ensures node.right.thread in keys(root)
+    ensures node == maxSubtree(GetSubtree(root, node.right.thread))
+    ensures Subtree(node, GetSubtree(root, node.right.thread))
+
+  lemma MaxOfRightThreadRoot(node: rbtree, root: rbtree)
+    requires ThreadedTreeRoot(root)
+    requires SearchTree(root)
+    requires Subtree(node, root)
+    requires node.Node?
+    requires node.right.Thread?
+    ensures node.right.thread in keys(root)
+    ensures node == maxSubtree(GetSubtree(root, node.right.thread))
+    ensures Subtree(node, GetSubtree(root, node.right.thread))
+
+  lemma RightThreadIsBiggerRec(node: rbtree, prev: threadOrEmpty, root: rbtree, next: threadOrEmpty)
+    decreases root
+    requires SearchTree(root)
+    requires root.Node?
+    requires ThreadedTreeRec(prev, root, next)
+    requires Subtree(node, root)
+    requires next.Thread? ==> forall k | k in keys(root) :: k < next.thread
+    requires node.Node?
+    requires node.right.Thread?
+    ensures node.key < node.right.thread
+  {
+    if node.key < root.key {
+      if root.left.Child? {
+        RightThreadIsBiggerRec(node, prev, root.left.child, Thread(root.key));
+      }
+    } else if root.key < node.key {
+      if root.right.Child? {
+        RightThreadIsBiggerRec(node, Thread(root.key), root.right.child, next);
+      }
+    } else {
+      assert node == root;
+    }
+  }
+
+  lemma RightThreadIsBiggerRoot(node: rbtree, root: rbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    requires Subtree(node, root)
+    requires node.Node?
+    requires node.right.Thread?
+    ensures node.key < node.right.thread
+  {
+    RightThreadIsBiggerRec(node, Child(Empty), root, Child(Empty));
+  }
+
+  lemma ThreadedKeysBetweenRec(prev: threadOrEmpty, root: rbtree, next: threadOrEmpty)
+    decreases root
+    requires SearchTree(root)
+    requires root.Node?
+    requires ThreadedTreeRec(prev, root, next)
+    ensures next.Thread? ==> forall k | k in keys(root) :: k < next.thread
+    ensures prev.Thread? ==> forall k | k in keys(root) :: prev.thread < k
+
+  lemma LeftRightRec(it: rbtree, left: set<K>, prev: threadOrEmpty, node: rbtree, next: threadOrEmpty, right: set<K>, root: rbtree)
+    decreases node
+    requires SearchTree(node)
+    requires node.Node?
+    requires ThreadedTreeRec(prev, node, next)
+    requires Subtree(it, node)
+    requires forall k | k in left :: k < node.key
+    requires forall k | k in right :: node.key < k
+    requires keys(root) == left + keys(node) + right
+    requires it.Node?
+    requires it.right.Thread?
+    ensures forall k | k in keys(root) && k != it.key && k != it.right.thread ::
+      k < it.key || it.right.thread < k
+
+/*
+  lemma LeftRightRec(prev: threadOrEmpty, node: rbtree, next: threadOrEmpty, left: set<K>, root: rbtree, right: set<K>)
+    decreases root
+    requires SearchTree(root)
+    requires root.Node?
+    requires ThreadedTreeRec(prev, node, next)
+    requires Subtree(node, root)
+    requires forall k | k in left :: k < node.key
+    requires forall k | k in right :: node.key < k
+    requires keys(root) == left + keys(node) + right
+    requires node.Node?
+    requires node.right.Thread?
+    ensures forall k | k in keys(root) :: k < node.key || node.right.thread < k
+  {
+    if node.key < root.key {
+      if root.left.Child? {
+        RightThreadIsBiggerRec(node, prev, root.left.child, Thread(root.key));
+      }
+    } else if root.key < node.key {
+      if root.right.Child? {
+        RightThreadIsBiggerRec(node, Thread(root.key), root.right.child, next);
+      }
+    } else {
+      assert node == root;
+    }
+  }
+    */
+
+  lemma NoKeyBetweenNodeAndRightThreadRoot(node: rbtree, root: rbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    requires Subtree(node, root)
+    requires node.Node?
+    requires node.right.Thread?
+    ensures node.key < node.right.thread
+    ensures forall k | k in keys(root) :: k < node.key || node.right.thread < k
+
+  lemma ThreadedInorderRec(it: rbtree, left: seq<(K, V)>, right: seq<(K, V)>, prev: threadOrEmpty, node: rbtree, next: threadOrEmpty, root: rbtree)
+      returns (i: nat)
+    decreases node
+
+    requires SearchTree(node)
+    requires node.Node?
+    requires ThreadedTreeRec(prev, node, next)
+    requires Subtree(it, node)
+    requires it.Node?
+    requires it.right.Thread?
+
+    requires prev.Thread? ==> left != [] && left[|left|-1].0 == prev.thread
+    requires next.Thread? ==> right != [] && right[0].0 == next.thread
+    requires inorder(root) == left + inorder(node) + right
+
+    ensures i+1 < |inorder(root)|
+    ensures inorder(root)[i].0 == it.key
+    ensures inorder(root)[i+1].0 == it.right.thread
+  {
+    if it.key < node.key {
+      if node.left.Child? {
+        i := ThreadedInorderRec(it, left, [(node.key, node.value)] + inorderP(node.right) + right, prev, node.left.child, Thread(node.key), root);
+      }
+    } else if node.key < it.key {
+      if node.right.Child? {
+        i := ThreadedInorderRec(it, left + inorderP(node.left) + [(node.key, node.value)], right, Thread(node.key), node.right.child, next, root);
+      }
+    } else {
+      assert node == it;
+      i := |left| + |inorderP(node.left)|;
+    }
+  }
+
+  lemma ThreadedInorderRoot(it: rbtree, root: rbtree)
+      returns (i: nat)
+    requires SearchTree(root)
+    requires root.Node?
+    requires ThreadedTreeRoot(root)
+    requires Subtree(it, root)
+    requires it.Node?
+    requires it.right.Thread?
+
+    ensures i+1 < |inorder(root)|
+    ensures inorder(root)[i].0 == it.key
+    ensures inorder(root)[i+1].0 == it.right.thread
+  {
+    i := ThreadedInorderRec(it, [], [], Child(Empty), root, Child(Empty), root);
+  }
+
+  lemma SmallerKeysOfThreadedRoot(node: rbtree, root: rbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    requires Subtree(node, root)
+    requires node.Node?
+    requires node.right.Thread?
+    ensures smallerKeys(root, node.right.thread)
+      == smallerKeys(root, node.key) + {node.key}
+  {
+    var i := ThreadedInorderRoot(node, root);
+    calc == {
+      smallerKeys(root, node.right.thread);
+      { SmallerOrderKeysIsTreeKeys(root, node.right.thread); }
+      orderKeysToSet(smallerInorder(root, node.right.thread));
+      {
+        InorderSmallerInorder(root, node.right.thread);
+        SmallerInorderIndex(root, node.right.thread, i+1);
+      }
+      orderKeysToSet(inorder(root)[..i+1]);
+      orderKeysToSet(inorder(root)[..i] + [inorder(root)[i]]);
+      orderKeysToSet(inorder(root)[..i]) + orderKeysToSet([inorder(root)[i]]);
+      orderKeysToSet(inorder(root)[..i]) + {inorder(root)[i].0};
+      orderKeysToSet(inorder(root)[..i]) + {node.key};
+      {
+        InorderSmallerInorder(root, node.key);
+        SmallerInorderIndex(root, node.key, i);
+      }
+      orderKeysToSet(smallerInorder(root, node.key)) + {node.key};
+      { SmallerOrderKeysIsTreeKeys(root, node.key); }
+      smallerKeys(root, node.key) + {node.key};
+    }
+  }
+
+/*
+  lemma SmallerKeysOfThreadedRoot(node: rbtree, root: rbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    requires Subtree(node, root)
+    requires node.Node?
+    requires node.right.Thread?
+    ensures smallerKeys(root, node.right.thread)
+      == smallerKeys(root, node.key) + {node.key}
+  {
+    assume node.key < node.right.thread;
+    ThreadedKeys(root);
+    var nextNode := GetSubtree(root, node.right.thread);
+    assert Subtree(nextNode, root);
+    assume Subtree(node, nextNode);
+    assume node.key < node.right.thread;
+    assume nextNode.left.Child?;
+    assume nextNode.left.child.Node?;
+    if nextNode.left.child == node {
+      assume false;
+    } else {
+      assume smallerKeys(root, nextNode.key)
+        == smallerKeys(root, nextNode.left.child.key) + {nextNode.left.child.key} + keysP(nextNode.left.child.right);
+      assume false;
+    }
+  }
+  */
 
   function ThreadedTreeExample1(): rbtree {
     Node(

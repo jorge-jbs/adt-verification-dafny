@@ -115,40 +115,6 @@ module TRBTree.Iterator {
     requires HasPeek'(it, root)
     ensures Peek(it, root) == Peek'(it, root)
 
-  function Next(it: iter, root: rbtree): iter
-    requires HasPeek(it)
-    requires Valid(it, root)
-  {
-    match it.link.right {
-      case Thread(k) =>
-        assert k in keys(root) by {
-          ThreadedKeys(root);
-        }
-        Link(GetSubtree(root, k))
-      case Child(Empty()) =>
-        PastTheEnd
-      case Child(Node(_, _, _, _, _)) =>
-        Link(minSubtreeP(it.link.right))
-    }
-  }
-
-  function Prev(it: iter, root: rbtree): iter
-    requires HasPeek(it)
-    requires Valid(it, root)
-  {
-    match it.link.left {
-      case Thread(k) =>
-        assert k in keys(root) by {
-          ThreadedKeys(root);
-        }
-        Link(GetSubtree(root, k))
-      case Child(Empty()) =>
-        PastTheBeginning
-      case Child(Node(_, _, _, _, _)) =>
-        Link(maxSubtreeP(it.link.left))
-    }
-  }
-
   function Traversed(it: iter, root: rbtree): set<K>
   {
     match it {
@@ -172,4 +138,63 @@ module TRBTree.Iterator {
   lemma TraversedEq(it: iter, root: rbtree)
     requires SearchTree(root)
     ensures Traversed(it, root) == Traversed'(it, root)
+
+  function Next(it: iter, root: rbtree): iter
+    requires HasPeek(it)
+    requires Valid(it, root)
+  {
+    match it.link.right {
+      case Thread(k) =>
+        assert k in keys(root) by {
+          ThreadedKeys(root);
+        }
+        Link(GetSubtree(root, k))
+      case Child(Empty()) =>
+        PastTheEnd
+      case Child(Node(_, _, _, _, _)) =>
+        Link(minSubtreeP(it.link.right))
+    }
+  }
+
+  lemma NextSpec(it: iter, root: rbtree)
+    requires HasPeek(it)
+    requires Valid(it, root)
+    ensures Valid(it, root)
+  {}
+
+  lemma NextTraversed(it: iter, root: rbtree)
+    requires HasPeek(it)
+    requires Valid(it, root)
+    ensures Traversed(Next(it, root), root)
+      == Traversed(it, root) + {Peek(it, root).0}
+  {
+    match it.link.right {
+      case Thread(k) => {
+        SmallerKeysOfThreadedRoot(it.link, root);
+      }
+      case Child(Empty()) => {
+        assume false;
+      }
+      case Child(Node(_, _, _, _, _)) => {
+        assume false;
+      }
+    }
+  }
+
+  function Prev(it: iter, root: rbtree): iter
+    requires HasPeek(it)
+    requires Valid(it, root)
+  {
+    match it.link.left {
+      case Thread(k) =>
+        assert k in keys(root) by {
+          ThreadedKeys(root);
+        }
+        Link(GetSubtree(root, k))
+      case Child(Empty()) =>
+        PastTheBeginning
+      case Child(Node(_, _, _, _, _)) =>
+        Link(maxSubtreeP(it.link.left))
+    }
+  }
 }
