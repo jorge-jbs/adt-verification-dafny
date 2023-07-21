@@ -176,7 +176,7 @@ module TRBTree.Iterator {
         assume false;
       }
       case Child(Node(_, _, _, _, _)) => {
-        assume false;
+        SmallerKeysOfMinThreadedRoot(it.link, root);
       }
     }
   }

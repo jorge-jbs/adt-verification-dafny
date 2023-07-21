@@ -400,6 +400,8 @@ module TRBTree.Base {
 
   function method minSubtreeP(p: pointer): rbtree
     requires p.Child? && p.child.Node?
+    ensures minSubtreeP(p).Node?
+    ensures inorderP(p)[0].0 == minSubtreeP(p).key
   {
     match p {
       case Child(t) => minSubtree(t)
@@ -410,6 +412,7 @@ module TRBTree.Base {
     requires keys(t) != {}
     ensures Subtree(minSubtree(t), t)
     ensures minSubtree(t).Node?
+    ensures inorder(t)[0].0 == minSubtree(t).key
   {
     if t.left.Child? && t.left.child.Node? then
       minSubtreeP(t.left)
@@ -1486,6 +1489,88 @@ module TRBTree.Base {
       {
         InorderSmallerInorder(root, node.right.thread);
         SmallerInorderIndex(root, node.right.thread, i+1);
+      }
+      orderKeysToSet(inorder(root)[..i+1]);
+      orderKeysToSet(inorder(root)[..i] + [inorder(root)[i]]);
+      orderKeysToSet(inorder(root)[..i]) + orderKeysToSet([inorder(root)[i]]);
+      orderKeysToSet(inorder(root)[..i]) + {inorder(root)[i].0};
+      orderKeysToSet(inorder(root)[..i]) + {node.key};
+      {
+        InorderSmallerInorder(root, node.key);
+        SmallerInorderIndex(root, node.key, i);
+      }
+      orderKeysToSet(smallerInorder(root, node.key)) + {node.key};
+      { SmallerOrderKeysIsTreeKeys(root, node.key); }
+      smallerKeys(root, node.key) + {node.key};
+    }
+  }
+
+  lemma {:verify false} MinInorderRec(it: rbtree, left: seq<(K, V)>, right: seq<(K, V)>, node: rbtree, root: rbtree)
+      returns (i: nat)
+    decreases node
+
+    requires SearchTree(node)
+    requires node.Node?
+    requires Subtree(it, node)
+    requires it.Node?
+    requires it.right.Child?
+    requires it.right.child.Node?
+
+    requires inorder(root) == left + inorder(node) + right
+
+    ensures i+1 < |inorder(root)|
+    ensures inorder(root)[i].0 == it.key
+    ensures inorder(root)[i+1].0 == minSubtreeP(it.right).key
+  {
+    if it.key < node.key {
+      if node.left.Child? {
+        i := MinInorderRec(it, left, [(node.key, node.value)] + inorderP(node.right) + right, node.left.child, root);
+      }
+    } else if node.key < it.key {
+      if node.right.Child? {
+        i := MinInorderRec(it, left + inorderP(node.left) + [(node.key, node.value)], right, node.right.child, root);
+      }
+    } else {
+      assert node == it;
+      i := |left| + |inorderP(node.left)|;
+    }
+  }
+
+  lemma MinInorderRoot(it: rbtree, root: rbtree)
+      returns (i: nat)
+    requires SearchTree(root)
+    requires root.Node?
+    requires ThreadedTreeRoot(root)
+    requires Subtree(it, root)
+    requires it.Node?
+    requires it.right.Child?
+    requires it.right.child.Node?
+
+    ensures i+1 < |inorder(root)|
+    ensures inorder(root)[i].0 == it.key
+    ensures inorder(root)[i+1].0 == minSubtreeP(it.right).key
+  {
+    i := MinInorderRec(it, [], [], root, root);
+  }
+
+  lemma SmallerKeysOfMinThreadedRoot(node: rbtree, root: rbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    requires Subtree(node, root)
+    requires node.Node?
+    requires node.right.Child?
+    requires node.right.child.Node?
+    ensures smallerKeys(root, minSubtreeP(node.right).key)
+      == smallerKeys(root, node.key) + {node.key}
+  {
+    var i := MinInorderRoot(node, root);
+    calc == {
+      smallerKeys(root, minSubtreeP(node.right).key);
+      { SmallerOrderKeysIsTreeKeys(root, minSubtreeP(node.right).key); }
+      orderKeysToSet(smallerInorder(root, minSubtreeP(node.right).key));
+      {
+        InorderSmallerInorder(root, minSubtreeP(node.right).key);
+        SmallerInorderIndex(root, minSubtreeP(node.right).key, i+1);
       }
       orderKeysToSet(inorder(root)[..i+1]);
       orderKeysToSet(inorder(root)[..i] + [inorder(root)[i]]);
