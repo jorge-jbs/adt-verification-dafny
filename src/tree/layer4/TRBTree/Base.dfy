@@ -1472,7 +1472,7 @@ module TRBTree.Base {
     i := ThreadedInorderRec(it, [], [], Child(Empty), root, Child(Empty), root);
   }
 
-  lemma SmallerKeysOfThreadedRoot(node: rbtree, root: rbtree)
+  lemma SmallerKeysRightThread(node: rbtree, root: rbtree)
     requires SearchTree(root)
     requires ThreadedTreeRoot(root)
     requires Subtree(node, root)
@@ -1540,7 +1540,6 @@ module TRBTree.Base {
       returns (i: nat)
     requires SearchTree(root)
     requires root.Node?
-    requires ThreadedTreeRoot(root)
     requires Subtree(it, root)
     requires it.Node?
     requires it.right.Child?
@@ -1553,9 +1552,8 @@ module TRBTree.Base {
     i := MinInorderRec(it, [], [], root, root);
   }
 
-  lemma SmallerKeysOfMinThreadedRoot(node: rbtree, root: rbtree)
+  lemma SmallerKeysMin(node: rbtree, root: rbtree)
     requires SearchTree(root)
-    requires ThreadedTreeRoot(root)
     requires Subtree(node, root)
     requires node.Node?
     requires node.right.Child?
