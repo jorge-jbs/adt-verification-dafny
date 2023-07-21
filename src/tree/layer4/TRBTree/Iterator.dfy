@@ -170,13 +170,13 @@ module TRBTree.Iterator {
   {
     match it.link.right {
       case Thread(k) => {
-        SmallerKeysOfThreadedRoot(it.link, root);
+        SmallerKeysRightThread(it.link, root);
       }
       case Child(Empty()) => {
         assume false;
       }
       case Child(Node(_, _, _, _, _)) => {
-        SmallerKeysOfMinThreadedRoot(it.link, root);
+        SmallerKeysMin(it.link, root);
       }
     }
   }
