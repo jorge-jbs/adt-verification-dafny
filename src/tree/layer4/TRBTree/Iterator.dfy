@@ -118,7 +118,7 @@ module TRBTree.Iterator {
   function Traversed(it: iter, root: rbtree): set<K>
   {
     match it {
-      case PastTheBeginning => {}
+      case PastTheBeginning => keys(root)
       case PastTheEnd => keys(root)
       case Link(t) => smallerKeys(root, t.key)
     }
@@ -136,8 +136,23 @@ module TRBTree.Iterator {
   }
 
   lemma TraversedEq(it: iter, root: rbtree)
-    requires SearchTree(root)
+    requires Valid(it, root)
     ensures Traversed(it, root) == Traversed'(it, root)
+  {
+    if Index(it, root) == -1 || Index(it, root) == |toMap(root)| {
+      assert |toMap(root)| == size(root) by {
+        SizeLemmas(root);
+      }
+      if it.Link? {
+        SizeSmaller(root, it.link.key);
+        assert false;
+      }
+      assert it.PastTheBeginning? || it.PastTheEnd?;
+      assert toMap(root).Keys == keys(root);
+    } else {
+      assume false;
+    }
+  }
 
   function Next(it: iter, root: rbtree): iter
     requires HasPeek(it)
