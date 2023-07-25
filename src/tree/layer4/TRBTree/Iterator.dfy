@@ -173,7 +173,7 @@ module TRBTree.Iterator {
         SmallerKeysRightThread(it.link, root);
       }
       case Child(Empty()) => {
-        assume false;
+        SmallerKeysRightEmpty(it.link, root);
       }
       case Child(Node(_, _, _, _, _)) => {
         SmallerKeysMin(it.link, root);
