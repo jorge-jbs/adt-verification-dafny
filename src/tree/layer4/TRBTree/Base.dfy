@@ -1505,7 +1505,7 @@ module TRBTree.Base {
     }
   }
 
-  lemma {:verify false} MinInorderRec(it: rbtree, left: seq<(K, V)>, right: seq<(K, V)>, node: rbtree, root: rbtree)
+  lemma MinInorderRec(it: rbtree, left: seq<(K, V)>, right: seq<(K, V)>, node: rbtree, root: rbtree)
       returns (i: nat)
     decreases node
 
@@ -1578,6 +1578,123 @@ module TRBTree.Base {
       {
         InorderSmallerInorder(root, node.key);
         SmallerInorderIndex(root, node.key, i);
+      }
+      orderKeysToSet(smallerInorder(root, node.key)) + {node.key};
+      { SmallerOrderKeysIsTreeKeys(root, node.key); }
+      smallerKeys(root, node.key) + {node.key};
+    }
+  }
+
+  lemma SubtreeLeftEmpty(it: rbtree, prev: threadOrEmpty, node: rbtree, next: threadOrEmpty)
+    decreases node
+
+    requires SearchTree(node)
+    requires node.Node?
+    requires next.Thread?
+    requires ThreadedTreeRec(prev, node, next)
+    requires Subtree(it, node)
+    requires it.Node?
+    ensures it.right != Child(Empty)
+  {
+    if SubtreeP(it, node.left) && node.left.Child? && node.left.child.Node? {
+      SubtreeLeftEmpty(it, prev, node.left.child, Thread(node.key));
+    }
+    if SubtreeP(it, node.right) && node.right.Child? && node.right.child.Node? {
+      SubtreeLeftEmpty(it, Thread(node.key), node.right.child, next);
+    }
+  }
+
+  lemma SubtreeRightEmpty(it: rbtree, prev: threadOrEmpty, node: rbtree)
+    decreases node
+
+    requires SearchTree(node)
+    requires node.Node?
+    requires ThreadedTreeRec(prev, node, Child(Empty))
+    requires Subtree(it, node)
+    requires it.Node?
+    requires it.right.Child?
+    requires it.right.child.Empty?
+
+    ensures it == node || SubtreeP(it, node.right)
+  {
+    assert !SubtreeP(it, node.left) by {
+      if SubtreeP(it, node.left) {
+        SubtreeLeftEmpty(it, prev, node.left.child, Thread(node.key));
+        assert false;
+      }
+    }
+    if node.right.Child? && node.right.child.Node? {
+      SubtreeRightEmpty(it, Thread(node.key), node.right.child);
+    }
+  }
+
+  lemma InorderRightEmptyRec(it: rbtree, prev: threadOrEmpty, node: rbtree)
+    decreases node
+
+    requires SearchTree(node)
+    requires node.Node?
+    requires ThreadedTreeRec(prev, node, Child(Empty))
+    requires Subtree(it, node)
+    requires it.Node?
+    requires it.right.Child?
+    requires it.right.child.Empty?
+
+    ensures inorder(node)[|inorder(node)|-1].0 == it.key
+  {
+    assert node.right.Child?;
+    assert it == node || Subtree(it, node.right.child) by {
+      SubtreeRightEmpty(it, prev, node);
+    }
+    if node.right.child.Empty? {
+      assert it == node;
+    } else {
+      InorderRightEmptyRec(it, Thread(node.key), node.right.child);
+    }
+  }
+
+  lemma InorderRightEmptyRoot(it: rbtree, node: rbtree)
+    decreases node
+
+    requires SearchTree(node)
+    requires node.Node?
+    requires ThreadedTreeRoot(node)
+    requires Subtree(it, node)
+    requires it.Node?
+    requires it.right.Child?
+    requires it.right.child.Empty?
+
+    ensures inorder(node)[|inorder(node)|-1].0 == it.key
+  {
+    InorderRightEmptyRec(it, Child(Empty), node);
+  }
+
+  lemma SmallerKeysRightEmpty(node: rbtree, root: rbtree)
+    requires SearchTree(root)
+    requires Subtree(node, root)
+    requires ThreadedTreeRoot(root)
+    requires node.Node?
+    requires node.right.Child?
+    requires node.right.child.Empty?
+    ensures keys(root) == smallerKeys(root, node.key) + {node.key}
+  {
+    calc == {
+      keys(root);
+      { OrderKeysIsTreeKeys(root); }
+      orderKeysToSet(inorder(root));
+      {
+        assert forall s: seq<(K, V)> | s != [] :: s == s[..|s|-1] + [s[|s|-1]];
+        assert inorder(root) == inorder(root)[..|inorder(root)|-1] + [inorder(root)[|inorder(root)|-1]];
+        assert forall a, b: seq<(K, V)> | a == b :: orderKeysToSet(a) == orderKeysToSet(b);
+      }
+      orderKeysToSet(inorder(root)[..|inorder(root)|-1] + [inorder(root)[|inorder(root)|-1]]);
+      orderKeysToSet(inorder(root)[..|inorder(root)|-1]) + orderKeysToSet([inorder(root)[|inorder(root)|-1]]);
+      orderKeysToSet(inorder(root)[..|inorder(root)|-1]) + {inorder(root)[|inorder(root)|-1].0};
+      { InorderRightEmptyRoot(node, root); }
+      orderKeysToSet(inorder(root)[..|inorder(root)|-1]) + {node.key};
+      {
+        InorderSmallerInorder(root, node.key);
+        InorderRightEmptyRoot(node, root);
+        SmallerInorderIndex(root, node.key, |inorder(root)|-1);
       }
       orderKeysToSet(smallerInorder(root, node.key)) + {node.key};
       { SmallerOrderKeysIsTreeKeys(root, node.key); }
