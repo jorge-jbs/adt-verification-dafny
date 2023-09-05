@@ -798,6 +798,15 @@ module TRBTree.Base {
   lemma SizeKeysP(p: pointer)
     requires SearchTreeP(p)
     ensures sizeP(p) == |keysP(p)|
+  {
+    match p {
+      case Child(t) => {
+        SizeKeys(t);
+      }
+      case Thread(_) => {
+      }
+    }
+  }
 
   lemma SizeKeys(t: rbtree)
     requires SearchTree(t)
@@ -1345,9 +1354,10 @@ module TRBTree.Base {
     }
   }
 
-  lemma ThreadedKeys(t: rbtree)
+  lemma {:verify false} ThreadedKeys(t: rbtree)
     requires ThreadedTreeRoot(t)
     ensures keys(t) == keysAndThreads(t)
+  {}
 
   lemma SmallerKeysP(p: pointer, k': K)
     requires SearchTreeP(p)

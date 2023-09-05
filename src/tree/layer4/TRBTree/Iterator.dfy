@@ -108,12 +108,13 @@ module TRBTree.Iterator {
   }
 */
 
-  lemma PeekEq(it: iter, root: rbtree)
+  lemma {:verify false} PeekEq(it: iter, root: rbtree)
     requires Valid(it, root)
     requires SearchTree(root)
     requires HasPeek(it)
     requires HasPeek'(it, root)
     ensures Peek(it, root) == Peek'(it, root)
+  {}
 
   function Traversed(it: iter, root: rbtree): set<K>
   {
@@ -150,7 +151,7 @@ module TRBTree.Iterator {
       assert it.PastTheBeginning? || it.PastTheEnd?;
       assert toMap(root).Keys == keys(root);
     } else {
-      assume false;
+      assume {:axiom} false;
     }
   }
 

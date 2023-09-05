@@ -65,10 +65,12 @@ module TRBTree.FlipColors {
   {}
 
 /*
-  lemma {:verify false} FlipColorsModel(t: rbtree)
+  lemma FlipColorsModel(t: rbtree)
     requires t.Node?
-    requires t.left.Node?
-    requires t.right.Node?
+    requires t.left.Child?
+    requires t.left.child.Node?
+    requires t.right.Child?
+    requires t.right.child.Node?
     requires SearchTree(t)
     requires SearchTree(FlipColors(t))
     ensures toMap(t) == toMap(FlipColors(t))

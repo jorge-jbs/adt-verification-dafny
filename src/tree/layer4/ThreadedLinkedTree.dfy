@@ -210,6 +210,7 @@ module ThreadedLinkedTree {
       RB.toMap(TreeModel())
     }
 
+    /*
     method Find(k: K) returns (foundNode: TTNode?)
       requires Valid()
       requires SearchTree()
@@ -220,7 +221,6 @@ module ThreadedLinkedTree {
 
       requires allocated(Repr())
       ensures allocated(Repr())
-    /*
     {
       foundNode := FindRec(root, skeleton, k);
     }
