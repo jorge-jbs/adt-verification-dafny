@@ -1,111 +1,129 @@
 #!/usr/bin/env bash
 
 files=(
-    src/Order.dfy
-    src/ADT.dfy
-    #src/UtilsAux.dfy
-    src/OrderCloseEnded.dfy
-    src/Utils.dfy
-    src/MUtils.dfy
-
-#    src/linear/layer1/Deque.dfy
-#    src/linear/layer1/List.dfy
-#    src/linear/layer1/Queue.dfy
-#    src/linear/layer1/Stack.dfy
+#    src/Order.dfy
+#    src/ADT.dfy
+#    #src/UtilsAux.dfy
+#    src/OrderCloseEnded.dfy
+#    src/Utils.dfy
+#    src/MUtils.dfy
 #
-#    src/linear/layer2/ArrayList.dfy
-#    src/linear/layer2/LinkedList.dfy
+##    src/linear/layer1/Deque.dfy
+##    src/linear/layer1/List.dfy
+##    src/linear/layer1/Queue.dfy
+##    src/linear/layer1/Stack.dfy
+##
+##    src/linear/layer2/ArrayList.dfy
+##    src/linear/layer2/LinkedList.dfy
+##
+##    src/linear/layer3/ArrayQueueImpl.dfy
+##    src/linear/layer3/ArrayDequeImpl.dfy
+##    src/linear/layer3/LinkedDequeImpl.dfy
+##    src/linear/layer3/SinglyLinkedQueueImpl.dfy
+##    src/linear/layer3/LinkedStackImpl.dfy
+##    src/linear/layer3/ArrayStackImpl.dfy
+##    src/linear/layer3/ArrayListImpl.dfy
+##    src/linear/layer3/DoublyLinkedQueueImpl.dfy
+##    src/linear/layer3/LinkedListImpl.dfy
+##
+##    src/linear/layer4/SinglyLinkedList.dfy
+##    src/linear/layer4/DoublyLinkedListWithLast.dfy
+##    src/linear/layer4/SinglyLinkedListWithLast.dfy
+##    src/linear/layer4/DoublyLinkedList.dfy
+##    #src/linear/layer4/CircularDoublyLinkedList.dfy
 #
-#    src/linear/layer3/ArrayQueueImpl.dfy
-#    src/linear/layer3/ArrayDequeImpl.dfy
-#    src/linear/layer3/LinkedDequeImpl.dfy
-#    src/linear/layer3/SinglyLinkedQueueImpl.dfy
-#    src/linear/layer3/LinkedStackImpl.dfy
-#    src/linear/layer3/ArrayStackImpl.dfy
-#    src/linear/layer3/ArrayListImpl.dfy
-#    src/linear/layer3/DoublyLinkedQueueImpl.dfy
-#    src/linear/layer3/LinkedListImpl.dfy
+#    src/tree/KeyValue.dfy
 #
-#    src/linear/layer4/SinglyLinkedList.dfy
-#    src/linear/layer4/DoublyLinkedListWithLast.dfy
-#    src/linear/layer4/SinglyLinkedListWithLast.dfy
-#    src/linear/layer4/DoublyLinkedList.dfy
-#    #src/linear/layer4/CircularDoublyLinkedList.dfy
+#    #src/tree/layer1/OrderedSetUtils.dfy
+#    #src/tree/layer1/UnorderedSet.dfy
+#    #src/tree/layer1/UnorderedMultiset.dfy
+#    #src/tree/layer1/OrderedSet.dfy
+#    #src/tree/layer1/OrderedSetForward.dfy
+#    #src/tree/layer1/OrderedMultisetUtils.dfy
+#    #src/tree/layer1/OrderedSetL.dfy
+#    src/tree/layer1/OrderedMap.dfy
+#    src/tree/layer1/OrderedMapForward.dfy
+#    #src/tree/layer1/OrderedMultiset.dfy
+#    #src/tree/layer1/OrderedMultisetForward.dfy
+#    src/tree/layer1/UnorderedMap.dfy
+#
+#    #src/tree/layer2/UnorderedSetArrayList.dfy
+#    #src/tree/layer2/UnorderedSetLinkedList.dfy
+#
+#    #src/tree/layer3/OrderedMultisetImpl.dfy
+#    #src/tree/layer3/OrderedMapImplIter.dfy
+#    src/tree/layer3/OrderedMapImpl.dfy
+#    #src/tree/layer3/IterTestImpl.dfy
+#    #src/tree/layer3/PruebaAbsurda.dfy
+#    #src/tree/layer3/UnorderedSetImplLinkedList.dfy
+#    #src/tree/layer3/UnorderedSetImplArrayList.dfy
+#
+#    src/tree/layer4/LinkedTree.dfy
+#    src/tree/layer4/Color.dfy
+#    src/tree/layer4/RBTree.dfy
+#    src/tree/layer4/LinkedTree/RBInsert.dfy
+#    src/tree/layer4/LinkedTree/SInsert.dfy
+#    src/tree/layer4/LinkedTree/RBRemove.dfy
+#    src/tree/layer4/LinkedTree/Find.dfy
+#    src/tree/layer4/Tree.dfy
+#    src/tree/layer4/TNode.dfy
+#    src/tree/layer4/RBTree/RBInsert.dfy
+#    src/tree/layer4/RBTree/SInsert.dfy
+#    src/tree/layer4/RBTree/RBRemove.dfy
+#    src/tree/layer4/RBTree/Iterator.1.dfy
+#    src/tree/layer4/RBTree/Iterator.2.dfy
+#    src/tree/layer4/RBTree/Base.dfy
+#    src/tree/layer4/RBTree/RemoveElemth.dfy
+#
+#    #examples/reordenando-la-cola.dfy
+#    #examples/accidentes-aereos.dfy
+#    #examples/iterators/AllProperty.dfy
+#    #examples/iterators/ElimDupNoIts.dfy
+#    #examples/iterators/Quicksort.dfy
+#    #examples/iterators/Dup_Utils.dfy
+#    #examples/iterators/FillArray.dfy
+#    #examples/iterators/ListaPersonas.dfy
+#    #examples/iterators/DupElementsMap.dfy
+#    #examples/iterators/Misc.dfy
+#    #examples/iterators/FibPrefix.dfy
+#    #examples/iterators/FindMax.dfy
+#    #examples/iterators/ElimDupMix.dfy
+#    #examples/iterators/FindMaxMap.dfy
+#    #examples/iterators/AllRelated.dfy
+#    #examples/iterators/FilterEven.dfy
+#    #examples/iterators/FillArrayMap.dfy
+#    #examples/iterators/DupElements.dfy
+#    #examples/iterators/ElimDupMap.dfy
+#    #examples/iterators/ElimDup.dfy
+#    #examples/iterators/Merge.dfy
+#    #examples/accidentes-aereos-main.dfy
+#    #examples/TestArrayList.dfy
+#    #examples/ListOfObjects.dfy
+#    #examples/reordenando-la-cola-main.dfy
+#    #examples/TestMeth.dfy
+#    #examples/sets/unordSetIntersection.dfy
+#    #examples/sets/ordSetIntersection.dfy
+#    #examples/sets/ordSetContainedL.dfy
+#    #examples/sets/unordSetContained.dfy
+#    #examples/sets/ordSetContained.dfy
 
-    src/tree/KeyValue.dfy
-
-    #src/tree/layer1/OrderedSetUtils.dfy
-    #src/tree/layer1/UnorderedSet.dfy
-    #src/tree/layer1/UnorderedMultiset.dfy
-    #src/tree/layer1/OrderedSet.dfy
-    #src/tree/layer1/OrderedSetForward.dfy
-    #src/tree/layer1/OrderedMultisetUtils.dfy
-    #src/tree/layer1/OrderedSetL.dfy
-    src/tree/layer1/OrderedMap.dfy
-    src/tree/layer1/OrderedMapForward.dfy
-    #src/tree/layer1/OrderedMultiset.dfy
-    #src/tree/layer1/OrderedMultisetForward.dfy
-    src/tree/layer1/UnorderedMap.dfy
-
-    #src/tree/layer2/UnorderedSetArrayList.dfy
-    #src/tree/layer2/UnorderedSetLinkedList.dfy
-
-    #src/tree/layer3/OrderedMultisetImpl.dfy
-    #src/tree/layer3/OrderedMapImplIter.dfy
-    src/tree/layer3/OrderedMapImpl.dfy
-    #src/tree/layer3/IterTestImpl.dfy
-    #src/tree/layer3/PruebaAbsurda.dfy
-    #src/tree/layer3/UnorderedSetImplLinkedList.dfy
-    #src/tree/layer3/UnorderedSetImplArrayList.dfy
-
-    src/tree/layer4/LinkedTree.dfy
-    src/tree/layer4/Color.dfy
-    src/tree/layer4/RBTree.dfy
-    src/tree/layer4/LinkedTree/RBInsert.dfy
-    src/tree/layer4/LinkedTree/SInsert.dfy
-    src/tree/layer4/LinkedTree/RBRemove.dfy
-    src/tree/layer4/LinkedTree/Find.dfy
-    src/tree/layer4/Tree.dfy
-    src/tree/layer4/TNode.dfy
-    src/tree/layer4/RBTree/RBInsert.dfy
-    src/tree/layer4/RBTree/SInsert.dfy
-    src/tree/layer4/RBTree/RBRemove.dfy
-    src/tree/layer4/RBTree/Iterator.1.dfy
-    src/tree/layer4/RBTree/Iterator.2.dfy
-    src/tree/layer4/RBTree/Base.dfy
-    src/tree/layer4/RBTree/RemoveElemth.dfy
-
-    #examples/reordenando-la-cola.dfy
-    #examples/accidentes-aereos.dfy
-    #examples/iterators/AllProperty.dfy
-    #examples/iterators/ElimDupNoIts.dfy
-    #examples/iterators/Quicksort.dfy
-    #examples/iterators/Dup_Utils.dfy
-    #examples/iterators/FillArray.dfy
-    #examples/iterators/ListaPersonas.dfy
-    #examples/iterators/DupElementsMap.dfy
-    #examples/iterators/Misc.dfy
-    #examples/iterators/FibPrefix.dfy
-    #examples/iterators/FindMax.dfy
-    #examples/iterators/ElimDupMix.dfy
-    #examples/iterators/FindMaxMap.dfy
-    #examples/iterators/AllRelated.dfy
-    #examples/iterators/FilterEven.dfy
-    #examples/iterators/FillArrayMap.dfy
-    #examples/iterators/DupElements.dfy
-    #examples/iterators/ElimDupMap.dfy
-    #examples/iterators/ElimDup.dfy
-    #examples/iterators/Merge.dfy
-    #examples/accidentes-aereos-main.dfy
-    #examples/TestArrayList.dfy
-    #examples/ListOfObjects.dfy
-    #examples/reordenando-la-cola-main.dfy
-    #examples/TestMeth.dfy
-    #examples/sets/unordSetIntersection.dfy
-    #examples/sets/ordSetIntersection.dfy
-    #examples/sets/ordSetContainedL.dfy
-    #examples/sets/unordSetContained.dfy
-    #examples/sets/ordSetContained.dfy
+    src/tree/layer4/TRBTree/Base.dfy
+    src/tree/layer4/TRBTree/FlipColors.dfy
+    src/tree/layer4/TRBTree/Rotate.dfy
+    src/tree/layer4/TRBTree/Restore.dfy
+    src/tree/layer4/TRBTree/TRBInsert.dfy
+    src/tree/layer4/TRBTree/MoveRed.dfy
+    src/tree/layer4/TRBTree/RemoveMin.dfy
+    src/tree/layer4/TRBTree/UpdatePrev.dfy
+    src/tree/layer4/TRBTree/Iterator.dfy
+    src/tree/layer4/ThreadedLinkedTree.dfy
+    src/tree/layer4/ThreadedLinkedTree/FlipColors.dfy
+    src/tree/layer4/ThreadedLinkedTree/Rotate.dfy
+    src/tree/layer4/ThreadedLinkedTree/Restore.dfy
+    src/tree/layer4/ThreadedLinkedTree/TRBInsert.dfy
+    src/tree/layer4/ThreadedLinkedTree/Min.dfy
+    src/tree/layer4/TTree.dfy
+    src/tree/layer4/TTNode.dfy
 )
 
 NINJA_FILE=build.ninja
