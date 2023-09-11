@@ -65,6 +65,11 @@ module TRBTree.Rotate {
     }
   }
 
+  lemma {:verify false} RotateLeftSize(t: rbtree)
+    requires RotateLeft.requires(t)
+    ensures size(t) == size(RotateLeft(t))
+  {}
+
   lemma RotateLeftThreaded(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty)
     requires t.Node?
     requires t.right.Child?
@@ -96,6 +101,117 @@ module TRBTree.Rotate {
       assert BlackHeightP(RotateRight(t).right.child.left) == BlackHeightP(t.left.child.right);
     }
   }
+
+  lemma RotateRightSize(t: rbtree)
+    requires RotateRight.requires(t)
+    ensures size(t) == size(RotateRight(t))
+  {
+    if t.left.child.right.Thread? {
+      calc == {
+        size(t);
+
+        1 +
+        sizeP(t.left) +
+        sizeP(t.right);
+
+        1 +
+        1 +
+        sizeP(t.left.child.left) +
+        sizeP(t.left.child.right) +
+        sizeP(t.right);
+
+        1 +
+        sizeP(t.left.child.left) +
+        1 +
+        sizeP(Thread(t.left.child.key)) +
+        sizeP(t.right);
+
+        1 +
+        sizeP(t.left.child.left) +
+        sizeP(
+          Child(Node(
+              Thread(t.left.child.key),
+              t.key,
+              t.value,
+              t.right,
+              Red
+            ))
+        );
+
+        size(
+          Node(
+            t.left.child.left,
+            t.left.child.key,
+            t.left.child.value,
+            Child(Node(
+              if t.left.child.right.Thread? then
+                Thread(t.left.child.key)
+              else
+                t.left.child.right,
+              t.key,
+              t.value,
+              t.right,
+              Red
+            )),
+            t.color
+          )
+        );
+        size(RotateRight(t));
+      }
+    } else {
+      calc == {
+        size(t);
+        1 +
+        sizeP(t.left) +
+        sizeP(t.right);
+        1 +
+        1 +
+        sizeP(t.left.child.left) +
+        sizeP(t.left.child.right) +
+        sizeP(t.right);
+        1 +
+        sizeP(t.left.child.left) +
+        1 +
+        sizeP(t.left.child.right) +
+        sizeP(t.right);
+        1 +
+        sizeP(t.left.child.left) +
+        sizeP(
+          Child(Node(
+              t.left.child.right,
+              t.key,
+              t.value,
+              t.right,
+              Red
+            ))
+        );
+        size(
+          Node(
+            t.left.child.left,
+            t.left.child.key,
+            t.left.child.value,
+            Child(Node(
+              if t.left.child.right.Thread? then
+                Thread(t.left.child.key)
+              else
+                t.left.child.right,
+              t.key,
+              t.value,
+              t.right,
+              Red
+            )),
+            t.color
+          )
+        );
+        size(RotateRight(t));
+      }
+    }
+  }
+
+  lemma {:verify false} RotateRightSizeWithPointers(t: rbtree)
+    requires RotateRight.requires(t)
+    ensures sizeWithPointers(t) == sizeWithPointers(RotateRight(t))
+  {}
 
   lemma RotateRightThreaded(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty)
     requires t.Node?

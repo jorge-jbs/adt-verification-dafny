@@ -5,6 +5,7 @@ include "../../../../src/tree/layer1/OrderedSetUtils.dfy"
 
 module TRBTree.Base {
   import opened Utils
+  import opened Utils.Printer
   import opened KeyValue
   import opened Color
   import opened OrderedSetUtils
@@ -15,26 +16,6 @@ module TRBTree.Base {
 
   datatype pointer = Child(child: rbtree) | Thread(thread: K)
 
-/*
-  datatype option<A> = Some(A) | Nothing
-
-  function method fromSome<A>(ox: option<A>): A
-    requires ox.Some?
-  {
-    match ox {
-      case Some(x) => x
-    }
-  }
- 
-  function method optionTo(oP: option<K>): pointer
-  {
-    match o {
-      case Nothing => Child(Empty())
-      case Some(k) => Thread(k)
-    }
-  }
-  */
-
   function method applyToChild<A>(p: pointer, f: rbtree -> A, d: A): A
   {
     match p {
@@ -42,6 +23,70 @@ module TRBTree.Base {
       case Thread(_) => d
     }
   }
+
+  function method ident(): string
+  {
+    "|   "
+  }
+
+  function method pointerToString'(prefix: string, p: pointer): string
+    decreases p
+  {
+    match p {
+      case Thread(k) => prefix + "Thread(" + intToString(k) + ")"
+      case Child(t) =>
+        prefix + "Child(\n" +
+        rbtreeToString'(prefix + ident(), t) + "\n" +
+        prefix + ")"
+    }
+  }
+
+  function method rbtreeToString'(prefix: string, t: rbtree): string
+    decreases t
+  {
+    match t {
+      case Empty => prefix + "Empty"
+      case Node(l, k, v, r, c) =>
+        prefix + "Node(\n" +
+        pointerToString'(prefix + ident(), l) + ",\n" +
+        prefix + ident() + intToString(k) + ",\n" +
+        prefix + ident() + intToString(v) + ",\n" +
+        pointerToString'(prefix + ident(), r) + ",\n" +
+        prefix + ident() + colorToString(c) + "\n" +
+        prefix + ")"
+    }
+  }
+
+  function method pointerToString(p: pointer): string
+  {
+    pointerToString'("", p)
+  }
+
+  function method rbtreeToString(t: rbtree): string
+  {
+    rbtreeToString'("", t)
+  }
+
+  function method BlackenRoot(t: rbtree): rbtree
+  {
+    match t {
+      case Empty => Empty
+      case Node(l, k, v, r, c) => Node(l, k, v, r, Black)
+    }
+  }
+
+  function method ConditionalReddenRoot(t: rbtree): rbtree
+  {
+    match t {
+      case Empty => Empty
+      case Node(l, k, v, r, c) =>
+        if isRedP(l) then
+          Node(l, k, v, r, c)
+        else
+          Node(l, k, v, r, Red)
+    }
+  }
+
 
   function method keysP(p: pointer): set<K>
     ensures p.Child? ==> keys(p.child) == keysP(p)
@@ -162,6 +207,23 @@ module TRBTree.Base {
       case Node(l, k, v, r, c) => 1 + sizeP(l) + sizeP(r)
     }
   }
+
+  function method sizeWithPointersP(p: pointer): nat
+  {
+    match p {
+      case Child(t) => 1 + sizeWithPointers(t)
+      case Thread(_) => 0
+    }
+  }
+
+  function method sizeWithPointers(t: rbtree): nat
+  {
+    match t {
+      case Empty => 0
+      case Node(l, k, v, r, c) => 1 + sizeWithPointersP(l) + sizeWithPointersP(r)
+    }
+  }
+
 
   /*
   function method toMapRec(t: rbtree): map<K, V>
@@ -1277,6 +1339,11 @@ module TRBTree.Base {
 
   type threadOrEmpty = p: pointer | p.Thread? || (p.Child? && p.child.Empty?) witness Child(Empty)
 
+  function method IsThreadOrEmpty(p: pointer): bool
+  {
+    p.Thread? || p == Child(Empty)
+  }
+
 /*
   function method ThreadedTreeRecP(prev: threadOrEmpty, p: pointer, next: threadOrEmpty, onLeft: bool): bool
     ensures p.Child? && !p.child.Empty? ==>
@@ -1712,7 +1779,7 @@ module TRBTree.Base {
     }
   }
 
-  function ThreadedTreeExample1(): rbtree {
+  function method ThreadedTreeExample1(): rbtree {
     Node(
       Child(Node(
         Child(Node(Child(Empty), 1, 0, Thread(2), Black)),

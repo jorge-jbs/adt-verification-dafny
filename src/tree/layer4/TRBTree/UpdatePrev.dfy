@@ -5,7 +5,7 @@ module TRBTree.UpdatePrev {
   import opened Color
   import opened Base
 
-  function UpdatePrevP(
+  function method UpdatePrevP(
       newPrev: threadOrEmpty,
       node: pointer
     ): pointer
@@ -16,7 +16,7 @@ module TRBTree.UpdatePrev {
     }
   }
 
-  function UpdatePrev(
+  function method UpdatePrev(
       newPrev: threadOrEmpty,
       node: rbtree
     ): rbtree
