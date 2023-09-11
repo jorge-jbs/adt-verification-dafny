@@ -159,4 +159,76 @@ module Utils {
       xs[..i] + xs[i+1..]
     }
   }
+
+  module {:options "-functionSyntax:4"} Option {
+    datatype option<A> = Some(unwrap: A) | Nothing {
+      predicate IsFailure() {
+        Nothing?
+      }
+
+      function PropagateFailure<A>(): option<A>
+        requires IsFailure()
+      {
+        Nothing
+      }
+
+      function Extract(): A
+        requires Some?
+      {
+        this.unwrap
+      }
+    }
+
+    function FromSome<A>(ox: option<A>): A
+      requires ox.Some?
+    {
+      match ox {
+        case Some(x) => x
+      }
+    }
+
+    function Bind<A, B>(m: option<A>, k: A --> option<B>): option<B>
+      requires m.Nothing? || k.requires(m.unwrap)
+    {
+      match m {
+        case Some(x) => k(x)
+        case Nothing() => Nothing
+      }
+    }
+
+    function Guard(b: bool): option<()>
+    {
+      if b then
+        Some(())
+      else
+        Nothing
+    }
+  }
+
+  module {:options "/functionSyntax:4"} Printer {
+    function natToString(n: nat): string
+    {
+      match n {
+        case 0 => "0"
+        case 1 => "1"
+        case 2 => "2"
+        case 3 => "3"
+        case 4 => "4"
+        case 5 => "5"
+        case 6 => "6"
+        case 7 => "7"
+        case 8 => "8"
+        case 9 => "9"
+        case _ => natToString(n / 10) + natToString(n % 10)
+      }
+    }
+
+    function intToString(n: int): string
+    {
+      if n < 0 then
+        "-" + natToString(-n)
+      else
+        "" + natToString(n)
+    }
+  }
 }

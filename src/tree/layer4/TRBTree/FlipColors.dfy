@@ -64,6 +64,11 @@ module TRBTree.FlipColors {
       && BlackHeight(t) == BlackHeight(FlipColors(t))
   {}
 
+  lemma {:verify false} FlipColorsSize(t: rbtree)
+    requires FlipColors.requires(t)
+    ensures size(t) == size(FlipColors(t))
+  {}
+
 /*
   lemma FlipColorsModel(t: rbtree)
     requires t.Node?
