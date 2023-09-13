@@ -6,11 +6,9 @@ module TRBTree.UpdateNext {
   import opened Base
 
   function method UpdateNextP(newNext: threadOrEmpty, p: pointer): pointer
+    requires !IsThreadOrEmpty(p)
   {
-    match p {
-      case Thread(k) => Thread(k)
-      case Child(t) => Child(UpdateNext(newNext, t))
-    }
+    Child(UpdateNext(newNext, p.child))
   }
 
   function method UpdateNext(newNext: threadOrEmpty, t: rbtree): rbtree
@@ -19,14 +17,17 @@ module TRBTree.UpdateNext {
       case Empty => Empty
       case Node(l, k, v, Thread(_), c) =>
         Node(l, k, v, newNext, c)
+      case Node(l, k, v, Child(Empty), c) =>
+        Node(l, k, v, newNext, c)
       case Node(l, k, v, r, c) =>
-        Node(l, k, v, UpdateNextP(newNext, r), c)
+        Node(l, k, v, Child(UpdateNext(newNext, r.child)), c)
     }
   }
 
   lemma UpdateNextPSpec(newNext: threadOrEmpty, p: pointer)
     decreases sizeWithPointersP(p)
 
+    requires !IsThreadOrEmpty(p)
     requires SearchTreeP(p)
     requires RedBlackTreeP(p)
 
@@ -35,17 +36,10 @@ module TRBTree.UpdateNext {
     ensures BlackHeightP(UpdateNextP(newNext, p)) == BlackHeightP(p)
     ensures keysP(UpdateNextP(newNext, p)) == keysP(p)
   {
-    match p {
-      case Thread(k) => {}
-      case Child(t) => {
-        UpdateNextSpec(newNext, t);
-      }
-    }
+    UpdateNextSpec(newNext, p.child);
   }
 
   lemma UpdateNextSpec(newNext: threadOrEmpty, t: rbtree)
-    decreases sizeWithPointers(t)
-
     requires SearchTree(t)
     requires RedBlackTree(t)
 
@@ -57,8 +51,51 @@ module TRBTree.UpdateNext {
     match t {
       case Empty => {}
       case Node(l, k, v, Thread(_), c) => {}
+      case Node(l, k, v, Child(Empty), c) => {}
       case Node(l, k, v, r, c) => {
-        UpdateNextPSpec(newNext, r);
+        UpdateNextSpec(newNext, r.child);
+        assert forall m | m in keysP(r) :: k < m;
+      }
+    }
+  }
+
+  lemma UpdateNextPThreaded(
+      newNext: threadOrEmpty,
+      prev: threadOrEmpty, 
+      p: pointer, 
+      next: threadOrEmpty
+    )
+    decreases sizeWithPointersP(p)
+
+    requires !IsThreadOrEmpty(p)
+    requires ThreadedTreeRec(prev, p.child, next)
+    ensures ThreadedTreeRec(prev, UpdateNextP(newNext, p).child, newNext)
+  {
+    match p {
+      case Child(t) => {
+        if t.Node? {
+          UpdateNextThreaded(newNext, prev, t, next);
+        }
+      }
+    }
+  }
+
+  lemma UpdateNextThreaded(
+      newNext: threadOrEmpty,
+      prev: threadOrEmpty, 
+      t: rbtree, 
+      next: threadOrEmpty
+    )
+    decreases sizeWithPointers(t)
+
+    requires t.Node?
+    requires ThreadedTreeRec(prev, t, next)
+    ensures ThreadedTreeRec(prev, UpdateNext(newNext, t), newNext)
+    {
+    match t {
+      case Node(_, _, _, Thread(_), _) | Node(_, _, _, Child(Empty), _) => {}
+      case Node(l, k, v, r, c) => {
+        UpdateNextPThreaded(newNext, Thread(k), r, next);
       }
     }
   }
