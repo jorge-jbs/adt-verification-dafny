@@ -1402,6 +1402,19 @@ module TRBTree.Base {
     }
   }
 
+  function method ThreadedTreeRecPCond(
+      prev: threadOrEmpty, 
+      p: pointer, 
+      next: threadOrEmpty, 
+      isLeft: bool
+    ): bool
+  {
+    if isLeft then
+      ThreadedTreeRecPL(prev, p, next)
+    else
+      ThreadedTreeRecPR(prev, p, next)
+  }
+
   function method ThreadedTreeRec(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty): bool
     decreases t
     requires t.Node?
