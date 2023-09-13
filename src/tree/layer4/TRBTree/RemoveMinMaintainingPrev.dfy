@@ -15,21 +15,24 @@ module TRBTree.RemoveMinMaintainingPrev {
   import opened Res = Restore
   import opened MoveRed
 
-  function method RemoveMinMaintainingPrevP(p: pointer): option<(pointer, K, V)>
+  function method RemoveMinMaintainingPrevP(p: pointer, isLeft: bool): option<(pointer, K, V)>
     requires p.Child?
     requires p.child.Node?
     decreases sizeWithPointersP(p)
   {
-    RemoveMinMaintainingPrev(p.child)
+    RemoveMinMaintainingPrev(p.child, isLeft)
   }
 
-  function method RemoveMinMaintainingPrev(t: rbtree): option<(pointer, K, V)>
+  function method RemoveMinMaintainingPrev(t: rbtree, isLeft: bool): option<(pointer, K, V)>
     requires t.Node?
     decreases sizeWithPointers(t)
   {
     if IsThreadOrEmpty(t.left) then
       var _ :- Guard(t.right.Thread? || t.right == Child(Empty));
-      Some((Thread(t.key), t.key, t.value))
+      if isLeft then
+        Some((Thread(t.key), t.key, t.value))
+      else
+        Some((t.right, t.key, t.value))
     else
       var t' :-
         if isBlackP(t.left) && !isRedP(t.left.child.left) then
@@ -38,7 +41,7 @@ module TRBTree.RemoveMinMaintainingPrev {
           Some(MoveRedLeft(t))
         else
           Some(t);
-      var (l', minK, minV) :- RemoveMinMaintainingPrevP(t'.left);
+      var (l', minK, minV) :- RemoveMinMaintainingPrevP(t'.left, true);
       Some((Child(Restore(Node(l', t'.key, t'.value, t'.right, t'.color))), minK, minV))
   }
 
@@ -49,7 +52,7 @@ module TRBTree.RemoveMinMaintainingPrev {
     assert ThreadedTreeRoot(t1);
     assert RedBlackTreeRoot(t1);
     assert SearchTree(t1);
-    var (t2, minK, minV) := RemoveMinMaintainingPrev(t1').unwrap;
+    var (t2, minK, minV) := RemoveMinMaintainingPrev(t1', true).unwrap;
     var t2' := BlackenRoot(t2.child);
     assert minK == 1;
     print rbtreeToString(t1') + "\n\n";
@@ -96,10 +99,10 @@ module TRBTree.RemoveMinMaintainingPrev {
     var t1 := ThreadedTreeExample1();
     var t1' := ConditionalReddenRoot(t1);
     print rbtreeToString(t1') + "\n\n";
-    print pointerToString(RemoveMinMaintainingPrev(t1'.right.child).unwrap.0) + "\n\n";
+    print pointerToString(RemoveMinMaintainingPrev(t1'.right.child, true).unwrap.0) + "\n\n";
   }
 
-  lemma RemoveMinMaintainingPrevPSpec(p: pointer)
+  lemma RemoveMinMaintainingPrevPSpec(p: pointer, isLeft: bool)
     decreases sizeWithPointersP(p)
 
     requires p.Child?
@@ -109,19 +112,19 @@ module TRBTree.RemoveMinMaintainingPrev {
     requires !(isRed(p.child) && isRedP(p.child.left))
     requires isRed(p.child) || isRedP(p.child.left)
 
-    ensures RemoveMinMaintainingPrevP(p).Some?
-    ensures keysP(RemoveMinMaintainingPrevP(p).unwrap.0) == keys(p.child) - {RemoveMinMaintainingPrevP(p).unwrap.1}
-    ensures RemoveMinMaintainingPrevP(p).unwrap.1 in keys(p.child)
-    //ensures forall k | k in keys(p.child) :: RemoveMinMaintainingPrevP(p).unwrap.1 <= k
-    ensures forall k | k in keysP(RemoveMinMaintainingPrevP(p).unwrap.0) :: RemoveMinMaintainingPrevP(p).unwrap.1 < k
+    ensures RemoveMinMaintainingPrevP(p, isLeft).Some?
+    ensures keysP(RemoveMinMaintainingPrevP(p, isLeft).unwrap.0) == keys(p.child) - {RemoveMinMaintainingPrevP(p, isLeft).unwrap.1}
+    ensures RemoveMinMaintainingPrevP(p, isLeft).unwrap.1 in keys(p.child)
+    //ensures forall k | k in keys(p.child) :: RemoveMinMaintainingPrevP(p, isLeft).unwrap.1 <= k
+    ensures forall k | k in keysP(RemoveMinMaintainingPrevP(p, isLeft).unwrap.0) :: RemoveMinMaintainingPrevP(p, isLeft).unwrap.1 < k
 
-    ensures SearchTreeP(RemoveMinMaintainingPrevP(p).unwrap.0)
-    ensures RedBlackTreeP(RemoveMinMaintainingPrevP(p).unwrap.0)
-    ensures BlackHeightP(RemoveMinMaintainingPrevP(p).unwrap.0) == BlackHeight(p.child)
-    ensures isRedP(RemoveMinMaintainingPrevP(p).unwrap.0) ==> !isRedP(RemoveMinMaintainingPrevP(p).unwrap.0.child.left)
-    ensures !isRed(p.child) ==> !isRedP(RemoveMinMaintainingPrevP(p).unwrap.0)
+    ensures SearchTreeP(RemoveMinMaintainingPrevP(p, isLeft).unwrap.0)
+    ensures RedBlackTreeP(RemoveMinMaintainingPrevP(p, isLeft).unwrap.0)
+    ensures BlackHeightP(RemoveMinMaintainingPrevP(p, isLeft).unwrap.0) == BlackHeight(p.child)
+    ensures isRedP(RemoveMinMaintainingPrevP(p, isLeft).unwrap.0) ==> !isRedP(RemoveMinMaintainingPrevP(p, isLeft).unwrap.0.child.left)
+    ensures !isRed(p.child) ==> !isRedP(RemoveMinMaintainingPrevP(p, isLeft).unwrap.0)
   {
-    RemoveMinMaintainingPrevSpec(p.child);
+    RemoveMinMaintainingPrevSpec(p.child, isLeft);
   }
 
   lemma SetDiffComm<K>(r: set<K>, k: K, s: set<K>)
@@ -129,7 +132,7 @@ module TRBTree.RemoveMinMaintainingPrev {
     ensures r - {k} + s == r + s - {k}
   {}
 
-  lemma RemoveMinMaintainingPrevSpec(t: rbtree)
+  lemma RemoveMinMaintainingPrevSpec(t: rbtree, isLeft: bool)
     decreases sizeWithPointers(t)
 
     requires t.Node?
@@ -138,17 +141,17 @@ module TRBTree.RemoveMinMaintainingPrev {
     requires !(isRed(t) && isRedP(t.left))
     requires isRed(t) || isRedP(t.left)
 
-    ensures RemoveMinMaintainingPrev(t).Some?
-    ensures keysP(RemoveMinMaintainingPrev(t).unwrap.0) == keys(t) - {RemoveMinMaintainingPrev(t).unwrap.1}
-    ensures RemoveMinMaintainingPrev(t).unwrap.1 in keys(t)
-    //ensures forall k | k in keys(t) :: RemoveMinMaintainingPrev(t).unwrap.1 <= k
-    ensures forall k | k in keysP(RemoveMinMaintainingPrev(t).unwrap.0) :: RemoveMinMaintainingPrev(t).unwrap.1 < k
+    ensures RemoveMinMaintainingPrev(t, isLeft).Some?
+    ensures keysP(RemoveMinMaintainingPrev(t, isLeft).unwrap.0) == keys(t) - {RemoveMinMaintainingPrev(t, isLeft).unwrap.1}
+    ensures RemoveMinMaintainingPrev(t, isLeft).unwrap.1 in keys(t)
+    //ensures forall k | k in keys(t) :: RemoveMinMaintainingPrev(t, isLeft).unwrap.1 <= k
+    ensures forall k | k in keysP(RemoveMinMaintainingPrev(t, isLeft).unwrap.0) :: RemoveMinMaintainingPrev(t, isLeft).unwrap.1 < k
 
-    ensures SearchTreeP(RemoveMinMaintainingPrev(t).unwrap.0)
-    ensures RedBlackTreeP(RemoveMinMaintainingPrev(t).unwrap.0)
-    ensures BlackHeightP(RemoveMinMaintainingPrev(t).unwrap.0) == BlackHeight(t)
-    ensures isRedP(RemoveMinMaintainingPrev(t).unwrap.0) ==> !isRedP(RemoveMinMaintainingPrev(t).unwrap.0.child.left)
-    ensures !isRed(t) ==> !isRedP(RemoveMinMaintainingPrev(t).unwrap.0)
+    ensures SearchTreeP(RemoveMinMaintainingPrev(t, isLeft).unwrap.0)
+    ensures RedBlackTreeP(RemoveMinMaintainingPrev(t, isLeft).unwrap.0)
+    ensures BlackHeightP(RemoveMinMaintainingPrev(t, isLeft).unwrap.0) == BlackHeight(t)
+    ensures isRedP(RemoveMinMaintainingPrev(t, isLeft).unwrap.0) ==> !isRedP(RemoveMinMaintainingPrev(t, isLeft).unwrap.0.child.left)
+    ensures !isRed(t) ==> !isRedP(RemoveMinMaintainingPrev(t, isLeft).unwrap.0)
   {
     if IsThreadOrEmpty(t.left) {
     } else {
@@ -164,10 +167,10 @@ module TRBTree.RemoveMinMaintainingPrev {
       if isBlackP(t.left) && !isRedP(t.left.child.left) {
         MoveRedLeftSpec(t);
       }
-      RemoveMinMaintainingPrevPSpec(t'.left);
-      assert RemoveMinMaintainingPrevP(t'.left).Some?;
+      RemoveMinMaintainingPrevPSpec(t'.left, true);
+      assert RemoveMinMaintainingPrevP(t'.left, true).Some?;
       assert forall m | m in keysP(t'.left) :: m < t'.key;
-      var (l', minK, minV) := RemoveMinMaintainingPrevP(t'.left).unwrap;
+      var (l', minK, minV) := RemoveMinMaintainingPrevP(t'.left, true).unwrap;
       var t'' :=
         Node(
           l',
@@ -179,7 +182,7 @@ module TRBTree.RemoveMinMaintainingPrev {
       var t''' := Restore(t'');
       RestoreSpec(t'');
       calc == {
-        keysP(RemoveMinMaintainingPrev(t).unwrap.0);
+        keysP(RemoveMinMaintainingPrev(t, true).unwrap.0);
         keys(t''');
         keys(t'');
         keysP(l') + {t'.key} + keysP(t'.right);
@@ -194,32 +197,44 @@ module TRBTree.RemoveMinMaintainingPrev {
     }
   }
 
-  lemma RemoveMinMaintainingPrevPThreaded(prev: threadOrEmpty, p: pointer, next: threadOrEmpty)
+  lemma RemoveMinMaintainingPrevPThreaded(
+      prev: threadOrEmpty, 
+      p: pointer, 
+      next: threadOrEmpty, 
+      isLeft: bool
+    )
     decreases sizeWithPointersP(p)
 
     requires p.Child?
     requires p.child.Node?
     requires ThreadedTreeRec(prev, p.child, next)
-    requires RemoveMinMaintainingPrevP(p).Some?
-    ensures ThreadedTreeRecPL(
-      Thread(RemoveMinMaintainingPrevP(p).unwrap.1),
-      RemoveMinMaintainingPrevP(p).unwrap.0,
-      next
+    requires RemoveMinMaintainingPrevP(p, isLeft).Some?
+    ensures ThreadedTreeRecPCond(
+      Thread(RemoveMinMaintainingPrevP(p, isLeft).unwrap.1),
+      RemoveMinMaintainingPrevP(p, isLeft).unwrap.0,
+      next,
+      isLeft
     )
   {
-    RemoveMinMaintainingPrevThreaded(prev, p.child, next);
+    RemoveMinMaintainingPrevThreaded(prev, p.child, next, isLeft);
   }
 
-  lemma RemoveMinMaintainingPrevThreaded(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty)
+  lemma RemoveMinMaintainingPrevThreaded(
+      prev: threadOrEmpty, 
+      t: rbtree, 
+      next: threadOrEmpty, 
+      isLeft: bool
+    )
     decreases sizeWithPointers(t)
 
     requires t.Node?
     requires ThreadedTreeRec(prev, t, next)
-    requires RemoveMinMaintainingPrev(t).Some?
-    ensures ThreadedTreeRecPL(
-      Thread(RemoveMinMaintainingPrev(t).unwrap.1),
-      RemoveMinMaintainingPrev(t).unwrap.0,
-      next
+    requires RemoveMinMaintainingPrev(t, isLeft).Some?
+    ensures ThreadedTreeRecPCond(
+      Thread(RemoveMinMaintainingPrev(t, isLeft).unwrap.1),
+      RemoveMinMaintainingPrev(t, isLeft).unwrap.0,
+      next,
+      isLeft
     )
   {
     if IsThreadOrEmpty(t.left) {
@@ -236,9 +251,9 @@ module TRBTree.RemoveMinMaintainingPrev {
       if isBlackP(t.left) && !isRedP(t.left.child.left) {
         MoveRedLeftThreaded(prev, t, next);
       }
-      RemoveMinMaintainingPrevPThreaded(prev, t'.left, Thread(t'.key));
-      assert RemoveMinMaintainingPrevP(t'.left).Some?;
-      var (l', minK, minV) := RemoveMinMaintainingPrevP(t'.left).unwrap;
+      RemoveMinMaintainingPrevPThreaded(prev, t'.left, Thread(t'.key), true);
+      assert RemoveMinMaintainingPrevP(t'.left, true).Some?;
+      var (l', minK, minV) := RemoveMinMaintainingPrevP(t'.left, true).unwrap;
       var t'' :=
         Node(
           l',
