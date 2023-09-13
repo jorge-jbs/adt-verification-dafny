@@ -138,4 +138,125 @@ module TRBTree.Remove {
     assert SearchTree(t5);
     */
   }
+
+  lemma RemovePSpec(p: pointer, isLeft: bool, k: K)
+    decreases sizeWithPointersP(p)
+
+    requires SearchTreeP(p)
+    requires RedBlackTreeP(p)
+    requires p.Thread? || p.child.Empty? || isRedP(p) || isRedP(p.child.left)
+    requires !(isRedP(p) && isRedP(p.child.left))
+
+    ensures RemoveP(p, isLeft, k).Some?
+    ensures SearchTreeP(RemoveP(p, isLeft, k).unwrap)
+    ensures RedBlackTreeP(RemoveP(p, isLeft, k).unwrap)
+    ensures BlackHeightP(RemoveP(p, isLeft, k).unwrap) == BlackHeightP(p)
+    ensures isRedP(RemoveP(p, isLeft, k).unwrap) ==> !isRedP(RemoveP(p, isLeft, k).unwrap.child.left)
+    ensures !isRedP(p) ==> !isRedP(RemoveP(p, isLeft, k).unwrap)
+
+    ensures keysP(RemoveP(p, isLeft, k).unwrap) == keysP(p) - {k}
+  {
+    match p {
+      case Thread(k) => {}
+      case Child(t) => {
+        RemoveSpec(t, isLeft, k);
+      }
+    }
+  }
+
+  lemma RemoveSpec(t: rbtree, isLeft: bool, k: K)  // 24"
+    decreases sizeWithPointers(t)
+
+    requires SearchTree(t)
+    requires RedBlackTree(t)
+    requires t.Empty? || isRed(t) || isRedP(t.left)
+    requires !(isRed(t) && isRedP(t.left))
+
+    ensures Remove(t, isLeft, k).Some?
+    ensures SearchTreeP(Remove(t, isLeft, k).unwrap)
+    ensures RedBlackTreeP(Remove(t, isLeft, k).unwrap)
+    ensures BlackHeightP(Remove(t, isLeft, k).unwrap) == BlackHeight(t)
+    ensures isRedP(Remove(t, isLeft, k).unwrap) ==> !isRedP(Remove(t, isLeft, k).unwrap.child.left)
+    ensures !isRed(t) ==> !isRedP(Remove(t, isLeft, k).unwrap)
+
+    ensures keysP(Remove(t, isLeft, k).unwrap) == keys(t) - {k}
+  {
+    if t.Empty? {
+    } else {
+      if t.key > k {  // 6"
+        var t' :=
+          if isBlackP(t.left) && !isRedP(t.left.child.left) then
+            MoveRedLeftSize(t);
+            MoveRedLeft(t)
+          else
+            t;
+        if isBlackP(t.left) && !isRedP(t.left.child.left) {
+          MoveRedLeftSpec(t);
+        }
+        RemovePSpec(t'.left, true, k);
+        var l' := RemoveP(t'.left, true, k).unwrap;
+        var t'' :=
+          Node(
+            l',
+            t'.key,
+            t'.value,
+            t'.right,
+            t'.color
+          );
+        var t''' := Restore(t'');
+        RestoreSpec(t'');
+      } else {
+        var t' :=
+          if isRedP(t.left) then
+            RotateRightSizeWithPointers(t);
+            RotateRight(t)
+          else
+            t;
+        if isRedP(t.left) {
+          RotateRightSpec(t);
+        }
+        if k == t'.key && IsThreadOrEmpty(t'.right) {
+        } else {
+          var t'' :=
+            if isBlackP(t'.right) && !isRedP(t'.right.child.left) then
+              MoveRedRightSize(t');
+              MoveRedRight(t')
+            else
+              t';
+          if isBlackP(t'.right) && !isRedP(t'.right.child.left) {
+            MoveRedRightSpec(t');
+          }
+          if k != t''.key {  // 22"
+            RemovePSpec(t''.right, false, k);
+            var r' := RemoveP(t''.right, false, k).unwrap;
+            var t''' :=
+              Node(
+                t''.left,
+                t''.key,
+                t''.value,
+                r',
+                t''.color
+              );
+            var t'''' := Restore(t''');
+            RestoreSpec(t''');
+          } else {  // 16"
+            RemoveMinMaintainingPrevPSpec(t''.right, false);
+            assert forall m | m in keysP(t''.right) :: t''.key < m;
+            var (r', minK, minV) := RemoveMinMaintainingPrevP(t''.right, false).unwrap;
+            var t''' :=
+              Node(
+                UpdateNextP(Thread(minK), t''.left),
+                minK,
+                minV,
+                r',
+                t''.color
+              );
+            UpdateNextPSpec(Thread(minK), t''.left);
+            var t'''' := Restore(t''');
+            RestoreSpec(t''');
+          }
+        }
+      }
+    }
+  }
 }
