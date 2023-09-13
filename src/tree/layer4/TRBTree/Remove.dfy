@@ -70,6 +70,7 @@ module TRBTree.Remove {
           else
             t;
         if k == t'.key && IsThreadOrEmpty(t'.right) then
+          var _ :- Guard(IsThreadOrEmpty(t'.left));
           if isLeft then
             Some(t'.left)
           else
@@ -93,6 +94,7 @@ module TRBTree.Remove {
             ))))
           else
             var (r', minK, minV) :- RemoveMinMaintainingPrev(t''.right.child, false);
+            var _ :- Guard(!IsThreadOrEmpty(t''.left));
             Some(Child(Restore(Node(
               UpdateNextP(Thread(minK), t''.left),
               minK,
@@ -164,7 +166,7 @@ module TRBTree.Remove {
     }
   }
 
-  lemma RemoveSpec(t: rbtree, isLeft: bool, k: K)  // 24"
+  lemma RemoveSpec(t: rbtree, isLeft: bool, k: K)  // 60"
     decreases sizeWithPointers(t)
 
     requires SearchTree(t)
@@ -255,6 +257,107 @@ module TRBTree.Remove {
             var t'''' := Restore(t''');
             RestoreSpec(t''');
           }
+        }
+      }
+    }
+  }
+
+  lemma RemovePThreaded(prev: threadOrEmpty, p: pointer, next: threadOrEmpty, isLeft: bool, k: K)
+    decreases sizeWithPointersP(p)
+
+    requires ThreadedTreeRecPCond(prev, p, next, isLeft)
+    requires RemoveP(p, isLeft, k).Some?
+    ensures ThreadedTreeRecPCond(prev, RemoveP(p, isLeft, k).unwrap, next, isLeft)
+  {
+    match p {
+      case Thread(k) => {}
+      case Child(t) => {
+        if t.Node? {
+          RemoveThreaded(prev, t, next, isLeft, k);
+        }
+      }
+    }
+  }
+
+  lemma RemoveThreaded(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty, isLeft: bool, k: K)  // 24"
+    decreases sizeWithPointers(t)
+
+    requires t.Node?
+    requires ThreadedTreeRec(prev, t, next)
+    requires Remove(t, isLeft, k).Some?
+    ensures ThreadedTreeRecPCond(prev, Remove(t, isLeft, k).unwrap, next, isLeft)
+  {
+    if t.key > k {
+      var t' :=
+        if isBlackP(t.left) && !isRedP(t.left.child.left) then
+          MoveRedLeftSize(t);
+          MoveRedLeft(t)
+        else
+          t;
+      if isBlackP(t.left) && !isRedP(t.left.child.left) {
+        MoveRedLeftThreaded(prev, t, next);
+      }
+      RemovePThreaded(prev, t'.left, Thread(t'.key), true, k);
+      var l' := RemoveP(t'.left, true, k).unwrap;
+      var t'' :=
+        Node(
+          l',
+          t'.key,
+          t'.value,
+          t'.right,
+          t'.color
+        );
+      var t''' := Restore(t'');
+      RestoreThreaded(prev, t'', next);
+    } else {
+      var t' :=
+        if isRedP(t.left) then
+          RotateRightSizeWithPointers(t);
+          RotateRight(t)
+        else
+          t;
+      if isRedP(t.left) {
+        RotateRightThreaded(prev, t, next);
+      }
+      if k == t'.key && IsThreadOrEmpty(t'.right) {
+      } else {
+        var t'' :=
+          if isBlackP(t'.right) && !isRedP(t'.right.child.left) then
+            MoveRedRightSize(t');
+            MoveRedRight(t')
+          else
+            t';
+        if isBlackP(t'.right) && !isRedP(t'.right.child.left) {
+          MoveRedRightThreaded(prev, t', next);
+        }
+        if k != t''.key {  // 22"
+          RemovePThreaded(Thread(t''.key), t''.right, next, false, k);
+          var r' := RemoveP(t''.right, false, k).unwrap;
+          assert ThreadedTreeRecPR(Thread(t''.key), t''.right, next);
+          var t''' :=
+            Node(
+              t''.left,
+              t''.key,
+              t''.value,
+              r',
+              t''.color
+            );
+          var t'''' := Restore(t''');
+          RestoreThreaded(prev, t''', next);
+        } else {  // 16"
+          RemoveMinMaintainingPrevPThreaded(Thread(t''.key), t''.right, next, false);
+          var (r', minK, minV) := RemoveMinMaintainingPrevP(t''.right, false).unwrap;
+          var t''' :=
+            Node(
+              UpdateNextP(Thread(minK), t''.left),
+              minK,
+              minV,
+              r',
+              t''.color
+            );
+          UpdateNextPThreaded(Thread(minK), prev, t''.left, Thread(t''.key));
+          var t'''' := Restore(t''');
+          RestoreThreaded(prev, t''', next);
         }
       }
     }
