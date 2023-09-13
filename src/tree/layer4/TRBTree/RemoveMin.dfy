@@ -27,7 +27,7 @@ module TRBTree.RemoveMin {
     requires t.Node?
     decreases sizeWithPointers(t)
   {
-    if t.left.Thread? || t.left == Child(Empty) then
+    if IsThreadOrEmpty(t.left) then
       var _ :- Guard(t.right.Thread? || t.right == Child(Empty));
       Some((t.left, t.key, t.value))
     else
@@ -39,7 +39,7 @@ module TRBTree.RemoveMin {
         else
           Some(t);
       var (l', minK, minV) :- RemoveMinP(t'.left);
-        Some((Child(Restore(Node(l', t'.key, t'.value, t'.right, t'.color))), minK, minV))
+      Some((Child(Restore(Node(l', t'.key, t'.value, t'.right, t'.color))), minK, minV))
   }
 
   method RemoveMinTest1()
@@ -96,5 +96,100 @@ module TRBTree.RemoveMin {
     var t1' := ConditionalReddenRoot(t1);
     print rbtreeToString(t1') + "\n\n";
     print pointerToString(RemoveMin(t1'.right.child).unwrap.0) + "\n\n";
+  }
+
+  lemma RemoveMinPSpec(p: pointer)
+    decreases sizeWithPointersP(p)
+
+    requires p.Child?
+    requires p.child.Node?
+    requires SearchTree(p.child)
+    requires RedBlackTree(p.child)
+    requires !(isRed(p.child) && isRedP(p.child.left))
+    requires isRed(p.child) || isRedP(p.child.left)
+    
+    ensures RemoveMinP(p).Some?
+    ensures keysP(RemoveMinP(p).unwrap.0) == keys(p.child) - {RemoveMinP(p).unwrap.1}
+    ensures RemoveMinP(p).unwrap.1 in keys(p.child)
+    //ensures forall k | k in keys(p.child) :: RemoveMinP(p).unwrap.1 <= k
+    ensures forall k | k in keysP(RemoveMinP(p).unwrap.0) :: RemoveMinP(p).unwrap.1 < k
+
+    ensures SearchTreeP(RemoveMinP(p).unwrap.0)
+    ensures RedBlackTreeP(RemoveMinP(p).unwrap.0)
+    ensures BlackHeightP(RemoveMinP(p).unwrap.0) == BlackHeight(p.child)
+    ensures isRedP(RemoveMinP(p).unwrap.0) ==> !isRedP(RemoveMinP(p).unwrap.0.child.left)
+    ensures !isRed(p.child) ==> !isRedP(RemoveMinP(p).unwrap.0)
+  {
+    RemoveMinSpec(p.child);
+  }
+
+  lemma SetDiffComm<K>(r: set<K>, k: K, s: set<K>)
+    requires k !in s
+    ensures r - {k} + s == r + s - {k}
+  {}
+
+  lemma RemoveMinSpec(t: rbtree)
+    decreases sizeWithPointers(t)
+
+    requires t.Node?
+    requires SearchTree(t)
+    requires RedBlackTree(t)
+    requires !(isRed(t) && isRedP(t.left))
+    requires isRed(t) || isRedP(t.left)
+
+    ensures RemoveMin(t).Some?
+    ensures keysP(RemoveMin(t).unwrap.0) == keys(t) - {RemoveMin(t).unwrap.1}
+    ensures RemoveMin(t).unwrap.1 in keys(t)
+    //ensures forall k | k in keys(t) :: RemoveMin(t).unwrap.1 <= k
+    ensures forall k | k in keysP(RemoveMin(t).unwrap.0) :: RemoveMin(t).unwrap.1 < k
+
+    ensures SearchTreeP(RemoveMin(t).unwrap.0)
+    ensures RedBlackTreeP(RemoveMin(t).unwrap.0)
+    ensures BlackHeightP(RemoveMin(t).unwrap.0) == BlackHeight(t)
+    ensures isRedP(RemoveMin(t).unwrap.0) ==> !isRedP(RemoveMin(t).unwrap.0.child.left)
+    ensures !isRed(t) ==> !isRedP(RemoveMin(t).unwrap.0)
+  {
+    if IsThreadOrEmpty(t.left) {
+    } else {
+      var pt' :=
+        if isBlackP(t.left) && !isRedP(t.left.child.left) then
+          var _ :- Guard(t.right.Child? && t.right.child.Node?);
+          MoveRedLeftSize(t);
+          Some(MoveRedLeft(t))
+        else
+          Some(t);
+      assert pt'.Some?;
+      var t' := pt'.unwrap;
+      if isBlackP(t.left) && !isRedP(t.left.child.left) {
+        MoveRedLeftSpec(t);
+      }
+      RemoveMinPSpec(t'.left);
+      assert RemoveMinP(t'.left).Some?;
+      assert forall m | m in keysP(t'.left) :: m < t'.key;
+      var (l', minK, minV) := RemoveMinP(t'.left).unwrap;
+      var t'' :=
+        Node(
+          l',
+          t'.key,
+          t'.value,
+          t'.right,
+          t'.color
+        );
+      var t''' := Restore(t'');
+      RestoreSpec(t'');
+      calc == {
+        keysP(RemoveMin(t).unwrap.0);
+        keys(t''');
+        keys(t'');
+        keysP(l') + {t'.key} + keysP(t'.right);
+        (keysP(t'.left) - {minK} + {t'.key}) + keysP(t'.right);
+        { SetDiffComm(keysP(t'.left), minK, {t'.key}); }
+        (keysP(t'.left) + {t'.key} - {minK}) + keysP(t'.right);
+        { SetDiffComm(keysP(t'.left) + {t'.key}, minK, keysP(t'.right)); }
+        keysP(t'.left) + {t'.key} + keysP(t'.right) - {minK};
+        keys(t') - {minK};
+        keys(t) - {minK};
+      }
+    }
   }
 }

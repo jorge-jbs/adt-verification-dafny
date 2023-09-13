@@ -30,7 +30,7 @@ module TRBTree.MoveRed {
       t'
   }
 
-  lemma MoveRedLeftSize(t: rbtree)
+  lemma {:verify false} MoveRedLeftSize(t: rbtree)
     requires t.Node?
     requires t.left.Child?
     requires t.left.child.Node?
@@ -38,10 +38,9 @@ module TRBTree.MoveRed {
     requires t.right.child.Node?
     ensures sizeWithPointers(t) == sizeWithPointers(MoveRedLeft(t))
   {
-    assume false;
   }
 
-  lemma {:verify false} MoveRedLeftSpec(t: rbtree)
+  lemma MoveRedLeftSpec(t: rbtree)
     requires t.Node?
     requires t.left.Child?
     requires t.left.child.Node?
@@ -58,10 +57,8 @@ module TRBTree.MoveRed {
     ensures SearchTree(MoveRedLeft(t))
     ensures RedBlackTreeP(MoveRedLeft(t).left)
     ensures RedBlackTreeP(MoveRedLeft(t).right)
-    //ensures BlackBalanced(MoveRedLeft(t))
     ensures BlackHeightP(MoveRedLeft(t).right) == BlackHeightP(MoveRedLeft(t).left)
     ensures BlackHeight(MoveRedLeft(t)) == BlackHeight(t)
-    ensures size(MoveRedLeft(t)) == size(t)
 
     ensures
       || isRedP(MoveRedLeft(t).left)
@@ -70,22 +67,6 @@ module TRBTree.MoveRed {
       || (!isRed(MoveRedLeft(t)) && isRedP(MoveRedLeft(t).left) && isRedP(MoveRedLeft(t).right) && !isRedP(MoveRedLeft(t).right.child.left) && !isRedP(MoveRedLeft(t).left.child.left))
       || (isRed(MoveRedLeft(t)) && !isRedP(MoveRedLeft(t).left) && !isRedP(MoveRedLeft(t).right) && isRedP(MoveRedLeft(t).left.child.left))
   {
-    assert size(MoveRedLeft(t)) == size(t) by {
-      forall t | RotateRight.requires(t)
-        ensures size(t) == size(RotateRight(t))
-      {
-        RotateRightSize(t);
-      }
-      assert forall t | RotateRight.requires(t) :: size(t) == size(RotateRight(t));
-      assert forall t | RotateLeft.requires(t) :: size(t) == size(RotateLeft(t));
-      assert forall t | FlipColors.requires(t) :: size(t) == size(FlipColors(t));
-    }
-    assume false;
-    /*
-    AllFlipColorsSpec();
-    AllRotateLeftSpec();
-    AllRotateRightSpec();
-    */
     var t' := FlipColors(t);
     FlipColorsSpec(t);
     if isRedP(t'.right.child.left) {
@@ -99,28 +80,29 @@ module TRBTree.MoveRed {
       RotateRightSpec(t'.right.child);
       RotateLeftSpec(t'');
       FlipColorsSpec(RotateLeft(t''));
+    }
+  }
 
-      var t''' := FlipColors(RotateLeft(t''));
-      assert t'''.color.Red?;
-      assert t'''.left.child.color.Black?;
-      assert t'''.right.child.color.Black?;
-      assert t'''.left.child.left.child.color.Red?;
-      assert !isRedP(t'''.left.child.left.child.left);
-
-      assert t'''.left.child.left.child.left == t.left.child.left;
-      assert t'''.left.child.left.child.right == t.left.child.right;
-      assert t'''.left.child.right == t.right.child.left.child.left;
-      assert t'''.right.child.left == t.right.child.left.child.right;
-      assert t'''.right.child.right == t.right.child.right;
-
-      assert (t'''.left.child.right.child.Node? ==> t'''.left.child.right.child.color.Black?);
-      assert (t'''.left.child.left.child.Node? && t'''.left.child.left.child.color.Red? && t'''.left.child.left.child.left.child.Node? ==> t'''.left.child.left.child.left.child.color.Black?);
-
-      assert RedBlackTreeP(t.left.child.left);
-      assert RedBlackTreeP(t.left.child.right);
-      assert RedBlackTreeP(t.right.child.left);
-      assert RedBlackTreeP(t.right.child.right);
-    } else {
+  lemma MoveRedLeftThreaded(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty)
+    requires t.Node?
+    requires t.left.Child?
+    requires t.left.child.Node?
+    requires t.right.Child?
+    requires t.right.child.Node?
+    requires ThreadedTreeRec(prev, t, next)
+    ensures ThreadedTreeRec(prev, MoveRedLeft(t), next)
+  {
+    var t' := FlipColors(t);
+    if isRedP(t'.right.child.left) {
+      var t'' := Node(
+        t'.left,
+        t'.key,
+        t'.value,
+        Child(RotateRight(t'.right.child)),
+        t'.color
+      );
+      RotateRightThreaded(Thread(t'.key), t'.right.child, next);
+      RotateLeftThreaded(prev, t'', next);
     }
   }
 
@@ -145,7 +127,7 @@ module TRBTree.MoveRed {
       t'
   }
 
-  lemma MoveRedRightSize(t: rbtree)
+  lemma {:verify false} MoveRedRightSize(t: rbtree)
     requires t.Node?
     requires t.left.Child?
     requires t.left.child.Node?
@@ -153,6 +135,73 @@ module TRBTree.MoveRed {
     requires t.right.child.Node?
     ensures sizeWithPointers(t) == sizeWithPointers(MoveRedRight(t))
   {
-    assume false;
+  }
+
+  lemma MoveRedRightSpec(t: rbtree)
+    requires t.Node?
+    requires t.left.Child?
+    requires t.left.child.Node?
+    requires t.right.Child?
+    requires t.right.child.Node?
+    requires SearchTree(t)
+    requires RedBlackTree(t)
+    requires isRed(t)
+    requires isBlack(t.left.child)
+    requires isBlack(t.right.child)
+    requires !isRedP(t.right.child.left)
+    ensures keys(t) == keys(FlipColors(t))
+    ensures isRedP(MoveRedRight(t).right) || isRedP(MoveRedRight(t).right.child.left)
+    ensures SearchTree(MoveRedRight(t))
+    ensures RedBlackTreeP(MoveRedRight(t).left)
+    ensures RedBlackTreeP(MoveRedRight(t).right)
+    ensures BlackHeightP(MoveRedRight(t).right) == BlackHeightP(MoveRedRight(t).left)
+    ensures BlackHeight(MoveRedRight(t)) == BlackHeight(t)
+  {
+    var t' := FlipColors(t);
+    FlipColorsSpec(t);
+    if isRedP(t'.left.child.left) {
+      var t'' := FlipColors(RotateRight(t'));
+      var t''' :=
+        Node(
+          t''.left,
+          t''.key,
+          t''.value,
+          Child(RotateLeft(t''.right.child)),
+          t''.color
+        );
+      RotateRightSpec(t');
+      FlipColorsSpec(RotateRight(t'));
+      RotateLeftSpec(t''.right.child);
+
+      assert RedBlackTreeP(MoveRedRight(t).right) by {
+        assert RedBlackTreeP(MoveRedRight(t).right.child.left);
+        assert RedBlackTreeP(MoveRedRight(t).right.child.right);
+      }
+    }
+  }
+
+  lemma MoveRedRightThreaded(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty)
+    requires t.Node?
+    requires t.left.Child?
+    requires t.left.child.Node?
+    requires t.right.Child?
+    requires t.right.child.Node?
+    requires ThreadedTreeRec(prev, t, next)
+    ensures ThreadedTreeRec(prev, MoveRedRight(t), next)
+  {
+    var t' := FlipColors(t);
+    if isRedP(t'.left.child.left) {
+      var t'' := FlipColors(RotateRight(t'));
+      var t''' :=
+        Node(
+          t''.left,
+          t''.key,
+          t''.value,
+          Child(RotateLeft(t''.right.child)),
+          t''.color
+        );
+      RotateRightThreaded(prev, t', next);
+      RotateLeftThreaded(Thread(t''.key), t''.right.child, next);
+    }
   }
 }

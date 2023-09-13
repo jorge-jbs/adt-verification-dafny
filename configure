@@ -114,7 +114,10 @@ files=(
     src/tree/layer4/TRBTree/TRBInsert.dfy
     src/tree/layer4/TRBTree/MoveRed.dfy
     src/tree/layer4/TRBTree/RemoveMin.dfy
+    src/tree/layer4/TRBTree/RemoveMinMaintainingPrev.dfy
     src/tree/layer4/TRBTree/UpdatePrev.dfy
+    src/tree/layer4/TRBTree/UpdateNext.dfy
+    src/tree/layer4/TRBTree/Remove.dfy
     src/tree/layer4/TRBTree/Iterator.dfy
     src/tree/layer4/ThreadedLinkedTree.dfy
     src/tree/layer4/ThreadedLinkedTree/FlipColors.dfy
