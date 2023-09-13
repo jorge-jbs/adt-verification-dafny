@@ -469,43 +469,43 @@ module RBTree.RBRemove {
             t'.color
           )
         )
-        else
-          var t' :=
-            if isRed(t.left) then
-              RotateRightSpec(t);
-              RotateRight(t)
-            else
-              t;
-          if k == t'.key && t'.right.Empty? then
-            t'.left
+      else
+        var t' :=
+          if isRed(t.left) then
+            RotateRightSpec(t);
+            RotateRight(t)
           else
-            var t'' :=
-              if isBlack(t'.right) && !isRed(t'.right.left) then
-                MoveRedRightSpec(t');
-                MoveRedRight(t')
-              else
-                t';
-            if k != t''.key then
-              Restore(
-                Node(
-                  t''.left,
-                  t''.key,
-                  t''.value,
-                  Remove(t''.right, k),
-                  t''.color
-                )
-              )
+            t;
+        if k == t'.key && t'.right.Empty? then
+          Empty
+        else
+          var t'' :=
+            if isBlack(t'.right) && !isRed(t'.right.left) then
+              MoveRedRightSpec(t');
+              MoveRedRight(t')
             else
-              var (r', minK, minV) := RemoveMin(t''.right);
-              Restore(
-                Node(
-                  t''.left,
-                  minK,
-                  minV,
-                  r',
-                  t''.color
-                )
+              t';
+          if k != t''.key then
+            Restore(
+              Node(
+                t''.left,
+                t''.key,
+                t''.value,
+                Remove(t''.right, k),
+                t''.color
               )
+            )
+          else
+            var (r', minK, minV) := RemoveMin(t''.right);
+            Restore(
+              Node(
+                t''.left,
+                minK,
+                minV,
+                r',
+                t''.color
+              )
+            )
   }
 
   lemma RemoveSpec(t: rbtree, k: K)  // 45"

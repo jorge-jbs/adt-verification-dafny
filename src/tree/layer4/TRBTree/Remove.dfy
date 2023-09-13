@@ -64,7 +64,6 @@ module TRBTree.Remove {
       else
         var t' :=
           if isRedP(t.left) then
-            assert RotateRight(t).right.Child?;
             RotateRightSizeWithPointers(t);
             RotateRight(t)
           else
