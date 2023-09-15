@@ -23,7 +23,7 @@ module TRBTree.Remove {
   import opened UN = UpdateNext
 
   function method RemoveP(
-      p: pointer, 
+      p: pointer,
       isLeft: bool,
       k: K
     ): option<pointer>
@@ -36,7 +36,7 @@ module TRBTree.Remove {
   }
 
   function method Remove(
-      t: rbtree, 
+      t: rbtree,
       isLeft: bool,
       k: K
     ): option<pointer>
@@ -54,13 +54,7 @@ module TRBTree.Remove {
           else
             Some(t);
         var l' :- RemoveP(t'.left, true, k);
-        Some(Child(Restore(Node(
-          l',
-          t'.key,
-          t'.value,
-          t'.right,
-          t'.color
-        ))))
+        Some(Child(Restore(t'.(left := l'))))
       else
         var t' :=
           if isRedP(t.left) then
@@ -84,13 +78,7 @@ module TRBTree.Remove {
               Some(t');
           if k != t''.key then
             var r' :- RemoveP(t''.right, false, k);
-            Some(Child(Restore(Node(
-              t''.left,
-              t''.key,
-              t''.value,
-              r',
-              t''.color
-            ))))
+            Some(Child(Restore(t''.(right := r'))))
           else
             var (r', minK, minV) :- RemoveMinMaintainingPrev(t''.right.child, false);
             var _ :- Guard(!IsThreadOrEmpty(t''.left));
