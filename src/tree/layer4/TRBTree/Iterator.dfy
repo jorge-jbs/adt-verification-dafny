@@ -2,12 +2,14 @@ include "../../../../src/MUtils.dfy"
 include "../../../../src/tree/KeyValue.dfy"
 include "../../../../src/tree/layer4/Color.dfy"
 include "../../../../src/tree/layer4/TRBTree/Base.dfy"
+include "../../../../src/tree/layer4/TRBTree/RemoveElemth.dfy"
 include "../../../../src/tree/layer1/OrderedSetUtils.dfy"
 
 module TRBTree.Iterator {
   import opened KeyValue
   import opened Color
   import opened Base
+  import opened RemoveElemth
   import opened OrderedSetUtils
 
   type nerbtree
@@ -108,13 +110,38 @@ module TRBTree.Iterator {
   }
 */
 
-  lemma {:verify false} PeekEq(it: iter, root: rbtree)
+  lemma PeekEq(it: iter, root: rbtree)
     requires Valid(it, root)
     requires SearchTree(root)
     requires HasPeek(it)
     requires HasPeek'(it, root)
     ensures Peek(it, root) == Peek'(it, root)
-  {}
+  {
+    calc == {
+      elemth(toMap(root).Keys, Index(it, root));
+      elemth(toMap(root).Keys, sizeSmaller(root, it.link.key));
+      {
+        if root.Node? {
+          SizeSmaller(root, it.link.key);
+          SizeLemmas(root);
+          ElemthInorder(root, sizeSmaller(root, it.link.key));
+        }
+      }
+      inorder(root)[sizeSmaller(root, it.link.key)].0;
+      { SmallerInorderSize(root, it.link.key); }
+      inorder(root)[|smallerInorder(root, it.link.key)|].0;
+      { InorderOfSmallerInorderSize(root, it.link.key); }
+      it.link.key;
+    }
+    var k := elemth(toMap(root).Keys, Index(it, root));
+    calc == {
+      it.link.value;
+      { GetOfSubtree(root, it.link); }
+      Get(root, it.link.key);
+      toMap(root)[it.link.key];
+      toMap(root)[k];
+    }
+  }
 
   function Traversed(it: iter, root: rbtree): set<K>
   {
@@ -151,7 +178,17 @@ module TRBTree.Iterator {
       assert it.PastTheBeginning? || it.PastTheEnd?;
       assert toMap(root).Keys == keys(root);
     } else {
-      assume {:axiom} false;
+      SizeIndex(it, root);
+      lelemth(toMap(root).Keys, Index(it, root));
+      HasPeekEq(it, root);
+      calc == {
+        smaller(toMap(root).Keys, elemth(toMap(root).Keys, Index(it, root)));
+        { PeekEq(it, root); }
+        smaller(toMap(root).Keys, it.link.key);
+        smaller(keys(root), it.link.key);
+        { SmallerKeys(root, it.link.key); }
+        smallerKeys(root, it.link.key);
+      }
     }
   }
 
