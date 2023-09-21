@@ -1,17 +1,17 @@
 include "../../../../src/tree/layer4/Color.dfy"
 include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 
-module TRBTree.UpdateNext {
+module {:options "-functionSyntax:4"} TRBTree.UpdateNext {
   import opened Color
   import opened Base
 
-  function method UpdateNextP(newNext: threadOrEmpty, p: pointer): pointer
+  function UpdateNextP(newNext: threadOrEmpty, p: pointer): pointer
     requires !IsThreadOrEmpty(p)
   {
     Child(UpdateNext(newNext, p.child))
   }
 
-  function method UpdateNext(newNext: threadOrEmpty, t: rbtree): rbtree
+  function UpdateNext(newNext: threadOrEmpty, t: rbtree): rbtree
   {
     match t {
       case Empty => Empty

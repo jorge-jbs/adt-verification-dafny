@@ -1,11 +1,11 @@
 include "../../../../src/tree/layer4/Color.dfy"
 include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 
-module TRBTree.Rotate {
+module {:options "-functionSyntax:4"} TRBTree.Rotate {
   import opened Color
   import opened Base
 
-  function method RotateLeft(t: rbtree): rbtree
+  function RotateLeft(t: rbtree): rbtree
     requires t.Node?
     requires t.right.Child?
     requires t.right.child.Node?
@@ -28,7 +28,7 @@ module TRBTree.Rotate {
     )
   }
 
-  function method RotateRight(t: rbtree): rbtree
+  function RotateRight(t: rbtree): rbtree
     requires t.Node?
     requires t.left.Child?
     requires t.left.child.Node?

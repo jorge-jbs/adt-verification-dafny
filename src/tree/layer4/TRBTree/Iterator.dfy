@@ -5,7 +5,7 @@ include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 include "../../../../src/tree/layer4/TRBTree/RemoveElemth.dfy"
 include "../../../../src/tree/layer1/OrderedSetUtils.dfy"
 
-module TRBTree.Iterator {
+module {:options "-functionSyntax:4"} TRBTree.Iterator {
   import opened KeyValue
   import opened Color
   import opened Base

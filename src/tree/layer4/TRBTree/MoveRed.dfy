@@ -3,13 +3,13 @@ include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 include "../../../../src/tree/layer4/TRBTree/FlipColors.dfy"
 include "../../../../src/tree/layer4/TRBTree/Rotate.dfy"
 
-module TRBTree.MoveRed {
+module {:options "-functionSyntax:4"} TRBTree.MoveRed {
   import opened Color
   import opened Base
   import opened FP = FlipColors
   import opened Rotate
 
-  function method MoveRedLeft(t: rbtree): rbtree
+  function MoveRedLeft(t: rbtree): rbtree
     requires t.Node?
     requires t.left.Child?
     requires t.left.child.Node?
@@ -26,6 +26,7 @@ module TRBTree.MoveRed {
         t'.color
       );
       FlipColors(RotateLeft(t''))
+      //FlipColors(RotateLeft(t'.(right := Child(RotateRight(t'.right.child)))))
     else
       t'
   }
@@ -106,7 +107,7 @@ module TRBTree.MoveRed {
     }
   }
 
-  function method MoveRedRight(t: rbtree): rbtree
+  function MoveRedRight(t: rbtree): rbtree
     requires t.Node?
     requires t.left.Child?
     requires t.left.child.Node?

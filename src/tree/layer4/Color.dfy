@@ -1,7 +1,7 @@
-module Color {
+module {:options "-functionSyntax:4"} Color {
   datatype Color = Red | Black
 
-  function method colorToString(c: Color): string
+  function colorToString(c: Color): string
   {
     match c {
       case Black => "Black"
@@ -9,7 +9,7 @@ module Color {
     }
   }
 
-  function method NegColor(c: Color): Color
+  function NegColor(c: Color): Color
   {
     match c {
       case Black => Red

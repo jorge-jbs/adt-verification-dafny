@@ -6,7 +6,7 @@ module TTree {
   datatype ttree<A> = Empty | Node(left: ttreePointer<A>, data: A, right: ttreePointer<A>)
   datatype ttreePointer<A> = Child(child: ttree<A>) | Thread(thread: A)
 
-  function method elemsP<A>(p: ttreePointer<A>): set<A>
+  function elemsP<A>(p: ttreePointer<A>): set<A>
     ensures p.Child? ==> elemsP(p) == elems(p.child)
   {
     match p {
@@ -15,7 +15,7 @@ module TTree {
     }
   }
 
-  function method elems<A>(t: ttree<A>): set<A>
+  function elems<A>(t: ttree<A>): set<A>
     //ensures t.Empty? ==> elems(t) == {}
     //ensures t.Node? ==> elems(t) == elemsP(t.left) + {t.data} + elemsP(t.right)
   {
@@ -25,7 +25,7 @@ module TTree {
     }
   }
 
-  function method elemsAndThreadsP<A>(t: ttreePointer<A>): set<A>
+  function elemsAndThreadsP<A>(t: ttreePointer<A>): set<A>
   {
     match t {
       case Child(t) => elemsAndThreads(t)
@@ -33,7 +33,7 @@ module TTree {
     }
   }
 
-  function method elemsAndThreads<A>(t: ttree<A>): set<A>
+  function elemsAndThreads<A>(t: ttree<A>): set<A>
   {
     match t {
       case Empty => {}
@@ -41,7 +41,7 @@ module TTree {
     }
   }
 
-  predicate SubtreeP<A>(node: ttree<A>, proot: ttreePointer<A>)
+  predicate SubtreeP<A(==)>(node: ttree<A>, proot: ttreePointer<A>)
     ensures SubtreeP(node, proot) ==> elems(node) <= elemsP(proot)
     ensures SubtreeP(node, proot) ==> elemsAndThreads(node) <= elemsAndThreadsP(proot)
   {
@@ -51,7 +51,7 @@ module TTree {
     }
   }
 
-  predicate Subtree<A>(node: ttree<A>, root: ttree<A>)
+  predicate Subtree<A(==)>(node: ttree<A>, root: ttree<A>)
     ensures Subtree(node, root) ==> elems(node) <= elems(root)
     ensures Subtree(node, root) ==> elemsAndThreads(node) <= elemsAndThreads(root)
   {
@@ -62,7 +62,7 @@ module TTree {
   }
 
 /*
-  function method elemsAndThreads<A>(t: ttree<A>): set<A>
+  function elemsAndThreads<A>(t: ttree<A>): set<A>
     ensures t.Empty? ==> elemsAndThreads(t) == {}
     ensures t.Thread? ==> elemsAndThreads(t) == {t.thread}
     ensures t.Node? ==> elemsAndThreads(t) == elemsAndThreads(t.left) + {t.data} + elemsAndThreads(t.right)
@@ -74,7 +74,7 @@ module TTree {
     }
   }
 
-  function method subtrees<A(==)>(t: ttree<A>): set<ttree<A>>
+  function subtrees<A(==)>(t: ttree<A>): set<ttree<A>>
     ensures t.Empty? ==> elemsAndThreads(t) == {}
     ensures t.Thread? ==> elemsAndThreads(t) == {t.thread}
     ensures t.Node? ==> elemsAndThreads(t) == elemsAndThreads(t.left) + {t.data} + elemsAndThreads(t.right)

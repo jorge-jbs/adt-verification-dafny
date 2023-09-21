@@ -5,7 +5,7 @@ include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 include "../../../../src/tree/layer4/TRBTree/Restore.dfy"
 include "../../../../src/tree/layer4/TRBTree/MoveRed.dfy"
 
-module TRBTree.RemoveMin {
+module {:options "-functionSyntax:4"} TRBTree.RemoveMin {
   import opened KeyValue
   import opened Utils
   import opened Utils.Option
@@ -15,7 +15,7 @@ module TRBTree.RemoveMin {
   import opened Res = Restore
   import opened MoveRed
 
-  function method RemoveMinP(p: pointer): option<(pointer, K, V)>
+  function RemoveMinP(p: pointer): option<(pointer, K, V)>
     requires p.Child?
     requires p.child.Node?
     decreases sizeWithPointersP(p)
@@ -23,7 +23,7 @@ module TRBTree.RemoveMin {
     RemoveMin(p.child)
   }
 
-  function method RemoveMin(t: rbtree): option<(pointer, K, V)>
+  function RemoveMin(t: rbtree): option<(pointer, K, V)>
     requires t.Node?
     decreases sizeWithPointers(t)
   {

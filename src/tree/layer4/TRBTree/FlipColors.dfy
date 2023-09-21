@@ -1,11 +1,11 @@
 include "../../../../src/tree/layer4/Color.dfy"
 include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 
-module TRBTree.FlipColors {
+module {:options "-functionSyntax:4"} TRBTree.FlipColors {
   import opened Color
   import opened Base
 
-  function method FlipColors(t: rbtree): rbtree
+  function FlipColors(t: rbtree): rbtree
     requires t.Node?
     requires t.left.Child?
     requires t.left.child.Node?

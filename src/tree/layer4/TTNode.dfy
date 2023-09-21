@@ -10,16 +10,16 @@ module TTNode {
   import opened Color
 
   class TTNode {
-    const key: K;
-    var value: V;
+    const key: K
+    var value: V
 
     var isThreadLeft: bool
-    var left: TTNode?;
+    var left: TTNode?
 
     var isThreadRight: bool
-    var right: TTNode?;
+    var right: TTNode?
    
-    var color: Color;
+    var color: Color
 
     constructor(lt: bool, l: TTNode?, k: K, v: V, rt: bool, r: TTNode?, c: Color)
       ensures isThreadLeft == lt
@@ -74,7 +74,7 @@ module TTNode {
     }
   }
 
-  function method nodeToPointer(node: TTNode?): RB.threadOrEmpty
+  function nodeToPointer(node: TTNode?): RB.threadOrEmpty
   {
     if node == null then
       RB.Child(RB.Empty)
@@ -300,20 +300,20 @@ module TTNode {
     RB.SearchTree(TreeModelRec(sk))
   }
 
-  function method isRed(node: TTNode?): bool
+  function isRed(node: TTNode?): bool
     reads node
   {
     node != null && node.color.Red?
   }
 
-  function method isRedLeft(node: TTNode?): bool
+  function isRedLeft(node: TTNode?): bool
     reads node, node.left
     requires node != null
   {
     node.left != null && !node.isThreadLeft && node.left.color.Red?
   }
 
-  function method isRedRight(node: TTNode?): bool
+  function isRedRight(node: TTNode?): bool
     reads node, node.right
     requires node != null
   {
@@ -337,15 +337,35 @@ module TTNode {
         :: isRed(node) <==> RB.isRed(TreeModelRec(sk))
   {}
 
-  function method isBlack(node: TTNode?): bool
+  function isBlack(node: TTNode?): bool
     reads node
   {
     node != null && node.color.Black?
   }
 
+  function isBlackLeft(node: TTNode?): bool
+    reads node, node.left
+    requires node != null
+  {
+    node.left != null && !node.isThreadLeft && node.left.color.Black?
+  }
+
+  function isBlackRight(node: TTNode?): bool
+    reads node, node.right
+    requires node != null
+  {
+    node.right != null && !node.isThreadRight && node.right.color.Black?
+  }
+
   lemma isBlackProp(node: TTNode?, sk: ttree<TTNode>)
     requires ValidRec(node, sk)
     ensures isBlack(node) <==> RB.isBlack(TreeModelRec(sk))
+  {}
+
+  lemma isBlackLeftProp(node: TTNode?, sk: ttree<TTNode>)
+    requires ValidRec(node, sk)
+    requires node != null
+    ensures isBlackLeft(node) <==> RB.isBlackP(TreeModelRec(sk).left)
   {}
 
   function BlackHeight(sk: ttree<TTNode>): nat
