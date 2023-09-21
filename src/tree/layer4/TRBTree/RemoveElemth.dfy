@@ -3,13 +3,13 @@ include "../../../../src/tree/KeyValue.dfy"
 include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 include "../../../../src/tree/layer1/OrderedSetUtils.dfy"
 
-module TRBTree.RemoveElemth {
+module {:options "-functionSyntax:4"} TRBTree.RemoveElemth {
   //import opened Utils
   import opened KeyValue
   import opened Base
   import opened OrderedSetUtils
 
-  function method SRemoveMinP(p: pointer): (pointer, K, V)
+  function SRemoveMinP(p: pointer): (pointer, K, V)
     requires !IsThreadOrEmpty(p)
     requires SearchTreeP(p)
   {
@@ -17,7 +17,7 @@ module TRBTree.RemoveElemth {
     (Child(t'), k, v)
   }
 
-  function method SRemoveMin(t: rbtree): (rbtree, K, V)
+  function SRemoveMin(t: rbtree): (rbtree, K, V)
     requires t.Node?
     requires SearchTree(t)
   {

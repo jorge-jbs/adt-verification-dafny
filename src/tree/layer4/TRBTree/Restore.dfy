@@ -3,13 +3,13 @@ include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 include "../../../../src/tree/layer4/TRBTree/FlipColors.dfy"
 include "../../../../src/tree/layer4/TRBTree/Rotate.dfy"
 
-module TRBTree.Restore {
+module {:options "-functionSyntax:4"} TRBTree.Restore {
   import opened Color
   import opened Base
   import opened FC = FlipColors
   import opened Rotate
 
-  function method Restore(t: rbtree): rbtree
+  function Restore(t: rbtree): rbtree
     requires t.Node?
   {
     var t' :=
@@ -76,6 +76,7 @@ module TRBTree.Restore {
         FlipColors(t'')
       else
         t'';
+
     if isRedP(t.right) {
       RotateLeftSpec(t);
     }
@@ -84,7 +85,23 @@ module TRBTree.Restore {
     }
     if isRedP(t''.left) && isRedP(t''.right) {
       FlipColorsSpec(t'');
+      assert RedBlackTree(Restore(t)) by {
+        assert BlackHeightP(t'''.left) == BlackHeightP(t'''.right);
+        assert RedBlackTreeP(t'''.left);
+        assert RedBlackTreeP(t'''.right);
+        assert (isNode(t'''.right) ==> isBlackP(t'''.right));
+        assert (isRedP(t'''.left) && isNode(t'''.left.child.left) ==> isBlackP(t'''.left.child.left));
+      }
+    } else {
+      assert RedBlackTree(Restore(t)) by {
+        assert BlackHeightP(t'''.left) == BlackHeightP(t'''.right);
+        assert RedBlackTreeP(t'''.left);
+        assert RedBlackTreeP(t'''.right);
+        assert (isNode(t'''.right) ==> isBlackP(t'''.right));
+        assert (isRedP(t'''.left) && isNode(t'''.left.child.left) ==> isBlackP(t'''.left.child.left));
+      }
     }
+    assert t''' == Restore(t);
   }
 
   lemma RestoreThreaded(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty)

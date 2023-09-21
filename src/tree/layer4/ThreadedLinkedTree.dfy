@@ -28,7 +28,7 @@ module ThreadedLinkedTree {
     ghost var isPastTheEnd: bool
     ghost var parent: ThreadedLinkedTree
 
-    function ItModel(): TRBit.iter
+    ghost function ItModel(): TRBit.iter
       reads this, node, elems(sk)
       requires ValidRec(node, sk)
     {
@@ -41,7 +41,7 @@ module ThreadedLinkedTree {
         TRBit.Link(TreeModelRec(sk))
     }
 
-    predicate Valid()
+    ghost predicate Valid()
       reads this, elems(sk), parent, parent.Repr()
     {
       && (node != null ==> node in elems(parent.skeleton))
@@ -57,21 +57,21 @@ module ThreadedLinkedTree {
       this.parent := parent;
     }
 
-    function Index(): int
+    ghost function Index(): int
       reads this, node, elems(sk), parent, elems(parent.skeleton)
       requires ValidRec(node, sk)
     {
       TRBit.Index(ItModel(), parent.TreeModel())
     }
 
-    predicate HasPeek()
+    ghost predicate HasPeek()
       reads this, node, elems(sk)
       requires ValidRec(node, sk)
     {
       TRBit.HasPeek(ItModel())
     }
 
-    function Peek(): (K, V)
+    ghost function Peek(): (K, V)
       reads this, node, elems(sk), parent, elems(parent.skeleton)
       requires ValidRec(node, sk)
       requires HasPeek()
@@ -155,16 +155,16 @@ module ThreadedLinkedTree {
   }
 
   class ThreadedLinkedTree {
-    var root: TTNode?;
-    ghost var skeleton: ttree<TTNode>;
+    var root: TTNode?
+    ghost var skeleton: ttree<TTNode>
 
-    function Repr(): set<object>
+    ghost function Repr(): set<object>
       reads this
     {
       elems(skeleton)
     }
 
-    predicate Valid()
+    ghost predicate Valid()
       reads this, Repr()
     {
       ValidRec(root, skeleton)
@@ -182,27 +182,27 @@ module ThreadedLinkedTree {
       skeleton := Empty;
     }
 
-    predicate SearchTree()
+    ghost predicate SearchTree()
       reads this, Repr()
       requires Valid()
     {
       SearchTreeRec(skeleton)
     }
 
-    predicate Threaded()
+    ghost predicate Threaded()
       reads this, Repr()
       requires Valid()
     {
       ThreadedRoot(root, skeleton)
     }
 
-    function TreeModel(): RB.rbtree
+    ghost function TreeModel(): RB.rbtree
       reads this, elems(skeleton)
     {
       TreeModelRec(skeleton)
     }
 
-    function MapModel(): map<K, V>
+    ghost function MapModel(): map<K, V>
       reads this, elems(skeleton)
       requires Valid()
       requires SearchTree()
@@ -246,7 +246,7 @@ module ThreadedLinkedTree {
     }
     */
 
-    predicate ThreadedTree()
+    ghost predicate ThreadedTree()
       reads this, elems(skeleton)
     {
       RB.ThreadedTreeRoot(TreeModelRec(skeleton))
@@ -270,7 +270,7 @@ module ThreadedLinkedTree {
       SubtreeOfInElemsRoot(node, sk, root, skeleton);
     }
 
-    predicate RedBlackTree()
+    ghost predicate RedBlackTree()
       reads this, elems(skeleton)
     {
       RB.RedBlackTreeRoot(TreeModelRec(skeleton))
@@ -327,5 +327,11 @@ module ThreadedLinkedTree {
       RBr.RemoveRootModel(old(TreeModelRec(skeleton)), k);
     }
     */
+  }
+
+  method {:main} TestThreadedLinkedTree()
+  {
+    var t := new ThreadedLinkedTree();
+    t.RBInsert(1, 0);
   }
 }

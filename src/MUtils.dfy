@@ -1,10 +1,10 @@
-module Utils {
-  function method BigUnion<A>(S: set<set<A>>): set<A>
+module {:options "-functionSyntax:4"} Utils {
+  function BigUnion<A>(S: set<set<A>>): set<A>
   {
     set X, x | X in S && x in X :: x
   }
 
-  function method abs(x: int): int
+  function abs(x: int): int
   {
     if x < 0 then
       -x
@@ -12,7 +12,7 @@ module Utils {
       x
   }
 
-  function method max(x: int, y: int): int
+  function max(x: int, y: int): int
   {
     if x < y then
       y
@@ -37,13 +37,13 @@ module Utils {
   {}
 
   module Array {
-    function method elems<A>(l: array<A>): set<A>
+    function elems<A>(l: array<A>): set<A>
       reads l
     {
       set x | x in l[..]
     }
 
-    function method melems<A>(l: array<A>): multiset<A>
+    function melems<A>(l: array<A>): multiset<A>
       reads l
     {
       multiset(l[..])
@@ -160,7 +160,7 @@ module Utils {
     }
   }
 
-  module {:options "-functionSyntax:4"} Option {
+  module Option {
     datatype option<A> = Some(unwrap: A) | Nothing {
       predicate IsFailure() {
         Nothing?
@@ -205,7 +205,7 @@ module Utils {
     }
   }
 
-  module {:options "/functionSyntax:4"} Printer {
+  module Printer {
     function natToString(n: nat): string
     {
       match n {

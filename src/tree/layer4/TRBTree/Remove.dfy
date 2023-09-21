@@ -9,7 +9,7 @@ include "../../../../src/tree/layer4/TRBTree/RemoveMinMaintainingPrev.dfy"
 include "../../../../src/tree/layer4/TRBTree/UpdatePrev.dfy"
 include "../../../../src/tree/layer4/TRBTree/UpdateNext.dfy"
 
-module TRBTree.Remove {
+module {:options "-functionSyntax:4"} TRBTree.Remove {
   import opened KeyValue
   import opened Utils
   import opened Utils.Option
@@ -22,7 +22,7 @@ module TRBTree.Remove {
   import opened UP = UpdatePrev
   import opened UN = UpdateNext
 
-  function method RemoveP(
+  function RemoveP(
       p: pointer,
       isLeft: bool,
       k: K
@@ -35,7 +35,7 @@ module TRBTree.Remove {
     }
   }
 
-  function method Remove(
+  function Remove(
       t: rbtree,
       isLeft: bool,
       k: K

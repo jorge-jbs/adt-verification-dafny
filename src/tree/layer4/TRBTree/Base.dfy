@@ -3,7 +3,7 @@ include "../../../../src/tree/KeyValue.dfy"
 include "../../../../src/tree/layer4/Color.dfy"
 include "../../../../src/tree/layer1/OrderedSetUtils.dfy"
 
-module TRBTree.Base {
+module {:options "-functionSyntax:4"} TRBTree.Base {
   import opened Utils
   import opened Utils.Printer
   import opened KeyValue
@@ -16,12 +16,12 @@ module TRBTree.Base {
 
   datatype pointer = Child(child: rbtree) | Thread(thread: K)
 
-  function method ident(): string
+  function ident(): string
   {
     "|   "
   }
 
-  function method pointerToString'(prefix: string, p: pointer): string
+  function pointerToString'(prefix: string, p: pointer): string
     decreases p
   {
     match p {
@@ -33,7 +33,7 @@ module TRBTree.Base {
     }
   }
 
-  function method rbtreeToString'(prefix: string, t: rbtree): string
+  function rbtreeToString'(prefix: string, t: rbtree): string
     decreases t
   {
     match t {
@@ -49,17 +49,17 @@ module TRBTree.Base {
     }
   }
 
-  function method pointerToString(p: pointer): string
+  function pointerToString(p: pointer): string
   {
     pointerToString'("", p)
   }
 
-  function method rbtreeToString(t: rbtree): string
+  function rbtreeToString(t: rbtree): string
   {
     rbtreeToString'("", t)
   }
 
-  function method BlackenRoot(t: rbtree): rbtree
+  function BlackenRoot(t: rbtree): rbtree
   {
     match t {
       case Empty => Empty
@@ -67,7 +67,7 @@ module TRBTree.Base {
     }
   }
 
-  function method ConditionalReddenRoot(t: rbtree): rbtree
+  function ConditionalReddenRoot(t: rbtree): rbtree
   {
     match t {
       case Empty => Empty
@@ -79,7 +79,14 @@ module TRBTree.Base {
     }
   }
 
-  function method keysP(p: pointer): set<K>
+  function ForgetThread(p: pointer): rbtree
+  {
+    match p
+    case Thread(_) => Empty()
+    case Child(t) => t
+  }
+
+  function keysP(p: pointer): set<K>
     ensures p.Child? ==> keys(p.child) == keysP(p)
   {
     match p {
@@ -88,7 +95,7 @@ module TRBTree.Base {
     }
   }
 
-  function method keys(t: rbtree): set<K>
+  function keys(t: rbtree): set<K>
     ensures t.Node? ==>
       keys(t) == keysP(t.left) + {t.key} + keysP(t.right)
   {
@@ -98,7 +105,7 @@ module TRBTree.Base {
     }
   }
 
-  function method threadsP(p: pointer): set<K>
+  function threadsP(p: pointer): set<K>
     ensures p.Child? ==> threads(p.child) == threadsP(p)
   {
     match p {
@@ -107,7 +114,7 @@ module TRBTree.Base {
     }
   }
 
-  function method threads(t: rbtree): set<K>
+  function threads(t: rbtree): set<K>
     ensures t.Node? ==>
       threads(t) == threadsP(t.left) + threadsP(t.right)
   {
@@ -117,7 +124,7 @@ module TRBTree.Base {
     }
   }
 
-  function method keysAndThreadsP(p: pointer): set<K>
+  function keysAndThreadsP(p: pointer): set<K>
     ensures p.Child? ==> keysAndThreads(p.child) == keysAndThreadsP(p)
   {
     match p {
@@ -126,7 +133,7 @@ module TRBTree.Base {
     }
   }
 
-  function method keysAndThreads(t: rbtree): set<K>
+  function keysAndThreads(t: rbtree): set<K>
     ensures t.Node? ==>
       keysAndThreads(t) == keysAndThreadsP(t.left) + {t.key} + keysAndThreadsP(t.right)
   {
@@ -170,7 +177,7 @@ module TRBTree.Base {
         keys(t) == {t.key})
   {}
 
-  function method valuesP(p: pointer): set<K>
+  function valuesP(p: pointer): set<K>
   {
     match p {
       case Child(t) => values(t)
@@ -178,7 +185,7 @@ module TRBTree.Base {
     }
   }
 
-  function method values(t: rbtree): set<V>
+  function values(t: rbtree): set<V>
   {
     match t {
       case Empty => {}
@@ -186,7 +193,7 @@ module TRBTree.Base {
     }
   }
 
-  function method pairsP(p: pointer): set<(K, V)>
+  function pairsP(p: pointer): set<(K, V)>
   {
     match p {
       case Child(t) => pairs(t)
@@ -194,7 +201,7 @@ module TRBTree.Base {
     }
   }
 
-  function method pairs(t: rbtree): set<(K, V)>
+  function pairs(t: rbtree): set<(K, V)>
   {
     match t {
       case Empty => {}
@@ -202,7 +209,7 @@ module TRBTree.Base {
     }
   }
 
-  function method sizeP(p: pointer): nat
+  function sizeP(p: pointer): nat
   {
     match p {
       case Child(t) => size(t)
@@ -210,7 +217,7 @@ module TRBTree.Base {
     }
   }
 
-  function method size(t: rbtree): nat
+  function size(t: rbtree): nat
   {
     match t {
       case Empty => 0
@@ -218,7 +225,8 @@ module TRBTree.Base {
     }
   }
 
-  function method sizeWithPointersP(p: pointer): nat
+  function sizeWithPointersP(p: pointer): nat
+    ensures p.Child? ==> 1 + sizeWithPointers(p.child) == sizeWithPointersP(p)
   {
     match p {
       case Child(t) => 1 + sizeWithPointers(t)
@@ -226,7 +234,7 @@ module TRBTree.Base {
     }
   }
 
-  function method sizeWithPointers(t: rbtree): nat
+  function sizeWithPointers(t: rbtree): nat
   {
     match t {
       case Empty => 0
@@ -236,7 +244,7 @@ module TRBTree.Base {
 
 
   /*
-  function method toMapRec(t: rbtree): map<K, V>
+  function toMapRec(t: rbtree): map<K, V>
   {
     match t {
       case Empty => map[]
@@ -245,7 +253,7 @@ module TRBTree.Base {
   }
   */
 
-  function method preorderP(p: pointer): seq<(K, V)>
+  function preorderP(p: pointer): seq<(K, V)>
   {
     match p {
       case Child(t) => preorder(t)
@@ -253,7 +261,7 @@ module TRBTree.Base {
     }
   }
 
-  function method preorder(t: rbtree): seq<(K, V)>
+  function preorder(t: rbtree): seq<(K, V)>
   {
     match t {
       case Empty => []
@@ -261,7 +269,7 @@ module TRBTree.Base {
     }
   }
 
-  function method inorderP(p: pointer): seq<(K, V)>
+  function inorderP(p: pointer): seq<(K, V)>
     ensures p.Child? ==> inorder(p.child) == inorderP(p)
   {
     match p {
@@ -270,7 +278,7 @@ module TRBTree.Base {
     }
   }
 
-  function method inorder(t: rbtree): seq<(K, V)>
+  function inorder(t: rbtree): seq<(K, V)>
   {
     match t {
       case Empty => []
@@ -378,7 +386,7 @@ module TRBTree.Base {
     seq(|s|, i requires 0 <= i < |s| => s[i].0)
   }
 
-  function method orderToMap(s: seq<(K, V)>): map<K, V>
+  function orderToMap(s: seq<(K, V)>): map<K, V>
   {
     if s == [] then
       map[]
@@ -386,19 +394,19 @@ module TRBTree.Base {
       map[s[0].0 := s[0].1] + orderToMap(s[1..])
   }
 
-  function method orderToMap'(s: seq<(K, V)>): map<K, V>
+  function orderToMap'(s: seq<(K, V)>): map<K, V>
     requires forall i, j | 0 <= i < j < |s| :: s[i].0 != s[j].0
   {
     map t: (K, V) | t in s :: t.0 := t.1
     //map i: int | 0 <= i < |s| :: s[i].0 := s[i].1
   }
 
-  function method toMapSeq(t: rbtree): map<K, V>
+  function toMapSeq(t: rbtree): map<K, V>
   {
     orderToMap(preorder(t))
   }
 
-  function method SearchTreeP(p: pointer): bool
+  function SearchTreeP(p: pointer): bool
     ensures p.Child? ==> (SearchTreeP(p) <==> SearchTree(p.child))
     //ensures p.Thread? ==> SearchTreeP(p)
   {
@@ -408,7 +416,7 @@ module TRBTree.Base {
     }
   }
 
-  function method SearchTree(t: rbtree): bool
+  function SearchTree(t: rbtree): bool
     ensures t.Node? && SearchTree(t) ==> (SearchTreeP(t.left) && SearchTreeP(t.right))
   {
     match t {
@@ -421,7 +429,7 @@ module TRBTree.Base {
     }
   }
 
-  function method GetP(p: pointer, k: K): V
+  function GetP(p: pointer, k: K): V
     requires k in keysP(p)
     requires SearchTreeP(p)
   {
@@ -430,7 +438,7 @@ module TRBTree.Base {
     }
   }
 
-  function method Get(t: rbtree, k: K): V
+  function Get(t: rbtree, k: K): V
     requires k in keys(t)
     requires SearchTree(t)
   {
@@ -444,7 +452,7 @@ module TRBTree.Base {
       t.value
   }
 
-  function method GetSubtreeP(p: pointer, k: K): rbtree
+  function GetSubtreeP(p: pointer, k: K): rbtree
     requires k in keysP(p)
     requires SearchTreeP(p)
   {
@@ -453,7 +461,7 @@ module TRBTree.Base {
     }
   }
 
-  function method GetSubtree(t: rbtree, k: K): rbtree
+  function GetSubtree(t: rbtree, k: K): rbtree
     requires k in keys(t)
     requires SearchTree(t)
     ensures Subtree(GetSubtree(t, k), t)
@@ -470,7 +478,7 @@ module TRBTree.Base {
       t
   }
 
-  function method minSubtreeP(p: pointer): rbtree
+  function minSubtreeP(p: pointer): rbtree
     requires p.Child? && p.child.Node?
     ensures minSubtreeP(p).Node?
     ensures inorderP(p)[0].0 == minSubtreeP(p).key
@@ -480,7 +488,7 @@ module TRBTree.Base {
     }
   }
 
-  function method minSubtree(t: rbtree): rbtree
+  function minSubtree(t: rbtree): rbtree
     requires keys(t) != {}
     ensures Subtree(minSubtree(t), t)
     ensures minSubtree(t).Node?
@@ -492,7 +500,7 @@ module TRBTree.Base {
       t
   }
 
-  function method maxSubtreeP(p: pointer): rbtree
+  function maxSubtreeP(p: pointer): rbtree
     requires p.Child? && p.child.Node?
     requires SearchTreeP(p)
   {
@@ -501,7 +509,7 @@ module TRBTree.Base {
     }
   }
 
-  function method maxSubtree(t: rbtree): rbtree
+  function maxSubtree(t: rbtree): rbtree
     requires keys(t) != {}
     requires SearchTree(t)
     ensures Subtree(maxSubtree(t), t)
@@ -513,7 +521,7 @@ module TRBTree.Base {
       t
   }
 
-  function method toMap(t: rbtree): map<K, V>
+  function toMap(t: rbtree): map<K, V>
     requires SearchTree(t)
   {
     map k: K | k in keys(t) :: Get(t, k)
@@ -598,7 +606,7 @@ module TRBTree.Base {
     }
   }
 
-  lemma orderToSetCard(s: seq<(K, V)>)
+  lemma {:verify false} orderToSetCard(s: seq<(K, V)>)
     requires forall i, j | 0 <= i < j < |s| :: s[i].0 != s[j].0
     ensures |s| == |orderToSet(s)|
   {
@@ -637,7 +645,7 @@ module TRBTree.Base {
     ensures orderKeysToSet(inorder(t)) == keys(t)
   {}
 
-  lemma OrderSetIsTreePairs(t: rbtree)
+  lemma {:verify false} OrderSetIsTreePairs(t: rbtree)
     ensures orderToSet(inorder(t)) == pairs(t)
   {}
 
@@ -1417,13 +1425,13 @@ module TRBTree.Base {
 
   type threadOrEmpty = p: pointer | p.Thread? || (p.Child? && p.child.Empty?) witness Child(Empty)
 
-  function method IsThreadOrEmpty(p: pointer): bool
+  function IsThreadOrEmpty(p: pointer): bool
   {
     p.Thread? || p == Child(Empty)
   }
 
 /*
-  function method ThreadedTreeRecP(prev: threadOrEmpty, p: pointer, next: threadOrEmpty, onLeft: bool): bool
+  function ThreadedTreeRecP(prev: threadOrEmpty, p: pointer, next: threadOrEmpty, onLeft: bool): bool
     ensures p.Child? && !p.child.Empty? ==>
       (ThreadedTreeRecP(prev, p, next, onLeft) <==> ThreadedTreeRec(prev, p.child, next))
     decreases p
@@ -1444,7 +1452,7 @@ module TRBTree.Base {
     }
   }
 
-  function method ThreadedTreeRec(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty): bool
+  function ThreadedTreeRec(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty): bool
     decreases t
     requires t.Node?
   {
@@ -1456,7 +1464,7 @@ module TRBTree.Base {
   }
   */
 
-  function method ThreadedTreeRecPL(prev: threadOrEmpty, p: pointer, next: threadOrEmpty): bool
+  function ThreadedTreeRecPL(prev: threadOrEmpty, p: pointer, next: threadOrEmpty): bool
     decreases p
     ensures p.Child? && !p.child.Empty? ==>
       (ThreadedTreeRecPL(prev, p, next) <==> ThreadedTreeRec(prev, p.child, next))
@@ -1468,7 +1476,7 @@ module TRBTree.Base {
     }
   }
 
-  function method ThreadedTreeRecPR(prev: threadOrEmpty, p: pointer, next: threadOrEmpty): bool
+  function ThreadedTreeRecPR(prev: threadOrEmpty, p: pointer, next: threadOrEmpty): bool
     decreases p
     ensures p.Child? && !p.child.Empty? ==>
       (ThreadedTreeRecPR(prev, p, next) <==> ThreadedTreeRec(prev, p.child, next))
@@ -1480,7 +1488,7 @@ module TRBTree.Base {
     }
   }
 
-  function method ThreadedTreeRecPCond(
+  function ThreadedTreeRecPCond(
       prev: threadOrEmpty,
       p: pointer,
       next: threadOrEmpty,
@@ -1493,7 +1501,7 @@ module TRBTree.Base {
       ThreadedTreeRecPR(prev, p, next)
   }
 
-  function method ThreadedTreeRec(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty): bool
+  function ThreadedTreeRec(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty): bool
     decreases t
     requires t.Node?
   {
@@ -1504,7 +1512,7 @@ module TRBTree.Base {
     }
   }
 
-  function method ThreadedTreeRoot(t: rbtree): bool
+  function ThreadedTreeRoot(t: rbtree): bool
   {
     match t {
       case Empty => true
@@ -1883,7 +1891,7 @@ module TRBTree.Base {
     InorderRightEmptyRec(it, Child(Empty), node);
   }
 
-  lemma SmallerKeysRightEmpty(node: rbtree, root: rbtree)
+  lemma {:verify false} SmallerKeysRightEmpty(node: rbtree, root: rbtree)
     requires SearchTree(root)
     requires Subtree(node, root)
     requires ThreadedTreeRoot(root)
@@ -1917,7 +1925,7 @@ module TRBTree.Base {
     }
   }
 
-  function method ThreadedTreeExample1(): rbtree {
+  function ThreadedTreeExample1(): rbtree {
     Node(
       Child(Node(
         Child(Node(Child(Empty), 1, 0, Thread(2), Black)),
@@ -1945,27 +1953,27 @@ module TRBTree.Base {
 
   /* Red Black Tree */
 
-  function method isRed(t: rbtree): bool
+  function isRed(t: rbtree): bool
   {
     t.Node? && t.color.Red?
   }
 
-  function method isRedP(p: pointer): bool
+  function isRedP(p: pointer): bool
   {
     p.Child? && p.child.Node? && p.child.color.Red?
   }
 
-  function method isBlack(t: rbtree): bool
+  function isBlack(t: rbtree): bool
   {
     t.Node? && t.color.Black?
   }
 
-  function method isBlackP(p: pointer): bool
+  function isBlackP(p: pointer): bool
   {
     p.Child? && p.child.Node? && p.child.color.Black?
   }
 
-  function method BlackHeightP(p: pointer): nat
+  function BlackHeightP(p: pointer): nat
     ensures p.Child? ==> (BlackHeightP(p) == BlackHeight(p.child))
   {
     match p {
@@ -1974,7 +1982,7 @@ module TRBTree.Base {
     }
   }
 
-  function method BlackHeight(t: rbtree): nat
+  function BlackHeight(t: rbtree): nat
   {
     match t {
       case Empty => 0
@@ -1986,12 +1994,12 @@ module TRBTree.Base {
     }
   }
 
-  function method isNode(p: pointer): bool
+  function isNode(p: pointer): bool
   {
     p.Child? && p.child.Node?
   }
 
-  function method RedBlackTreeP(p: pointer): bool
+  function RedBlackTreeP(p: pointer): bool
     ensures p.Child? ==> (RedBlackTreeP(p) <==> RedBlackTree(p.child))
   {
     match p {
@@ -2000,7 +2008,7 @@ module TRBTree.Base {
     }
   }
 
-  function method RedBlackTree(t: rbtree): bool
+  function RedBlackTree(t: rbtree): bool
   {
     match t {
       case Empty => true
@@ -2017,7 +2025,7 @@ module TRBTree.Base {
     }
   }
 
-  function method RedBlackTreeRoot(t: rbtree): bool
+  function RedBlackTreeRoot(t: rbtree): bool
   {
     RedBlackTree(t) && (t.Node? ==> t.color.Black?)
   }

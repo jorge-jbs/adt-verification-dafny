@@ -1,11 +1,11 @@
 include "../../../../src/tree/layer4/Color.dfy"
 include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 
-module TRBTree.UpdatePrev {
+module {:options "-functionSyntax:4"} TRBTree.UpdatePrev {
   import opened Color
   import opened Base
 
-  function method UpdatePrevP(
+  function UpdatePrevP(
       newPrev: threadOrEmpty,
       node: pointer
     ): pointer
@@ -16,7 +16,7 @@ module TRBTree.UpdatePrev {
     }
   }
 
-  function method UpdatePrev(
+  function UpdatePrev(
       newPrev: threadOrEmpty,
       node: rbtree
     ): rbtree

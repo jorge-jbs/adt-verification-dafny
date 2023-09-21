@@ -127,6 +127,7 @@ files=(
     src/tree/layer4/ThreadedLinkedTree/Min.dfy
     src/tree/layer4/TTree.dfy
     src/tree/layer4/TTNode.dfy
+    src/tree/layer4/Color.dfy
 )
 
 NINJA_FILE=build.ninja

@@ -5,7 +5,7 @@ include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 include "../../../../src/tree/layer4/TRBTree/Restore.dfy"
 include "../../../../src/tree/layer4/TRBTree/MoveRed.dfy"
 
-module TRBTree.RemoveMinMaintainingPrev {
+module {:options "-functionSyntax:4"} TRBTree.RemoveMinMaintainingPrev {
   import opened KeyValue
   import opened Utils
   import opened Utils.Option
@@ -15,7 +15,7 @@ module TRBTree.RemoveMinMaintainingPrev {
   import opened Res = Restore
   import opened MoveRed
 
-  function method RemoveMinMaintainingPrevP(p: pointer, isLeft: bool): option<(pointer, K, V)>
+  function RemoveMinMaintainingPrevP(p: pointer, isLeft: bool): option<(pointer, K, V)>
     requires p.Child?
     requires p.child.Node?
     decreases sizeWithPointersP(p)
@@ -23,7 +23,7 @@ module TRBTree.RemoveMinMaintainingPrev {
     RemoveMinMaintainingPrev(p.child, isLeft)
   }
 
-  function method RemoveMinMaintainingPrev(t: rbtree, isLeft: bool): option<(pointer, K, V)>
+  function RemoveMinMaintainingPrev(t: rbtree, isLeft: bool): option<(pointer, K, V)>
     requires t.Node?
     decreases sizeWithPointers(t)
   {
@@ -41,7 +41,7 @@ module TRBTree.RemoveMinMaintainingPrev {
           Some(MoveRedLeft(t))
         else
           Some(t);
-      var (l', minK, minV) :- RemoveMinMaintainingPrevP(t'.left, true);
+      var (l', minK, minV) :- RemoveMinMaintainingPrev(t'.left.child, true);
       Some((Child(Restore(Node(l', t'.key, t'.value, t'.right, t'.color))), minK, minV))
   }
 

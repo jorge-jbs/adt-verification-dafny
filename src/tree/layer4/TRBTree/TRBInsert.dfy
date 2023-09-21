@@ -5,7 +5,7 @@ include "../../../../src/tree/layer4/TRBTree/FlipColors.dfy"
 include "../../../../src/tree/layer4/TRBTree/Rotate.dfy"
 include "../../../../src/tree/layer4/TRBTree/Restore.dfy"
 
-module TRBTree.TRBInsert {
+module {:options "-functionSyntax:4"} TRBTree.TRBInsert {
   import opened KeyValue
   import opened Color
   import opened Base
@@ -13,7 +13,7 @@ module TRBTree.TRBInsert {
   import opened Rotate
   import opened R = Restore
 
-  function method TRBInsertP(prev: threadOrEmpty, p: pointer, next: threadOrEmpty, k': K, v': V): pointer
+  function TRBInsertP(prev: threadOrEmpty, p: pointer, next: threadOrEmpty, k': K, v': V): pointer
     decreases p
   {
     match p {
@@ -22,7 +22,7 @@ module TRBTree.TRBInsert {
     }
   }
 
-  function method TRBInsert(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty, k': K, v': V): rbtree
+  function TRBInsert(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty, k': K, v': V): rbtree
     decreases t
   {
     match t {
@@ -37,7 +37,7 @@ module TRBTree.TRBInsert {
     }
   }
 
-  function method BlackenRoot(t: rbtree): rbtree
+  function BlackenRoot(t: rbtree): rbtree
   {
     match t {
       case Empty => Empty
@@ -46,7 +46,7 @@ module TRBTree.TRBInsert {
     }
   }
 
-  function method TRBInsertRoot(t: rbtree, k: K, v: V): rbtree
+  function TRBInsertRoot(t: rbtree, k: K, v: V): rbtree
   {
     BlackenRoot(TRBInsert(Child(Empty), t, Child(Empty), k, v))
   }
@@ -72,8 +72,7 @@ module TRBTree.TRBInsert {
     }
   }
 
-  // 7"
-  lemma {:verify false} TRBInsertSpec(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty, k': K, v': V)
+  lemma TRBInsertSpec(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty, k': K, v': V)
     decreases t
     requires SearchTree(t)
     requires RedBlackTree(t)
