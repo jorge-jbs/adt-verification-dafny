@@ -123,6 +123,10 @@ files=(
     src/tree/layer4/ThreadedLinkedTree/FlipColors.dfy
     src/tree/layer4/ThreadedLinkedTree/Rotate.dfy
     src/tree/layer4/ThreadedLinkedTree/Restore.dfy
+    src/tree/layer4/ThreadedLinkedTree/OpFlipColors.dfy
+    src/tree/layer4/ThreadedLinkedTree/OpRotate.dfy
+    src/tree/layer4/ThreadedLinkedTree/OpMoveRed.dfy
+    src/tree/layer4/ThreadedLinkedTree/OpRestore.dfy
     src/tree/layer4/ThreadedLinkedTree/TRBInsert.dfy
     src/tree/layer4/ThreadedLinkedTree/Min.dfy
     src/tree/layer4/TTree.dfy

@@ -74,6 +74,107 @@ module TTNode {
     }
   }
 
+  predicate ValidRecPReadsSk(node: TTNode?, sk: ttreePointer<TTNode>, isThread: bool)
+    decreases sk
+    reads elemsP(sk)
+
+    ensures sk.Child? ==> (ValidRecPReadsSk(node, sk, isThread) <==> !isThread && ValidRecReadsSk(node, sk.child))
+  {
+    match sk {
+      case Child(t) => !isThread && ValidRecReadsSk(node, t)
+      case Thread(n) => isThread && node == n
+    }
+  }
+
+  predicate ValidRecReadsSk(node: TTNode?, sk: ttree<TTNode>)
+    decreases sk
+    reads elems(sk)
+  {
+    match sk {
+      case Empty => node == null
+      case Node(l, x, r) =>
+        && x == node
+        && x !in elemsP(l)
+        && x !in elemsP(r)
+        && elemsP(l) !! elemsP(r)
+        && ValidRecPReadsSk(node.left, l, node.isThreadLeft)
+        && ValidRecPReadsSk(node.right, r, node.isThreadRight)
+    }
+  }
+
+  predicate {:opaque} OpValidRecP(node: TTNode?, sk: ttreePointer<TTNode>, isThread: bool)
+    decreases sk
+    reads set x | x in elemsP(sk) :: x`left
+    reads set x | x in elemsP(sk) :: x`isThreadLeft
+    reads set x | x in elemsP(sk) :: x`right
+    reads set x | x in elemsP(sk) :: x`isThreadRight
+
+    ensures sk.Child? ==> (OpValidRecP(node, sk, isThread) <==> !isThread && OpValidRec(node, sk.child))
+  {
+    match sk {
+      case Child(t) => !isThread && OpValidRec(node, t)
+      case Thread(n) => isThread && node == n
+    }
+  }
+
+  predicate {:opaque} OpValidRec(node: TTNode?, sk: ttree<TTNode>)
+    decreases sk
+    reads set x | x in elems(sk) :: x`left
+    reads set x | x in elems(sk) :: x`isThreadLeft
+    reads set x | x in elems(sk) :: x`right
+    reads set x | x in elems(sk) :: x`isThreadRight
+  {
+    match sk {
+      case Empty => node == null
+      case Node(l, x, r) =>
+        && x == node
+        && x !in elemsP(l)
+        && x !in elemsP(r)
+        && elemsP(l) !! elemsP(r)
+        && OpValidRecP(node.left, l, node.isThreadLeft)
+        && OpValidRecP(node.right, r, node.isThreadRight)
+    }
+  }
+
+  lemma OpValidEqP(node: TTNode?, sk: ttreePointer<TTNode>, isThread: bool)
+    ensures ValidRecP(node, sk, isThread) <==> OpValidRecP(node, sk, isThread)
+  {
+    if ValidRecP(node, sk, isThread) || OpValidRecP(node, sk, isThread) {
+      reveal OpValidRecP();
+      if sk.Child? {
+        OpValidEq(node, sk.child);
+      }
+    }
+  }
+
+  lemma OpValidEq(node: TTNode?, sk: ttree<TTNode>)
+    ensures ValidRec(node, sk) <==> OpValidRec(node, sk)
+  {
+    if ValidRec(node, sk) || OpValidRec(node, sk) {
+      reveal OpValidRec();
+      if sk.Node? {
+        OpValidEqP(node.left, sk.left, node.isThreadLeft);
+        OpValidEqP(node.right, sk.right, node.isThreadRight);
+      }
+    }
+  }
+
+  predicate {:opaque} OpValidRecPReadsSk(node: TTNode?, sk: ttreePointer<TTNode>, isThread: bool)
+    decreases sk
+    reads elemsP(sk)
+
+    ensures sk.Child? ==> (ValidRecPReadsSk(node, sk, isThread) <==> !isThread && ValidRecReadsSk(node, sk.child))
+  {
+    ValidRecPReadsSk(node, sk, isThread)
+  }
+
+  predicate {:opaque} OpValidRecReadsSk(node: TTNode?, sk: ttree<TTNode>)
+    decreases sk
+    reads elems(sk)
+  {
+    ValidRecReadsSk(node, sk)
+  }
+
   function nodeToPointer(node: TTNode?): RB.threadOrEmpty
   {
     if node == null then
@@ -277,7 +378,7 @@ module TTNode {
 
   function TreeModelRec(sk: ttree<TTNode>): rbtree
     reads elems(sk)
-    ensures (set n | n in elems(sk) :: n.key) == keys(TreeModelRec(sk))
+    //ensures (set n | n in elems(sk) :: n.key) == keys(TreeModelRec(sk))
   {
     match sk {
       case Empty => RB.Empty
@@ -327,6 +428,12 @@ module TTNode {
 
   lemma isRedLeftProp(node: TTNode?, sk: ttree<TTNode>)
     requires ValidRec(node, sk)
+    requires node != null
+    ensures isRedLeft(node) <==> RB.isRedP(TreeModelRec(sk).left)
+  {}
+
+  lemma isRedLeftPropOp(node: TTNode?, sk: ttree<TTNode>)
+    requires OpValidRec(node, sk)
     requires node != null
     ensures isRedLeft(node) <==> RB.isRedP(TreeModelRec(sk).left)
   {}
