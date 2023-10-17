@@ -258,7 +258,6 @@ module {:options "-functionSyntax:4"} TRBTree.MoveRed {
       RotateLeftSpec(t''.right);
 
       assert RedBlackTree(MoveRedRight(t).left) by {
-        assume false;
         if !t.left.left.color.Black? {
           assert MoveRedRight(t).left.left == t.left.left.left;
           assert MoveRedRight(t).left.right == t.left.left.right;
@@ -295,7 +294,23 @@ module {:options "-functionSyntax:4"} TRBTree.MoveRed {
           }
           assert BlackHeight(MoveRedRight(t).left.left) == BlackHeight(MoveRedRight(t).left.right) by {
             assert RedBlackTree(t.left.left);
-          } 
+          }
+          assert (MoveRedRight(t).left.right.Node? ==> MoveRedRight(t).left.right.color.Black?);
+          assert (isRed(MoveRedRight(t).left.left) && MoveRedRight(t).left.left.left.Node? ==> MoveRedRight(t).left.left.left.color.Black?);
+          assert RedBlackTree(MoveRedRight(t).left.right) by {
+            assert MoveRedRight(t).left.right == t.left.left.right;
+            assert RedBlackTree(t);
+            assert RedBlackTree(t.left);
+            assert RedBlackTree(t.left.left);
+            assert RedBlackTree(t.left.left.right);
+          }
+          assert RedBlackTree(MoveRedRight(t).left.left) by {
+            assert MoveRedRight(t).left.left == t.left.left.left;
+            assert RedBlackTree(t);
+            assert RedBlackTree(t.left);
+            assert RedBlackTree(t.left.left);
+            assert RedBlackTree(t.left.left.left);
+          }
         }
       }
       assert RedBlackTree(MoveRedRight(t).right) by {
