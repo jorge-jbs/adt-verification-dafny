@@ -241,7 +241,7 @@ module ThreadedLinkedTree.Remove {
           newNode.isThreadLeft := false;
           newNode.right := newRight;
           newNode.isThreadRight := newIsThreadRight;
-          newSk := Node(newSkLeft, newNode, newSkRight);
+          newSk := Node(newSkLeft, newNode as TTNode, newSkRight);
           ghost var t''' := TreeModelRec(newSk);
           assert
             && t'''.left == l'
