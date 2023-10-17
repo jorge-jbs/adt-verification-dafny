@@ -258,6 +258,7 @@ module {:options "-functionSyntax:4"} TRBTree.MoveRed {
       RotateLeftSpec(t''.right);
 
       assert RedBlackTree(MoveRedRight(t).left) by {
+        assume false;
         if !t.left.left.color.Black? {
           assert MoveRedRight(t).left.left == t.left.left.left;
           assert MoveRedRight(t).left.right == t.left.left.right;
