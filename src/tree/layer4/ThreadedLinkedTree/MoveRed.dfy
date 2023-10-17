@@ -1,10 +1,10 @@
 include "../../../../src/MUtils.dfy"
-include "../../../../src/tree/layer4/AltThreadedLinkedTree/FlipColors.dfy"
-include "../../../../src/tree/layer4/AltThreadedLinkedTree/Rotate.dfy"
-include "../../../../src/tree/layer4/AltTRBTree/Base.dfy"
-include "../../../../src/tree/layer4/AltTRBTree/MoveRed.dfy"
-include "../../../../src/tree/layer4/AltTTree.dfy"
-include "../../../../src/tree/layer4/AltTTNode2.dfy"
+include "../../../../src/tree/layer4/ThreadedLinkedTree/FlipColors.dfy"
+include "../../../../src/tree/layer4/ThreadedLinkedTree/Rotate.dfy"
+include "../../../../src/tree/layer4/TRBTree/Base.dfy"
+include "../../../../src/tree/layer4/TRBTree/MoveRed.dfy"
+include "../../../../src/tree/layer4/TTree.dfy"
+include "../../../../src/tree/layer4/TTNode.dfy"
 include "../../../../src/tree/layer4/Color.dfy"
 
 module ThreadedLinkedTree.MoveRed {

@@ -1,11 +1,11 @@
 include "../../../../src/MUtils.dfy"
-include "../../../../src/tree/layer4/AltThreadedLinkedTree/Restore.dfy"
-include "../../../../src/tree/layer4/AltThreadedLinkedTree/MoveRed.dfy"
-include "../../../../src/tree/layer4/AltTRBTree/Base.dfy"
-include "../../../../src/tree/layer4/AltTRBTree/MoveRed.dfy"
-include "../../../../src/tree/layer4/AltTRBTree/RemoveMinMaintainingPrev.dfy"
-include "../../../../src/tree/layer4/AltTTree.dfy"
-include "../../../../src/tree/layer4/AltTTNode2.dfy"
+include "../../../../src/tree/layer4/ThreadedLinkedTree/Restore.dfy"
+include "../../../../src/tree/layer4/ThreadedLinkedTree/MoveRed.dfy"
+include "../../../../src/tree/layer4/TRBTree/Base.dfy"
+include "../../../../src/tree/layer4/TRBTree/MoveRed.dfy"
+include "../../../../src/tree/layer4/TRBTree/RemoveMinMaintainingPrev.dfy"
+include "../../../../src/tree/layer4/TTree.dfy"
+include "../../../../src/tree/layer4/TTNode.dfy"
 include "../../../../src/tree/layer4/Color.dfy"
 
 module ThreadedLinkedTree.RemoveMinMaintainingPrev {

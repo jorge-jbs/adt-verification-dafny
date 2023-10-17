@@ -13,31 +13,22 @@ module {:options "-functionSyntax:4"} TRBTree.TRBInsert {
   import opened Rotate
   import opened R = Restore
 
-  function TRBInsertP(prev: threadOrEmpty, p: pointer, next: threadOrEmpty, k': K, v': V): pointer
-    decreases p
-  {
-    match p {
-      case Child(t) => Child(TRBInsert(prev, t, next, k', v'))
-      case Thread(k) => Child(Node(prev, k', v', next, Red))
-    }
-  }
-
-  function TRBInsert(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty, k': K, v': V): rbtree
+  function TRBInsert(prev: threadOrEmpty, t: trbtreeOrThread, next: threadOrEmpty, k': K, v': V): trbtree
     decreases t
   {
     match t {
-      case Empty => Node(prev, k', v', next, Red)
+      case Empty|Thread(_) => Node(prev, k', v', next, Red)
       case Node(l, k, v, r, c) =>
         if k < k' then
-          Restore(Node(l, k, v, TRBInsertP(Thread(k), r, next, k', v'), c))
+          Restore(Node(l, k, v, TRBInsert(Thread(k), r, next, k', v'), c))
         else if k' < k then
-          Restore(Node(TRBInsertP(prev, l, Thread(k), k', v'), k, v, r, c))
+          Restore(Node(TRBInsert(prev, l, Thread(k), k', v'), k, v, r, c))
         else
           Node(l, k, v', r, c)
     }
   }
 
-  function BlackenRoot(t: rbtree): rbtree
+  function BlackenRoot(t: trbtree): trbtree
   {
     match t {
       case Empty => Empty
@@ -46,93 +37,55 @@ module {:options "-functionSyntax:4"} TRBTree.TRBInsert {
     }
   }
 
-  function TRBInsertRoot(t: rbtree, k: K, v: V): rbtree
+  function TRBInsertRoot(t: trbtree, k: K, v: V): trbtree
   {
-    BlackenRoot(TRBInsert(Child(Empty), t, Child(Empty), k, v))
+    BlackenRoot(TRBInsert(Empty, t, Empty, k, v))
   }
 
-  lemma TRBInsertPSpec(prev: threadOrEmpty, p: pointer, next: threadOrEmpty, k': K, v': V)
-    decreases p
-    requires SearchTreeP(p)
-    requires RedBlackTreeP(p)
-    requires !(isRedP(p) && isRedP(p.child.left))
-    ensures isBlackP(p) && isRed(Restore(p.child)) ==>
-      !isRedP(Restore(p.child).left)
-    ensures keysP(p) + {k'} == keysP(TRBInsertP(prev, p, next, k', v'))
-    ensures SearchTreeP(TRBInsertP(prev, p, next, k', v'))
-    ensures RedBlackTreeP(TRBInsertP(prev, p, next, k', v'))
-    ensures BlackHeightP(p) == BlackHeightP(TRBInsertP(prev, p, next, k', v'))
-  {
-    match p {
-      case Child(t) => {
-        TRBInsertSpec(prev, t, next, k', v');
-      }
-      case Thread(k) => {
-      }
-    }
-  }
-
-  lemma TRBInsertSpec(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty, k': K, v': V)
+  lemma TRBInsertSpec(prev: threadOrEmpty, t: trbtreeOrThread, next: threadOrEmpty, k': K, v': V)
     decreases t
     requires SearchTree(t)
     requires RedBlackTree(t)
-    requires !(isRed(t) && isRedP(t.left))
+    requires !(isRed(t) && isRed(t.left))
     ensures isBlack(t) && isRed(Restore(t)) ==>
-      !isRedP(Restore(t).left)
+      !isRed(Restore(t).left)
     ensures keys(t) + {k'} == keys(TRBInsert(prev, t, next, k', v'))
     ensures SearchTree(TRBInsert(prev, t, next, k', v'))
     ensures RedBlackTree(TRBInsert(prev, t, next, k', v'))
     ensures BlackHeight(t) == BlackHeight(TRBInsert(prev, t, next, k', v'))
   {
     match t {
-      case Empty => {
+      case Empty|Thread(_) => {
       }
       case Node(l, k, v, r, c) => {
         if k < k' {
-          TRBInsertPSpec(Thread(k), r, next, k', v');
-          RestoreSpec(Node(l, k, v, TRBInsertP(Thread(k), r, next, k', v'), c));
+          TRBInsertSpec(Thread(k), r, next, k', v');
+          RestoreSpec(Node(l, k, v, TRBInsert(Thread(k), r, next, k', v'), c));
         } else if k' < k {
-          TRBInsertPSpec(prev, l, Thread(k), k', v');
-          RestoreSpec(Node(TRBInsertP(prev, l, Thread(k), k', v'), k, v, r, c));
+          TRBInsertSpec(prev, l, Thread(k), k', v');
+          RestoreSpec(Node(TRBInsert(prev, l, Thread(k), k', v'), k, v, r, c));
         } else {
         }
       }
     }
   }
 
-  lemma TRBInsertPThreaded(prev: threadOrEmpty, p: pointer, next: threadOrEmpty, k': K, v': V)
-    decreases p
-    requires ThreadedTreeRecPL(prev, p, next) || ThreadedTreeRecPR(prev, p, next)
-    ensures TRBInsertP(prev, p, next, k', v').Child?
-    ensures TRBInsertP(prev, p, next, k', v').child.Node?
-    ensures ThreadedTreeRecPR(prev, TRBInsertP(prev, p, next, k', v'), next)
-    ensures ThreadedTreeRecPL(prev, TRBInsertP(prev, p, next, k', v'), next)
-  {
-    match p {
-      case Child(t) => {
-        TRBInsertThreaded(prev, t, next, k', v');
-      }
-      case Thread(k) => {
-      }
-    }
-  }
-
-  lemma TRBInsertThreaded(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty, k': K, v': V)
+  lemma TRBInsertThreaded(prev: threadOrEmpty, t: trbtreeOrThread, next: threadOrEmpty, k': K, v': V)
     decreases t
-    requires t.Node? ==> ThreadedTreeRec(prev, t, next)
+    requires t.Node? ==> ThreadedTreeNe(prev, t, next)
     ensures TRBInsert(prev, t, next, k', v').Node?
-    ensures ThreadedTreeRec(prev, TRBInsert(prev, t, next, k', v'), next)
+    ensures ThreadedTreeNe(prev, TRBInsert(prev, t, next, k', v'), next)
   {
     match t {
-      case Empty => {
+      case Empty|Thread(_) => {
       }
       case Node(l, k, v, r, c) => {
         if k < k' {
-          TRBInsertPThreaded(Thread(k), r, next, k', v');
-          RestoreThreaded(prev, Node(l, k, v, TRBInsertP(Thread(k), r, next, k', v'), c), next);
+          TRBInsertThreaded(Thread(k), r, next, k', v');
+          RestoreThreaded(prev, Node(l, k, v, TRBInsert(Thread(k), r, next, k', v'), c), next);
         } else if k' < k {
-          TRBInsertPThreaded(prev, l, Thread(k), k', v');
-          RestoreThreaded(prev, Node(TRBInsertP(prev, l, Thread(k), k', v'), k, v, r, c), next);
+          TRBInsertThreaded(prev, l, Thread(k), k', v');
+          RestoreThreaded(prev, Node(TRBInsert(prev, l, Thread(k), k', v'), k, v, r, c), next);
         } else {
         }
       }
@@ -141,7 +94,7 @@ module {:options "-functionSyntax:4"} TRBTree.TRBInsert {
 
 /*
   // 43"
-  lemma {:verify false} TRBInsertModel(lt: option<K>, t: rbtree, rt: option<K>, k': K, v': V)
+  lemma {:verify false} TRBInsertModel(lt: option<K>, t: trbtree, rt: option<K>, k': K, v': V)
     decreases t
     requires !t.Thread?
     requires SearchTree(t)
@@ -223,25 +176,25 @@ module {:options "-functionSyntax:4"} TRBTree.TRBInsert {
   }
   */
 
-  lemma TRBInsertRootSpec(t: rbtree, k': K, v': V)
+  lemma TRBInsertRootSpec(t: trbtree, k': K, v': V)
     requires SearchTree(t)
     requires RedBlackTreeRoot(t)
     ensures keys(t) + {k'} == keys(TRBInsertRoot(t, k', v'))
     ensures SearchTree(TRBInsertRoot(t, k', v'))
     ensures RedBlackTreeRoot(TRBInsertRoot(t, k', v'))
   {
-    TRBInsertSpec(Child(Empty), t, Child(Empty), k', v');
+    TRBInsertSpec(Empty, t, Empty, k', v');
   }
 
-  lemma TRBInsertRootThreaded(t: rbtree, k': K, v': V)
+  lemma TRBInsertRootThreaded(t: trbtree, k': K, v': V)
     decreases t
     requires ThreadedTreeRoot(t)
     ensures ThreadedTreeRoot(TRBInsertRoot(t, k', v'))
   {
-    TRBInsertThreaded(Child(Empty), t, Child(Empty), k', v');
+    TRBInsertThreaded(Empty, t, Empty, k', v');
   }
 
-  lemma {:verify false} TRBInsertRootModel(t: rbtree, k: K, v: V)
+  lemma {:verify false} TRBInsertRootModel(t: trbtree, k: K, v: V)
     requires SearchTree(t)
     requires RedBlackTreeRoot(t)
     requires SearchTree(TRBInsertRoot(t, k, v))

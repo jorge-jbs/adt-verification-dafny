@@ -1,7 +1,7 @@
-include "../../../../src/tree/layer4/AltTRBTree/Base.dfy"
-include "../../../../src/tree/layer4/AltTRBTree/UpdateNext.dfy"
-include "../../../../src/tree/layer4/AltTTree.dfy"
-include "../../../../src/tree/layer4/AltTTNode2.dfy"
+include "../../../../src/tree/layer4/TRBTree/Base.dfy"
+include "../../../../src/tree/layer4/TRBTree/UpdateNext.dfy"
+include "../../../../src/tree/layer4/TTree.dfy"
+include "../../../../src/tree/layer4/TTNode.dfy"
 
 module ThreadedLinkedTree.UpdateNext {
   import TRB = TRBTree.Base

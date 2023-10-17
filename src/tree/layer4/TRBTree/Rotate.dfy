@@ -5,154 +5,157 @@ module {:options "-functionSyntax:4"} TRBTree.Rotate {
   import opened Color
   import opened Base
 
-  function RotateLeft(t: rbtree): rbtree
+  function RotateLeft(t: trbtree): trbtree
     requires t.Node?
-    requires t.right.Child?
-    requires t.right.child.Node?
+    requires t.right.Node?
   {
     Node(
-      Child(Node(
+      Node(
         t.left,
         t.key,
         t.value,
-        if t.right.child.left.Thread? then
-          Thread(t.right.child.key)
+        if t.right.left.Thread? then
+          Thread(t.right.key)
         else
-          t.right.child.left,
+          t.right.left,
         Red
-      )),
-      t.right.child.key,
-      t.right.child.value,
-      t.right.child.right,
+      ),
+      t.right.key,
+      t.right.value,
+      t.right.right,
       t.color
     )
   }
 
-  function RotateRight(t: rbtree): rbtree
+  function RotateRight(t: trbtree): trbtree
     requires t.Node?
-    requires t.left.Child?
-    requires t.left.child.Node?
+    requires t.left.Node?
   {
     Node(
-      t.left.child.left,
-      t.left.child.key,
-      t.left.child.value,
-      Child(Node(
-        if t.left.child.right.Thread? then
-          Thread(t.left.child.key)
+      t.left.left,
+      t.left.key,
+      t.left.value,
+      Node(
+        if t.left.right.Thread? then
+          Thread(t.left.key)
         else
-          t.left.child.right,
+          t.left.right,
         t.key,
         t.value,
         t.right,
         Red
-      )),
+      ),
       t.color
     )
   }
-
-  lemma RotateLeftSpec(t: rbtree)
+  
+  lemma RotateRightRightLeft(t: trbtree)
     requires t.Node?
-    requires isRedP(t.right)
+    requires t.left.Node?
+    ensures !t.left.right.Thread? ==> RotateRight(t).right.left == t.left.right
+  {}
+  
+  lemma RotateLeftSpec(t: trbtree)
+    requires t.Node?
+    requires isRed(t.right)
     requires SearchTree(t)
     ensures keys(t) == keys(RotateLeft(t))
     ensures SearchTree(RotateLeft(t))
     ensures BlackHeight(RotateLeft(t)) == BlackHeight(t)
   {
-    if t.right.child.left.Thread? {
-      assert SearchTreeP(RotateLeft(t).left.child.right);
-      assert BlackHeightP(RotateLeft(t).left.child.right) == BlackHeightP(t.right.child.left);
+    if t.right.left.Thread? {
+      assert keys(t.right.left) == keys(RotateLeft(t).left.right) == {};
+      assert SearchTree(RotateLeft(t).left.right);
+      assert BlackHeight(RotateLeft(t).left.right) == BlackHeight(t.right.left);
     }
   }
 
-  lemma {:verify false} RotateLeftSize(t: rbtree)
+  lemma {:verify false} RotateLeftSize(t: trbtree)
     requires RotateLeft.requires(t)
     ensures size(t) == size(RotateLeft(t))
   {}
 
-  lemma RotateLeftThreaded(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty)
+  lemma RotateLeftThreaded(prev: threadOrEmpty, t: trbtree, next: threadOrEmpty)
     requires t.Node?
-    requires t.right.Child?
-    requires t.right.child.Node?
-    requires ThreadedTreeRec(prev, t, next)
-    ensures ThreadedTreeRec(prev, RotateLeft(t), next)
+    requires t.right.Node?
+    requires ThreadedTreeNe(prev, t, next)
+    ensures ThreadedTreeNe(prev, RotateLeft(t), next)
   {
-    assert ThreadedTreeRecPL(prev, RotateLeft(t).left, Thread(RotateLeft(t).key)) by {
-      assert ThreadedTreeRec(prev, RotateLeft(t).left.child, Thread(RotateLeft(t).key)) by {
-        assert ThreadedTreeRecPL(prev, RotateLeft(t).left.child.left, Thread(RotateLeft(t).left.child.key));
-        assert ThreadedTreeRecPR(Thread(RotateLeft(t).left.child.key), RotateLeft(t).left.child.right, Thread(RotateLeft(t).key)) by {
-          assert ThreadedTreeRecPL(Thread(t.key), t.right.child.left, Thread(t.right.child.key));
+    assert ThreadedTreeRecL(prev, RotateLeft(t).left, Thread(RotateLeft(t).key)) by {
+      assert ThreadedTreeNe(prev, RotateLeft(t).left, Thread(RotateLeft(t).key)) by {
+        assert ThreadedTreeRecL(prev, RotateLeft(t).left.left, Thread(RotateLeft(t).left.key));
+        assert ThreadedTreeRecR(Thread(RotateLeft(t).left.key), RotateLeft(t).left.right, Thread(RotateLeft(t).key)) by {
+          assert ThreadedTreeRecL(Thread(t.key), t.right.left, Thread(t.right.key));
         }
       }
     }
-    assert ThreadedTreeRecPR(Thread(RotateLeft(t).key), RotateLeft(t).right, next);
+    assert ThreadedTreeRecR(Thread(RotateLeft(t).key), RotateLeft(t).right, next);
   }
 
-  lemma RotateRightSpec(t: rbtree)
+  lemma RotateRightSpec(t: trbtree)
     requires t.Node?
-    requires isRedP(t.left)
+    requires isRed(t.left)
     requires SearchTree(t)
     ensures keys(t) == keys(RotateRight(t))
     ensures SearchTree(RotateRight(t))
     ensures BlackHeight(RotateRight(t)) == BlackHeight(t)
   {
-    if t.left.child.right.Thread? {
-      assert SearchTreeP(RotateRight(t).right.child.left);
-      assert BlackHeightP(RotateRight(t).right.child.left) == BlackHeightP(t.left.child.right);
+    if t.left.right.Thread? {
+      assert keys(t.left.right) == keys(RotateRight(t).right.left) == {};
+      assert SearchTree(RotateRight(t).right.left);
+      assert BlackHeight(RotateRight(t).right.left) == BlackHeight(t.left.right);
     }
   }
 
-  lemma RotateRightSize(t: rbtree)
+  lemma RotateRightSize(t: trbtree)
     requires RotateRight.requires(t)
     ensures size(t) == size(RotateRight(t))
   {
-    if t.left.child.right.Thread? {
+    if t.left.right.Thread? {
       calc == {
         size(t);
 
         1 +
-        sizeP(t.left) +
-        sizeP(t.right);
+        size(t.left) +
+        size(t.right);
 
         1 +
         1 +
-        sizeP(t.left.child.left) +
-        sizeP(t.left.child.right) +
-        sizeP(t.right);
+        size(t.left.left) +
+        size(t.left.right) +
+        size(t.right);
 
         1 +
-        sizeP(t.left.child.left) +
+        size(t.left.left) +
         1 +
-        sizeP(Thread(t.left.child.key)) +
-        sizeP(t.right);
+        size(Thread(t.left.key)) +
+        size(t.right);
 
         1 +
-        sizeP(t.left.child.left) +
-        sizeP(
-          Child(Node(
-              Thread(t.left.child.key),
-              t.key,
-              t.value,
-              t.right,
-              Red
-            ))
-        );
+        size(t.left.left) +
+        size(Node(
+          Thread(t.left.key),
+          t.key,
+          t.value,
+          t.right,
+          Red
+        ));
 
         size(
           Node(
-            t.left.child.left,
-            t.left.child.key,
-            t.left.child.value,
-            Child(Node(
-              if t.left.child.right.Thread? then
-                Thread(t.left.child.key)
+            t.left.left,
+            t.left.key,
+            t.left.value,
+            Node(
+              if t.left.right.Thread? then
+                Thread(t.left.key)
               else
-                t.left.child.right,
+                t.left.right,
               t.key,
               t.value,
               t.right,
               Red
-            )),
+            ),
             t.color
           )
         );
@@ -162,44 +165,42 @@ module {:options "-functionSyntax:4"} TRBTree.Rotate {
       calc == {
         size(t);
         1 +
-        sizeP(t.left) +
-        sizeP(t.right);
+        size(t.left) +
+        size(t.right);
         1 +
         1 +
-        sizeP(t.left.child.left) +
-        sizeP(t.left.child.right) +
-        sizeP(t.right);
+        size(t.left.left) +
+        size(t.left.right) +
+        size(t.right);
         1 +
-        sizeP(t.left.child.left) +
+        size(t.left.left) +
         1 +
-        sizeP(t.left.child.right) +
-        sizeP(t.right);
+        size(t.left.right) +
+        size(t.right);
         1 +
-        sizeP(t.left.child.left) +
-        sizeP(
-          Child(Node(
-              t.left.child.right,
-              t.key,
-              t.value,
-              t.right,
-              Red
-            ))
-        );
+        size(t.left.left) +
+        size(Node(
+          t.left.right,
+          t.key,
+          t.value,
+          t.right,
+          Red
+        ));
         size(
           Node(
-            t.left.child.left,
-            t.left.child.key,
-            t.left.child.value,
-            Child(Node(
-              if t.left.child.right.Thread? then
-                Thread(t.left.child.key)
+            t.left.left,
+            t.left.key,
+            t.left.value,
+            Node(
+              if t.left.right.Thread? then
+                Thread(t.left.key)
               else
-                t.left.child.right,
+                t.left.right,
               t.key,
               t.value,
               t.right,
               Red
-            )),
+            ),
             t.color
           )
         );
@@ -208,33 +209,27 @@ module {:options "-functionSyntax:4"} TRBTree.Rotate {
     }
   }
 
-  lemma {:verify false} RotateRightSizeWithPointers(t: rbtree)
-    requires RotateRight.requires(t)
-    ensures sizeWithPointers(t) == sizeWithPointers(RotateRight(t))
-  {}
-
-  lemma RotateRightThreaded(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty)
+  lemma RotateRightThreaded(prev: threadOrEmpty, t: trbtree, next: threadOrEmpty)
     requires t.Node?
-    requires t.left.Child?
-    requires t.left.child.Node?
-    requires ThreadedTreeRec(prev, t, next)
-    ensures ThreadedTreeRec(prev, RotateRight(t), next)
+    requires t.left.Node?
+    requires ThreadedTreeNe(prev, t, next)
+    ensures ThreadedTreeNe(prev, RotateRight(t), next)
   {
-    assert ThreadedTreeRecPL(prev, RotateRight(t).left, Thread(RotateRight(t).key));
-    assert ThreadedTreeRecPR(Thread(RotateRight(t).key), RotateRight(t).right, next) by {
-      assert ThreadedTreeRec(Thread(RotateRight(t).key), RotateRight(t).right.child, next) by {
-        assert ThreadedTreeRecPL(Thread(RotateRight(t).key), RotateRight(t).right.child.left, Thread(RotateRight(t).right.child.key)) by {
-          assert ThreadedTreeRecPR(Thread(t.left.child.key), t.left.child.right, Thread(t.key));
+    assert ThreadedTreeRecL(prev, RotateRight(t).left, Thread(RotateRight(t).key));
+    assert ThreadedTreeRecR(Thread(RotateRight(t).key), RotateRight(t).right, next) by {
+      assert ThreadedTreeNe(Thread(RotateRight(t).key), RotateRight(t).right, next) by {
+        assert ThreadedTreeRecL(Thread(RotateRight(t).key), RotateRight(t).right.left, Thread(RotateRight(t).right.key)) by {
+          assert ThreadedTreeRecR(Thread(t.left.key), t.left.right, Thread(t.key));
         }
-        assert ThreadedTreeRecPR(Thread(RotateRight(t).right.child.key), RotateRight(t).right.child.right, next);
+        assert ThreadedTreeRecR(Thread(RotateRight(t).right.key), RotateRight(t).right.right, next);
       }
     }
   }
 
   lemma AllRotateLeftSpec()
-    ensures forall t: rbtree
+    ensures forall t: trbtree
         | t.Node?
-        && isRedP(t.right)
+        && isRed(t.right)
         && SearchTree(t)
         && RedBlackTree(t)
       :: keys(t) == keys(RotateLeft(t))
@@ -243,17 +238,17 @@ module {:options "-functionSyntax:4"} TRBTree.Rotate {
   {}
 
   lemma AllRotateRightSpec()
-    ensures forall t: rbtree
+    ensures forall t: trbtree
         | t.Node?
-        && isRedP(t.left)
+        && isRed(t.left)
         && SearchTree(t)
       :: keys(t) == keys(RotateRight(t))
       && SearchTree(RotateRight(t))
       && BlackHeight(RotateRight(t)) == BlackHeight(t)
   {
-    forall t: rbtree
+    forall t: trbtree
         | t.Node?
-        && isRedP(t.left)
+        && isRed(t.left)
         && SearchTree(t)
       ensures keys(t) == keys(RotateRight(t))
       ensures SearchTree(RotateRight(t))
@@ -265,7 +260,7 @@ module {:options "-functionSyntax:4"} TRBTree.Rotate {
 
 /*
   // 58"
-  lemma {:verify false} RotateLeftModel(t: rbtree)
+  lemma {:verify false} RotateLeftModel(t: trbtree)
     requires t.Node?
     requires t.right.Node?
     requires SearchTree(t)
@@ -298,7 +293,7 @@ module {:options "-functionSyntax:4"} TRBTree.Rotate {
     }
   }
 
-  lemma {:verify false} RotateRightModel(t: rbtree)
+  lemma {:verify false} RotateRightModel(t: trbtree)
     requires t.Node?
     requires t.left.Node?
     requires SearchTree(t)

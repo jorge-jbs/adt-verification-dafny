@@ -1,11 +1,11 @@
-include "../../../src/tree/layer4/TRBTree/Base.dfy"
-include "../../../src/tree/layer4/TTree.dfy"
+include "../../../src/tree/layer4/AltTRBTree/Base.dfy"
+include "../../../src/tree/layer4/AltTTree.dfy"
 include "../../../src/tree/KeyValue.dfy"
 include "../../../src/tree/layer4/Color.dfy"
 
 module TTNode {
   import opened KeyValue
-  import opened RB = TRBTree.Base
+  import opened TRB = TRBTree.Base
   import opened T = TTree
   import opened Color
 
@@ -40,18 +40,36 @@ module TTNode {
     }
   }
 
-  predicate ValidRecP(node: TTNode?, sk: ttreePointer<TTNode>, isThread: bool)
-    decreases sk
-    reads set x | x in elemsP(sk) :: x`left
-    reads set x | x in elemsP(sk) :: x`isThreadLeft
-    reads set x | x in elemsP(sk) :: x`right
-    reads set x | x in elemsP(sk) :: x`isThreadRight
-
-    ensures sk.Child? ==> (ValidRecP(node, sk, isThread) <==> !isThread && ValidRec(node, sk.child))
+  predicate ValidChild(node: TTNode?, sk: ttreeOrThread<TTNode>, isThread: bool)
+    decreases sk, 1
+    reads set x | x in elems(sk) :: x`left
+    reads set x | x in elems(sk) :: x`isThreadLeft
+    reads set x | x in elems(sk) :: x`right
+    reads set x | x in elems(sk) :: x`isThreadRight
   {
     match sk {
-      case Child(t) => !isThread && ValidRec(node, t)
       case Thread(n) => isThread && node == n
+      case _ => !isThread && ValidRec(node, sk)
+    }
+  }
+
+  predicate ValidRec'(node: TTNode?, sk: ttree<TTNode>)
+    decreases sk, 0
+    reads set x | x in elems(sk) :: x`left
+    reads set x | x in elems(sk) :: x`isThreadLeft
+    reads set x | x in elems(sk) :: x`right
+    reads set x | x in elems(sk) :: x`isThreadRight
+    //ensures ValidRec(node, sk, parents) <==> ValidRec'(node, sk, parents)
+  {
+    match sk {
+      case Empty => node == null
+      case Node(l, x, r) =>
+        && x == node
+        && x !in elems(l)
+        && x !in elems(r)
+        && elems(l) !! elems(r)
+        && ValidChild(node.left, l, node.isThreadLeft)
+        && ValidChild(node.right, r, node.isThreadRight)
     }
   }
 
@@ -66,269 +84,71 @@ module TTNode {
       case Empty => node == null
       case Node(l, x, r) =>
         && x == node
-        && x !in elemsP(l)
-        && x !in elemsP(r)
-        && elemsP(l) !! elemsP(r)
-        && ValidRecP(node.left, l, node.isThreadLeft)
-        && ValidRecP(node.right, r, node.isThreadRight)
+        && x !in elems(l)
+        && x !in elems(r)
+        && elems(l) !! elems(r)
+
+        //&& ValidChild(node.left, l, node.isThreadLeft)
+        && (
+          if l.Thread? then
+            node.isThreadLeft && node.left == l.thread
+          else
+            !node.isThreadLeft && ValidRec(node.left, sk.left)
+        )
+
+        //&& ValidChild(node.right, r, node.isThreadRight)
+        && (
+          if r.Thread? then
+            node.isThreadRight && node.right == r.thread
+          else
+            !node.isThreadRight && ValidRec(node.right, sk.right)
+        )
     }
   }
 
-  predicate ValidRecPReadsSk(node: TTNode?, sk: ttreePointer<TTNode>, isThread: bool)
-    decreases sk
-    reads elemsP(sk)
-
-    ensures sk.Child? ==> (ValidRecPReadsSk(node, sk, isThread) <==> !isThread && ValidRecReadsSk(node, sk.child))
-  {
-    match sk {
-      case Child(t) => !isThread && ValidRecReadsSk(node, t)
-      case Thread(n) => isThread && node == n
-    }
-  }
-
-  predicate ValidRecReadsSk(node: TTNode?, sk: ttree<TTNode>)
-    decreases sk
-    reads elems(sk)
-  {
-    match sk {
-      case Empty => node == null
-      case Node(l, x, r) =>
-        && x == node
-        && x !in elemsP(l)
-        && x !in elemsP(r)
-        && elemsP(l) !! elemsP(r)
-        && ValidRecPReadsSk(node.left, l, node.isThreadLeft)
-        && ValidRecPReadsSk(node.right, r, node.isThreadRight)
-    }
-  }
-
-  predicate {:opaque} OpValidRecP(node: TTNode?, sk: ttreePointer<TTNode>, isThread: bool)
-    decreases sk
-    reads set x | x in elemsP(sk) :: x`left
-    reads set x | x in elemsP(sk) :: x`isThreadLeft
-    reads set x | x in elemsP(sk) :: x`right
-    reads set x | x in elemsP(sk) :: x`isThreadRight
-
-    ensures sk.Child? ==> (OpValidRecP(node, sk, isThread) <==> !isThread && OpValidRec(node, sk.child))
-  {
-    match sk {
-      case Child(t) => !isThread && OpValidRec(node, t)
-      case Thread(n) => isThread && node == n
-    }
-  }
-
-  predicate {:opaque} OpValidRec(node: TTNode?, sk: ttree<TTNode>)
-    decreases sk
+  predicate ValidRoot(node: TTNode?, sk: ttree<TTNode>)
+    decreases sk, 0
     reads set x | x in elems(sk) :: x`left
     reads set x | x in elems(sk) :: x`isThreadLeft
     reads set x | x in elems(sk) :: x`right
     reads set x | x in elems(sk) :: x`isThreadRight
   {
-    match sk {
-      case Empty => node == null
-      case Node(l, x, r) =>
-        && x == node
-        && x !in elemsP(l)
-        && x !in elemsP(r)
-        && elemsP(l) !! elemsP(r)
-        && OpValidRecP(node.left, l, node.isThreadLeft)
-        && OpValidRecP(node.right, r, node.isThreadRight)
-    }
+    ValidRec(node, sk)
   }
 
-  lemma OpValidEqP(node: TTNode?, sk: ttreePointer<TTNode>, isThread: bool)
-    ensures ValidRecP(node, sk, isThread) <==> OpValidRecP(node, sk, isThread)
-  {
-    if ValidRecP(node, sk, isThread) || OpValidRecP(node, sk, isThread) {
-      reveal OpValidRecP();
-      if sk.Child? {
-        OpValidEq(node, sk.child);
-      }
-    }
-  }
-
-  lemma OpValidEq(node: TTNode?, sk: ttree<TTNode>)
-    ensures ValidRec(node, sk) <==> OpValidRec(node, sk)
-  {
-    if ValidRec(node, sk) || OpValidRec(node, sk) {
-      reveal OpValidRec();
-      if sk.Node? {
-        OpValidEqP(node.left, sk.left, node.isThreadLeft);
-        OpValidEqP(node.right, sk.right, node.isThreadRight);
-      }
-    }
-  }
-
-  predicate {:opaque} OpValidRecPReadsSk(node: TTNode?, sk: ttreePointer<TTNode>, isThread: bool)
-    decreases sk
-    reads elemsP(sk)
-
-    ensures sk.Child? ==> (ValidRecPReadsSk(node, sk, isThread) <==> !isThread && ValidRecReadsSk(node, sk.child))
-  {
-    ValidRecPReadsSk(node, sk, isThread)
-  }
-
-  predicate {:opaque} OpValidRecReadsSk(node: TTNode?, sk: ttree<TTNode>)
-    decreases sk
-    reads elems(sk)
-  {
-    ValidRecReadsSk(node, sk)
-  }
-
-  function nodeToPointer(node: TTNode?): RB.threadOrEmpty
+  function nodeToThread(node: TTNode?): T.threadOrEmpty<TTNode>
   {
     if node == null then
-      RB.Child(RB.Empty)
+      T.Empty
     else
-      RB.Thread(node.key)
+      T.Thread(node as TTNode)
   }
 
-  predicate ThreadedRecPL(prev: TTNode?, node: TTNode?, sk: ttreePointer<TTNode>, next: TTNode?)
-    decreases sk
-    reads set x | x in elemsP(sk) :: x`left
-    reads set x | x in elemsP(sk) :: x`isThreadLeft
-    reads set x | x in elemsP(sk) :: x`right
-    reads set x | x in elemsP(sk) :: x`isThreadRight
-
-    requires ValidRecP(node, sk, true) || ValidRecP(node, sk, false)
-    ensures ThreadedRecPL(prev, node, sk, next) ==> RB.ThreadedTreeRecPL(nodeToPointer(prev), TreeModelRecP(sk), nodeToPointer(next))
-    ensures sk.Child? && sk.child.Node? ==>
-      (ThreadedRecPL(prev, node, sk, next) <==> ThreadedRec(prev, node, sk.child, next))
-  {
-    match sk {
-      case Child(Empty) => prev == null
-      case Child(t) => ThreadedRec(prev, node, t, next)
-      case Thread(n) => prev == n
-    }
-  }
-
-  predicate ThreadedRecPR(prev: TTNode?, node: TTNode?, sk: ttreePointer<TTNode>, next: TTNode?)
-    decreases sk
-    reads set x | x in elemsP(sk) :: x`left
-    reads set x | x in elemsP(sk) :: x`isThreadLeft
-    reads set x | x in elemsP(sk) :: x`right
-    reads set x | x in elemsP(sk) :: x`isThreadRight
-
-    requires ValidRecP(node, sk, true) || ValidRecP(node, sk, false)
-    ensures ThreadedRecPR(prev, node, sk, next) ==>
-      RB.ThreadedTreeRecPR(nodeToPointer(prev), TreeModelRecP(sk), nodeToPointer(next))
-    ensures sk.Child? && sk.child.Node? ==>
-      (ThreadedRecPR(prev, node, sk, next) <==> ThreadedRec(prev, node, sk.child, next))
-  {
-    match sk {
-      case Child(Empty) => next == null
-      case Child(t) => ThreadedRec(prev, node, t, next)
-      case Thread(n) => next == n
-    }
-  }
-
-  predicate ThreadedRec(prev: TTNode?, node: TTNode?, sk: ttree<TTNode>, next: TTNode?)
-    decreases sk
-    reads set x | x in elems(sk) :: x`left
-    reads set x | x in elems(sk) :: x`isThreadLeft
-    reads set x | x in elems(sk) :: x`right
-    reads set x | x in elems(sk) :: x`isThreadRight
-
-    requires ValidRec(node, sk)
-    requires node != null
-    ensures ThreadedRec(prev, node, sk, next) ==>
-      RB.ThreadedTreeRec(nodeToPointer(prev), TreeModelRec(sk), nodeToPointer(next))
-  {
-    match sk {
-      case Node(l, x, r) =>
-        && ThreadedRecPL(prev, node.left, l, node)
-        && ThreadedRecPR(node, node.right, r, next)
-    }
-  }
-
-  predicate ThreadedRoot(node: TTNode?, sk: ttree<TTNode>)
-    decreases sk
-    reads set x | x in elems(sk) :: x`left
-    reads set x | x in elems(sk) :: x`isThreadLeft
-    reads set x | x in elems(sk) :: x`right
-    reads set x | x in elems(sk) :: x`isThreadRight
-
-    requires ValidRec(node, sk)
-  {
-    match sk {
-      case Empty => true
-      case Node(_, _, _) => ThreadedRec(null, node, sk, null)
-    }
-  }
-
-  lemma ElemsOfThreadRecP(prev: TTNode?, node: TTNode?, sk: ttreePointer<TTNode>, next: TTNode?, visited: set<TTNode>)
-      returns (threads: set<TTNode>)
-    decreases sk
-    requires ValidRecP(node, sk, true) || ValidRecP(node, sk, false)
-    requires prev != null ==> prev in visited
-    requires next != null ==> next in visited
-    requires ThreadedRecPL(prev, node, sk, next) || ThreadedRecPR(prev, node, sk, next)
-    ensures elemsAndThreadsP(sk) <= elemsP(sk) + visited
-    ensures threads <= visited
-    ensures elemsAndThreadsP(sk) == elemsP(sk) + threads
-  {
-    match sk {
-      case Child(Empty) => {
-        threads := {};
-      }
-      case Child(_) => {
-        threads := ElemsOfThreadRec(prev, node, sk.child, next, visited);
-      }
-      case Thread(n) => {
-        assert n == next || n == prev;
-        threads := {n};
-      }
-    }
-  }
-
-  lemma ElemsOfThreadRec(prev: TTNode?, node: TTNode?, sk: ttree<TTNode>, next: TTNode?, visited: set<TTNode>)
-      returns (threads: set<TTNode>)
-    decreases sk
-    requires ValidRec(node, sk)
-    requires node != null
-    requires prev != null ==> prev in visited
-    requires next != null ==> next in visited
-    requires ThreadedRec(prev, node, sk, next)
-    ensures elemsAndThreads(sk) <= elems(sk) + visited
-    ensures threads <= visited
-    ensures elemsAndThreads(sk) == elems(sk) + threads
-  {
-    match sk {
-      case Node(l, x, r) => {
-        var threadsL := ElemsOfThreadRecP(prev, node.left, sk.left, node, visited + {node});
-        var threadsR := ElemsOfThreadRecP(node, node.right, sk.right, next, visited + {node});
-        threads := threadsL + threadsR - {node};
-      }
-    }
-  }
-
-  lemma ElemsOfThreadRoot(node: TTNode?, sk: ttree<TTNode>)
-    requires ValidRec(node, sk)
-    requires ThreadedRoot(node, sk)
-    ensures elems(sk) == elemsAndThreads(sk)
-  {
-    if node != null {
-      var _ := ElemsOfThreadRec(null, node, sk, null, {});
-    }
-  }
-
-  function GetSk(node: TTNode, root: TTNode?, rootSk: ttree<TTNode>): ttree<TTNode>
+  function GetSk(
+      node: TTNode, 
+      root: TTNode?, 
+      rootSk: ttree<TTNode>, 
+      rootParents: set<TTNode>): (ttree<TTNode>, set<TTNode>)
     reads elems(rootSk)
     requires ValidRec(root, rootSk)
+    requires ThreadsInParentsRec(rootSk, rootParents)
     requires node in elems(rootSk)
     requires SearchTree(TreeModelRec(rootSk))
-    ensures ValidRec(node, GetSk(node, root, rootSk))
+    ensures ValidRec( node, GetSk(node, root, rootSk, rootParents).0)
+    ensures ThreadsInParentsRec(
+      GetSk(node, root, rootSk, rootParents).0,
+      GetSk(node, root, rootSk, rootParents).1
+    )
     ensures node.key in keys(TreeModelRec(rootSk))
-    ensures TreeModelRec(GetSk(node, root, rootSk)) == GetSubtree(TreeModelRec(rootSk), node.key)
+    ensures TreeModelRec(GetSk(node, root, rootSk, rootParents).0) == GetSubtree(TreeModelRec(rootSk), node.key)
   {
-    if node in elemsP(rootSk.left) then
-      GetSk(node, root.left, rootSk.left.child)
-    else if node in elemsP(rootSk.right) then
-      GetSk(node, root.right, rootSk.right.child)
+    if node in elems(rootSk.left) then
+      GetSk(node, root.left, rootSk.left, rootParents + {root})
+    else if node in elems(rootSk.right) then
+      GetSk(node, root.right, rootSk.right, rootParents + {root})
     else
-      rootSk
+      (rootSk, rootParents)
   }
-
 
   lemma EqOfValid(node: TTNode?, sk: ttree<TTNode>, sk': ttree<TTNode>)
     requires ValidRec(node, sk)
@@ -337,16 +157,21 @@ module TTNode {
   {
     if node == null {
     } else {
-      if sk.left.Child? {
-        EqOfValid(node.left, sk.left.child, sk'.left.child);
+      if !sk.left.Thread? {
+        EqOfValid(node.left, sk.left, sk'.left);
       }
-      if sk.right.Child? {
-        EqOfValid(node.right, sk.right.child, sk'.right.child);
+      if !sk.right.Thread? {
+        EqOfValid(node.right, sk.right, sk'.right);
       }
     }
   }
 
-  lemma SubtreeOfInElemsRoot(node: TTNode?, sk: ttree<TTNode>, root: TTNode?, rootSk: ttree<TTNode>)
+  lemma SubtreeOfInElemsRoot(
+      node: TTNode?,
+      sk: ttree<TTNode>,
+      root: TTNode?,
+      rootSk: ttree<TTNode>
+    )
     requires ValidRec(node, sk)
     requires ValidRec(root, rootSk)
     requires node in elems(rootSk)
@@ -356,49 +181,29 @@ module TTNode {
     if node == root {
       EqOfValid(node, sk, rootSk);
     } else {
-      if rootSk.left.Child? && node in elems(rootSk.left.child) {
-        SubtreeOfInElemsRoot(node, sk, root.left, rootSk.left.child);
+      if !rootSk.left.Thread? && node in elems(rootSk.left) {
+        SubtreeOfInElemsRoot(node, sk, root.left, rootSk.left);
       }
-      if rootSk.right.Child? && node in elems(rootSk.right.child) {
-        SubtreeOfInElemsRoot(node, sk, root.right, rootSk.right.child);
+      if !rootSk.right.Thread? && node in elems(rootSk.right) {
+        SubtreeOfInElemsRoot(node, sk, root.right, rootSk.right);
       }
     }
   }
 
-  function TreeModelRecP(sk: ttreePointer<TTNode>): pointer
-    reads elemsP(sk)
-    ensures sk.Child? ==> (TreeModelRecP(sk) == RB.Child(TreeModelRec(sk.child)))
-    ensures (set n | n in elemsP(sk) :: n.key) == keysP(TreeModelRecP(sk))
-  {
-    match sk {
-      case Child(t) => RB.Child(TreeModelRec(t))
-      case Thread(n) => RB.Thread(n.key)
-    }
-  }
-
-  function TreeModelRec(sk: ttree<TTNode>): rbtree
+  function TreeModelRec(sk: ttreeOrThread<TTNode>): trbtreeOrThread
     reads elems(sk)
-    //ensures (set n | n in elems(sk) :: n.key) == keys(TreeModelRec(sk))
   {
     match sk {
-      case Empty => RB.Empty
-      case Node(l, n, r) => RB.Node(TreeModelRecP(l), n.key, n.value, TreeModelRecP(r), n.color)
+      case Empty => TRB.Empty
+      case Thread(n) => TRB.Thread(n.key)
+      case Node(l, n, r) => TRB.Node(TreeModelRec(l), n.key, n.value, TreeModelRec(r), n.color)
     }
   }
-
-
-/*
-  lemma TreeModelRecChildren(sk: ttree<TTNode>)
-    requires sk.Node?
-    ensures TreeModelRec(sk).left == TreeModelRec(sk.left)
-    ensures TreeModelRec(sk).right == TreeModelRec(sk.right)
-  {}
-  */
 
   predicate SearchTreeRec(sk: ttree<TTNode>)
     reads elems(sk)
   {
-    RB.SearchTree(TreeModelRec(sk))
+    TRB.SearchTree(TreeModelRec(sk))
   }
 
   function isRed(node: TTNode?): bool
@@ -414,6 +219,12 @@ module TTNode {
     node.left != null && !node.isThreadLeft && node.left.color.Red?
   }
 
+  lemma isRedLeftProp(node: TTNode?, sk: ttree<TTNode>)
+    requires ValidRec(node, sk)
+    requires node != null
+    ensures isRedLeft(node) <==> TRB.isRed(TreeModelRec(sk).left)
+  {}
+
   function isRedRight(node: TTNode?): bool
     reads node, node.right
     requires node != null
@@ -423,25 +234,13 @@ module TTNode {
 
   lemma isRedProp(node: TTNode?, sk: ttree<TTNode>)
     requires ValidRec(node, sk)
-    ensures isRed(node) <==> RB.isRed(TreeModelRec(sk))
-  {}
-
-  lemma isRedLeftProp(node: TTNode?, sk: ttree<TTNode>)
-    requires ValidRec(node, sk)
-    requires node != null
-    ensures isRedLeft(node) <==> RB.isRedP(TreeModelRec(sk).left)
-  {}
-
-  lemma isRedLeftPropOp(node: TTNode?, sk: ttree<TTNode>)
-    requires OpValidRec(node, sk)
-    requires node != null
-    ensures isRedLeft(node) <==> RB.isRedP(TreeModelRec(sk).left)
+    ensures isRed(node) <==> TRB.isRed(TreeModelRec(sk))
   {}
 
   lemma isRedPropAll(nodes: set<TTNode?>, sks: set<ttree<TTNode>>)
     ensures
       forall node, sk | node in nodes && sk in sks && ValidRec(node, sk)
-        :: isRed(node) <==> RB.isRed(TreeModelRec(sk))
+        :: isRed(node) <==> TRB.isRed(TreeModelRec(sk))
   {}
 
   function isBlack(node: TTNode?): bool
@@ -450,12 +249,23 @@ module TTNode {
     node != null && node.color.Black?
   }
 
+  lemma isBlackProp(node: TTNode?, sk: ttree<TTNode>)
+    requires ValidRec(node, sk)
+    ensures isBlack(node) <==> TRB.isBlack(TreeModelRec(sk))
+  {}
+
   function isBlackLeft(node: TTNode?): bool
     reads node, node.left
     requires node != null
   {
     node.left != null && !node.isThreadLeft && node.left.color.Black?
   }
+
+  lemma isBlackLeftProp(node: TTNode?, sk: ttree<TTNode>)
+    requires ValidRec(node, sk)
+    requires node != null
+    ensures isBlackLeft(node) <==> TRB.isBlack(TreeModelRec(sk).left)
+  {}
 
   function isBlackRight(node: TTNode?): bool
     reads node, node.right
@@ -464,26 +274,21 @@ module TTNode {
     node.right != null && !node.isThreadRight && node.right.color.Black?
   }
 
-  lemma isBlackProp(node: TTNode?, sk: ttree<TTNode>)
-    requires ValidRec(node, sk)
-    ensures isBlack(node) <==> RB.isBlack(TreeModelRec(sk))
-  {}
-
-  lemma isBlackLeftProp(node: TTNode?, sk: ttree<TTNode>)
+  lemma isBlackRightProp(node: TTNode?, sk: ttree<TTNode>)
     requires ValidRec(node, sk)
     requires node != null
-    ensures isBlackLeft(node) <==> RB.isBlackP(TreeModelRec(sk).left)
+    ensures isBlackRight(node) <==> TRB.isBlack(TreeModelRec(sk).right)
   {}
 
   function BlackHeight(sk: ttree<TTNode>): nat
     reads elems(sk)
   {
-    RB.BlackHeight(TreeModelRec(sk))
+    TRB.BlackHeight(TreeModelRec(sk))
   }
 
   predicate RedBlackTreeRec(sk: ttree<TTNode>)
     reads elems(sk)
   {
-    RB.RedBlackTree(TreeModelRec(sk))
+    TRB.RedBlackTree(TreeModelRec(sk))
   }
 }
