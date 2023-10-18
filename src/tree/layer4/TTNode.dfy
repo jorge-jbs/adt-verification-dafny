@@ -18,7 +18,7 @@ module TTNode {
 
     var isThreadRight: bool
     var right: TTNode?
-   
+
     var color: Color
 
     constructor(lt: bool, l: TTNode?, k: K, v: V, rt: bool, r: TTNode?, c: Color)
@@ -106,16 +106,6 @@ module TTNode {
     }
   }
 
-  predicate ValidRoot(node: TTNode?, sk: ttree<TTNode>)
-    decreases sk, 0
-    reads set x | x in elems(sk) :: x`left
-    reads set x | x in elems(sk) :: x`isThreadLeft
-    reads set x | x in elems(sk) :: x`right
-    reads set x | x in elems(sk) :: x`isThreadRight
-  {
-    ValidRec(node, sk)
-  }
-
   function nodeToThread(node: TTNode?): T.threadOrEmpty<TTNode>
   {
     if node == null then
@@ -124,31 +114,61 @@ module TTNode {
       T.Thread(node as TTNode)
   }
 
-  function GetSk(
-      node: TTNode, 
-      root: TTNode?, 
-      rootSk: ttree<TTNode>, 
-      rootParents: set<TTNode>): (ttree<TTNode>, set<TTNode>)
+  ghost function GetSk(
+      node: TTNode,
+      root: TTNode,
+      rootSk: ttree<TTNode>
+    ): ttree<TTNode>
     reads elems(rootSk)
+
     requires ValidRec(root, rootSk)
-    requires ThreadsInParentsRec(rootSk, rootParents)
     requires node in elems(rootSk)
     requires SearchTree(TreeModelRec(rootSk))
-    ensures ValidRec( node, GetSk(node, root, rootSk, rootParents).0)
-    ensures ThreadsInParentsRec(
-      GetSk(node, root, rootSk, rootParents).0,
-      GetSk(node, root, rootSk, rootParents).1
-    )
+
+    ensures ValidRec(node, GetSk(node, root, rootSk))
     ensures node.key in keys(TreeModelRec(rootSk))
-    ensures TreeModelRec(GetSk(node, root, rootSk, rootParents).0) == GetSubtree(TreeModelRec(rootSk), node.key)
+    ensures TreeModelRec(GetSk(node, root, rootSk))
+      == GetSubtree(TreeModelRec(rootSk), node.key)
   {
     if node in elems(rootSk.left) then
-      GetSk(node, root.left, rootSk.left, rootParents + {root})
+      assert ValidRec(root.left, rootSk.left);
+      GetSk(node, root.left, rootSk.left)
     else if node in elems(rootSk.right) then
-      GetSk(node, root.right, rootSk.right, rootParents + {root})
+      assert ValidRec(root.right, rootSk.right);
+      GetSk(node, root.right, rootSk.right)
     else
-      (rootSk, rootParents)
+      rootSk
   }
+
+  /*
+  ghost function GetSk(
+      node: TTNode,
+      root: TTNode,
+      prev: T.threadOrEmpty<TTNode>,
+      rootSk: ttree<TTNode>,
+      next: T.threadOrEmpty<TTNode>
+    ): ttree<TTNode>
+    reads elems(rootSk)
+    requires ValidRec(root, rootSk)
+    //requires rootSk.Node? ==> ThreadedNe(prev, rootSk, next)
+    requires node in elems(rootSk)
+    requires SearchTree(TreeModelRec(rootSk))
+    ensures ValidRec(node, GetSk(node, root, prev, rootSk, next))
+    //ensures ThreadedNe(prev, GetSk(node, root, prev, rootSk, next), next)
+    ensures node.key in keys(TreeModelRec(rootSk))
+    ensures TreeModelRec(GetSk(node, root, prev, rootSk, next))
+      == GetSubtree(TreeModelRec(rootSk), node.key)
+  {
+    if node in elems(rootSk.left) then
+      assert ValidRec(root.left, rootSk.left);
+      GetSk(node, root.left, prev, rootSk.left, T.Thread(rootSk.data))
+    else if node in elems(rootSk.right) then
+      assert ValidRec(root.right, rootSk.right);
+      GetSk(node, root.right, T.Thread(rootSk.data), rootSk.right, next)
+    else
+      rootSk
+  }
+  */
 
   lemma EqOfValid(node: TTNode?, sk: ttree<TTNode>, sk': ttree<TTNode>)
     requires ValidRec(node, sk)

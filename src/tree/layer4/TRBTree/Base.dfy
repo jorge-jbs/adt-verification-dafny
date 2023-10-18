@@ -323,7 +323,7 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
       t
   }
 
-  function toMap(t: trbtree): map<K, V>
+  function toMap(t: trbtreeOrThread): map<K, V>
     requires SearchTree(t)
   {
     map k: K | k in keys(t) :: Get(t, k)
@@ -398,7 +398,7 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     }
   }
 
-  lemma {:verify false} orderToSetCard(s: seq<(K, V)>)
+  lemma orderToSetCard(s: seq<(K, V)>)
     requires forall i, j | 0 <= i < j < |s| :: s[i].0 != s[j].0
     ensures |s| == |orderToSet(s)|
   {
@@ -410,10 +410,18 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
         1 + |s[1..]|;
         1 + |orderToSet(s[1..])|;
         |{s[0].0}| + |orderToSet(s[1..])|;
-        { assert orderToSet([s[0]]) == {s[0]}; }
+        {
+          assert orderToSet([s[0]]) == {s[0]} by {
+            assert s[0] in [s[0]];
+          }
+        }
         |orderToSet([s[0]])| + |orderToSet(s[1..])|;
         |orderToSet([s[0]]) + orderToSet(s[1..])|;
-        { assert orderToSet([s[0]]) + orderToSet(s[1..]) == orderToSet([s[0]] + s[1..]); }
+        {
+          assert orderToSet([s[0]]) + orderToSet(s[1..]) == orderToSet([s[0]] + s[1..]) by {
+            assert forall x :: (x in [s[0]] || x in s[1..]) <==> x in ([s[0]] + s[1..]);
+          }
+        }
         |orderToSet([s[0]] + s[1..])|;
         { assert [s[0]] + s[1..] == s; }
         |orderToSet(s)|;
@@ -431,10 +439,6 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
 
   lemma OrderKeysIsTreeKeys(t: trbtreeOrThread)
     ensures orderKeysToSet(inorder(t)) == keys(t)
-  {}
-
-  lemma {:verify false} OrderSetIsTreePairs(t: trbtree)
-    ensures orderToSet(inorder(t)) == pairs(t)
   {}
 
   lemma SmallerOrderKeysIsTreeKeys(t: trbtreeOrThread, k': K)
@@ -718,7 +722,7 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     ensures size(t) == |inorder(t)|
   {}
 
-  lemma SizeLemmas(t: trbtree)
+  lemma SizeLemmas(t: trbtreeOrThread)
     requires SearchTree(t)
     ensures size(t)
       == |inorder(t)|
@@ -760,6 +764,7 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
   {
     MapTreeEmpty(t);
   }
+  */
 
   lemma SingletonSet<A>(s: set<A>, x: A)
     requires x in s
@@ -767,6 +772,7 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     ensures s == {x}
   {}
 
+/*
   lemma SingletonMapItems(k: K, v: V)
     ensures map[k := v].Items == {(k, v)}
   {
@@ -1328,6 +1334,7 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
   {
     RightThreadIsBiggerRec(node, Child(Empty), root, Child(Empty));
   }
+  */
 
   lemma ThreadedInorderRec(it: trbtree, left: seq<(K, V)>, right: seq<(K, V)>, prev: threadOrEmpty, node: trbtree, next: threadOrEmpty, root: trbtree)
       returns (i: nat)
@@ -1335,7 +1342,7 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
 
     requires SearchTree(node)
     requires node.Node?
-    requires ThreadedTreeRec(prev, node, next)
+    requires ThreadedTreeNe(prev, node, next)
     requires Subtree(it, node)
     requires it.Node?
     requires it.right.Thread?
@@ -1349,13 +1356,9 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     ensures inorder(root)[i+1].0 == it.right.thread
   {
     if it.key < node.key {
-      if node.left.Child? {
-        i := ThreadedInorderRec(it, left, [(node.key, node.value)] + inorder(node.right) + right, prev, node.left.child, Thread(node.key), root);
-      }
+      i := ThreadedInorderRec(it, left, [(node.key, node.value)] + inorder(node.right) + right, prev, node.left, Thread(node.key), root);
     } else if node.key < it.key {
-      if node.right.Child? {
-        i := ThreadedInorderRec(it, left + inorder(node.left) + [(node.key, node.value)], right, Thread(node.key), node.right.child, next, root);
-      }
+      i := ThreadedInorderRec(it, left + inorder(node.left) + [(node.key, node.value)], right, Thread(node.key), node.right, next, root);
     } else {
       assert node == it;
       i := |left| + |inorder(node.left)|;
@@ -1375,7 +1378,7 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     ensures inorder(root)[i].0 == it.key
     ensures inorder(root)[i+1].0 == it.right.thread
   {
-    i := ThreadedInorderRec(it, [], [], Child(Empty), root, Child(Empty), root);
+    i := ThreadedInorderRec(it, [], [], Empty, root, Empty, root);
   }
 
   lemma SmallerKeysRightThread(node: trbtree, root: trbtree)
@@ -1419,8 +1422,7 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     requires node.Node?
     requires Subtree(it, node)
     requires it.Node?
-    requires it.right.Child?
-    requires it.right.child.Node?
+    requires it.right.Node?
 
     requires inorder(root) == left + inorder(node) + right
 
@@ -1429,13 +1431,9 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     ensures inorder(root)[i+1].0 == minSubtree(it.right).key
   {
     if it.key < node.key {
-      if node.left.Child? {
-        i := MinInorderRec(it, left, [(node.key, node.value)] + inorder(node.right) + right, node.left.child, root);
-      }
+      i := MinInorderRec(it, left, [(node.key, node.value)] + inorder(node.right) + right, node.left, root);
     } else if node.key < it.key {
-      if node.right.Child? {
-        i := MinInorderRec(it, left + inorder(node.left) + [(node.key, node.value)], right, node.right.child, root);
-      }
+      i := MinInorderRec(it, left + inorder(node.left) + [(node.key, node.value)], right, node.right, root);
     } else {
       assert node == it;
       i := |left| + |inorder(node.left)|;
@@ -1448,8 +1446,7 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     requires root.Node?
     requires Subtree(it, root)
     requires it.Node?
-    requires it.right.Child?
-    requires it.right.child.Node?
+    requires it.right.Node?
 
     ensures i+1 < |inorder(root)|
     ensures inorder(root)[i].0 == it.key
@@ -1462,8 +1459,7 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     requires SearchTree(root)
     requires Subtree(node, root)
     requires node.Node?
-    requires node.right.Child?
-    requires node.right.child.Node?
+    requires node.right.Node?
     ensures smallerKeys(root, minSubtree(node.right).key)
       == smallerKeys(root, node.key) + {node.key}
   {
@@ -1497,16 +1493,16 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     requires SearchTree(node)
     requires node.Node?
     requires next.Thread?
-    requires ThreadedTreeRec(prev, node, next)
+    requires ThreadedTreeNe(prev, node, next)
     requires Subtree(it, node)
     requires it.Node?
-    ensures it.right != Child(Empty)
+    ensures !it.right.Empty?
   {
-    if Subtree(it, node.left) && node.left.Child? && node.left.child.Node? {
-      SubtreeLeftEmpty(it, prev, node.left.child, Thread(node.key));
+    if Subtree(it, node.left) && node.left.Node? {
+      SubtreeLeftEmpty(it, prev, node.left, Thread(node.key));
     }
-    if Subtree(it, node.right) && node.right.Child? && node.right.child.Node? {
-      SubtreeLeftEmpty(it, Thread(node.key), node.right.child, next);
+    if Subtree(it, node.right) && node.right.Node? {
+      SubtreeLeftEmpty(it, Thread(node.key), node.right, next);
     }
   }
 
@@ -1515,22 +1511,21 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
 
     requires SearchTree(node)
     requires node.Node?
-    requires ThreadedTreeRec(prev, node, Child(Empty))
+    requires ThreadedTreeNe(prev, node, Empty)
     requires Subtree(it, node)
     requires it.Node?
-    requires it.right.Child?
-    requires it.right.child.Empty?
+    requires it.right.Empty?
 
     ensures it == node || Subtree(it, node.right)
   {
     assert !Subtree(it, node.left) by {
       if Subtree(it, node.left) {
-        SubtreeLeftEmpty(it, prev, node.left.child, Thread(node.key));
+        SubtreeLeftEmpty(it, prev, node.left, Thread(node.key));
         assert false;
       }
     }
-    if node.right.Child? && node.right.child.Node? {
-      SubtreeRightEmpty(it, Thread(node.key), node.right.child);
+    if node.right.Node? {
+      SubtreeRightEmpty(it, Thread(node.key), node.right);
     }
   }
 
@@ -1539,22 +1534,20 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
 
     requires SearchTree(node)
     requires node.Node?
-    requires ThreadedTreeRec(prev, node, Child(Empty))
+    requires ThreadedTreeNe(prev, node, Empty)
     requires Subtree(it, node)
     requires it.Node?
-    requires it.right.Child?
-    requires it.right.child.Empty?
+    requires it.right.Empty?
 
     ensures inorder(node)[|inorder(node)|-1].0 == it.key
   {
-    assert node.right.Child?;
-    assert it == node || Subtree(it, node.right.child) by {
+    assert it == node || Subtree(it, node.right) by {
       SubtreeRightEmpty(it, prev, node);
     }
-    if node.right.child.Empty? {
+    if node.right.Empty? {
       assert it == node;
     } else {
-      InorderRightEmptyRec(it, Thread(node.key), node.right.child);
+      InorderRightEmptyRec(it, Thread(node.key), node.right);
     }
   }
 
@@ -1566,21 +1559,19 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     requires ThreadedTreeRoot(node)
     requires Subtree(it, node)
     requires it.Node?
-    requires it.right.Child?
-    requires it.right.child.Empty?
+    requires it.right.Empty?
 
     ensures inorder(node)[|inorder(node)|-1].0 == it.key
   {
-    InorderRightEmptyRec(it, Child(Empty), node);
+    InorderRightEmptyRec(it, Empty, node);
   }
 
-  lemma {:verify false} SmallerKeysRightEmpty(node: trbtree, root: trbtree)
+  lemma SmallerKeysRightEmpty(node: trbtree, root: trbtree)
     requires SearchTree(root)
     requires Subtree(node, root)
     requires ThreadedTreeRoot(root)
     requires node.Node?
-    requires node.right.Child?
-    requires node.right.child.Empty?
+    requires node.right.Empty?
     ensures keys(root) == smallerKeys(root, node.key) + {node.key}
   {
     calc == {
@@ -1607,7 +1598,6 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
       smallerKeys(root, node.key) + {node.key};
     }
   }
-  */
 
   function ThreadedTreeExample1(): trbtree {
     Node(

@@ -116,6 +116,10 @@ files=(
     src/tree/layer4/TRBTree/RemoveMinMaintainingPrev.dfy
     src/tree/layer4/TRBTree/Remove.dfy
     src/tree/layer4/TRBTree/UpdateNext.dfy
+    src/tree/layer4/TRBTree/Iterator.dfy
+    src/tree/layer4/TRBTree/RemoveElemth.dfy
+    src/tree/layer4/TRBTree/RemoveRoot.dfy
+    src/tree/layer4/ThreadedLinkedTree.dfy
     src/tree/layer4/ThreadedLinkedTree/FlipColors.dfy
     src/tree/layer4/ThreadedLinkedTree/Restore.dfy
     src/tree/layer4/ThreadedLinkedTree/Rotate.dfy
@@ -124,6 +128,10 @@ files=(
     src/tree/layer4/ThreadedLinkedTree/RemoveMinMaintainingPrev.dfy
     src/tree/layer4/ThreadedLinkedTree/UpdateNext.dfy
     src/tree/layer4/ThreadedLinkedTree/Remove.dfy
+    src/tree/layer4/ThreadedLinkedTree/Min.dfy
+    src/tree/layer4/ThreadedLinkedTree/RemoveRoot.dfy
+    src/tree/layer4/ThreadedLinkedTree/BlackenRoot.dfy
+    src/tree/layer4/ThreadedLinkedTree/ConditionalReddenRoot.dfy
     src/tree/layer4/TTree.dfy
     src/tree/layer4/TTNode.dfy
     src/tree/layer4/Color.dfy

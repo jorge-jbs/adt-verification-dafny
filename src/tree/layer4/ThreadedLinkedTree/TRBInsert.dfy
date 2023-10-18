@@ -126,7 +126,7 @@ module ThreadedLinkedTree.TRBInsert {
     requires ValidRec(node, sk)
     requires ThreadedRoot(sk)
     ensures ValidRec(newNode, newSk)
-    ensures ThreadedRoot(sk)
+    ensures ThreadedRoot(newSk)
     ensures TreeModelRec(newSk) == TRBi.TRBInsertRoot(old(TreeModelRec(sk)), k, v)
 
     ensures elems(newSk) == elems(sk) + {insertedNode}

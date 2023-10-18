@@ -28,82 +28,49 @@ module TTree {
     case Node(l, x, r) => elemsAndThreads(l) + {x} + elemsAndThreads(r)
   }
 
-  predicate ThreadsInParentsRec<A>(t: ttreeOrThread<A>, parents: set<A>)
-  {
-    match t
-    case Empty => true
-    case Thread(x) => x in parents
-    case Node(l, x, r) =>
-      && ThreadsInParentsRec(l, parents + {x})
-      && ThreadsInParentsRec(r, parents + {x})
-  }
-
-  lemma ThreadsInParentsSub<A>(t: ttreeOrThread<A>, parents: set<A>, parents': set<A>)
-    requires ThreadsInParentsRec(t, parents)
-    requires parents <= parents'
-    ensures ThreadsInParentsRec(t, parents')
-  {
-    match t
-    case Empty => {}
-    case Thread(_) => {}
-    case Node(l, x, r) => {
-      ThreadsInParentsSub(l, parents + {x}, parents' + {x});
-      ThreadsInParentsSub(r, parents + {x}, parents' + {x});
-    }
-  }
-
-  lemma AllThreadsInParentsSub<A>()
-    ensures
-      forall t: ttreeOrThread<A>, parents: set<A>, parents': set<A> |
-          && ThreadsInParentsRec(t, parents)
-          && parents <= parents' ::
-        ThreadsInParentsRec(t, parents')
-  {
-    forall t: ttreeOrThread<A>, parents: set<A>, parents': set<A> |
-        && ThreadsInParentsRec(t, parents)
-        && parents <= parents'
-      ensures ThreadsInParentsRec(t, parents')
-    {
-      ThreadsInParentsSub(t, parents, parents');
-    }
-  }
-
-  predicate ThreadsInParentsRoot<A(==)>(t: ttreeOrThread<A>)
-  {
-    ThreadsInParentsRec(t, {})
-  }
-
-  lemma ElemsAndThreadsRec<A>(t: ttree<A>, parents: set<A>)
-      returns (threads: set<A>)
-    requires ThreadsInParentsRec(t, parents)
-    ensures elemsAndThreads(t) <= elems(t) + parents
-    ensures threads <= parents
-    ensures elemsAndThreads(t) == elems(t) + threads 
+  lemma ElemsInElemsAndThreads<A>(t: ttreeOrThread<A>)
+    ensures elems(t) <= elemsAndThreads(t)
   {
     if t.Node? {
-      var threadsL;
-      if !t.left.Thread? {
-        threadsL := ElemsAndThreadsRec(t.left, parents + {t.data});
-      } else {
-        threadsL := {t.left.thread};
-      }
-      var threadsR;
-      if !t.right.Thread? {
-        threadsR := ElemsAndThreadsRec(t.right, parents + {t.data});
-      } else {
-        threadsR := {t.right.thread};
-      }
-      return threadsL + threadsR - {t.data};
-    } else {
+      ElemsInElemsAndThreads(t.left);
+      ElemsInElemsAndThreads(t.right);
+    }
+  }
+
+  lemma ElemsAndThreadsRec<A>(
+      prev: threadOrEmpty, 
+      sk: ttreeOrThread<A>, 
+      next: threadOrEmpty, 
+      visited: set<A>
+    )
+      returns (threads: set<A>)
+    decreases sk
+    requires prev.Thread? ==> prev.thread in visited
+    requires next.Thread? ==> next.thread in visited
+    requires ThreadedRecL(prev, sk, next) || ThreadedRecR(prev, sk, next)
+    ensures elemsAndThreads(sk) <= elems(sk) + visited
+    ensures threads <= visited
+    ensures elemsAndThreads(sk) == elems(sk) + threads
+  {
+    match sk
+    case Empty => {
       return {};
+    }
+    case Thread(n) => {
+      return {n};
+    }
+    case Node(l, x, r) => {
+      var threadsL := ElemsAndThreadsRec(prev, sk.left, Thread(sk.data), visited + {sk.data});
+      var threadsR := ElemsAndThreadsRec(Thread(sk.data), sk.right, next, visited + {sk.data});
+      return threadsL + threadsR - {sk.data};
     }
   }
 
   lemma ElemsAndThreads<A>(t: ttree<A>)
-    requires ThreadsInParentsRoot(t)
+    requires ThreadedRoot(t)
     ensures elems(t) == elemsAndThreads(t)
   {
-    var _ := ElemsAndThreadsRec(t, {});
+    var _ := ElemsAndThreadsRec(Empty, t, Empty, {});
   }
 
   function ThreadedRecL<A(==)>(prev: threadOrEmpty<A>, t: ttreeOrThread<A>, next: threadOrEmpty<A>): bool
