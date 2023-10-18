@@ -129,6 +129,7 @@ module TTNode {
     ensures node.key in keys(TreeModelRec(rootSk))
     ensures TreeModelRec(GetSk(node, root, rootSk))
       == GetSubtree(TreeModelRec(rootSk), node.key)
+    ensures elems(GetSk(node, root, rootSk)) <= elems(rootSk)
   {
     if node in elems(rootSk.left) then
       assert ValidRec(root.left, rootSk.left);

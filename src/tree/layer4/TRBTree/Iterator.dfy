@@ -19,9 +19,7 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
 
   predicate Valid(it: iter, root: trbtree)
   {
-    && SearchTree(root)
-    && ThreadedTreeRoot(root)
-    && (it.Link? ==> Subtree(it.link, root))
+    it.Link? ==> Subtree(it.link, root)
   }
 
   function Index(it: iter, root: trbtree): int
@@ -159,6 +157,8 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
   }
 
   lemma TraversedEq(it: iter, root: trbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
     requires Valid(it, root)
     ensures Traversed(it, root) == Traversed'(it, root)
   {
@@ -188,6 +188,8 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
   }
 
   function Next(it: iter, root: trbtree): iter
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
     requires HasPeek(it)
     requires Valid(it, root)
   {
@@ -205,6 +207,8 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
   }
 
   lemma NextSpec(it: iter, root: trbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
     requires HasPeek(it)
     requires Valid(it, root)
     ensures Valid(Next(it, root), root)
@@ -220,6 +224,8 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
   }
 
   lemma NextTraversed(it: iter, root: trbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
     requires HasPeek(it)
     requires Valid(it, root)
     ensures Traversed(Next(it, root), root)
@@ -239,6 +245,8 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
   }
 
   function Prev(it: iter, root: trbtree): iter
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
     requires HasPeek(it)
     requires Valid(it, root)
   {
