@@ -31,4 +31,12 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveRoot {
   {
     RemoveSpec(ConditionalReddenRoot(t), false, k);
   }
+
+  lemma RemoveRootModel(t: trbtree, k: K)
+    requires SearchTree(t)
+    requires RedBlackTreeRoot(t)
+
+    ensures RemoveRoot(t, k).Some?
+    ensures SearchTree(RemoveRoot(t, k).unwrap)
+    ensures toMap(RemoveRoot(t, k).unwrap) == toMap(t) - {k}
 }

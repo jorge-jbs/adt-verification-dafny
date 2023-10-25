@@ -156,6 +156,7 @@ module OrderedMapForwardSpec {
 
       ensures Traversed() == {key(old(Peek?()))} + old(Traversed())
       ensures |Traversed()| == 1 + old(|Traversed()|)
+      ensures Index() == old(Index()) + 1 //NEW
 
       ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::

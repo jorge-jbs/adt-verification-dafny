@@ -6,28 +6,29 @@ module ADT {
   type pos = n: int | n > 0 witness 1
 
   trait {:termination false} ADT<M> {
-    const ReprDepth: pos
+    ghost const ReprDepth: pos
 
-    function ReprFamily(n: nat): set<object>
+    ghost function ReprFamily(n: nat): set<object>
       decreases n
+      //ensures forall i, j | 0 <= i < j <= n :: ReprFamily(i) <= ReprFamily(j)
       ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
       reads this, if n == 0 then {} else ReprFamily(n-1)
 
-    function Repr(): set<object>
+    ghost function Repr(): set<object>
       reads this, ReprFamily(ReprDepth-1)
     {
       ReprFamily(ReprDepth)
     }
 
-    predicate Valid()
+    ghost predicate Valid()
       reads this, Repr()
 
-    function Model(): M
+    ghost function Model(): M
       reads this, Repr()
       requires Valid()
   }
 
-  predicate ValidDistinctADTs(adts: seq<ADT>)
+  ghost predicate ValidDistinctADTs(adts: seq<ADT>)
     reads set r | r in adts :: r
     reads BigUnion(set r | r in adts :: r.Repr())
   {
@@ -36,13 +37,13 @@ module ADT {
           {r} + r.Repr() !! {s} + s.Repr())
   }
 
-  predicate ValidDistinctObjs(objects: seq<object>)
+  ghost predicate ValidDistinctObjs(objects: seq<object>)
   {
     forall r, s | r in objects && s in objects && [r, s] <= objects ::
       {r} !! {s}
   }
 
-  predicate ValidDistinct(adts: seq<ADT>, objs: seq<object>)
+  ghost predicate ValidDistinct(adts: seq<ADT>, objs: seq<object>)
     reads set r | r in adts :: r
     reads BigUnion(set r | r in adts :: r.Repr())
   {

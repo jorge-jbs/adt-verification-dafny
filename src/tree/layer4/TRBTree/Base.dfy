@@ -476,10 +476,9 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
         <==> exists i | 0 <= i < |s| :: orderKeysToSeq(s)[i] == k)
   {
     forall k
-      ensures (k in orderKeysToSet(s)
-        <==> k in orderKeysToSeq(s))
-      ensures (k in orderKeysToSet(s)
-        <==> exists i | 0 <= i < |s| :: orderKeysToSeq(s)[i] == k)
+      ensures (k in orderKeysToSet(s) <==> k in orderKeysToSeq(s))
+      ensures (k in orderKeysToSet(s) <==>
+        exists i | 0 <= i < |s| :: orderKeysToSeq(s)[i] == k)
     {
       if k in orderKeysToSet(s) {
         var v :| (k, v) in s;

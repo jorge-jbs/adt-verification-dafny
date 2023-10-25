@@ -1,7 +1,7 @@
 include "../../../src/tree/KeyValue.dfy"
 include "../../../src/ADT.dfy"
 
-module UnorderedMapSpec {
+module {:options "-functionSyntax:4"} UnorderedMapSpec {
   import opened KeyValue
   import opened ADT
 
@@ -9,18 +9,18 @@ module UnorderedMapSpec {
     function Parent(): UnorderedMap
       reads this
 
-    predicate Valid()
+    ghost predicate Valid()
       reads this, Parent(), Parent().Repr()
       ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
 
-    function Traversed(): set<K>
+    ghost function Traversed(): set<K>
       reads this, Parent(), Parent().Repr()
       requires Valid()
       requires Parent().Valid()
       ensures Traversed() <= (Parent().Model().Keys)
       ensures 0 <= |Traversed()| <= |Parent().Model().Keys|
 
-    function Peek?():(K,V)
+    ghost function Peek?():(K,V)
       reads this, Parent(), Parent().Repr()
       requires Valid()
       requires Parent().Valid()
@@ -29,7 +29,7 @@ module UnorderedMapSpec {
       ensures Peek?() in Parent().Model().Items
       ensures key(Peek?()) in Parent().Model() - Traversed()
 
-    predicate HasPeek?()
+    ghost predicate HasPeek?()
       reads this, Parent(), Parent().Repr()
       requires Valid()
       requires Parent().Valid()
@@ -156,7 +156,7 @@ module UnorderedMapSpec {
   }
 
   trait {:termination false} UnorderedMap extends ADT<map<K,V>> { //<K (==),V> extends ADT<map<K,V>> {
-    predicate Empty?()
+    ghost predicate Empty?()
       reads this, Repr()
       requires Valid()
     {
@@ -203,8 +203,7 @@ module UnorderedMapSpec {
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-
-    function Iterators(): set<UnorderedMapIterator>
+    ghost function Iterators(): set<UnorderedMapIterator>
       reads this, Repr()
       requires Valid()
       ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
