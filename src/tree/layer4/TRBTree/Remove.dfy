@@ -76,6 +76,95 @@ module {:options "-functionSyntax:4"} TRBTree.Remove {
             )))
   }
 
+  predicate IsRemoved(t: trbtreeOrThread, isLeft: bool, k: K)
+    decreases size(t)
+    requires Remove(t, isLeft, k).Some?
+{
+    match t
+    case Empty|Thread(_) => false
+    case Node(_, _, _, _, _) =>
+      if t.key > k then
+        var t' :=
+          if isBlack(t.left) && !isRed(t.left.left) then
+            MoveRedLeftSize(t);
+            MoveRedLeft(t)
+          else
+            t;
+        IsRemoved(t'.left, true, k)
+      else
+        var t' :=
+          if isRed(t.left) then
+            RotateRightSize(t);
+            RotateRight(t)
+          else
+            t;
+        if k == t'.key && IsThreadOrEmpty(t'.right) then
+          true
+        else
+          var t'' :=
+            if isBlack(t'.right) && !isRed(t'.right.left) then
+              MoveRedRightSize(t');
+              MoveRedRight(t')
+            else
+              t';
+          if k != t''.key then
+            IsRemoved(t''.right, false, k)
+          else
+            true
+  }
+
+  lemma IsRemovedSpec(t: trbtreeOrThread, isLeft: bool, k: K)
+    decreases size(t)
+    requires SearchTree(t)
+    requires RedBlackTree(t)
+    requires t.Empty? || t.Thread? || isRed(t) || isRed(t.left)
+    requires !(isRed(t) && isRed(t.left))
+    requires Remove(t, isLeft, k).Some?
+    ensures IsRemoved(t, isLeft, k) <==> k in keys(t)
+  {
+    if t.Empty? || t.Thread? {
+    } else {
+      if t.key > k {
+        var t' :=
+          if isBlack(t.left) && !isRed(t.left.left) then
+            MoveRedLeftSize(t);
+            MoveRedLeft(t)
+          else
+            t;
+        if isBlack(t.left) && !isRed(t.left.left) {
+          MoveRedLeftSpec(t);
+        }
+        IsRemovedSpec(t'.left, true, k);
+      } else {
+        var t' :=
+          if isRed(t.left) then
+            RotateRightSize(t);
+            RotateRight(t)
+          else
+            t;
+        if isRed(t.left) {
+          RotateRightSpec(t);
+        }
+        if k == t'.key && IsThreadOrEmpty(t'.right) {
+        } else {
+          var t'' :=
+            if isBlack(t'.right) && !isRed(t'.right.left) then
+              MoveRedRightSize(t');
+              MoveRedRight(t')
+            else
+              t';
+          if isBlack(t'.right) && !isRed(t'.right.left) {
+            MoveRedRightSpec(t');
+          }
+          if k != t''.key {
+            IsRemovedSpec(t''.right, false, k);
+          } else {
+          }
+        }
+      }
+    }
+  }
+
   method RemoveTest1()
   {
     var t1 := ThreadedTreeExample1();

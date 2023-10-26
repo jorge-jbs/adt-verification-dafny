@@ -282,6 +282,18 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
       t.value
   }
 
+  function Get'(t: trbtreeOrThread, k: K): V
+    requires k in keys(t)
+  {
+    if k == t.key then
+      t.value
+    else if k in keys(t.left) then
+      Get'(t.left, k)
+    else 
+      assert k in keys(t.right);
+      Get'(t.right, k)
+  }
+
   function GetSubtree(t: trbtreeOrThread, k: K): trbtree
     requires k in keys(t)
     requires SearchTree(t)

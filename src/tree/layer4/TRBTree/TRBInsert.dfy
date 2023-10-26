@@ -16,17 +16,35 @@ module {:options "-functionSyntax:4"} TRBTree.TRBInsert {
   function TRBInsert(prev: threadOrEmpty, t: trbtreeOrThread, next: threadOrEmpty, k': K, v': V): trbtree
     decreases t
   {
-    match t {
-      case Empty|Thread(_) => Node(prev, k', v', next, Red)
-      case Node(l, k, v, r, c) =>
-        if k < k' then
-          Restore(Node(l, k, v, TRBInsert(Thread(k), r, next, k', v'), c))
-        else if k' < k then
-          Restore(Node(TRBInsert(prev, l, Thread(k), k', v'), k, v, r, c))
-        else
-          Node(l, k, v', r, c)
-    }
+    match t
+    case Empty|Thread(_) =>
+      Node(prev, k', v', next, Red)
+    case Node(l, k, v, r, c) =>
+      if k < k' then
+        Restore(Node(l, k, v, TRBInsert(Thread(k), r, next, k', v'), c))
+      else if k' < k then
+        Restore(Node(TRBInsert(prev, l, Thread(k), k', v'), k, v, r, c))
+      else
+        Node(l, k, v', r, c)
   }
+
+  predicate IsInserted(t: trbtreeOrThread, k': K)
+  {
+    match t
+    case Empty|Thread(_) => true
+    case Node(l, k, v, r, c) =>
+      if k < k' then
+        IsInserted(r, k')
+      else if k' < k then
+        IsInserted(l, k')
+      else
+        false
+  }
+
+  lemma IsInsertedSpec(t: trbtreeOrThread, k': K)
+    requires SearchTree(t)
+    ensures IsInserted(t, k') <==> k' !in keys(t)
+  {}
 
   function BlackenRoot(t: trbtree): trbtree
   {
@@ -50,6 +68,7 @@ module {:options "-functionSyntax:4"} TRBTree.TRBInsert {
     ensures isBlack(t) && isRed(Restore(t)) ==>
       !isRed(Restore(t).left)
     ensures keys(t) + {k'} == keys(TRBInsert(prev, t, next, k', v'))
+    ensures !IsInserted(t, k') ==> keys(t) == keys(TRBInsert(prev, t, next, k', v'))
     ensures SearchTree(TRBInsert(prev, t, next, k', v'))
     ensures RedBlackTree(TRBInsert(prev, t, next, k', v'))
     ensures BlackHeight(t) == BlackHeight(TRBInsert(prev, t, next, k', v'))
@@ -180,6 +199,7 @@ module {:options "-functionSyntax:4"} TRBTree.TRBInsert {
     requires SearchTree(t)
     requires RedBlackTreeRoot(t)
     ensures keys(t) + {k'} == keys(TRBInsertRoot(t, k', v'))
+    ensures !IsInserted(t, k') ==> keys(t) == keys(TRBInsertRoot(t, k', v'))
     ensures SearchTree(TRBInsertRoot(t, k', v'))
     ensures RedBlackTreeRoot(TRBInsertRoot(t, k', v'))
   {

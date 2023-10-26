@@ -26,7 +26,12 @@ module ThreadedLinkedTree.TRBInsert {
       k: K, 
       v: V
     )
-    returns (newNode: TTNode, ghost newSk: nettree<TTNode>, ghost insertedNode:TTNode)
+    returns (
+      newNode: TTNode, 
+      ghost newSk: nettree<TTNode>, 
+      insertedNode: TTNode,
+      isInserted: bool
+    )
 
     decreases sk
 
@@ -53,6 +58,16 @@ module ThreadedLinkedTree.TRBInsert {
 
     ensures elems(newSk) == elems(sk) + {insertedNode}
     ensures insertedNode.key == k && insertedNode.value == v
+    
+    ensures isInserted <==> old(TRBi.IsInserted(TreeModelRec(sk), k))
+
+/*
+    ensures insertedNode == null ==>
+      && elems(newSk) == elems(sk)
+      && k in old(TRB.keys(TreeModelRec(sk)))
+      && k in TRB.keys(TreeModelRec(newSk))
+      && TRB.Get'(TreeModelRec(newSk), k) == v
+*/
 
     requires allocated(elems(sk))
     ensures fresh(elems(newSk)-elems(sk))
@@ -72,6 +87,7 @@ module ThreadedLinkedTree.TRBInsert {
       newNode := new TTNode(prev != null, prev, k, v, next != null, next, Red);
       newSk := T.Node(newChildLeft, newNode, newChildRight);
       insertedNode := newNode;
+      isInserted := true;
     } else {
       assert sk.data == node;
       newNode := node;
@@ -79,9 +95,10 @@ module ThreadedLinkedTree.TRBInsert {
         node.value := v;
         newSk := sk;
         insertedNode := node;
+        isInserted := false;
       } else if node.key < k {
         ghost var newSkRight;
-        node.right, newSkRight, insertedNode := TRBInsertRec(
+        node.right, newSkRight, insertedNode, isInserted := TRBInsertRec(
           node, 
           node.right, 
           node.isThreadRight, 
@@ -95,7 +112,7 @@ module ThreadedLinkedTree.TRBInsert {
         newNode, newSk := Restore(newNode, nodeToThread(prev), newSk, nodeToThread(next));
       } else if k < node.key {
         ghost var newSkLeft;
-        node.left, newSkLeft, insertedNode := TRBInsertRec(
+        node.left, newSkLeft, insertedNode, isInserted := TRBInsertRec(
           prev, 
           node.left, 
           node.isThreadLeft, 
@@ -114,7 +131,12 @@ module ThreadedLinkedTree.TRBInsert {
   }
 
   method TRBInsertRoot(node: TTNode?, ghost sk: ttree<TTNode>, k: K, v: V)
-    returns (newNode: TTNode, ghost newSk: ttree<TTNode>, ghost insertedNode:TTNode)
+    returns (
+      newNode: TTNode, 
+      ghost newSk: ttree<TTNode>, 
+      insertedNode: TTNode,
+      isInserted: bool
+    )
 
     modifies set x | x in elems(sk) :: x`left
     modifies set x | x in elems(sk) :: x`isThreadLeft
@@ -131,12 +153,21 @@ module ThreadedLinkedTree.TRBInsert {
 
     ensures elems(newSk) == elems(sk) + {insertedNode}
     ensures insertedNode.key == k && insertedNode.value == v
+    ensures isInserted <==> TRBi.IsInserted(old(TreeModelRec(sk)), k)
+
+/*
+    ensures insertedNode == null ==>
+      && elems(newSk) == elems(sk)
+      && k in old(TRB.keys(TreeModelRec(sk)))
+      && k in TRB.keys(TreeModelRec(newSk))
+      && TRB.Get'(TreeModelRec(newSk), k) == v
+*/
 
     requires allocated(elems(sk))
     ensures fresh(elems(newSk)-elems(sk))
     ensures allocated(elems(newSk))
   {
-    newNode, newSk, insertedNode := TRBInsertRec(null, node, false, null, sk, k, v);
+    newNode, newSk, insertedNode, isInserted := TRBInsertRec(null, node, false, null, sk, k, v);
     newNode.color := Black;
   }
 }

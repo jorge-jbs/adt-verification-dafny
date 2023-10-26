@@ -45,7 +45,8 @@ module ThreadedLinkedTree.Remove {
       returns (
         newNode: TTNode?,
         isThreadNewNode: bool,
-        ghost newSk: ttreeOrThread<TTNode>
+        ghost newSk: ttreeOrThread<TTNode>,
+        isRemoved: bool
       )
     decreases TRB.size(TreeModelRec(sk))
 
@@ -61,6 +62,7 @@ module ThreadedLinkedTree.Remove {
 
     ensures ValidChild(newNode, newSk, isThreadNewNode)
     ensures ThreadedRecCond(prev, newSk, next, isLeft)
+    ensures isRemoved <==> TRBr.IsRemoved(old(TreeModelRec(sk)), isLeft, k)
     ensures elems(newSk) <= elems(sk)
     ensures TreeModelRec(newSk) == TRBr.Remove(old(TreeModelRec(sk)), isLeft, k).unwrap
 
@@ -72,6 +74,7 @@ module ThreadedLinkedTree.Remove {
     ghost var t := TreeModelRec(newSk);
     if node == null || isThread {
       isThreadNewNode := isThread;
+      isRemoved := false;
     } else if node.key > k {
       //assume false;
       isThreadNewNode := false;
@@ -89,7 +92,7 @@ module ThreadedLinkedTree.Remove {
       }
       ghost var t' := TreeModelRec(newSk);
       ghost var newSkLeft;
-      newNode.left, newNode.isThreadLeft, newSkLeft := Remove(
+      newNode.left, newNode.isThreadLeft, newSkLeft, isRemoved := Remove(
         newNode.left,
         newNode.isThreadLeft,
         prev,
@@ -143,12 +146,12 @@ module ThreadedLinkedTree.Remove {
           assert ThreadedRecL(prev, newSk.left, Thread(newSk.data));
           assert ThreadedRecL(prev, newSk.left, next);
           assert ThreadedRecCond(prev, newSk.left, next, true);
-          return newNode.left, newNode.isThreadLeft, newSk.left;
+          return newNode.left, newNode.isThreadLeft, newSk.left, true;
         } else {
           assert ThreadedRecR(Thread(newSk.data), newSk.right, next);
           assert ThreadedRecR(prev, newSk.right, next);
           assert ThreadedRecCond(prev, newSk.right, next, false);
-          return newNode.right, newNode.isThreadRight, newSk.right;
+          return newNode.right, newNode.isThreadRight, newSk.right, true;
         }
       } else {
         isBlackRightProp(newNode, newSk);
@@ -169,7 +172,7 @@ module ThreadedLinkedTree.Remove {
           isThreadNewNode := false;
           ghost var newSkRight;
           label PreRec:
-          newNode.right, newNode.isThreadRight, newSkRight := Remove(
+          newNode.right, newNode.isThreadRight, newSkRight, isRemoved := Remove(
             newNode.right,
             newNode.isThreadRight,
             Thread(newSk.data),
@@ -199,6 +202,7 @@ module ThreadedLinkedTree.Remove {
             }
           }
         } else {  // 4'30"
+          isRemoved := true;
           ghost var newSkRight;
           var newRight, newIsThreadRight, minNode;
           assert ThreadedNe(Thread(newNode), newSk.right, next) by {

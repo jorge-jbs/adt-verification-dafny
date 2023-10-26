@@ -20,7 +20,7 @@ module OrderedMapImplTRBT {
 
   class OrderedMapImplTRBT extends OrderedMap {
     var tree: ThreadedLinkedTree
-    //var size: nat
+    var size: nat
 
     ghost function ReprFamily(n: nat): set<object>
       decreases n
@@ -45,7 +45,7 @@ module OrderedMapImplTRBT {
       && tree.Threaded()
       && tree.SearchTree()
       && tree.RedBlackTree()
-      //&& TRB.size(tree.Model()) == size
+      && TRB.size(tree.Model()) == size
     }
 
     ghost function Model(): map<K, V>
@@ -60,7 +60,7 @@ module OrderedMapImplTRBT {
       ensures fresh(Repr())
     {
       ReprDepth := 1;
-      //size := 0;
+      size := 0;
       tree := new ThreadedLinkedTree();
     }
 
@@ -137,11 +137,10 @@ module OrderedMapImplTRBT {
       ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()))
-    /*
     {
+      SizeLemmas(tree.Model());
       return size;
     }
-    */
 
     ghost function Iterators(): set<UnorderedMapIterator>
       reads this, Repr()
@@ -308,8 +307,21 @@ module OrderedMapImplTRBT {
       ensures Iterators() >= old(Iterators())
     {
       TRBi.TRBInsertRootSpec(tree.Model(), k, v);
+      TRBi.IsInsertedSpec(tree.Model(), k);
       TRBi.TRBInsertRootModel(tree.Model(), k, v);
-      tree.Insert(k, v);
+      var isInserted := tree.Insert(k, v);
+      if isInserted {
+        size := size + 1;
+        assert size == TRB.size(tree.Model()) by {
+          TRB.SizeLemmas(old(tree.Model()));
+          TRB.SizeLemmas(tree.Model());
+        }
+      } else {
+        assert size == TRB.size(tree.Model()) by {
+          TRB.SizeLemmas(old(tree.Model()));
+          TRB.SizeLemmas(tree.Model());
+        }
+      }
     }
 
     method Remove(k: K)
@@ -330,8 +342,14 @@ module OrderedMapImplTRBT {
       ensures Iterators() >= old(Iterators())
     {
       TRBr.RemoveRootSpec(tree.Model(), k);
+      TRBr.IsRemovedRootSpec(tree.Model(), k);
       TRBr.RemoveRootModel(tree.Model(), k);
-      tree.Remove(k);
+      TRB.SizeLemmas(tree.Model());
+      var isRemoved := tree.Remove(k);
+      TRB.SizeLemmas(tree.Model());
+      if isRemoved {
+        size := size - 1;
+      }
       if k in old(Model()) {
         calc == {
           |Model()|;

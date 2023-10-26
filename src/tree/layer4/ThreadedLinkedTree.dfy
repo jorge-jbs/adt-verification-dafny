@@ -331,7 +331,7 @@ module ThreadedLinkedTree {
       TRB.RedBlackTreeRoot(TreeModelRec(skeleton))
     }
 
-    method Insert(k: K, v: V)
+    method Insert(k: K, v: V) returns (isInserted: bool)
       modifies this, Repr()
 
       requires Valid()
@@ -344,17 +344,18 @@ module ThreadedLinkedTree {
       ensures SearchTree()
       ensures RedBlackTree()
       ensures Model() == TRBi.TRBInsertRoot(old(Model()), k, v)
+      ensures isInserted <==> TRBi.IsInserted(old(Model()), k)
 
       requires allocated(Repr())
       ensures fresh(Repr()-old(Repr()))
       ensures allocated(Repr())
     {
       TRBi.TRBInsertRootSpec(TreeModelRec(skeleton), k, v);
-      ghost var z;
-      root, skeleton, z := TRBInsertRoot(root, skeleton, k, v);
+      var insertedNode;
+      root, skeleton, insertedNode, isInserted := TRBInsertRoot(root, skeleton, k, v);
     }
 
-    method Remove(k: K)
+    method Remove(k: K) returns (isRemoved: bool)
       modifies this, Repr()
 
       requires Valid()
@@ -368,13 +369,14 @@ module ThreadedLinkedTree {
       ensures RedBlackTree()
       ensures TRBr.RemoveRoot(old(Model()), k).Some?
       ensures Model() == TRBr.RemoveRoot(old(Model()), k).unwrap
+      ensures isRemoved <==> TRBr.IsRemovedRoot(old(Model()), k)
 
       requires allocated(Repr())
       ensures fresh(Repr()-old(Repr()))
       ensures allocated(Repr())
     {
       TRBr.RemoveRootSpec(TreeModelRec(skeleton), k);
-      root, skeleton := R.RemoveRoot(root, skeleton, k);
+      root, skeleton, isRemoved := R.RemoveRoot(root, skeleton, k);
     }
   }
 
@@ -384,15 +386,15 @@ module ThreadedLinkedTree {
     assert TRB.toMap(t.Model()) == map[];
 
     TRBi.TRBInsertRootModel(t.Model(), 1, 0);
-    t.Insert(1, 0);
+    var _ := t.Insert(1, 0);
     assert TRB.toMap(t.Model()) == map[1 := 0];
 
     TRBi.TRBInsertRootModel(t.Model(), 3, 2);
-    t.Insert(3, 2);
+    var _ := t.Insert(3, 2);
     assert TRB.toMap(t.Model()) == map[1 := 0, 3 := 2];
 
     TRBi.TRBInsertRootModel(t.Model(), 2, 1);
-    t.Insert(2, 1);
+    var _ := t.Insert(2, 1);
     assert TRB.toMap(t.Model()) == map[1 := 0, 3 := 2, 2 := 1];
   }
 }

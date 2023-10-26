@@ -13,8 +13,6 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveRoot {
   import opened R = Remove
 
   function RemoveRoot(t: trbtree, k: K): option<trbtree>
-    requires SearchTree(t)
-    requires RedBlackTreeRoot(t)
   {
     var t' :- Remove(ConditionalReddenRoot(t), false, k);
     Some(BlackenRoot(ForgetThread(t')))
@@ -39,4 +37,19 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveRoot {
     ensures RemoveRoot(t, k).Some?
     ensures SearchTree(RemoveRoot(t, k).unwrap)
     ensures toMap(RemoveRoot(t, k).unwrap) == toMap(t) - {k}
+
+  predicate IsRemovedRoot(t: trbtree, k: K)
+    requires RemoveRoot(t, k).Some?
+  {
+    IsRemoved(ConditionalReddenRoot(t), false, k)
+  }
+
+  lemma IsRemovedRootSpec(t: trbtree, k: K)
+    requires SearchTree(t)
+    requires RedBlackTreeRoot(t)
+    requires RemoveRoot(t, k).Some?
+    ensures IsRemovedRoot(t, k) <==> k in keys(t)
+  {
+    IsRemovedSpec(ConditionalReddenRoot(t), false, k);
+  }
 }
