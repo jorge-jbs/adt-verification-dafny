@@ -24,7 +24,6 @@ module OrderedMapImplTRBT {
 
     ghost function ReprFamily(n: nat): set<object>
       decreases n
-      //ensures forall i, j | 0 <= i < j <= n :: ReprFamily(i) <= ReprFamily(j)
       ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
       reads this, if n == 0 then {} else ReprFamily(n-1)
     {
@@ -39,7 +38,6 @@ module OrderedMapImplTRBT {
     ghost predicate Valid()
       reads this, Repr()
     {
-      //assert {tree} + tree.Repr() <= Repr() <= ReprFamily(1);
       && ReprDepth == 1
       && tree.Valid()
       && tree.Threaded()
@@ -85,7 +83,7 @@ module OrderedMapImplTRBT {
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()))
     {
@@ -134,7 +132,7 @@ module OrderedMapImplTRBT {
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()))
     {
@@ -177,11 +175,11 @@ module OrderedMapImplTRBT {
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()))
 
-    method Last() returns (it: OrderedMapIterator)//iterator to the last element
+    method Last() returns (it: OrderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -207,7 +205,7 @@ module OrderedMapImplTRBT {
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-      ensures forall it | it in old(Iterators()) && old(it.Valid()):://NEW
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
 
@@ -231,7 +229,7 @@ module OrderedMapImplTRBT {
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-      ensures forall it | it in old(Iterators()) && old(it.Valid()):://NEW
+      ensures forall it | it in old(Iterators()) && old(it.Valid())::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
 
@@ -256,7 +254,7 @@ module OrderedMapImplTRBT {
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-      ensures forall it | it in old(Iterators()) && old(it.Valid()):://NEW
+      ensures forall it | it in old(Iterators()) && old(it.Valid())::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
 
@@ -277,7 +275,7 @@ module OrderedMapImplTRBT {
       ensures k in old(Model()) ==> newt.HasPeek?() && key(newt.Peek?()) == k
       ensures k !in old(Model()) ==> newt.Traversed() == Model().Keys && |newt.Traversed()| == |Model().Keys|
 
-      ensures k in old(Model()) ==> (newt as OrderedMapIterator).Index() == |smaller(Model().Keys,k)| //NEW
+      ensures k in old(Model()) ==> (newt as OrderedMapIterator).Index() == |smaller(Model().Keys,k)|
       ensures k !in old(Model()) ==> (newt as OrderedMapIterator).Index() == |Model().Keys|
 
       ensures Iterators() >= {newt}+old(Iterators())
@@ -288,7 +286,7 @@ module OrderedMapImplTRBT {
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-      ensures forall it | it in old(Iterators()) && old(it.Valid()):://NEW
+      ensures forall it | it in old(Iterators()) && old(it.Valid())::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
 
@@ -373,11 +371,9 @@ module OrderedMapImplTRBT {
       ensures newt.Valid() && newt.Parent() == this
       ensures newt.HasPeek?() && newt.Peek?() == (k,v)
 
-      ensures (newt as OrderedMapIterator).Index() ==  |smaller(Model().Keys,k)|//NEW
+      ensures (newt as OrderedMapIterator).Index() == |smaller(Model().Keys,k)|
 
       ensures Iterators() >= {newt}+old(Iterators())
-
-    // points either to the inserted element or to the already existing one
 
     method Erase(mid:UnorderedMapIterator) returns (next: UnorderedMapIterator)
       modifies this, Repr()
@@ -391,7 +387,7 @@ module OrderedMapImplTRBT {
       requires mid.HasPeek?()
       requires mid in Iterators()
       ensures Valid()
-      ensures Model()== old(Model())- {key(old(mid.Peek?()))} //map k | k in old(Model()) && k != key(old(mid.Peek?()))::old(Model())[k]
+      ensures Model()== old(Model()) - {key(old(mid.Peek?()))}
       ensures |Model()|==|old(Model())|-1
 
       ensures next is OrderedMapIterator
