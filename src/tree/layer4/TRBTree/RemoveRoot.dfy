@@ -26,8 +26,16 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveRoot {
     ensures SearchTree(RemoveRoot(t, k).unwrap)
     ensures RedBlackTreeRoot(RemoveRoot(t, k).unwrap)
     ensures keys(RemoveRoot(t, k).unwrap) == keys(t) - {k}
+    ensures k in keys(t) ==> size(RemoveRoot(t, k).unwrap) == size(t) - 1
   {
     RemoveSpec(ConditionalReddenRoot(t), false, k);
+    if k in keys(t) {
+      SizeLemmas(t);
+      SizeLemmas(RemoveRoot(t, k).unwrap);
+    } else {
+      SizeLemmas(t);
+      SizeLemmas(RemoveRoot(t, k).unwrap);
+    }
   }
 
   lemma RemoveRootModel(t: trbtree, k: K)
@@ -36,7 +44,11 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveRoot {
 
     ensures RemoveRoot(t, k).Some?
     ensures SearchTree(RemoveRoot(t, k).unwrap)
-    ensures toMap(RemoveRoot(t, k).unwrap) == toMap(t) - {k}
+    ensures toMapRec(RemoveRoot(t, k).unwrap) == toMapRec(t) - {k}
+  {
+    RemoveSpec(ConditionalReddenRoot(t), false, k);
+    RemoveModel(ConditionalReddenRoot(t), false, k);
+  }
 
   predicate IsRemovedRoot(t: trbtree, k: K)
     requires RemoveRoot(t, k).Some?

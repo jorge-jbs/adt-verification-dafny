@@ -52,7 +52,7 @@ module OrderedMapImplTRBT {
       reads this, Repr()
       requires Valid()
     {
-      toMap(tree.Model())
+      toMapRec(tree.Model())
     }
 
     constructor()
@@ -349,25 +349,6 @@ module OrderedMapImplTRBT {
       TRB.SizeLemmas(tree.Model());
       if isRemoved {
         size := size - 1;
-      }
-      if k in old(Model()) {
-        calc == {
-          |Model()|;
-          |old(Model()) - {k}|;
-          |old(Model().Keys) - {k}|;
-          |old(Model()).Keys| - |{k}|;
-          |old(Model())| - |{k}|;
-          old(|Model()|) - 1;
-        }
-      } else {
-        calc == {
-          |Model()|;
-          |old(Model()) - {k}|;
-          |old(Model().Keys) - {k}|;
-          |old(Model().Keys)|;
-          |old(Model())|;
-          old(|Model()|);
-        }
       }
     }
 

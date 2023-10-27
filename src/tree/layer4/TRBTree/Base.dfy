@@ -138,15 +138,12 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     }
   }
 
-  /*
-  function toMapRec(t: trbtree): map<K, V>
+  function toMapRec(t: trbtreeOrThread): map<K, V>
   {
-    match t {
-      case Empty => map[]
-      case Node(l, k, v, r, c) => toMapRec(l) + toMapRec(r) + map[k := v]
-    }
+    match t
+    case Empty|Thread(_) => map[]
+    case Node(l, k, v, r, c) => toMapRec(l) + map[k := v] + toMapRec(r)
   }
-  */
 
   function preorder(t: trbtreeOrThread): seq<(K, V)>
   {
@@ -340,6 +337,12 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
   {
     map k: K | k in keys(t) :: Get(t, k)
   }
+
+  lemma ToMapRec(t: trbtreeOrThread)
+    requires SearchTree(t)
+    //ensures toMap(t) == toMap(t.left) + toMap(t.right) + map[t.key := t.value]
+    ensures toMap(t) == toMapRec(t)
+  {}
 
   predicate Subtree(node: trbtree, root: trbtreeOrThread)
     ensures Subtree(node, root) ==> keys(node) <= keys(root)
@@ -740,11 +743,13 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
       == |keys(t)|
       == |toMap(t).Keys|
       == |toMap(t)|
+      == |toMapRec(t)|
   {
     SizeInorder(t);
     SizeKeys(t);
     assert keys(t) == toMap(t).Keys;
     assert |toMap(t).Keys| == |toMap(t)|;
+    ToMapRec(t);
   }
 
 /*

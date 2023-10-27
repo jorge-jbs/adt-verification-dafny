@@ -70,10 +70,21 @@ module {:options "-functionSyntax:4"} TRBTree.Rotate {
     }
   }
 
-  lemma {:verify false} RotateLeftSize(t: trbtree)
+  lemma RotateLeftSize(t: trbtree)
     requires RotateLeft.requires(t)
     ensures size(t) == size(RotateLeft(t))
-  {}
+  {
+    calc == {
+      size(RotateLeft(t));
+      2
+      + size(t.left)
+      + size(RotateLeft(t).left.right)
+      + size(t.right.right);
+      2 + size(t.left) + size(t.right.left) + size(t.right.right);
+      1 + size(t.left) + size(t.right);
+      size(t);
+    }
+  }
 
   lemma RotateLeftThreaded(prev: threadOrEmpty, t: trbtree, next: threadOrEmpty)
     requires t.Node?
@@ -258,72 +269,108 @@ module {:options "-functionSyntax:4"} TRBTree.Rotate {
     }
   }
 
-/*
-  // 58"
-  lemma {:verify false} RotateLeftModel(t: trbtree)
+  lemma RotateLeftModelLemma<A, B>(a: map<A, B>, b: map<A, B>, c: map<A, B>, d: map<A, B>, e: map<A, B>)
+    ensures (a + b + c) + d + e == a + b + (c + d + e)
+  {}
+
+  lemma RotateLeftModel(t: trbtree)
     requires t.Node?
     requires t.right.Node?
     requires SearchTree(t)
     requires SearchTree(RotateLeft(t))
-    ensures toMap(t) == toMap(RotateLeft(t))
+    ensures toMapRec(t) == toMapRec(RotateLeft(t))
   {
     calc == {
-      toMap(RotateLeft(t));
-      toMap(
-        Node(
-          Node(t.left, t.key, t.value, t.right.left, Red),
-          t.right.key,
-          t.right.value,
-          t.right.right,
-          t.color
-        )
-      );
-      toMap(Node(t.left, t.key, t.value, t.right.left, Red))
+      toMapRec(RotateLeft(t));
+      toMapRec(RotateLeft(t).left)
         + map[t.right.key := t.right.value]
-        + toMap(t.right.right);
-      toMap(t.left)
+        + toMapRec(t.right.right);
+      (toMapRec(t.left)
         + map[t.key := t.value]
-        + toMap(t.right.left)
+        + toMapRec(RotateLeft(t).left.right)
+      )
         + map[t.right.key := t.right.value]
-        + toMap(t.right.right);
-      toMap(t.left)
+        + toMapRec(t.right.right);
+      {
+        RotateLeftModelLemma(
+          toMapRec(t.left),
+          map[t.key := t.value],
+          toMapRec(RotateLeft(t).left.right),
+          map[t.right.key := t.right.value],
+          toMapRec(t.right.right)
+        );
+      }
+      toMapRec(t.left)
         + map[t.key := t.value]
-        + toMap(t.right);
-      toMap(t);
+        + (
+          toMapRec(RotateLeft(t).left.right)
+          + map[t.right.key := t.right.value]
+          + toMapRec(t.right.right)
+        );
+      toMapRec(t.left)
+        + map[t.key := t.value]
+        + (
+          toMapRec(t.right.left)
+          + map[t.right.key := t.right.value]
+          + toMapRec(t.right.right)
+        );
+      toMapRec(t.left)
+        + map[t.key := t.value]
+        + toMapRec(t.right);
+      toMapRec(t);
     }
   }
 
-  lemma {:verify false} RotateRightModel(t: trbtree)
+  lemma RotateRightModelLemma<A, B>(a: map<A, B>, b: map<A, B>, c: map<A, B>, d: map<A, B>, e: map<A, B>)
+    ensures a + b + (c + d + e) == (a + b + c) + d + e
+  {}
+
+  lemma RotateRightModel(t: trbtree)
     requires t.Node?
     requires t.left.Node?
     requires SearchTree(t)
     requires SearchTree(RotateRight(t))
-    ensures toMap(t) == toMap(RotateRight(t))
+    ensures toMapRec(t) == toMapRec(RotateRight(t))
   {
     calc == {
-      toMap(RotateRight(t));
-      toMap(
-        Node(
-          t.left.left,
-          t.left.key,
-          t.left.value,
-          Node(t.left.right, t.key, t.value, t.right, Red),
-          t.color
-        )
+      toMapRec(RotateRight(t));
+      toMapRec(t.left.left)
+      + map[t.left.key := t.left.value]
+      + toMapRec(RotateRight(t).right);
+      toMapRec(t.left.left)
+      + map[t.left.key := t.left.value]
+      + (
+        toMapRec(RotateRight(t).right.left)
+          + map[t.key := t.value]
+          + toMapRec(t.right)
       );
-      toMap(t.left.left)
-        + map[t.left.key := t.left.value]
-        + toMap(Node(t.left.right, t.key, t.value, t.right, Red));
-      toMap(t.left.left)
-        + map[t.left.key := t.left.value]
-        + toMap(t.left.right)
+      {
+        RotateRightModelLemma(
+          toMapRec(t.left.left),
+          map[t.left.key := t.left.value],
+          toMapRec(RotateRight(t).right.left),
+          map[t.key := t.value],
+          toMapRec(t.right)
+        );
+      }
+      (
+        toMapRec(t.left.left)
+          + map[t.left.key := t.left.value]
+          + toMapRec(RotateRight(t).right.left)
+      )
         + map[t.key := t.value]
-        + toMap(t.right);
-      toMap(t.left)
+        + toMapRec(t.right);
+      (
+        toMapRec(t.left.left)
+          + map[t.left.key := t.left.value]
+          + toMapRec(t.left.right)
+      )
         + map[t.key := t.value]
-        + toMap(t.right);
-      toMap(t);
+        + toMapRec(t.right);
+      toMapRec(t.left)
+        + map[t.key := t.value]
+        + toMapRec(t.right);
+      toMapRec(t);
     }
   }
-*/
 }

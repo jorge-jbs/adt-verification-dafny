@@ -53,4 +53,8 @@ module {:options "-functionSyntax:4"} TRBTree.UpdateNext {
       }
     }
   }
+
+  lemma UpdateNextModel(newNext: threadOrEmpty, t: trbtree)
+    ensures toMapRec(UpdateNext(newNext, t)) == toMapRec(t)
+  {}
 }

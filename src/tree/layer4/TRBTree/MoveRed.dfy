@@ -31,13 +31,6 @@ module {:options "-functionSyntax:4"} TRBTree.MoveRed {
       t'
   }
 
-  lemma {:verify false} MoveRedLeftSize(t: trbtree)
-    requires t.Node?
-    requires t.left.Node?
-    requires t.right.Node?
-    ensures size(t) == size(MoveRedLeft(t))
-  {}
-
   lemma MoveRedLeftSpec(t: trbtree)
     requires t.Node?
     requires t.left.Node?
@@ -197,6 +190,60 @@ module {:options "-functionSyntax:4"} TRBTree.MoveRed {
     }
   }
 
+  lemma MoveRedLeftSize(t: trbtree)
+    requires t.Node?
+    requires t.left.Node?
+    requires t.right.Node?
+    ensures size(t) == size(MoveRedLeft(t))
+  {
+    FlipColorsSize(t);
+    var t' := FlipColors(t);
+    if isRed(t'.right.left) {
+      var t'' := Node(
+        t'.left,
+        t'.key,
+        t'.value,
+        RotateRight(t'.right),
+        t'.color
+      );
+      RotateRightSize(t'.right);
+      RotateLeftSize(t'');
+    }
+  }
+
+  lemma MoveRedLeftModel(t: trbtree)
+    requires t.Node?
+    requires t.left.Node?
+    requires t.right.Node?
+    requires SearchTree(t)
+    requires RedBlackTree(t)
+    requires isRed(t)
+    requires isBlack(t.left)
+    requires isBlack(t.right)
+    requires !isRed(t.left.left)
+    ensures toMapRec(t) == toMapRec(MoveRedLeft(t))
+  {
+    assert SearchTree(MoveRedLeft(t)) by {
+      MoveRedLeftSpec(t);
+    }
+    FlipColorsSpec(t);
+    FlipColorsModel(t);
+    var t' := FlipColors(t);
+    if isRed(t'.right.left) {
+      var t'' := Node(
+        t'.left,
+        t'.key,
+        t'.value,
+        RotateRight(t'.right),
+        t'.color
+      );
+      RotateRightSpec(t'.right);
+      RotateRightModel(t'.right);
+      RotateLeftSpec(t'');
+      RotateLeftModel(t'');
+    }
+  }
+
   function MoveRedRight(t: trbtree): trbtree
     requires t.Node?
     requires t.left.Node?
@@ -215,13 +262,6 @@ module {:options "-functionSyntax:4"} TRBTree.MoveRed {
     else
       t'
   }
-
-  lemma {:verify false} MoveRedRightSize(t: trbtree)
-    requires t.Node?
-    requires t.left.Node?
-    requires t.right.Node?
-    ensures size(t) == size(MoveRedRight(t))
-  {}
 
   lemma MoveRedRightSpec(t: trbtree)
     requires t.Node?
@@ -340,6 +380,64 @@ module {:options "-functionSyntax:4"} TRBTree.MoveRed {
         );
       RotateRightThreaded(prev, t', next);
       RotateLeftThreaded(Thread(t''.key), t''.right, next);
+    }
+  }
+
+  lemma MoveRedRightSize(t: trbtree)
+    requires t.Node?
+    requires t.left.Node?
+    requires t.right.Node?
+    ensures size(t) == size(MoveRedRight(t))
+  {
+    FlipColorsSize(t);
+    var t' := FlipColors(t);
+    if isRed(t'.left.left) {
+      var t'' := FlipColors(RotateRight(t'));
+      var t''' :=
+        Node(
+          t''.left,
+          t''.key,
+          t''.value,
+          RotateLeft(t''.right),
+          t''.color
+        );
+      RotateRightSize(t');
+      RotateLeftSize(t''.right);
+    }
+  }
+
+  lemma MoveRedRightModel(t: trbtree)
+    requires t.Node?
+    requires t.left.Node?
+    requires t.right.Node?
+    requires SearchTree(t)
+    requires RedBlackTree(t)
+    requires isRed(t)
+    requires isBlack(t.left)
+    requires isBlack(t.right)
+    requires !isRed(t.right.left)
+    ensures toMapRec(t) == toMapRec(MoveRedRight(t))
+  {
+    assert SearchTree(MoveRedRight(t)) by {
+      MoveRedRightSpec(t);
+    }
+    FlipColorsSpec(t);
+    FlipColorsModel(t);
+    var t' := FlipColors(t);
+    if isRed(t'.left.left) {
+      var t'' := FlipColors(RotateRight(t'));
+      var t''' :=
+        Node(
+          t''.left,
+          t''.key,
+          t''.value,
+          RotateLeft(t''.right),
+          t''.color
+        );
+      RotateRightSpec(t');
+      RotateRightModel(t');
+      RotateLeftSpec(t''.right);
+      RotateLeftModel(t''.right);
     }
   }
 }

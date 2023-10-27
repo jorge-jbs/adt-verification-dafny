@@ -220,4 +220,115 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveMinMaintainingPrev {
       RestoreThreaded(Thread(minK), t'', next);
     }
   }
+
+  lemma RemoveMinMaintainingPrevModelLemma<A, B>(
+      a: map<A, B>, 
+      b: map<A, B>, 
+      c: map<A, B>, 
+      k: A
+    )
+    requires k !in b
+    requires k !in c
+    ensures (a - {k}) + b + c == (a + b + c) - {k}
+  {}
+
+  lemma RemoveMinMaintainingPrevModel(t: trbtreeOrThread, isLeft: bool)
+    decreases size(t)
+
+    requires t.Node?
+    requires SearchTree(t)
+    requires RedBlackTree(t)
+    requires !(isRed(t) && isRed(t.left))
+    requires isRed(t) || isRed(t.left)
+
+    ensures RemoveMinMaintainingPrev(t, isLeft).Some?
+    ensures RemoveMinMaintainingPrev(t, isLeft).unwrap.1 in toMapRec(t).Keys
+    ensures toMapRec(t)[RemoveMinMaintainingPrev(t, isLeft).unwrap.1]
+      == RemoveMinMaintainingPrev(t, isLeft).unwrap.2
+    ensures toMapRec(RemoveMinMaintainingPrev(t, isLeft).unwrap.0)
+      == toMapRec(t) - {RemoveMinMaintainingPrev(t, isLeft).unwrap.1}
+  {
+    if t.left.Empty? || t.left.Thread? {
+    } else {
+      var pt' :=
+        if isBlack(t.left) && !isRed(t.left.left) then
+          var _ :- Guard(t.right.Node?);
+          MoveRedLeftSize(t);
+          Some(MoveRedLeft(t))
+        else
+          Some(t);
+      assert pt'.Some?;
+      var t' := pt'.unwrap;
+      if isBlack(t.left) && !isRed(t.left.left) {
+        MoveRedLeftSpec(t);
+        MoveRedLeftModel(t);
+      }
+      RemoveMinMaintainingPrevSpec(t'.left, true);
+      assert RemoveMinMaintainingPrev(t'.left, true).Some?;
+      var (l', minK, minV) := RemoveMinMaintainingPrev(t'.left, true).unwrap;
+      var t'' :=
+        Node(
+          l',
+          t'.key,
+          t'.value,
+          t'.right,
+          t'.color
+        );
+      var t''' := Restore(t'');
+      RestoreSpec(t'');
+      assert toMapRec(t)[RemoveMinMaintainingPrev(t, isLeft).unwrap.1]
+          == RemoveMinMaintainingPrev(t, isLeft).unwrap.2 by {
+        RemoveMinMaintainingPrevModel(t'.left, true);
+        calc == {
+          toMapRec(t)[minK];
+          toMapRec(t')[minK];
+          (toMapRec(t'.left) + map[t'.key := t'.value] + toMapRec(t'.right))[minK];
+          { 
+            assert minK !in toMapRec(t'.right) by {
+              ToMapRec(t'.right);
+            }
+            assert minK != t'.key;
+          }
+          toMapRec(t'.left)[minK];
+          minV;
+        }
+      }
+      calc == {
+        toMapRec(RemoveMinMaintainingPrev(t, isLeft).unwrap.0);
+        toMapRec(t''');
+        toMapRec(Restore(t''));
+        { RestoreModel(t''); }
+        toMapRec(t'');
+        toMapRec(t''.left)
+          + map[t'.key := t'.value]
+          + toMapRec(t''.right);
+        toMapRec(RemoveMinMaintainingPrev(t'.left, true).unwrap.0)
+          + map[t'.key := t'.value]
+          + toMapRec(t'.right);
+        { RemoveMinMaintainingPrevModel(t'.left, true); }
+        (toMapRec(t'.left) - {RemoveMinMaintainingPrev(t'.left, true).unwrap.1})
+          + map[t'.key := t'.value]
+          + toMapRec(t'.right);
+        {
+          var minK := RemoveMinMaintainingPrev(t'.left, true).unwrap.1;
+          assert minK !in toMapRec(t'.right) by {
+            ToMapRec(t'.right);
+          }
+          assert minK != t'.key;
+          RemoveMinMaintainingPrevModelLemma(
+            toMapRec(t'.left),
+            map[t'.key := t'.value],
+            toMapRec(t'.right),
+            minK
+          );
+        }
+        (toMapRec(t'.left)
+          + map[t'.key := t'.value]
+          + toMapRec(t'.right)) - {RemoveMinMaintainingPrev(t'.left, true).unwrap.1};
+        toMapRec(t') - {RemoveMinMaintainingPrev(t'.left, true).unwrap.1};
+        toMapRec(t) - {RemoveMinMaintainingPrev(t'.left, true).unwrap.1};
+        toMapRec(t) - {RemoveMinMaintainingPrev(t, isLeft).unwrap.1};
+      }
+    }
+  }
 }

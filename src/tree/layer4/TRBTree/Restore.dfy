@@ -131,8 +131,8 @@ module {:options "-functionSyntax:4"} TRBTree.Restore {
       RotateRightThreaded(prev, t', next);
     }
   }
-/*
-  lemma {:verify false} RestoreModel(t: trbtree)
+
+  lemma RestoreModel(t: trbtree)
     requires t.Node?
     requires SearchTree(t)
     requires isRed(t.right) && isRed(t.right.left) ==>
@@ -152,7 +152,7 @@ module {:options "-functionSyntax:4"} TRBTree.Restore {
     requires RedBlackTree(t.right)
 
     ensures SearchTree(Restore(t))
-    ensures toMap(t) == toMap(Restore(t))
+    ensures toMapRec(t) == toMapRec(Restore(t))
   {
     RestoreSpec(t);
     var t' :=
@@ -174,23 +174,22 @@ module {:options "-functionSyntax:4"} TRBTree.Restore {
 
     if isRed(t.right) {
       RotateLeftModel(t);
-      assert toMap(RotateLeft(t)) == toMap(t);
+      assert toMapRec(RotateLeft(t)) == toMapRec(t);
     }
-    assert toMap(t) == toMap(t');
+    assert toMapRec(t) == toMapRec(t');
 
     if isRed(t'.left) && isRed(t'.left.left) {
       RotateRightModel(t');
-      assert toMap(RotateRight(t')) == toMap(t');
+      assert toMapRec(RotateRight(t')) == toMapRec(t');
     }
-    assert toMap(t') == toMap(t'');
+    assert toMapRec(t') == toMapRec(t'');
 
     if isRed(t''.left) && isRed(t''.right) {
       FlipColorsModel(t'');
-      assert toMap(FlipColors(t'')) == toMap(t'');
+      assert toMapRec(FlipColors(t'')) == toMapRec(t'');
     }
-    assert toMap(t'') == toMap(t''');
+    assert toMapRec(t'') == toMapRec(t''');
 
     assert t''' == Restore(t);
   }
-*/
 }

@@ -110,90 +110,106 @@ module {:options "-functionSyntax:4"} TRBTree.TRBInsert {
       }
     }
   }
+  
+  lemma TRBInsertModelLemmaR<A, B>(a: map<A, B>, b: map<A, B>, c: map<A, B>, k: A, v: B)
+    ensures a + b + c[k := v] == (a + b + c)[k := v]
+  {}
 
-/*
-  // 43"
-  lemma {:verify false} TRBInsertModel(lt: option<K>, t: trbtree, rt: option<K>, k': K, v': V)
+  lemma TRBInsertModelLemmaL<A, B>(a: map<A, B>, b: map<A, B>, c: map<A, B>, k: A, v: B)
+    requires k !in b.Keys
+    requires k !in c.Keys
+    ensures a[k := v] + b + c == (a + b + c)[k := v]
+  {}
+
+  lemma TRBInsertModel(prev: threadOrEmpty, t: trbtreeOrThread, next: threadOrEmpty, k': K, v': V)
     decreases t
-    requires !t.Thread?
     requires SearchTree(t)
     requires RedBlackTree(t)
     requires !(isRed(t) && isRed(t.left))
-    requires SearchTree(TRBInsert(lt, t, rt, k', v'))
-    ensures toMap(t)[k' := v'] == toMap(TRBInsert(lt, t, rt, k', v'))
+    ensures SearchTree(TRBInsert(prev, t, next, k', v'))
+    ensures toMapRec(t)[k' := v'] == toMapRec(TRBInsert(prev, t, next, k', v'))
   {
     match t {
-      case Empty => {
+      case Empty|Thread(_) => {
       }
       case Node(l, k, v, r, c) => {
         if k < k' {
-          if r.Thread? {
-            RestoreSpec(Node(l, k, v, Node(Thread(k), k', v', Thread(fromThread(r)), Red), c));
-            calc == {
-              toMap(TRBInsert(lt, Node(l, k, v, r, c), rt, k', v'));
-              toMap(Restore(Node(l, k, v, Node(Thread(k), k', v', Thread(fromThread(r)), Red), c)));
-              { RestoreModel(Node(l, k, v, Node(Thread(k), k', v', Thread(fromThread(r)), Red), c)); }
-              toMap(Node(l, k, v, Node(Thread(k), k', v', Thread(fromThread(r)), Red), c));
-              { toMapLemmas(Node(l, k, v, Node(Thread(k), k', v', Thread(fromThread(r)), Red), c)); }
-              toMap(l) + map[k := v] + toMap(Node(Thread(k), k', v', Thread(fromThread(r)), Red));
-              { toMapLemmas(Node(Thread(k), k', v', Thread(fromThread(r)), Red)); }
-              toMap(l) + map[k := v] + (map[] + map[k' := v'] + map[]);
-              toMap(l) + map[k := v] + map[k' := v'];
-              (toMap(l) + map[k := v]) + map[k' := v'];
-              (toMap(l) + map[k := v] + toMap(r)) + map[k' := v'];
-              { toMapLemmas(t); }
-              toMap(t) + map[k' := v'];
+          assume false;
+          TRBInsertSpec(Thread(k), r, next, k', v');
+          RestoreSpec(Node(l, k, v, TRBInsert(Thread(k), r, next, k', v'), c));
+          calc == {
+            toMapRec(TRBInsert(prev, t, next, k', v'));
+            toMapRec(Restore(Node(l, k, v, TRBInsert(Thread(k), r, next, k', v'), c)));
+            { RestoreModel(Node(l, k, v, TRBInsert(Thread(k), r, next, k', v'), c)); }
+            toMapRec(Node(l, k, v, TRBInsert(Thread(k), r, next, k', v'), c));
+            toMapRec(l)
+              + map[k := v]
+              + toMapRec(TRBInsert(Thread(k), r, next, k', v'));
+            { TRBInsertModel(Thread(k), r, next, k', v'); }
+            toMapRec(l)
+              + map[k := v]
+              + toMapRec(r)[k' := v'];
+            /*
+            {
+              TRBInsertModelLemmaR(
+                toMapRec(l),
+                map[k := v],
+                toMapRec(r),
+                k',
+                v'
+              );
             }
-          } else {
-            TRBInsertSpec(Some(k), r, rt, k', v');
-            calc == {
-              toMap(TRBInsert(lt, Node(l, k, v, r, c), rt, k', v'));
-              toMap(Restore(Node(l, k, v, TRBInsert(Some(k), r, rt, k', v'), c)));
-              { RestoreModel(Node(l, k, v, TRBInsert(Some(k), r, rt, k', v'), c)); }
-              toMap(Node(l, k, v, TRBInsert(Some(k), r, rt, k', v'), c));
-              { toMapLemmas(Node(l, k, v, TRBInsert(Some(k), r, rt, k', v'), c)); }
-              toMap(l) + map[k := v] + toMap(TRBInsert(Some(k), r, rt, k', v'));
-              { TRBInsertModel(Some(k), r, rt, k', v'); }
-              toMap(l) + map[k := v] + toMap(r)[k' := v'];
-              toMap(l) + map[k := v] + toMap(r) + map[k' := v'];
-              toMap(t) + map[k' := v'];
-            }
+            */
+            ( toMapRec(l)
+                + map[k := v]
+                + toMapRec(r))
+              [k' := v'];
+            toMapRec(t)[k' := v'];
           }
         } else if k' < k {
-          if l.Thread? {
-            RestoreSpec(Node(Node(Thread(fromThread(l)), k', v', Thread(k), Red), k, v, r, c));
-            calc == {
-              toMap(TRBInsert(lt, Node(l, k, v, r, c), rt, k', v'));
-              toMap(Node(Node(Thread(fromThread(l)), k', v', Thread(k), Red), k, v, r, c));
-              toMap(Node(Thread(fromThread(l)), k', v', Thread(k), Red)) + map[k := v] + toMap(r);
-              { toMapLemmas(Node(Thread(fromThread(l)), k', v', Thread(k), Red)); }
-              (map[] + map[k' := v'] + map[]) + map[k := v] + toMap(r);
-              map[k' := v'] + map[k := v] + toMap(r);
-              toMap(l) + map[k := v] + toMap(r) + map[k' := v'];
-              toMap(t) + map[k' := v'];
+          TRBInsertSpec(prev, l, Thread(k), k', v');
+          RestoreModel(Node(TRBInsert(prev, l, Thread(k), k', v'), k, v, r, c));
+          calc == {
+            toMapRec(TRBInsert(prev, t, next, k', v'));
+            toMapRec(Restore(Node(TRBInsert(prev, l, Thread(k), k', v'), k, v, r, c)));
+            { RestoreModel(Node(TRBInsert(prev, l, Thread(k), k', v'), k, v, r, c)); }
+            toMapRec(Node(TRBInsert(prev, l, Thread(k), k', v'), k, v, r, c));
+            toMapRec(TRBInsert(prev, l, Thread(k), k', v'))
+              + map[k := v]
+              + toMapRec(r);
+            { TRBInsertModel(prev, l, Thread(k), k', v'); }
+            toMapRec(l)[k' := v']
+              + map[k := v]
+              + toMapRec(r);
+            {
+              assert k' !in toMapRec(r) by {
+                assert toMapRec(r).Keys == keys(r) by {
+                  ToMapRec(r);
+                }
+              }
+              assert k' != k;
+              TRBInsertModelLemmaL(
+                toMapRec(l),
+                map[k := v],
+                toMapRec(r),
+                k',
+                v'
+              );
             }
-          } else {
-            TRBInsertSpec(lt, l, Some(k), k', v');
-            calc == {
-              toMap(TRBInsert(lt, Node(l, k, v, r, c), rt, k', v'));
-              toMap(Restore(Node(TRBInsert(lt, l, Some(k), k', v'), k, v, r, c)));
-              { RestoreModel(Node(TRBInsert(lt, l, Some(k), k', v'), k, v, r, c)); }
-              toMap(Node(TRBInsert(lt, l, Some(k), k', v'), k, v, r, c));
-              { toMapLemmas(Node(TRBInsert(lt, l, Some(k), k', v'), k, v, r, c)); }
-              toMap(TRBInsert(lt, l, Some(k), k', v')) + map[k := v] + toMap(r);
-              { TRBInsertModel(lt, l, Some(k), k', v'); }
-              toMap(l)[k' := v'] + map[k := v] + toMap(r);
-              toMap(l) + map[k' := v'] + map[k := v] + toMap(r);
-              toMap(l) + map[k := v] + toMap(r) + map[k' := v'];
-              toMap(t) + map[k' := v'];
-            }
+            ( toMapRec(l)
+                + map[k := v]
+                + toMapRec(r))
+              [k' := v'];
+            toMapRec(t)[k' := v'];
           }
         } else {
+          assert toMap(t)[k' := v'] == toMap(TRBInsert(prev, t, next, k', v'));
+          ToMapRec(t);
+          ToMapRec(TRBInsert(prev, t, next, k', v'));
         }
       }
     }
   }
-  */
 
   lemma TRBInsertRootSpec(t: trbtree, k': K, v': V)
     requires SearchTree(t)
@@ -214,15 +230,12 @@ module {:options "-functionSyntax:4"} TRBTree.TRBInsert {
     TRBInsertThreaded(Empty, t, Empty, k', v');
   }
 
-  lemma {:verify false} TRBInsertRootModel(t: trbtree, k: K, v: V)
+  lemma TRBInsertRootModel(t: trbtree, k: K, v: V)
     requires SearchTree(t)
     requires RedBlackTreeRoot(t)
     requires SearchTree(TRBInsertRoot(t, k, v))
-    ensures toMap(t)[k := v] == toMap(TRBInsertRoot(t, k, v))
-  {}
-/*
+    ensures toMapRec(t)[k := v] == toMapRec(TRBInsertRoot(t, k, v))
   {
-    TRBInsertModel(Nothing, t, Nothing, k, v);
+    TRBInsertModel(Empty, t, Empty, k, v);
   }
-  */
 }

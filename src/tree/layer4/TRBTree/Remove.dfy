@@ -400,4 +400,244 @@ module {:options "-functionSyntax:4"} TRBTree.Remove {
       }
     }
   }
+
+  lemma RemoveModelLemmaL<A, B>(a: map<A, B>, b: map<A, B>, c: map<A, B>, k: A)
+    requires k !in b
+    requires k !in c
+    ensures (a - {k}) + b + c == (a + b + c) - {k}
+  {}
+
+  lemma RemoveModelLemmaR<A, B>(a: map<A, B>, b: map<A, B>, c: map<A, B>, k: A)
+    requires k !in a
+    requires k !in b
+    ensures a + b + (c - {k}) == (a + b + c) - {k}
+  {}
+
+  lemma RemoveModelLemmaMin1<A, B>(a: map<A, B>, b: map<A, B>, k: A, v: B)
+    requires k in b.Keys
+    requires b[k] == v
+    ensures a + map[k := v] + (b - {k}) == a + b
+  {}
+
+  lemma RemoveModelLemmaMin2<A, B>(a: map<A, B>, b: map<A, B>, k: A, v: B)
+    requires k !in a.Keys
+    requires k !in b.Keys
+    ensures (a + map[k := v] + b) - {k} == a + b
+  {}
+
+  lemma RemoveModel(t: trbtreeOrThread, isLeft: bool, k: K)  // 2'
+    decreases size(t)
+
+    requires SearchTree(t)
+    requires RedBlackTree(t)
+    requires t.Empty? || t.Thread? || isRed(t) || isRed(t.left)
+    requires !(isRed(t) && isRed(t.left))
+
+    ensures Remove(t, isLeft, k).Some?
+    ensures toMapRec(Remove(t, isLeft, k).unwrap) == toMapRec(t) - {k}
+  {
+    if t.Empty? || t.Thread? {
+      //assume false;
+    } else {
+      if t.key > k {  // 22"
+        //assume false;
+        var t' :=
+          if isBlack(t.left) && !isRed(t.left.left) then
+            MoveRedLeftSize(t);
+            MoveRedLeft(t)
+          else
+            t;
+        if isBlack(t.left) && !isRed(t.left.left) {
+          MoveRedLeftSpec(t);
+          MoveRedLeftModel(t);
+        }
+        RemoveSpec(t'.left, true, k);
+        RemoveModel(t'.left, true, k);
+        var l' := Remove(t'.left, true, k).unwrap;
+        var t'' :=
+          Node(
+            l',
+            t'.key,
+            t'.value,
+            t'.right,
+            t'.color
+          );
+        var t''' := Restore(t'');
+        RestoreSpec(t'');
+        assert Remove(t, isLeft, k).Some?;
+        calc == {
+          toMapRec(Remove(t, isLeft, k).unwrap);
+          toMapRec(t''');
+          toMapRec(Restore(t''));
+          { RestoreModel(t''); }
+          toMapRec(t'');
+          toMapRec(t''.left)
+            + map[t''.key := t''.value]
+            + toMapRec(t''.right);
+          toMapRec(Remove(t'.left, true, k).unwrap)
+            + map[t'.key := t'.value]
+            + toMapRec(t'.right);
+          (toMapRec(t'.left) - {k})
+            + map[t'.key := t'.value]
+            + toMapRec(t'.right);
+          {
+            assert k !in toMapRec(t'.right) by {
+              ToMapRec(t'.right);
+            }
+            RemoveModelLemmaL(
+              toMapRec(t'.left),
+              map[t'.key := t'.value],
+              toMapRec(t'.right),
+              k
+            );
+          }
+          (toMapRec(t'.left)
+            + map[t'.key := t'.value]
+            + toMapRec(t'.right)) - {k};
+          toMapRec(t') - {k};
+          toMapRec(t) - {k};
+        }
+      } else {
+        var t' :=
+          if isRed(t.left) then
+            RotateRightSize(t);
+            RotateRight(t)
+          else
+            t;
+        if isRed(t.left) {
+          RotateRightSpec(t);
+          RotateRightModel(t);
+        }
+        if k == t'.key && IsThreadOrEmpty(t'.right) {
+          //assume false;
+        } else {
+          var t'' :=
+            if isBlack(t'.right) && !isRed(t'.right.left) then
+              MoveRedRightSize(t');
+              MoveRedRight(t')
+            else
+              t';
+          if isBlack(t'.right) && !isRed(t'.right.left) {
+            MoveRedRightSpec(t');
+            MoveRedRightModel(t');
+          }
+          if k != t''.key {  // 33"
+            //assume false;
+            RemoveSpec(t''.right, false, k);
+            RemoveModel(t''.right, false, k);
+            var r' := Remove(t''.right, false, k).unwrap;
+            var t''' :=
+              Node(
+                t''.left,
+                t''.key,
+                t''.value,
+                r',
+                t''.color
+              );
+            var t'''' := Restore(t''');
+            RestoreSpec(t''');
+            calc == {
+              toMapRec(Remove(t, isLeft, k).unwrap);
+              toMapRec(t'''');
+              toMapRec(Restore(t'''));
+              { RestoreModel(t'''); }
+              toMapRec(t''');
+              toMapRec(t'''.left)
+                + map[t'''.key := t'''.value]
+                + toMapRec(t'''.right);
+              toMapRec(t''.left)
+                + map[t''.key := t''.value]
+                + toMapRec(Remove(t''.right, false, k).unwrap);
+              { RemoveModel(t''.right, false, k); }
+              toMapRec(t''.left)
+                + map[t''.key := t''.value]
+                + (toMapRec(t''.right) - {k});
+              {
+                assert k !in toMapRec(t''.left) by {
+                  ToMapRec(t''.left);
+                }
+                RemoveModelLemmaR(
+                  toMapRec(t''.left),
+                  map[t''.key := t''.value],
+                  toMapRec(t''.right),
+                  k
+                );
+              }
+              (toMapRec(t''.left)
+                + map[t''.key := t''.value]
+                + toMapRec(t''.right)) - {k};
+              toMapRec(t'') - {k};
+              toMapRec(t') - {k};
+              toMapRec(t) - {k};
+            }
+          } else {  // 60"
+            //assume false;
+            RemoveMinMaintainingPrevSpec(t''.right, false);
+            RemoveMinMaintainingPrevModel(t''.right, false);
+            assert forall m | m in keys(t''.right) :: t''.key < m;
+            var (r', minK, minV) := RemoveMinMaintainingPrev(t''.right, false).unwrap;
+            var t''' :=
+              Node(
+                UpdateNext(Thread(minK), t''.left),
+                minK,
+                minV,
+                r',
+                t''.color
+              );
+            UpdateNextSpec(Thread(minK), t''.left);
+            UpdateNextModel(Thread(minK), t''.left);
+            var t'''' := Restore(t''');
+            RestoreSpec(t''');
+            RestoreModel(t''');
+            calc == {
+              toMapRec(Remove(t, isLeft, k).unwrap);
+              toMapRec(t'''');
+              toMapRec(Restore(t'''));
+              { RestoreModel(t'''); }
+              toMapRec(t''');
+              toMapRec(t'''.left)
+                + map[t'''.key := t'''.value]
+                + toMapRec(t'''.right);
+              toMapRec(UpdateNext(Thread(minK), t''.left))
+                + map[minK := minV]
+                + toMapRec(RemoveMinMaintainingPrev(t''.right, false).unwrap.0);
+              toMapRec(t''.left)
+                + map[minK := minV]
+                + (toMapRec(t''.right) - {minK});
+              {
+                RemoveModelLemmaMin1(
+                  toMapRec(t''.left),
+                  toMapRec(t''.right),
+                  minK, minV
+                );
+              }
+              toMapRec(t''.left) + toMapRec(t''.right);
+              {
+                assert k !in toMapRec(t''.left).Keys by {
+                  ToMapRec(t''.left);
+                }
+                assert k !in toMapRec(t''.right).Keys by {
+                  ToMapRec(t''.right);
+                }
+                RemoveModelLemmaMin2(
+                  toMapRec(t''.left),
+                  toMapRec(t''.right),
+                  k, t''.value
+                );
+              }
+              (toMapRec(t''.left)
+                + map[k := t''.value]
+                + toMapRec(t''.right)) - {k};
+              (toMapRec(t''.left)
+                + map[t''.key := t''.value]
+                + toMapRec(t''.right)) - {k};
+              toMapRec(t'') - {k};
+              toMapRec(t') - {k};
+              toMapRec(t) - {k};
+            }
+          }
+        }
+      }
+    }
+  }
 }
