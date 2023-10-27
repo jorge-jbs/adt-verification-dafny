@@ -1,7 +1,10 @@
-include "../../../src/Utils.dfy"
+include "../../../src/MUtils.dfy"
 include "../../../src/linear/layer1/List.dfy"
 
-trait ArrayList<A> extends List<A> {
+module ArrayListSpec{
+  import opened ListSpec
+
+trait {:termination false} ArrayList<A> extends List<A> {
   method PushFront(x: A)
     modifies this, Repr()
     requires allocated(Repr())
@@ -14,7 +17,9 @@ trait ArrayList<A> extends List<A> {
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 
   method PopFront() returns (x: A)
     modifies this, Repr()
@@ -28,8 +33,10 @@ trait ArrayList<A> extends List<A> {
     ensures [x] + Model() == old(Model())
 
     ensures Iterators() >= old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
-      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?()) :: 
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 
   method PushBack(x: A)
     modifies this, Repr()
@@ -42,8 +49,10 @@ trait ArrayList<A> extends List<A> {
     ensures Model() == old(Model()) + [x]
 
     ensures Iterators() >= old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid())
-      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) :: 
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 
   method PopBack() returns (x: A)
     modifies this, Repr()
@@ -57,8 +66,10 @@ trait ArrayList<A> extends List<A> {
     ensures Model() + [x] == old(Model())
 
     ensures Iterators() >= old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
-      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?()) :: 
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
  
   // Insertion of x before mid, newt points to x
   method Insert(mid: ListIterator<A>, x: A) returns (newt: ListIterator<A>)
@@ -79,8 +90,10 @@ trait ArrayList<A> extends List<A> {
     ensures Iterators() >= {newt} + old(Iterators())
     ensures newt.Valid() && newt.Parent() == this && newt.Index() == old(mid.Index())
  
-    ensures forall it | it in old(Iterators()) && old(it.Valid())
-      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 
   // Deletion of mid, next points to the next element (or past-the-end)
   method Erase(mid: ListIterator<A>) returns (next: ListIterator<A>)
@@ -100,7 +113,9 @@ trait ArrayList<A> extends List<A> {
     ensures fresh(next)
     ensures Iterators() >= {next}+old(Iterators())
     ensures next.Valid() && next.Parent() == this && next.Index() == old(mid.Index())
-     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
-      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?()) :: 
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 }
-
+}

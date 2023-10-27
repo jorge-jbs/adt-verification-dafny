@@ -1,7 +1,10 @@
-include "../../../src/Utils.dfy"
+include "../../../src/MUtils.dfy"
 include "../layer1/List.dfy"
 
-trait LinkedList<A> extends List<A> {
+module LinkedListSpec{
+  import opened ListSpec
+
+trait {:termination false} LinkedList<A> extends List<A> {
   method PushFront(x: A)
     modifies this, Repr()
     requires allocated(Repr())
@@ -33,7 +36,9 @@ trait LinkedList<A> extends List<A> {
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.Index()) > 0 ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() + 1 == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() + 1 == old(it.Index())
 
   method PushBack(x: A)
     modifies this, Repr()
@@ -130,4 +135,5 @@ trait LinkedList<A> extends List<A> {
              it.Index() == old(it.Index())
             else
              it.Index() == old(it.Index()) - 1
+}
 }

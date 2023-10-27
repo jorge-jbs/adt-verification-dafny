@@ -1,21 +1,26 @@
-include "../../../src/Utils.dfy"
+include "../../../src/MUtils.dfy"
 include "../../../src/ADT.dfy"
 
-trait ListIterator<A> {
-  function Parent(): List<A>
+module  ListSpec{
+
+  import opened ADT 
+  import opened Utils.Seq
+
+trait {:termination false} ListIterator<A> {
+  ghost function Parent(): List<A>
     reads this
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Parent(), Parent().Repr()
     ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
 
-  function Index(): int
+  ghost function Index(): int
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
     ensures -1 <= Index() <= |Parent().Model()|
 
-  predicate HasPeek?() 
+  ghost predicate HasPeek?() 
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
@@ -39,7 +44,9 @@ trait ListIterator<A> {
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 
   
   method Next() 
@@ -60,7 +67,9 @@ trait ListIterator<A> {
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures Index() == 1 + old(Index())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && (it != this ==> it.Index() == old(it.Index()))
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && (it != this ==> it.Index() == old(it.Index()))
   
   method Prev() 
     modifies this, Parent(), Parent().Repr()
@@ -80,7 +89,9 @@ trait ListIterator<A> {
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures Index() + 1 == old(Index())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && (it != this ==> it.Index() == old(it.Index()))
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && (it != this ==> it.Index() == old(it.Index()))
   
   method Peek() returns (p: A)
     modifies this, Parent(), Parent().Repr()
@@ -101,7 +112,9 @@ trait ListIterator<A> {
     
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 
   method Copy() returns (it: ListIterator<A>)
     modifies this, Parent(), Parent().Repr()
@@ -124,7 +137,9 @@ trait ListIterator<A> {
     ensures Parent() == it.Parent()
     ensures Index() == it.Index()
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 
   method Set(x: A)
     modifies this, Parent(), Parent().Repr()
@@ -145,11 +160,15 @@ trait ListIterator<A> {
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 }
 
-trait List<A> extends ADT<seq<A>> {
-  predicate Empty?()
+
+
+trait {:termination false} List<A> extends ADT<seq<A>> {
+  ghost predicate Empty?()
     reads this, Repr()
     requires Valid()
   {
@@ -169,7 +188,9 @@ trait List<A> extends ADT<seq<A>> {
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 
   method Size() returns (s: nat)
     modifies this, Repr()
@@ -184,9 +205,11 @@ trait List<A> extends ADT<seq<A>> {
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 
-  function Iterators(): set<ListIterator<A>>
+  ghost function Iterators(): set<ListIterator<A>>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
@@ -207,7 +230,9 @@ trait List<A> extends ADT<seq<A>> {
     ensures it.Index() == 0
     ensures it.Parent() == this
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 
   method Last() returns (it: ListIterator<A>)
     modifies this, Repr()
@@ -225,7 +250,9 @@ trait List<A> extends ADT<seq<A>> {
     ensures it.Index() == |old(Model())| - 1 == |Model()| - 1 //no es capaz de deducirlo si no lo ponemos
     ensures it.Parent() == this
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 
   method Front() returns (x: A)
     modifies this, Repr()
@@ -241,7 +268,9 @@ trait List<A> extends ADT<seq<A>> {
  
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 
   method PushFront(x: A)
     modifies this, Repr()
@@ -282,7 +311,9 @@ trait List<A> extends ADT<seq<A>> {
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
 
   method PushBack(x: A)
     modifies this, Repr()
@@ -347,4 +378,4 @@ trait List<A> extends ADT<seq<A>> {
     ensures Iterators() >= {next} + old(Iterators())
     ensures next.Valid() && next.Parent() == this && next.Index() == old(mid.Index())
 }
-
+}

@@ -1,7 +1,10 @@
 include "../../../src/ADT.dfy"
 
-trait Deque<A> extends ADT<seq<A>> {
-  predicate Empty?()
+module DequeSpec {
+   import opened ADT
+
+trait {:termination false} Deque<A> extends ADT<seq<A>> {
+  ghost predicate Empty?()
     reads this, Repr()
     requires Valid()
   { Model() == [] }
@@ -93,4 +96,5 @@ trait Deque<A> extends ADT<seq<A>> {
     requires !Empty?()
     ensures Valid()
     ensures Model() + [x] == old(Model())
+}
 }

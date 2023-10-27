@@ -1,7 +1,10 @@
 include "../../../src/ADT.dfy"
 
-trait Stack<A> extends ADT<seq<A>> {
-  predicate Empty?()
+module StackSpec {
+   import opened ADT
+
+trait {:termination false} Stack<A> extends ADT<seq<A>> {
+  ghost predicate Empty?()
     reads this, Repr()
     requires Valid()
   { Model() == [] }
@@ -61,4 +64,5 @@ trait Stack<A> extends ADT<seq<A>> {
     ensures Valid()
     ensures [x] + Model() == old(Model())
 
+}
 }

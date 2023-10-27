@@ -1,17 +1,26 @@
 include "../../../src/linear/layer1/Stack.dfy"
-include "../../../src/Utils.dfy"
+include "../../../src/MUtils.dfy"
+
+module MArrayStackImpl{
+   import opened StackSpec
+   import opened Utils
+   export provides StackSpec, Utils
+          reveals ArrayStackImpl
+          provides ArrayStackImpl.Model, ArrayStackImpl.Valid, ArrayStackImpl.ReprFamily
+          provides ArrayStackImpl.Empty, ArrayStackImpl.Size
+          provides ArrayStackImpl.Top, ArrayStackImpl.Push, ArrayStackImpl.Pop
 
 class ArrayStackImpl<A> extends Stack<A> {
-  var list: array<A>;
-  var size: nat;
+  var list: array<A>
+  var size: nat
 
-  function Repr0(): set<object>
+  ghost function Repr0(): set<object>
     reads this
   {
     {list}
   }
 
-  function ReprFamily(n: nat): set<object>
+  ghost function ReprFamily(n: nat): set<object>
     decreases n
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
@@ -22,18 +31,16 @@ class ArrayStackImpl<A> extends Stack<A> {
       ReprFamily(n-1)
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Repr()
   {
     && ReprDepth == 1
     && 0 <= size <= list.Length
   }
 
-  function Model(): seq<A>
-    reads this, list
+  ghost function Model(): seq<A>
+    reads this, Repr()
     requires Valid()
-    ensures Model() == Seq.Rev(list[0..size])
-    ensures |Model()| == size
   {
     Seq.Rev(list[0..size])
   }
@@ -41,8 +48,8 @@ class ArrayStackImpl<A> extends Stack<A> {
   constructor()
     ensures Valid()
     ensures Model() == []
-    ensures forall x | x in Repr() :: fresh(x)
-    ensures forall x | x in Repr() :: allocated(x)
+    ensures fresh(Repr())
+    ensures allocated(Repr())
   {
     ReprDepth := 1;
     list := new A[0];
@@ -168,4 +175,6 @@ class ArrayStackImpl<A> extends Stack<A> {
     assert |Model()| == |old(Model())| - 1;
     Seq.LastRev(list[0..old(size)]);
   }
+}
+
 }

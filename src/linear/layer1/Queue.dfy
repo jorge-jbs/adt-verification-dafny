@@ -1,7 +1,10 @@
 include "../../../src/ADT.dfy"
 
-trait Queue<A> extends ADT<seq<A>> {
-  predicate Empty?()
+module QueueSpec {
+   import opened ADT
+
+trait {:termination false} Queue<A> extends ADT<seq<A>> {
+  ghost predicate Empty?()
     reads this, Repr()
     requires Valid()
   { Model() == [] }
@@ -60,4 +63,5 @@ trait Queue<A> extends ADT<seq<A>> {
     requires Model() != []
     ensures Valid()
     ensures [x] + Model() == old(Model())
+}
 }

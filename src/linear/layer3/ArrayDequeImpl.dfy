@@ -1,17 +1,25 @@
 include "../../../src/linear/layer1/Deque.dfy"
+module ArrayDequeImpl{
+   import opened DequeSpec
+   export provides DequeSpec
+          reveals ArrayDequeImpl
+          provides ArrayDequeImpl.Model, ArrayDequeImpl.Valid, ArrayDequeImpl.ReprFamily
+          provides ArrayDequeImpl.Empty, ArrayDequeImpl.Size
+          provides ArrayDequeImpl.Front, ArrayDequeImpl.PushFront, ArrayDequeImpl.PopFront
+          provides ArrayDequeImpl.Back, ArrayDequeImpl.PushBack, ArrayDequeImpl.PopBack
 
 class ArrayDequeImpl<A> extends Deque<A> {
-  var list: array<A>;
-  var c: nat;
-  var nelems: nat;
+  var list: array<A>
+  var c: nat
+  var nelems: nat
 
-  function Repr0(): set<object>
+  ghost function Repr0(): set<object>
     reads this
   {
     {this, list}
   }
 
-  function ReprFamily(n: nat): set<object>
+  ghost function ReprFamily(n: nat): set<object>
     decreases n
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
@@ -22,7 +30,7 @@ class ArrayDequeImpl<A> extends Deque<A> {
       ReprFamily(n-1)
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Repr()
   {
     && ReprDepth == 1
@@ -31,14 +39,14 @@ class ArrayDequeImpl<A> extends Deque<A> {
     && 0 <= nelems <= list.Length
   }
 
-  function Model(): seq<A> // Los elementos estan en [c..(c+nelems)%Length) circularmente
+  ghost function Model(): seq<A> // Los elementos estan en [c..(c+nelems)%Length) circularmente
     reads this, Repr()
     requires Valid()
   {
     ModelAux(list, c, nelems)
   }
 
-  static function ModelAux(a: array<A>, c: nat, nelems: nat): seq<A>
+  static ghost function ModelAux(a: array<A>, c: nat, nelems: nat): seq<A>
     reads a
     requires a.Length != 0 ==> 0 <= c < a.Length
     requires 0 <= nelems <= a.Length
@@ -62,13 +70,30 @@ class ArrayDequeImpl<A> extends Deque<A> {
     nelems := 0;
   }
 
-  lemma IncDeque(a: array<A>, c: nat, nelems: nat)
+  static lemma IncDeque(a: array<A>, c: nat, nelems: nat)
     requires 0 <= c < a.Length && 0 < nelems <= a.Length
     ensures ModelAux(a, c, nelems) == [a[c]] + ModelAux(a, (c + 1) % a.Length, nelems - 1)
-  {
-    if c + 1 < a.Length {
-      assert ModelAux(a, c, nelems) == [a[c]] + ModelAux(a, c + 1, nelems - 1);
-      assert (c + 1) % a.Length == c + 1;
+  { if (c + nelems <= a.Length) {
+      if (c + 1 < a.Length){
+       assert (c + 1) % a.Length == c + 1;
+       assert ModelAux(a, c, nelems) == a[c..c+nelems] == [a[c]] + a[c+1..c+nelems];
+      }
+      else { 
+        assert a.Length <= c + 1 <= c + nelems <= a.Length;
+        assert nelems == 1;
+        assert ModelAux(a, c, nelems) == [a[c]];
+        assert ModelAux(a, (c + 1) % a.Length, nelems - 1) == ModelAux(a, 0, 0) == [];
+
+      }
+    } 
+    else {//c+nelems > a.Length
+      calc{
+         ModelAux(a, c, nelems);
+         a[c..a.Length] + a[0..(c + nelems) % a.Length]; 
+         [a[c]] + a[c+1..a.Length] + a[0..(c + nelems) % a.Length];//(c+1)+(nelems-1)>a.Length
+         {assert c+nelems==(c+1)+(nelems-1);}
+         [a[c]] + ModelAux(a, (c + 1) % a.Length, nelems - 1);
+      }
     }
   }
 
@@ -165,7 +190,7 @@ class ArrayDequeImpl<A> extends Deque<A> {
     ensures Model() == old(Model())
     ensures x == Model()[|Model()| - 1]
   {
-    assert list[(c + nelems - 1) % list.Length] == Model()[|Model()| - 1];
+    //assert list[(c + nelems - 1) % list.Length] == Model()[|Model()| - 1];
     x := list[(c + nelems - 1) % list.Length];
   }
 
@@ -203,7 +228,7 @@ class ArrayDequeImpl<A> extends Deque<A> {
     ensures 0 <= a < b ==> a / b == 0 && a % b == a
   {}
 
-  method PopBack() returns (x: A)
+  method  PopBack() returns (x: A)
     modifies this, Repr()
     requires allocated(Repr())
     ensures fresh(Repr() - old(Repr()))
@@ -214,9 +239,9 @@ class ArrayDequeImpl<A> extends Deque<A> {
     ensures Valid()
     ensures Model() + [x] == old(Model())
   {
+    IncEnque(list,c,nelems-1); 
     x := list[(c + nelems - 1) % list.Length];
     nelems := nelems - 1;
-    //assert c+nelems==0 ==> (c+nelems-1)%list.Length==list.Length-1;
   }
 
   method Front() returns (x: A)
@@ -278,3 +303,6 @@ class ArrayDequeImpl<A> extends Deque<A> {
     // assert ModelAux(list,old(c),f,old(nelems))==[list[old(c)]]+ModelAux(list,(old(c)+1)%list.Length,f,nelems);
   }
 }
+
+}
+

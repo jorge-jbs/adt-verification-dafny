@@ -1,8 +1,12 @@
-include "../../../src/Utils.dfy"
+include "../../../src/MUtils.dfy"
+
+module MSinglyLinkedList{
+  import opened Utils
+        
 
 class SNode<A> {
-  var data: A;
-  var next: SNode?<A>;
+  var data: A
+  var next: SNode?<A>
 
   constructor(data: A, next: SNode?<A>)
     ensures this.data == data
@@ -12,7 +16,7 @@ class SNode<A> {
     this.next := next;
   }
 
-  predicate IsPrevOf(n: SNode<A>)
+  ghost predicate IsPrevOf(n: SNode<A>)
     reads this
   {
     next == n
@@ -20,16 +24,16 @@ class SNode<A> {
 }
 
 class SinglyLinkedList<A> {
-  var head: SNode?<A>;
-  ghost var spine: seq<SNode<A>>;
+  var head: SNode?<A>
+  ghost var spine: seq<SNode<A>>
 
-  function Repr(): set<object>
+  ghost function Repr(): set<object>
     reads this
   {
     set x | x in spine
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Repr()
   {
     // && (forall i | 0 <= i < |spine|-1 :: spine[i].IsPrevOf(spine[i+1]))
@@ -39,6 +43,23 @@ class SinglyLinkedList<A> {
       else
         spine != [] && spine[0] == head && spine[|spine|-1].next == null
       )
+  }
+  ghost function Model(): seq<A>
+    reads this, Repr()
+    requires Valid()
+  {
+    ModelAux(spine)
+  }
+
+  static ghost function ModelAux(xs: seq<SNode<A>>): seq<A>
+    reads set x | x in xs :: x`data
+  {
+    if xs == [] then
+      []
+    else
+      assert xs[0] in xs;
+      assert forall x | x in xs[1..] :: x in xs;
+      [xs[0].data] + ModelAux(xs[1..])
   }
 
   lemma HeadInSpine()
@@ -117,16 +138,7 @@ class SinglyLinkedList<A> {
     }
   }
 
-  static function ModelAux(xs: seq<SNode<A>>): seq<A>
-    reads set x | x in xs :: x`data
-  {
-    if xs == [] then
-      []
-    else
-      assert xs[0] in xs;
-      assert forall x | x in xs[1..] :: x in xs;
-      [xs[0].data] + ModelAux(xs[1..])
-  }
+  
 
   lemma ModelAuxCommutesConcat(xs: seq<SNode<A>>, ys: seq<SNode<A>>)
     ensures ModelAux(xs + ys) == ModelAux(xs) + ModelAux(ys)
@@ -172,15 +184,10 @@ class SinglyLinkedList<A> {
     ModelRelationWithSpineAux(spine, Model());
   }
 
-  function Model(): seq<A>
-    reads this, Repr()
-    requires Valid()
-  {
-    ModelAux(spine)
-  }
+  
 
   // TODO: remove
-  static function ModelUntilAux(xs: seq<SNode<A>>, last: SNode<A>): seq<A>
+  static ghost function ModelUntilAux(xs: seq<SNode<A>>, last: SNode<A>): seq<A>
     reads set x | x in xs :: x`data
   {
     if xs == [] || xs[0] == last then
@@ -192,13 +199,13 @@ class SinglyLinkedList<A> {
   }
 
   // TODO: remove
-  function ModelUntil(last: SNode<A>): seq<A>
+  ghost function ModelUntil(last: SNode<A>): seq<A>
     reads this, spine
   {
     ModelUntilAux(spine, last)
   }
 
-  function GetIndex(n: SNode<A>): nat
+  ghost function GetIndex(n: SNode<A>): nat
     reads this, spine
     requires Valid()
     requires n in Repr()
@@ -262,13 +269,14 @@ class SinglyLinkedList<A> {
     ensures Repr() < old(Repr())
   {
     h := head;
-    { // GHOST
-      if head.next == null {
-        HeadNextNullImpliesSingleton();
-      }
-      HeadNotInTail();
+    // GHOST
+    if head.next == null {
+      HeadNextNullImpliesSingleton();
     }
+    HeadNotInTail();
+    
     head := head.next;
+
     /*GHOST*/ spine := spine[1..];
     assert old(spine[0]) !in Repr();
     assert old(spine[0]) in old(Repr());
@@ -422,7 +430,7 @@ class SinglyLinkedList<A> {
     { // GHOST
       ghost var i :| 0 <= i < |spine| && spine[i] == mid;
       spine := spine[..i+1] + [n] + spine[i+1..];
-      assert forall i | 0 <= i < |spine|-1 :: spine[i].next == spine[i+1];
+      //assert forall i | 0 <= i < |spine|-1 :: spine[i].next == spine[i+1];
       ModelRelationWithSpine();
       assert spine == Seq.Insert(mid.next, old(spine), old(GetIndex(mid))+1);
     }
@@ -503,3 +511,7 @@ method Append<A>(self: SinglyLinkedList<A>, other: SinglyLinkedList<A>)
     self.Push(x);
   }
 }
+
+}
+
+

@@ -1,15 +1,39 @@
 include "../../../src/linear/layer2/ArrayList.dfy"
-include "../../../src/Utils.dfy"
+include "../../../src/linear/layer1/List.dfy"
+
+include "../../../src/MUtils.dfy"
+
+module MArrayListImpl{
+   import opened ListSpec
+   import opened ArrayListSpec
+   import opened Utils
+
+   export provides ListSpec, ArrayListSpec, Utils
+          reveals  ArrayListImpl//, ArrayListIterator 
+        
+          /*provides ArrayListIteratorImpl.Valid, ArrayListIteratorImpl.Parent, ArrayListIteratorImpl.Index
+          provides ArrayListIteratorImpl.HasPeek, ArrayListIteratorImpl.Peek
+          provides ArrayListIteratorImpl.Next, ArrayListIteratorImpl.Prev
+          provides ArrayListIteratorImpl.Copy, ArrayListIteratorImpl.Set*/
+          
+          provides ArrayListImpl.Model, ArrayListImpl.Valid, ArrayListImpl.ReprFamily
+          provides ArrayListImpl.Empty, ArrayListImpl.Size
+          provides ArrayListImpl.Front, ArrayListImpl.PushFront, ArrayListImpl.PopFront
+          provides ArrayListImpl.Back, ArrayListImpl.PushBack, ArrayListImpl.PopBack
+          provides ArrayListImpl.Iterators, ArrayListImpl.First, ArrayListImpl.Last
+          provides ArrayListImpl.Insert, ArrayListImpl.Erase 
+
+
 
 class ArrayListIteratorImpl<A> extends ListIterator<A> {
   var parent: ArrayListImpl<A>
   var index: int
 
-  function Parent(): List<A>
+  ghost function Parent(): List<A>
     reads this
   { parent }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Parent(), Parent().Repr()
     ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
   {
@@ -18,21 +42,24 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
     && -1 <= index <= parent.size
   }
 
-  function Index(): int
+  ghost function Index(): int
     reads this, Parent(), Parent().Repr()
     requires Valid()
     requires Parent().Valid()
     ensures -1 <= Index() <= |Parent().Model()|
   { index }
 
-  constructor(parent: ArrayListImpl<A>, index: int)
+   /*constructor ()
+   requires false*/
+
+   constructor Internal(parent: ArrayListImpl<A>, index: int)
     modifies parent
     requires parent.Valid()
     requires -1 <= index <= |parent.Model()|
     ensures Valid()
     ensures Parent() == parent
     ensures Index() == index
-    ensures parent.iterators == old(parent.iterators) + { this }
+    ensures parent.Iterators() == old(parent.Iterators()) + { this }
     ensures parent.Model() == old(parent.Model())
     ensures fresh(parent.Repr() - old(parent.Repr()))
   {
@@ -60,7 +87,9 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
   {
     b := 0 <= index < parent.size;
   }
@@ -85,7 +114,9 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
     
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
   {
     p := parent.elements[index];
   }
@@ -108,7 +139,9 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures Index() == 1 + old(Index())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && (it != this ==> it.Index() == old(it.Index()))
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && (it != this ==> it.Index() == old(it.Index()))
     {
       index := index + 1;
     }
@@ -131,7 +164,9 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures Index() + 1 == old(Index())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && (it != this ==> it.Index() == old(it.Index()))
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && (it != this ==> it.Index() == old(it.Index()))
   {
     index := index - 1;
   }
@@ -157,10 +192,13 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
     ensures Parent() == it.Parent()
     ensures Index() == it.Index()
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
     {
-      var itImpl := new ArrayListIteratorImpl(parent, index);      
+      var itImpl := new ArrayListIteratorImpl.Internal(parent, index);      
       it := itImpl; 
+      
       parent.iterators := parent.iterators + { itImpl };
     }
 
@@ -183,24 +221,26 @@ class ArrayListIteratorImpl<A> extends ListIterator<A> {
 
     ensures Parent().Iterators() >= old(Parent().Iterators())
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
  {
     parent.elements[index] := x;
   }
 }
 
 class ArrayListImpl<A> extends ArrayList<A> {
-  var elements: array<A>;
-  var size: nat;
+  var elements: array<A>
+  var size: nat
   ghost var iterators: set<ArrayListIteratorImpl<A>>
 
-  function Repr0(): set<object>
+  ghost function Repr0(): set<object>
     reads this
   {
-    {this, elements} + iterators
+    {elements} + iterators 
   }
 
-  function ReprFamily(n: nat): set<object>
+  ghost function ReprFamily(n: nat): set<object>
     decreases n
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
     reads this, if n == 0 then {} else ReprFamily(n-1)
@@ -211,23 +251,24 @@ class ArrayListImpl<A> extends ArrayList<A> {
       ReprFamily(n-1)
   }
 
-  predicate Valid()
+  ghost predicate Valid()
     reads this, Repr()
-  {
+  { 
     && ReprDepth == 1
+    && assert ReprFamily(0) <= ReprFamily(1); true
     && 0 <= size <= elements.Length
     && elements.Length >= 0
-    && forall it | it in iterators :: it.parent == this
+    && forall it | it in iterators  :: it.parent == this && {it} !! {this}
   }
 
-  function Model(): seq<A>
+  ghost function Model(): seq<A>
     reads this, Repr()
     requires Valid()
   {
     elements[..size]
   }
 
-  function Iterators(): set<ListIterator<A>>
+  ghost function Iterators(): set<ListIterator<A>>
     reads this, Repr()
     requires Valid()
     ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
@@ -244,6 +285,7 @@ class ArrayListImpl<A> extends ArrayList<A> {
     ReprDepth := 1;
     elements := new A[0];
     size := 0;
+
     iterators := {};
   }
 
@@ -260,7 +302,9 @@ class ArrayListImpl<A> extends ArrayList<A> {
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
   {
     b := size == 0;
   }
@@ -278,7 +322,9 @@ class ArrayListImpl<A> extends ArrayList<A> {
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
   {
     s := size;
   }
@@ -297,7 +343,9 @@ class ArrayListImpl<A> extends ArrayList<A> {
  
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
   {
     x := elements[0];
   }
@@ -314,7 +362,9 @@ class ArrayListImpl<A> extends ArrayList<A> {
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
   {      
     if (size == elements.Length) {
       Grow(elements.Length * 2 + 1, x);
@@ -337,8 +387,10 @@ class ArrayListImpl<A> extends ArrayList<A> {
     ensures [x] + Model() == old(Model())
 
     ensures Iterators() >= old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
-      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?()) ::
+      &&it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
   {
     x := elements[0];
     ShiftLeft(0);
@@ -359,7 +411,9 @@ class ArrayListImpl<A> extends ArrayList<A> {
 
     ensures Iterators() >= old(Iterators())
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent())
+      && it.Index() == old(it.Index())
   {
     x := elements[size - 1];
   }
@@ -376,8 +430,10 @@ class ArrayListImpl<A> extends ArrayList<A> {
     ensures Model() + [x] == old(Model())
 
     ensures Iterators() >= old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
-      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
   {
     assert size > 0;
     x := elements[size - 1];
@@ -395,8 +451,10 @@ class ArrayListImpl<A> extends ArrayList<A> {
     ensures Model() == old(Model()) + [x]
 
     ensures Iterators() >= old(Iterators())
-    ensures forall it | it in old(Iterators()) && old(it.Valid())
-      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
   {
     if (size == elements.Length) {
       Grow(elements.Length * 2 + 1, x);
@@ -422,9 +480,12 @@ class ArrayListImpl<A> extends ArrayList<A> {
     ensures it.Index() == 0
     ensures it.Parent() == this
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
   {
-    it := new ArrayListIteratorImpl(this, 0);
+    it := new ArrayListIteratorImpl.Internal(this, 0);
+    
     iterators := iterators + { it };
   }
 
@@ -444,9 +505,12 @@ class ArrayListImpl<A> extends ArrayList<A> {
     ensures it.Index() == |old(Model())| - 1 == |Model()| - 1 //no es capaz de deducirlo si no lo ponemos
     ensures it.Parent() == this
     ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
   {
-    it := new ArrayListIteratorImpl(this, size - 1);
+    it := new ArrayListIteratorImpl.Internal(this, size - 1);
+    
     iterators := iterators + { it };
   }
 
@@ -469,8 +533,10 @@ class ArrayListImpl<A> extends ArrayList<A> {
     ensures Iterators() >= {newt} + old(Iterators())
     ensures newt.Valid() && newt.Parent() == this && newt.Index() == old(mid.Index())
  
-    ensures forall it | it in old(Iterators()) && old(it.Valid())
-      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
   {
     var midImpl := mid as ArrayListIteratorImpl;
    
@@ -479,9 +545,11 @@ class ArrayListImpl<A> extends ArrayList<A> {
     }
     assert size < elements.Length;
     assert Model() == old(Model());
+
     ShiftRight(midImpl.index);
     elements[midImpl.index] := x;
     size := size + 1;
+    
     calc == {
       Model();
       old(Model()[..midImpl.index]) + [x] + old(Model()[midImpl.index..]);
@@ -510,29 +578,26 @@ class ArrayListImpl<A> extends ArrayList<A> {
     ensures fresh(next)
     ensures Iterators() >= {next}+old(Iterators())
     ensures next.Valid() && next.Parent() == this && next.Index() == old(mid.Index())
-     ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?())
-      :: it.Valid() && it.Parent() == old(it.Parent()) && it.Index() == old(it.Index())
+    ensures forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek?()) ::
+      && it.Valid() 
+      && it.Parent() == old(it.Parent()) 
+      && it.Index() == old(it.Index())
   {
     var midImpl := mid as ArrayListIteratorImpl;
+    
     assert midImpl.index == mid.Index();
+    
     ShiftLeft(midImpl.index);
+    
     assert forall j | midImpl.index <= j < size - 1 :: elements[j] == old(elements[j + 1]);
     assert forall j | 0 <= j < midImpl.index :: elements[j] == old(elements[j]);
 
     assert elements[..midImpl.index] == old(elements[0..midImpl.index]);
     assert elements[midImpl.index..size - 1] == old(elements[midImpl.index + 1..size]);
 
-    // assert Seq.Remove(old(elements[..size]), midImpl.index)
-    //         == old(elements[..size])[..midImpl.index] + old(elements[..size])[midImpl.index + 1..size]
-    //         == elements[..midImpl.index] + old(elements[..size])[midImpl.index + 1..]
-    //         == elements[..midImpl.index] + elements[midImpl.index..size - 1]
-    //         == elements[..size - 1];
-
-    // assert elements[..size - 1] == Seq.Remove(old(elements[..size]), midImpl.index);
     size := size - 1;
-    // assert elements[..size] == Seq.Remove(old(elements[..size]), midImpl.index);
-    // assert Model() == Seq.Remove(old(Model()), midImpl.index);
     next := midImpl.Copy();
+
     iterators := iterators + { next };
   }
 
@@ -544,9 +609,7 @@ class ArrayListImpl<A> extends ArrayList<A> {
     ensures Model() == old(Model())
     ensures this.elements.Length == newCapacity
 
-    ensures forall x {:trigger x in Repr(), x in old(Repr())} | x in Repr() - old(Repr()) :: fresh(x)
     ensures fresh(Repr() - old(Repr()))
-    
     ensures Iterators() == old(Iterators())
     modifies this
   {
@@ -571,12 +634,11 @@ class ArrayListImpl<A> extends ArrayList<A> {
     requires 0 <= from <= size < elements.Length
     modifies this.elements
     requires Valid()
-    ensures forall j | 0 <= j < from :: elements[j] == old(elements[j]);
-    ensures forall j | from < j <= size :: elements[j] == old(elements[j - 1]);
+    ensures forall j | 0 <= j < from :: elements[j] == old(elements[j])
+    ensures forall j | from < j <= size :: elements[j] == old(elements[j - 1])
     ensures Valid()
   {
     ghost var oldElems := elements[..];
-    assert oldElems[..] == old(elements)[..];
 
     var i := size;
     while (i > from)
@@ -593,13 +655,12 @@ class ArrayListImpl<A> extends ArrayList<A> {
   method ShiftLeft(until: nat)
     requires 0 <= until < size <= elements.Length
     requires Valid()
-    ensures forall j | until <= j < size - 1 :: elements[j] == old(elements[j + 1]);
-    ensures forall j | 0 <= j < until :: elements[j] == old(elements[j]);
+    ensures forall j | until <= j < size - 1 :: elements[j] == old(elements[j + 1])
+    ensures forall j | 0 <= j < until :: elements[j] == old(elements[j])
     ensures Valid()
     modifies this.elements
   {
     ghost var oldElems := elements[..];
-    assert oldElems[..] == old(elements)[..];
 
     var i := until;
     while (i < size - 1)
@@ -614,4 +675,6 @@ class ArrayListImpl<A> extends ArrayList<A> {
     }
     assert i == size - 1;
   }
+}
+
 }
