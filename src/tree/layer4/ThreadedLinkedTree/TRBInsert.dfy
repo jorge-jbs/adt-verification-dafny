@@ -18,17 +18,17 @@ module ThreadedLinkedTree.TRBInsert {
 
   // 45"
   method TRBInsertRec(
-      prev: TTNode?, 
-      node: TTNode?, 
+      prev: TTNode?,
+      node: TTNode?,
       isThread: bool,
-      next: TTNode?, 
-      ghost sk: ttreeOrThread<TTNode>, 
-      k: K, 
+      next: TTNode?,
+      ghost sk: ttreeOrThread<TTNode>,
+      k: K,
       v: V
     )
     returns (
-      newNode: TTNode, 
-      ghost newSk: nettree<TTNode>, 
+      newNode: TTNode,
+      ghost newSk: nettree<TTNode>,
       insertedNode: TTNode,
       isInserted: bool
     )
@@ -58,7 +58,7 @@ module ThreadedLinkedTree.TRBInsert {
 
     ensures elems(newSk) == elems(sk) + {insertedNode}
     ensures insertedNode.key == k && insertedNode.value == v
-    
+
     ensures isInserted <==> old(TRBi.IsInserted(TreeModelRec(sk), k))
 
 /*
@@ -99,12 +99,12 @@ module ThreadedLinkedTree.TRBInsert {
       } else if node.key < k {
         ghost var newSkRight;
         node.right, newSkRight, insertedNode, isInserted := TRBInsertRec(
-          node, 
-          node.right, 
-          node.isThreadRight, 
-          next, 
-          sk.right, 
-          k, 
+          node,
+          node.right,
+          node.isThreadRight,
+          next,
+          sk.right,
+          k,
           v
         );
         node.isThreadRight := false;
@@ -113,12 +113,12 @@ module ThreadedLinkedTree.TRBInsert {
       } else if k < node.key {
         ghost var newSkLeft;
         node.left, newSkLeft, insertedNode, isInserted := TRBInsertRec(
-          prev, 
-          node.left, 
-          node.isThreadLeft, 
-          node, 
-          sk.left, 
-          k, 
+          prev,
+          node.left,
+          node.isThreadLeft,
+          node,
+          sk.left,
+          k,
           v
         );
         node.isThreadLeft := false;
@@ -132,8 +132,8 @@ module ThreadedLinkedTree.TRBInsert {
 
   method TRBInsertRoot(node: TTNode?, ghost sk: ttree<TTNode>, k: K, v: V)
     returns (
-      newNode: TTNode, 
-      ghost newSk: ttree<TTNode>, 
+      newNode: TTNode,
+      ghost newSk: ttree<TTNode>,
       insertedNode: TTNode,
       isInserted: bool
     )
