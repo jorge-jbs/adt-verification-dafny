@@ -114,6 +114,10 @@ module TTNode {
       T.Thread(node as TTNode)
   }
 
+  lemma {:induction t} KeysAndElems(t: ttree<TTNode>)
+    ensures TRB.keys(TreeModelRec(t)) == set n | n in elems(t) :: n.key
+  {}
+
   ghost function GetSk(
       node: TTNode,
       root: TTNode,

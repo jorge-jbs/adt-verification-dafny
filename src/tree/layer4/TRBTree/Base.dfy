@@ -209,12 +209,23 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
   }
 
   function minimumKey(t: netrbtree): K
+    ensures minimumKey(t) in keys(t)
+    ensures inorder(t)[0].0 == minimumKey(t)
   {
-    match t {
-      case Node(Thread(_), k, v, r, c) => k
-      case Node(Empty(), k, v, r, c) => k
-      case Node(l, k, v, r, c) => minimumKey(l)
-    }
+    if t.left.Node? then
+      minimumKey(t.left)
+    else
+      t.key
+  }
+
+  function maximumKey(t: netrbtree): K
+    ensures maximumKey(t) in keys(t)
+    ensures inorder(t)[|inorder(t)|-1].0 == maximumKey(t)
+  {
+    if t.right.Node? then
+      maximumKey(t.right)
+    else
+      t.key
   }
 
   function orderKeysToSet(s: seq<(K, V)>): set<K>
@@ -290,6 +301,12 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
       assert k in keys(t.right);
       Get'(t.right, k)
   }
+
+  lemma {:induction} GetEqGet'(t: trbtreeOrThread, k: K)
+    requires k in keys(t)
+    requires SearchTree(t)
+    ensures Get(t, k) == Get'(t, k)
+  {}
 
   function GetSubtree(t: trbtreeOrThread, k: K): trbtree
     requires k in keys(t)
@@ -1444,7 +1461,7 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
 
     ensures i+1 < |inorder(root)|
     ensures inorder(root)[i].0 == it.key
-    ensures inorder(root)[i+1].0 == minSubtree(it.right).key
+    ensures inorder(root)[i+1].0 == minimumKey(it.right)
   {
     if it.key < node.key {
       i := MinInorderRec(it, left, [(node.key, node.value)] + inorder(node.right) + right, node.left, root);
@@ -1466,7 +1483,7 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
 
     ensures i+1 < |inorder(root)|
     ensures inorder(root)[i].0 == it.key
-    ensures inorder(root)[i+1].0 == minSubtree(it.right).key
+    ensures inorder(root)[i+1].0 == minimumKey(it.right)
   {
     i := MinInorderRec(it, [], [], root, root);
   }
@@ -1476,17 +1493,17 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     requires Subtree(node, root)
     requires node.Node?
     requires node.right.Node?
-    ensures smallerKeys(root, minSubtree(node.right).key)
+    ensures smallerKeys(root, minimumKey(node.right))
       == smallerKeys(root, node.key) + {node.key}
   {
     var i := MinInorderRoot(node, root);
     calc == {
-      smallerKeys(root, minSubtree(node.right).key);
-      { SmallerOrderKeysIsTreeKeys(root, minSubtree(node.right).key); }
-      orderKeysToSet(smallerInorder(root, minSubtree(node.right).key));
+      smallerKeys(root, minimumKey(node.right));
+      { SmallerOrderKeysIsTreeKeys(root, minimumKey(node.right)); }
+      orderKeysToSet(smallerInorder(root, minimumKey(node.right)));
       {
-        InorderSmallerInorder(root, minSubtree(node.right).key);
-        SmallerInorderIndex(root, minSubtree(node.right).key, i+1);
+        InorderSmallerInorder(root, minimumKey(node.right));
+        SmallerInorderIndex(root, minimumKey(node.right), i+1);
       }
       orderKeysToSet(inorder(root)[..i+1]);
       orderKeysToSet(inorder(root)[..i] + [inorder(root)[i]]);

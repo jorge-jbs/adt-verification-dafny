@@ -49,10 +49,7 @@ module ThreadedLinkedTree {
     }
 
     ghost function Model(): TRBit.iter
-      reads this, node, parent, parent.Repr()
-      requires Valid()
-      requires parent.Valid()
-      requires parent.SearchTree()
+      reads this
     {
       if node == null then
         if isPastTheEnd then
@@ -60,37 +57,20 @@ module ThreadedLinkedTree {
         else
           TRBit.PastTheBeginning
       else
-        TRBit.Link(TreeModelRec(Skeleton()))
+        // we do not need `reads node` because `key` is a constant
+        TRBit.Link(node.key)
     }
 
     ghost predicate Valid'()
       reads this, node, parent, parent.Repr()
-      requires Valid()
-      requires parent.Valid()
-      requires parent.SearchTree()
     {
       TRBit.Valid(Model(), parent.Model())
     }
 
     lemma ValidImp()
-      requires parent.Valid()
-      requires parent.SearchTree()
       ensures Valid() ==> Valid'()
     {
-      // Esto es cierto pero no sé por qué Dafny lo demuestra tan fácil... sospechoso...
-      // (podría quitar todos los asertos de abajo)
-      // Edit: esto es porque GetSk es equivalente a GetSubtree, que dice que es un subárbol de la raíz
-      if Valid() {
-        assert node != null ==> TRB.Subtree(Model().link, parent.Model());
-        if node != null {
-          assert || parent.Model() == Model().link
-          || (
-            && parent.Model().Node?
-            && (TRB.Subtree(Model().link, parent.Model().left) || TRB.Subtree(Model().link, parent.Model().right))
-          );
-        }
-        assert TRBit.Valid(Model(), parent.Model());
-      }
+      KeysAndElems(parent.skeleton);
     }
 
     constructor Root(parent: ThreadedLinkedTree)
@@ -116,44 +96,38 @@ module ThreadedLinkedTree {
     }
 
     ghost predicate HasPeek'()
-      reads this, node, parent, parent.Repr()
-      requires Valid()
-      requires parent.Valid()
-      requires parent.SearchTree()
+      reads this
     {
       TRBit.HasPeek(Model())
     }
 
     lemma HasPeekEq()
-      requires Valid()
-      requires parent.Valid()
-      requires parent.SearchTree()
       ensures HasPeek() <==> HasPeek'()
     {}
 
     ghost function Peek(): (K, V)
-      reads this, node, parent, parent.Repr()
+      reads this, parent, parent.Repr()
       requires Valid()
-      requires parent.Valid()
-      requires parent.SearchTree()
       requires HasPeek()
     {
+      ValidImp();
       TRBit.Peek(Model(), parent.Model())
     }
 
-    method Next()  // 20"
+    method Next()  // 8"
       modifies this
-      requires Valid()
-      requires HasPeek()
       requires parent.Valid()
       requires parent.Threaded()
       requires parent.SearchTree()
+      requires Valid()
+      requires Valid'()
+      requires HasPeek()
       requires TRB.ThreadedTreeRoot(parent.Model())
 
-      ensures Valid()
       ensures parent.Valid()
       ensures parent.Threaded()
       ensures parent.SearchTree()
+      ensures Valid()
       ensures Model() == TRBit.Next(old(Model()), old(parent.Model()))
 
       requires allocated(parent.Repr())
@@ -163,14 +137,14 @@ module ThreadedLinkedTree {
         assert ValidRec(node.right, Skeleton().right);
         assert Skeleton().right.Empty?;
         assert TreeModelRec(Skeleton()).right.Empty?;
-        assert Model().link.right.Empty?;
         node := null;
         isPastTheEnd := true;
       } else if node.isThreadRight {
         assert ValidChild(node.right, Skeleton().right, true);
         assert Skeleton().right.Thread?;
         assert TreeModelRec(Skeleton()).right.Thread?;
-        assert Model().link.right.Thread?;
+        assert TreeModelRec(Skeleton()) == TRB.GetSubtree(parent.Model(), Model().link);
+        assert TreeModelRec(Skeleton()).right.thread == node.right.key;
         assert node.right in elems(parent.skeleton) by {
           assert node.right in elemsAndThreads(Skeleton());
           calc {
@@ -183,8 +157,8 @@ module ThreadedLinkedTree {
         assert Model() == TRBit.Next(old(Model()), old(parent.Model())) by {
           calc == {
             TRBit.Next(old(Model()), old(parent.Model()));
-            TRBit.Link(TRB.GetSubtree(old(parent.Model()), old(TreeModelRec(Skeleton()).right.thread)));
-            TRBit.Link(TRB.GetSubtree(old(parent.Model()), old(node.right.key)));
+            TRBit.Link(old(TreeModelRec(Skeleton()).right.thread));
+            TRBit.Link(old(node.right.key));
             Model();
           }
         }
@@ -192,7 +166,6 @@ module ThreadedLinkedTree {
         assert ValidRec(node.right, Skeleton().right);
         assert Skeleton().right.Node?;
         assert TreeModelRec(Skeleton()).right.Node?;
-        assert Model().link.right.Node?;
         assert node.right in elems(Skeleton());
         assert elems(Skeleton()) <= elems(parent.skeleton) by {
           calc {
@@ -205,9 +178,6 @@ module ThreadedLinkedTree {
         parent.ElemsOfThread();
         ghost var sk;
         node, sk := Min.Min(node.right, Skeleton().right);
-        assert sk == GetSk(node, parent.root, parent.skeleton) by {
-          EqOfValid(node, sk, GetSk(node, parent.root, parent.skeleton));
-        }
       }
     }
   }

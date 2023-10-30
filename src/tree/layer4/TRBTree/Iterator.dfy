@@ -15,11 +15,11 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
   datatype iter
     = PastTheBeginning
     | PastTheEnd
-    | Link(link: netrbtree)
+    | Link(link: K)
 
   predicate Valid(it: iter, root: trbtree)
   {
-    it.Link? ==> Subtree(it.link, root)
+    it.Link? ==> it.link in keys(root)
   }
 
   function Index(it: iter, root: trbtree): int
@@ -27,7 +27,7 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     match it {
       case PastTheBeginning => -1
       case PastTheEnd => size(root)
-      case Link(t) => sizeSmaller(root, t.key)
+      case Link(k) => sizeSmaller(root, k)
     }
   }
 
@@ -36,7 +36,7 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     ensures Index(it, root) <= |toMap(root)|
   {
     if it.Link? {
-      SizeSmaller(root, it.link.key);
+      SizeSmaller(root, it.link);
     }
     SizeLemmas(root);
   }
@@ -61,7 +61,7 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
       assert it.Link?;
       assert Index(it, root) < size(root) by {
         if it.Link? {
-          SizeSmaller(root, it.link.key);
+          SizeSmaller(root, it.link);
         }
       }
       assert size(root) == |toMap(root)| by {
@@ -80,8 +80,9 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
 
   function Peek(it: iter, root: trbtree): (K, V)
     requires HasPeek(it)
+    requires Valid(it, root)
   {
-    (it.link.key, it.link.value)
+    (it.link, Get'(root, it.link))
   }
 
   function Peek'(it: iter, root: trbtree): (K, V)
@@ -112,26 +113,26 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
   {
     calc == {
       elemth(toMap(root).Keys, Index(it, root));
-      elemth(toMap(root).Keys, sizeSmaller(root, it.link.key));
+      elemth(toMap(root).Keys, sizeSmaller(root, it.link));
       {
         if root.Node? {
-          SizeSmaller(root, it.link.key);
+          SizeSmaller(root, it.link);
           SizeLemmas(root);
-          ElemthInorder(root, sizeSmaller(root, it.link.key));
+          ElemthInorder(root, sizeSmaller(root, it.link));
         }
       }
-      inorder(root)[sizeSmaller(root, it.link.key)].0;
-      { SmallerInorderSize(root, it.link.key); }
-      inorder(root)[|smallerInorder(root, it.link.key)|].0;
-      { InorderOfSmallerInorderSize(root, it.link.key); }
-      it.link.key;
+      inorder(root)[sizeSmaller(root, it.link)].0;
+      { SmallerInorderSize(root, it.link); }
+      inorder(root)[|smallerInorder(root, it.link)|].0;
+      { InorderOfSmallerInorderSize(root, it.link); }
+      it.link;
     }
     var k := elemth(toMap(root).Keys, Index(it, root));
     calc == {
-      it.link.value;
-      { GetOfSubtree(root, it.link); }
-      Get(root, it.link.key);
-      toMap(root)[it.link.key];
+      Get'(root, it.link);
+      { GetEqGet'(root, it.link); }
+      Get(root, it.link);
+      toMap(root)[it.link];
       toMap(root)[k];
     }
   }
@@ -141,7 +142,7 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     match it {
       case PastTheBeginning => keys(root)
       case PastTheEnd => keys(root)
-      case Link(t) => smallerKeys(root, t.key)
+      case Link(k) => smallerKeys(root, k)
     }
   }
 
@@ -167,7 +168,7 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
         SizeLemmas(root);
       }
       if it.Link? {
-        SizeSmaller(root, it.link.key);
+        SizeSmaller(root, it.link);
         assert false;
       }
       assert it.PastTheBeginning? || it.PastTheEnd?;
@@ -179,10 +180,10 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
       calc == {
         smaller(toMap(root).Keys, elemth(toMap(root).Keys, Index(it, root)));
         { PeekEq(it, root); }
-        smaller(toMap(root).Keys, it.link.key);
-        smaller(keys(root), it.link.key);
-        { SmallerKeys(root, it.link.key); }
-        smallerKeys(root, it.link.key);
+        smaller(toMap(root).Keys, it.link);
+        smaller(keys(root), it.link);
+        { SmallerKeys(root, it.link); }
+        smallerKeys(root, it.link);
       }
     }
   }
@@ -193,17 +194,18 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     requires HasPeek(it)
     requires Valid(it, root)
   {
-    match it.link.right
+    var t := GetSubtree(root, it.link);
+    match t.right
     case Empty => PastTheEnd
     case Thread(k) =>
       assert k in keys(root) by {
-        assert k in keysAndThreads(it.link);
+        assert k in keysAndThreads(t);
         assert k in keysAndThreads(root);
         ThreadedKeys(root);
       }
-      Link(GetSubtree(root, k))
+      Link(k)
     case Node(_, _, _, _, _) =>
-      Link(minSubtree(it.link.right))
+      Link(minimumKey(t.right))
   }
 
   lemma NextSpec(it: iter, root: trbtree)
@@ -213,14 +215,14 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     requires Valid(it, root)
     ensures Valid(Next(it, root), root)
   {
-    match it.link.right
+    var t := GetSubtree(root, it.link);
+    match t.right
     case Empty =>
-    case Thread(_) =>
+    case Thread(k) =>
+      assert k in keysAndThreads(t);
+      assert k in keysAndThreads(root);
+      ThreadedKeys(root);
     case Node(_, _, _, _, _) =>
-      assert Subtree(minSubtree(it.link.right), it.link.right);
-      assert Subtree(it.link.right, it.link);
-      SubtreeTrans(minSubtree(it.link.right), it.link.right, it.link);
-      SubtreeTrans(minSubtree(it.link.right), it.link, root);
   }
 
   lemma NextTraversed(it: iter, root: trbtree)
@@ -231,17 +233,14 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     ensures Traversed(Next(it, root), root)
       == Traversed(it, root) + {Peek(it, root).0}
   {
-    match it.link.right {
-      case Empty() => {
-        SmallerKeysRightEmpty(it.link, root);
-      }
-      case Thread(k) => {
-        SmallerKeysRightThread(it.link, root);
-      }
-      case Node(_, _, _, _, _) => {
-        SmallerKeysMin(it.link, root);
-      }
-    }
+    var t := GetSubtree(root, it.link);
+    match t.right
+    case Empty =>
+      SmallerKeysRightEmpty(t, root);
+    case Thread(k) =>
+      SmallerKeysRightThread(t, root);
+    case Node(_, _, _, _, _) =>
+      SmallerKeysMin(t, root);
   }
 
   function Prev(it: iter, root: trbtree): iter
@@ -250,17 +249,17 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     requires HasPeek(it)
     requires Valid(it, root)
   {
-    match it.link.left {
-      case Empty() => PastTheBeginning
-      case Thread(k) =>
-        assert k in keys(root) by {
-          assert k in keysAndThreads(it.link);
-          assert k in keysAndThreads(root);
-          ThreadedKeys(root);
-        }
-        Link(GetSubtree(root, k))
-      case Node(_, _, _, _, _) =>
-        Link(maxSubtree(it.link.left))
-    }
+    var t := GetSubtree(root, it.link);
+    match t.left
+    case Empty => PastTheBeginning
+    case Thread(k) =>
+      assert k in keys(root) by {
+        assert k in keysAndThreads(t);
+        assert k in keysAndThreads(root);
+        ThreadedKeys(root);
+      }
+      Link(k)
+    case Node(_, _, _, _, _) =>
+      Link(maximumKey(t.left))
   }
 }
