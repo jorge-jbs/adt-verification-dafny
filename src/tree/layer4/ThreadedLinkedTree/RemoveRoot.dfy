@@ -22,7 +22,12 @@ module ThreadedLinkedTree.RemoveRoot {
   import opened Color
 
   method RemoveRoot(node: TTNode?, ghost sk: ttree<TTNode>, k: K)
-      returns (newNode: TTNode?, ghost newSk: ttree<TTNode>, isRemoved: bool)
+    returns (
+      newNode: TTNode?,
+      ghost newSk: ttree<TTNode>,
+      ghost removedNode: TTNode?,
+      isRemoved: bool
+    )
     decreases TRB.size(TreeModelRec(sk))
     modifies elems(sk)
 
@@ -35,7 +40,9 @@ module ThreadedLinkedTree.RemoveRoot {
     ensures ThreadedRoot(newSk)
     ensures TreeModelRec(newSk) == TRBr.RemoveRoot(old(TreeModelRec(sk)), k).unwrap
     ensures isRemoved <==> TRBr.IsRemovedRoot(old(TreeModelRec(sk)), k)
-    ensures elems(newSk) <= elems(sk)
+    ensures isRemoved <==> removedNode != null
+    ensures elems(newSk) == elems(sk) - {removedNode}
+    ensures isRemoved ==> removedNode.key == k && removedNode in elems(sk)
 
     requires allocated(elems(sk))
     ensures fresh(elems(newSk)-elems(sk))
@@ -45,7 +52,7 @@ module ThreadedLinkedTree.RemoveRoot {
     newSk := sk;
     CRR.ConditionalReddenRoot(newNode, newSk);
     var isThreadNewNode;
-    newNode, isThreadNewNode, newSk, isRemoved := R.Remove(newNode, false, Empty, newSk, Empty, false, k);
+    newNode, isThreadNewNode, newSk, removedNode, isRemoved := R.Remove(newNode, false, Empty, newSk, Empty, false, k);
     {
       // Por qué funciona? podrían devolverme una hebra y newSk no sería del tipo ttree
       assert !isThreadNewNode;

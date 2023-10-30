@@ -134,7 +134,6 @@ module {:options "-functionSyntax:4"} TRBTree.TRBInsert {
       }
       case Node(l, k, v, r, c) => {
         if k < k' {
-          assume false;
           TRBInsertSpec(Thread(k), r, next, k', v');
           RestoreSpec(Node(l, k, v, TRBInsert(Thread(k), r, next, k', v'), c));
           calc == {

@@ -175,6 +175,45 @@ module TTNode {
   }
   */
 
+  lemma ThreadedRecLImp(prev: T.threadOrEmpty<TTNode>, t: ttreeOrThread<TTNode>, next: T.threadOrEmpty<TTNode>)
+    decreases t
+    ensures ThreadedRecL(prev, t, next) ==>
+      TRB.ThreadedTreeRecL(TreeModelRec(prev), TreeModelRec(t), TreeModelRec(next))
+  {
+    if t.Node? {
+      ThreadedRecLImp(prev, t.left, T.Thread(t.data));
+      ThreadedRecRImp(T.Thread(t.data), t.right, next);
+    }
+  }
+
+  lemma ThreadedRecRImp(prev: T.threadOrEmpty<TTNode>, t: ttreeOrThread<TTNode>, next: T.threadOrEmpty<TTNode>)
+    decreases t
+    ensures ThreadedRecR(prev, t, next) ==>
+      TRB.ThreadedTreeRecR(TreeModelRec(prev), TreeModelRec(t), TreeModelRec(next))
+  {
+    if t.Node? {
+      ThreadedRecLImp(prev, t.left, T.Thread(t.data));
+      ThreadedRecRImp(T.Thread(t.data), t.right, next);
+    }
+  }
+
+  lemma ThreadedNeImp(prev: T.threadOrEmpty<TTNode>, t: nettree<TTNode>, next: T.threadOrEmpty<TTNode>)
+    decreases t
+    ensures ThreadedNe(prev, t, next) ==>
+      TRB.ThreadedTreeNe(TreeModelRec(prev), TreeModelRec(t), TreeModelRec(next))
+  {
+    ThreadedRecLImp(prev, t.left, T.Thread(t.data));
+    ThreadedRecRImp(T.Thread(t.data), t.right, next);
+  }
+
+  lemma ThreadedRootImp(t: ttree<TTNode>)
+    ensures ThreadedRoot(t) ==> TRB.ThreadedTreeRoot(TreeModelRec(t))
+  {
+    if t.Node? {
+      ThreadedNeImp(T.Empty, t, T.Empty);
+    }
+  }
+
   lemma EqOfValid(node: TTNode?, sk: ttree<TTNode>, sk': ttree<TTNode>)
     requires ValidRec(node, sk)
     requires ValidRec(node, sk')

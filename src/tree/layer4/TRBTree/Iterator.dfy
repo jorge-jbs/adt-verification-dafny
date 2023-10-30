@@ -188,6 +188,14 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     }
   }
 
+  function First(root: trbtree): iter
+  {
+    if root.Node? then
+      Link(minimumKey(root))
+    else
+      PastTheBeginning
+  }
+
   function Next(it: iter, root: trbtree): iter
     requires SearchTree(root)
     requires ThreadedTreeRoot(root)
@@ -262,4 +270,36 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     case Node(_, _, _, _, _) =>
       Link(maximumKey(t.left))
   }
+
+  lemma {:verify false} ModelAfterInsert(it: iter, k: K, root: trbtree, root': trbtree)
+    requires HasPeek(it)
+    requires Valid(it, root)
+    requires Valid(it, root')
+    requires keys(root') == keys(root) + {k}
+
+    ensures k !in keys(root) || k != it.link ==> Peek(it, root') == Peek(it, root)
+    ensures
+      if k !in keys(root) && k < it.link then
+        && Index(it, root') == Index(it, root) + 1
+        && Traversed(it, root') == Traversed(it, root) + {k}
+      else
+        && Index(it, root') == Index(it, root)
+        && Traversed(it, root') == Traversed(it, root)
+  {}
+
+  lemma {:verify false} ModelAfterRemove(it: iter, k: K, root: trbtree, root': trbtree)
+    requires HasPeek(it)
+    requires Valid(it, root)
+    requires Valid(it, root')
+    requires keys(root') == keys(root) - {k}
+
+    ensures Peek(it, root') == Peek(it, root)
+    ensures
+      if k in keys(root) && k < it.link then
+        && Index(it, root') == Index(it, root) - 1
+        && Traversed(it, root') == Traversed(it, root) - {k}
+      else
+        && Index(it, root') == Index(it, root)
+        && Traversed(it, root') == Traversed(it, root)
+  {}
 }
