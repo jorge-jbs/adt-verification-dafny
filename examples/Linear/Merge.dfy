@@ -43,7 +43,7 @@ method Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml:LinkedList<int>)
     && old(it.Index()) == it.Index()
 {
 
-  var it1,it2 := copyMerge(l1,l2,ml);
+  var it1,it2 := NEMerge(l1,l2,ml);
   var it1HasPeek := it1.HasPeek();
   var it2HasPeek := it2.HasPeek();
 
@@ -54,7 +54,7 @@ method Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml:LinkedList<int>)
     { 
     var oldit1Index := it1.Index();
 
-     copyRest(l1,ml,it1); 
+     Append(l1,ml,it1); 
      
      assert multiset(ml.Model()) == multiset(l1.Model())+multiset(l2.Model()[..it2.Index()]) by
      {
@@ -73,7 +73,7 @@ method Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml:LinkedList<int>)
       var oldit2Index := it2.Index();
       assert multiset(ml.Model()) == multiset(l1.Model()) + multiset(l2.Model()[..oldit2Index]);
 
-      copyRest(l2,ml,it2); 
+      Append(l2,ml,it2); 
       
       assert multiset(ml.Model()) == multiset(l1.Model())+multiset(l2.Model()) by
       {
@@ -90,7 +90,7 @@ method Merge(l1:LinkedList<int>,l2:LinkedList<int>,ml:LinkedList<int>)
 }
 
 
-method copyRest(l:LinkedList<int>,ml:LinkedList<int>, itl:ListIterator<int>)
+method Append(l:LinkedList<int>,ml:LinkedList<int>, itl:ListIterator<int>)
   modifies l, l.Repr(), ml, ml.Repr()
   requires allocated(l.Repr())
   requires allocated(ml.Repr())
@@ -169,7 +169,7 @@ method copyRest(l:LinkedList<int>,ml:LinkedList<int>, itl:ListIterator<int>)
 
 }
 
-method copyMerge(l1:LinkedList<int>,l2:LinkedList<int>, ml:LinkedList<int>) returns (it1:ListIterator<int>, it2:ListIterator<int>)
+method NEMerge(l1:LinkedList<int>,l2:LinkedList<int>, ml:LinkedList<int>) returns (it1:ListIterator<int>, it2:ListIterator<int>)
    modifies l1, l1.Repr(), l2, l2.Repr(),ml, ml.Repr()
   requires allocated(l1.Repr())
   requires allocated(l2.Repr())
