@@ -729,6 +729,7 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     ensures sizeSmaller(t, k) <= size(t)
     ensures SearchTree(t) && k in keys(t) ==>
       sizeSmaller(t, k) < size(t)
+    ensures sizeSmaller(t, k) == |smallerKeys(t, k)|
   {
     if t.Node? {
       SizeSmaller(t.left, k);
@@ -761,12 +762,19 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
       == |toMap(t).Keys|
       == |toMap(t)|
       == |toMapRec(t)|
+    ensures forall k ::
+      && sizeSmaller(t, k) <= size(t)
+      && (k in keys(t) ==> sizeSmaller(t, k) < size(t))
+      && sizeSmaller(t, k) == |smallerKeys(t, k)|
   {
     SizeInorder(t);
     SizeKeys(t);
     assert keys(t) == toMap(t).Keys;
     assert |toMap(t).Keys| == |toMap(t)|;
     ToMapRec(t);
+    forall k {
+      SizeSmaller(t, k);
+    }
   }
 
 /*

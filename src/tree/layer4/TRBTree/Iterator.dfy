@@ -33,7 +33,7 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
 
   lemma SizeIndex(it: iter, root: trbtree)
     requires SearchTree(root)
-    ensures Index(it, root) <= |toMap(root)|
+    ensures Index(it, root) <= |toMapRec(root)|
   {
     if it.Link? {
       SizeSmaller(root, it.link);
@@ -49,7 +49,7 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
   predicate HasPeek'(it: iter, root: trbtree)
     requires SearchTree(root)
   {
-    0 <= Index(it, root) < |toMap(root)|
+    0 <= Index(it, root) < |toMapRec(root)|
   }
 
   lemma HasPeekEq(it: iter, root: trbtree)
@@ -64,14 +64,14 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
           SizeSmaller(root, it.link);
         }
       }
-      assert size(root) == |toMap(root)| by {
+      assert size(root) == |toMapRec(root)| by {
         SizeLemmas(root);
       }
-      assert Index(it, root) < |toMap(root)|;
+      assert Index(it, root) < |toMapRec(root)|;
     }
     if HasPeek'(it, root) {
-      assert 0 <= Index(it, root) < |toMap(root)|;
-      assert size(root) == |toMap(root)| by {
+      assert 0 <= Index(it, root) < |toMapRec(root)|;
+      assert size(root) == |toMapRec(root)| by {
         SizeLemmas(root);
       }
       assert it.Link?;
@@ -89,8 +89,8 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     requires SearchTree(root)
     requires HasPeek'(it, root)
   {
-    var k := elemth(toMap(root).Keys, Index(it, root));
-    (k, toMap(root)[k])
+    var k := elemth(toMapRec(root).Keys, Index(it, root));
+    (k, toMapRec(root)[k])
   }
 
 /*
@@ -111,9 +111,10 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     requires HasPeek'(it, root)
     ensures Peek(it, root) == Peek'(it, root)
   {
+    ToMapRec(root);
     calc == {
-      elemth(toMap(root).Keys, Index(it, root));
-      elemth(toMap(root).Keys, sizeSmaller(root, it.link));
+      elemth(toMapRec(root).Keys, Index(it, root));
+      elemth(toMapRec(root).Keys, sizeSmaller(root, it.link));
       {
         if root.Node? {
           SizeSmaller(root, it.link);
@@ -127,13 +128,13 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
       { InorderOfSmallerInorderSize(root, it.link); }
       it.link;
     }
-    var k := elemth(toMap(root).Keys, Index(it, root));
+    var k := elemth(toMapRec(root).Keys, Index(it, root));
     calc == {
       Get'(root, it.link);
       { GetEqGet'(root, it.link); }
       Get(root, it.link);
-      toMap(root)[it.link];
-      toMap(root)[k];
+      toMapRec(root)[it.link];
+      toMapRec(root)[k];
     }
   }
 
@@ -149,12 +150,12 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
   function Traversed'(it: iter, root: trbtree): set<K>
     requires SearchTree(root)
   {
-    if Index(it, root) == -1 || Index(it, root) == |toMap(root)| then
-      toMap(root).Keys
+    if Index(it, root) == -1 || Index(it, root) == |toMapRec(root)| then
+      toMapRec(root).Keys
     else
       SizeIndex(it, root);
-      lelemth(toMap(root).Keys, Index(it, root));
-      smaller(toMap(root).Keys, elemth(toMap(root).Keys, Index(it, root)))
+      lelemth(toMapRec(root).Keys, Index(it, root));
+      smaller(toMapRec(root).Keys, elemth(toMapRec(root).Keys, Index(it, root)))
   }
 
   lemma TraversedEq(it: iter, root: trbtree)
@@ -163,8 +164,9 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     requires Valid(it, root)
     ensures Traversed(it, root) == Traversed'(it, root)
   {
-    if Index(it, root) == -1 || Index(it, root) == |toMap(root)| {
-      assert |toMap(root)| == size(root) by {
+    ToMapRec(root);
+    if Index(it, root) == -1 || Index(it, root) == |toMapRec(root)| {
+      assert |toMapRec(root)| == size(root) by {
         SizeLemmas(root);
       }
       if it.Link? {
@@ -172,20 +174,28 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
         assert false;
       }
       assert it.PastTheBeginning? || it.PastTheEnd?;
-      assert toMap(root).Keys == keys(root);
+      assert toMapRec(root).Keys == keys(root);
     } else {
       SizeIndex(it, root);
-      lelemth(toMap(root).Keys, Index(it, root));
+      lelemth(toMapRec(root).Keys, Index(it, root));
       HasPeekEq(it, root);
       calc == {
-        smaller(toMap(root).Keys, elemth(toMap(root).Keys, Index(it, root)));
+        smaller(toMapRec(root).Keys, elemth(toMapRec(root).Keys, Index(it, root)));
         { PeekEq(it, root); }
-        smaller(toMap(root).Keys, it.link);
+        smaller(toMapRec(root).Keys, it.link);
         smaller(keys(root), it.link);
         { SmallerKeys(root, it.link); }
         smallerKeys(root, it.link);
       }
     }
+  }
+
+  lemma TraversedIndex(it: iter, root: trbtree)
+    requires it.Link? || it.PastTheEnd?
+    requires SearchTree(root)
+    ensures |Traversed(it, root)| == Index(it, root)
+  {
+    SizeLemmas(root);
   }
 
   function First(root: trbtree): iter

@@ -6,7 +6,7 @@ module {:options "-functionSyntax:4"} UnorderedMapSpec {
   import opened ADT
 
   trait {:termination false} UnorderedMapIterator {
-    function Parent(): UnorderedMap
+    ghost function Parent(): UnorderedMap
       reads this
 
     ghost predicate Valid()

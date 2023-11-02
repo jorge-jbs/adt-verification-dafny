@@ -86,19 +86,26 @@ module ThreadedLinkedTree {
     }
 
     constructor First(parent: ThreadedLinkedTree)
+      modifies {}
       requires parent.Valid()
       requires parent.Threaded()
       requires parent.SearchTree()
       requires TRB.ThreadedTreeRoot(parent.Model())
       ensures Valid()
-      ensures Valid'()
       ensures Model() == TRBit.First(parent.Model())
       ensures Parent() == parent
+      ensures parent.Valid()
+      ensures parent.Threaded()
+      ensures parent.SearchTree()
+      ensures TRB.ThreadedTreeRoot(parent.Model())
+      ensures old(parent.RedBlackTree()) ==> parent.RedBlackTree()
+      ensures parent.Model() == old(parent.Model())
     {
       this.node := parent.root;
       this.isPastTheEnd := false;
       this.parent := parent;
       new;
+      ValidImp();
       if parent.root == null {
         this.node := null;
       } else {
@@ -116,7 +123,7 @@ module ThreadedLinkedTree {
       TRBit.Index(Model(), parent.Model())
     }
 
-    ghost predicate HasPeek()
+    predicate HasPeek()
       reads this
     {
       node != null
@@ -132,7 +139,15 @@ module ThreadedLinkedTree {
       ensures HasPeek() <==> HasPeek'()
     {}
 
-    ghost function Peek(): (K, V)
+    function Peek(): (K, V)
+      reads this, parent, parent.Repr()
+      requires Valid()
+      requires HasPeek()
+    {
+      (node.key, node.value)
+    }
+
+    ghost function Peek'(): (K, V)
       reads this, parent, parent.Repr()
       requires Valid()
       requires HasPeek()
@@ -141,15 +156,25 @@ module ThreadedLinkedTree {
       TRBit.Peek(Model(), parent.Model())
     }
 
+    lemma PeekEq()
+      requires Valid()
+      requires HasPeek()
+      requires parent.Valid()
+      requires parent.SearchTree()
+      ensures Peek() == Peek'()
+    {
+      GetValue(node, parent.root, parent.skeleton);
+    }
+
     method Next()  // 8"
       modifies this
       requires parent.Valid()
       requires parent.Threaded()
       requires parent.SearchTree()
       requires Valid()
-      requires Valid'()
+      requires assert Valid'() by {ValidImp();} true
+      requires assert TRB.ThreadedTreeRoot(parent.Model()) by {ThreadedRootImp(parent.skeleton);} true
       requires HasPeek()
-      requires TRB.ThreadedTreeRoot(parent.Model())
 
       ensures parent.Valid()
       ensures parent.Threaded()
@@ -160,6 +185,9 @@ module ThreadedLinkedTree {
       requires allocated(parent.Repr())
       ensures allocated(parent.Repr())
     {
+      assert TRB.ThreadedTreeRoot(parent.Model()) by {
+        ThreadedRootImp(parent.skeleton);
+      }
       if node.right == null {
         assert ValidRec(node.right, Skeleton().right);
         assert Skeleton().right.Empty?;

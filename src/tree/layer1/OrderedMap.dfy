@@ -8,14 +8,14 @@ module {:options "-functionSyntax:4"} OrderedMapSpec {
   import opened OrderedSetUtils
 
   trait {:termination false} OrderedMapIterator extends UnorderedMapIterator {
-    function Parent(): UnorderedMap
+    ghost function Parent(): UnorderedMap
       reads this
 
     ghost predicate Valid()
       reads this, Parent(), Parent().Repr()
       ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
 
-    function Index(): int
+    ghost function Index(): int
       reads this, Parent(), Parent().Repr()
       requires Valid()
       requires Parent().Valid()

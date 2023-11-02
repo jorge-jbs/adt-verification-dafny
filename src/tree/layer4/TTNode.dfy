@@ -145,6 +145,31 @@ module TTNode {
       rootSk
   }
 
+  lemma GetValue(
+      node: TTNode,
+      root: TTNode,
+      rootSk: ttree<TTNode>
+    )
+    requires ValidRec(root, rootSk)
+    requires SearchTree(TreeModelRec(rootSk))
+    requires node in elems(rootSk)
+    requires assert node.key in keys(TreeModelRec(rootSk)) by { KeysAndElems(rootSk); } true
+    ensures node.value == Get'(TreeModelRec(rootSk), node.key)
+  {
+    if node == root {
+    } else if node in elems(rootSk.left) {
+      assert node.key in keys(TreeModelRec(rootSk).left) by {
+        KeysAndElems(rootSk.left);
+      }
+      GetValue(node, root.left, rootSk.left);
+    } else {
+      assert node.key in keys(TreeModelRec(rootSk).right) by {
+        KeysAndElems(rootSk.right);
+      }
+      GetValue(node, root.right, rootSk.right);
+    }
+  }
+
   /*
   ghost function GetSk(
       node: TTNode,

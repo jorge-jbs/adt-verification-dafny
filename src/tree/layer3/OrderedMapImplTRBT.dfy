@@ -18,9 +18,307 @@ module OrderedMapImplTRBT {
   import opened TTree
   import opened ThreadedLinkedTree
 
+  class OrderedMapIteratorTRBT extends OrderedMapIterator {
+    const iter: ThreadedLinkedTreeIterator
+    ghost const parent: OrderedMapImplTRBT
+
+    ghost function Parent(): UnorderedMap
+      reads this
+    {
+      parent
+    }
+
+    ghost predicate PreValid()
+      reads this, Parent(), Parent().Repr()
+    {
+      this in parent.iterators ==> (
+        && parent.Valid()
+        && iter.parent == parent.tree
+        && iter.Valid()
+      )
+    }
+
+    ghost predicate Valid()
+      reads this, Parent(), Parent().Repr()
+      ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
+    {
+      this in parent.iterators && PreValid()
+    }
+
+    constructor First(parent: OrderedMapImplTRBT)
+      requires parent.Valid()
+      ensures PreValid()
+    {
+      ThreadedRootImp(parent.tree.skeleton);
+      this.iter := new ThreadedLinkedTreeIterator.First(parent.tree);
+      this.parent := parent;
+    }
+
+    ghost function Index(): int
+      reads this, Parent(), Parent().Repr()
+      requires Valid()
+      requires Parent().Valid()
+      ensures -1 <= Index() <= |parent.Model()|
+    {
+      TRB.SizeLemmas(parent.tree.Model());
+      TRBit.Index(iter.Model(), parent.tree.Model())
+    }
+
+    method HasPeek() returns (b:bool)
+      modifies this, Parent(), Parent().Repr()
+      requires allocated(Parent())
+      requires allocated(Parent().Repr())
+      ensures fresh(Parent().Repr() - old(Parent().Repr()))
+      ensures allocated(Parent().Repr())
+
+      requires Valid()
+      requires Parent().Valid()
+      ensures Valid()
+      ensures Parent().Valid()
+      ensures Parent() == old(Parent())
+      ensures Parent().Model() == old(Parent().Model())
+      ensures |Parent().Model()| == old(|Parent().Model()|)
+
+      ensures Index() == old(Index())
+
+      ensures Traversed() == old(Traversed())
+      ensures |Traversed()| == old(|Traversed()|)
+
+      ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
+      ensures b == HasPeek?()
+
+      ensures Parent().Iterators() >= old(Parent().Iterators())
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())
+                && |it.Traversed()| == old(|it.Traversed()|)
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+                (it is OrderedMapIterator &&
+                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
+    {
+      iter.ValidImp();
+      TRBit.HasPeekEq(iter.Model(), parent.tree.Model());
+      return iter.HasPeek();
+    }
+
+    method Peek() returns (p:(K,V))
+      modifies this, Parent(), Parent().Repr()
+      requires allocated(Parent())
+      requires allocated(Parent().Repr())
+      ensures fresh(Parent().Repr() - old(Parent().Repr()))
+      ensures allocated(Parent().Repr())
+
+      requires Valid()
+      requires Parent().Valid()
+      requires HasPeek?()
+      ensures Valid()
+      ensures Parent().Valid()
+      ensures Parent() == old(Parent())
+      ensures Parent().Model() == old(Parent().Model())
+      ensures |Parent().Model()| == old(|Parent().Model()|)
+
+      ensures Index() == old(Index())
+
+      ensures Traversed() == old(Traversed()) && Peek?()==old(Peek?())
+      ensures |Traversed()| == old(|Traversed()|)
+
+      ensures p == Peek?()
+      ensures HasPeek?() && Peek?()==old(Peek?())
+
+      ensures Parent().Iterators() >= old(Parent().Iterators())
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())
+                && |it.Traversed()| == old(|it.Traversed()|)
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid())::
+                (it is OrderedMapIterator &&
+                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
+    {
+      iter.ValidImp();
+      TRBit.HasPeekEq(iter.Model(), parent.tree.Model());
+      TRBit.PeekEq(iter.Model(), parent.tree.Model());
+      iter.PeekEq();
+      return iter.Peek();
+    }
+
+    method Next()  // 3'
+      modifies this, Parent(), Parent().Repr()
+      requires allocated(Parent())
+      requires allocated(Parent().Repr())
+      ensures fresh(Parent().Repr() - old(Parent().Repr()))
+      ensures allocated(Parent().Repr())
+
+      requires Valid()
+      requires Parent().Valid()
+      requires HasPeek?()
+      ensures Valid()
+      ensures Parent().Valid()
+      ensures Parent() == old(Parent())
+      ensures Parent().Model() == old(Parent().Model())
+      ensures |Parent().Model()| == old(|Parent().Model()|)
+
+      ensures Traversed() == {key(old(Peek?()))} + old(Traversed())
+      ensures |Traversed()| == 1 + old(|Traversed()|)
+      ensures Index() == old(Index()) + 1
+
+      ensures Parent().Iterators() >= old(Parent().Iterators())
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && (it != this ==> it.Traversed() == old(it.Traversed())
+                                   && |it.Traversed()| == old(|it.Traversed()|)
+                                   && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this::
+                (it is OrderedMapIterator &&
+                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
+    {
+      assert iter.parent.Valid();
+      assert iter.parent.Threaded();
+      assert iter.parent.SearchTree();
+      assert iter.Valid();
+      assert iter.HasPeek() by {
+        iter.ValidImp();
+        TRBit.HasPeekEq(iter.Model(), parent.tree.Model());
+      }
+      assert iter.Valid'() by {
+        iter.ValidImp();
+      }
+      assert iter.Peek() == iter.Peek'() by {
+        iter.PeekEq();
+      }
+      assert ThreadedTreeRoot(iter.parent.Model()) by {
+        ThreadedRootImp(iter.parent.skeleton);
+      }
+      ghost var oldIterModel := iter.Model();
+      ghost var oldParentModel := iter.parent.Model();
+      iter.Next();
+      assert
+        && fresh(Parent().Repr() - old(Parent().Repr()))
+        && allocated(Parent().Repr())
+        && Valid()
+        && Parent().Valid()
+        && Parent() == old(Parent())
+        && Parent().Model() == old(Parent().Model())
+        && |Parent().Model()| == old(|Parent().Model()|)
+        && Parent().Iterators() >= old(Parent().Iterators())
+      by {
+        //assume false;
+      }
+      assert
+        && Traversed() == {key(old(Peek?()))} + old(Traversed())
+        && |Traversed()| == 1 + old(|Traversed()|)
+        && Index() == old(Index()) + 1
+        && (forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && (it != this ==> it.Traversed() == old(it.Traversed())
+                                   && |it.Traversed()| == old(|it.Traversed()|)
+                                   && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))))
+        && forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this::
+                (it is OrderedMapIterator &&
+                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
+      by {
+        TRBit.TraversedEq(oldIterModel, oldParentModel);
+        TRBit.HasPeekEq(oldIterModel, oldParentModel);
+        TRBit.PeekEq(oldIterModel, oldParentModel);
+        TRBit.TraversedEq(oldIterModel, oldParentModel);
+        iter.ValidImp();
+        ThreadedRootImp(iter.parent.skeleton);
+        TRBit.TraversedEq(iter.Model(), iter.parent.Model());
+        TRBit.NextTraversed(oldIterModel, oldParentModel);
+
+        assert TRBit.Traversed(iter.Model(), iter.parent.Model())
+          == TRBit.Traversed(oldIterModel, oldParentModel) + {TRBit.Peek(oldIterModel, oldParentModel).0};
+
+        TRBit.TraversedIndex(oldIterModel, oldParentModel);
+        TRBit.TraversedIndex(iter.Model(), iter.parent.Model());
+      }
+    }
+
+    method Prev()
+      modifies this, Parent(), Parent().Repr()
+      requires allocated(Parent())
+      requires allocated(Parent().Repr())
+      ensures fresh(Parent().Repr() - old(Parent().Repr()))
+      ensures allocated(Parent().Repr())
+
+      requires Valid()
+      requires Parent().Valid()
+      requires HasPeek?()
+      ensures Valid()
+      ensures Parent().Valid()
+      ensures Parent() == old(Parent())
+      ensures Parent().Model() == old(Parent().Model())
+      ensures |Parent().Model()| == old(|Parent().Model()|)
+
+      ensures Index() == old(Index()) - 1
+
+      ensures Parent().Iterators() >= old(Parent().Iterators())
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && (it != this ==> it.Traversed() == old(it.Traversed())
+                                   && |it.Traversed()| == old(|it.Traversed()|)
+                                   && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
+
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) &&  it != this::
+                (it is OrderedMapIterator &&
+                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
+
+    method Copy() returns (it: UnorderedMapIterator)
+      modifies this, Parent(), Parent().Repr()
+      requires allocated(Parent())
+      requires allocated(Parent().Repr())
+      ensures fresh(Parent().Repr() - old(Parent().Repr()))
+      ensures allocated(Parent().Repr())
+
+      requires Valid()
+      requires Parent().Valid()
+      ensures Valid()
+      ensures Parent().Valid()
+      ensures Parent() == old(Parent())
+      ensures Parent().Model() == old(Parent().Model())
+      ensures |Parent().Model()| == old(|Parent().Model()|)
+
+      ensures Index() == old(Index())
+
+      ensures Traversed() == old(Traversed())
+      ensures |Traversed()| == old(|Traversed()|)
+
+      ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
+
+      ensures fresh(it)
+      ensures it.Valid()
+      ensures Parent() == it.Parent()
+      ensures it is OrderedMapIterator
+      ensures  (it as OrderedMapIterator).Index() == Index()
+      ensures Traversed() == it.Traversed()
+      ensures |Traversed()| == |it.Traversed()|
+      ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
+
+      ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())
+                && |it.Traversed()| == old(|it.Traversed()|)
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+                (it is OrderedMapIterator &&
+                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
+  }
+
   class OrderedMapImplTRBT extends OrderedMap {
-    var tree: ThreadedLinkedTree
+    const tree: ThreadedLinkedTree
     var size: nat
+    ghost var iterators: set<OrderedMapIteratorTRBT>
 
     ghost function ReprFamily(n: nat): set<object>
       decreases n
@@ -28,9 +326,9 @@ module OrderedMapImplTRBT {
       reads this, if n == 0 then {} else ReprFamily(n-1)
     {
       if n == 0 then
-        {tree}
+        {tree} + iterators
       else if n == 1 then
-        ReprFamily(0) + tree.Repr()
+        ReprFamily(0) + tree.Repr() + (set it <- iterators :: it.iter)
       else
         ReprFamily(n-1)
     }
@@ -39,11 +337,17 @@ module OrderedMapImplTRBT {
       reads this, Repr()
     {
       && ReprDepth == 1
+      && assert tree in ReprFamily(0) && tree.Repr() <= ReprFamily(1); true
       && tree.Valid()
       && tree.Threaded()
       && tree.SearchTree()
       && tree.RedBlackTree()
       && TRB.size(tree.Model()) == size
+      && (forall it | it in iterators :: it.parent == this)
+      && (
+        forall it1, it2 | it1 in iterators && it2 in iterators && it1 != it2 ::
+          it1.iter != it2.iter
+      )
     }
 
     ghost function Model(): map<K, V>
@@ -60,6 +364,7 @@ module OrderedMapImplTRBT {
       ReprDepth := 1;
       size := 0;
       tree := new ThreadedLinkedTree();
+      iterators := {};
     }
 
     method Empty() returns (b: bool)
@@ -146,7 +451,7 @@ module OrderedMapImplTRBT {
       ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
       ensures forall it | it in Iterators() :: it is OrderedMapIterator
     {
-      {}
+      iterators
     }
 
     method First() returns (it: UnorderedMapIterator)
@@ -322,7 +627,7 @@ module OrderedMapImplTRBT {
       }
     }
 
-    method Remove(k: K)
+    method Remove(k: K)  // 2'
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -347,6 +652,25 @@ module OrderedMapImplTRBT {
       TRB.SizeLemmas(tree.Model());
       if isRemoved {
         size := size - 1;
+      }
+      assert Valid()
+      by {
+        assert
+          && ReprDepth == 1
+          && tree in ReprFamily(0) && tree.Repr() <= ReprFamily(1)
+          && tree.Valid()
+          && tree.Threaded()
+          && tree.SearchTree()
+          && tree.RedBlackTree()
+          && TRB.size(tree.Model()) == size
+        by {
+          //assume false;
+        }
+        assert (forall it | it in iterators :: it.parent == this);
+        assert (
+          forall it1, it2 | it1 in iterators && it2 in iterators && it1 != it2 ::
+            it1.iter != it2.iter
+        );
       }
     }
 
