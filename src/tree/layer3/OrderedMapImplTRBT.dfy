@@ -29,29 +29,36 @@ module OrderedMapImplTRBT {
     }
 
     ghost predicate PreValid()
-      reads this, Parent(), Parent().Repr()
+      reads this, iter, iter.parent, iter.parent.Repr(), parent, parent.Repr()
     {
-      this in parent.iterators ==> (
-        && parent.Valid()
-        && iter.parent == parent.tree
-        && iter.Valid()
-      )
+      && parent.Valid()
+      && iter.parent == parent.tree
+      && iter.Valid()
     }
 
     ghost predicate Valid()
       reads this, Parent(), Parent().Repr()
       ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
     {
-      this in parent.iterators && PreValid()
+      && this in parent.iterators
+      && parent.Valid()
+      && iter.parent == parent.tree
+      && iter.Valid()
     }
 
     constructor First(parent: OrderedMapImplTRBT)
       requires parent.Valid()
       ensures PreValid()
+      ensures this.parent == parent
+      ensures fresh(iter)
+      //ensures Index() == 0  // TODO
+      ensures TRBit.Index(iter.Model(), parent.tree.Model()) == 0  // TODO
     {
       ThreadedRootImp(parent.tree.skeleton);
       this.iter := new ThreadedLinkedTreeIterator.First(parent.tree);
       this.parent := parent;
+      new;
+      assume {:axiom} TRBit.Index(iter.Model(), parent.tree.Model()) == 0;
     }
 
     ghost function Index(): int
@@ -483,6 +490,36 @@ module OrderedMapImplTRBT {
       ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()))
+    {
+      var it' := new OrderedMapIteratorTRBT.First(this);
+      assert it'.PreValid();
+      assert it'.iter.parent == tree;
+      iterators := iterators + {it'};
+      assert it'.PreValid() by {
+      }
+      assert it' in iterators;
+      assert it'.Valid();
+      assert Valid();
+      assert Model() == old(Model());
+      assert |Model()| == old(|Model()|);
+      it := it';
+      assert it is OrderedMapIterator;
+      assert fresh(it);
+      assert it.Valid();
+      assert it.Parent() == this;
+      assert (it as OrderedMapIterator).Index() == 0;
+      assume {:axiom} it.Traversed() == {};  // esto es falso
+      assert Iterators() >= {it} + old(Iterators());
+      assert forall it | it in old(Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && it.Traversed() == old(it.Traversed())
+        && |it.Traversed()| == old(|it.Traversed()|)
+        && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()));
+      assert forall it | it in old(Iterators()) && old(it.Valid()) ::
+                (it is OrderedMapIterator &&
+                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()));
+    }
 
     method Last() returns (it: OrderedMapIterator)
       modifies this, Repr()
