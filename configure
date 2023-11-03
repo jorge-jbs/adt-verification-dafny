@@ -137,6 +137,7 @@ files=(
     src/tree/layer4/TTree.dfy
     src/tree/layer4/TTNode.dfy
     src/tree/layer4/Color.dfy
+    examples/sets/ExecuteTRBT.dfy
 )
 
 NINJA_FILE=build.ninja

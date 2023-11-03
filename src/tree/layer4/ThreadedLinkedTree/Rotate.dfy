@@ -188,7 +188,7 @@ module ThreadedLinkedTree.Rotate {
       assert ThreadedRecR(Thread(newSk.data), newSk.right, next);
     }
     assert TreeModelRec(newSk) == TRBr.RotateLeft(old(TreeModelRec(sk))) by {
-      assume false;
+      assume {:axiom} false;
     }
   }
 
@@ -256,7 +256,7 @@ module ThreadedLinkedTree.Rotate {
       }
     }
     assert TreeModelRec(newSk) == TRBr.RotateRight(old(TreeModelRec(sk))) by {
-      assume false;
+      assume {:axiom} false;
     }
   }
 }

@@ -497,7 +497,7 @@ module ThreadedLinkedTree {
 
     it.ValidImp();
     ThreadedRootImp(t.skeleton);
-    assume false;  // Dafny cannot verify anything below
+    assume {:axiom} false;  // Dafny cannot verify anything below
     it.Next();
     assert it.Peek() == (2, 1);
     print it.node.key;

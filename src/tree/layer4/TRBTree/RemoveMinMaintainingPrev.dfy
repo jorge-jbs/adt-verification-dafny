@@ -46,7 +46,7 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveMinMaintainingPrev {
       Some((Restore(Node(l', t'.key, t'.value, t'.right, t'.color)), minK, minV))
   }
 
-  method {:main} RemoveMinMaintainingPrevTest1()
+  method RemoveMinMaintainingPrevTest1()
   {
     var t1 := ThreadedTreeExample1();
     var t1' := ConditionalReddenRoot(t1);

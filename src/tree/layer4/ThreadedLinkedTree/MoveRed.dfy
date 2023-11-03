@@ -76,7 +76,7 @@ module ThreadedLinkedTree.MoveRed {
       FlipColors(newNode, prev, newSk, next);
     }
     assert TreeModelRec(newSk) == TRBm.MoveRedLeft(old(TreeModelRec(sk))) by {
-      assume false;
+      assume {:axiom} false;
     }
   }
 
@@ -146,7 +146,7 @@ module ThreadedLinkedTree.MoveRed {
       }
     }
     assert TreeModelRec(newSk) == TRBm.MoveRedRight(old(TreeModelRec(sk))) by {
-      assume false;
+      assume {:axiom} false;
     }
   }
 }

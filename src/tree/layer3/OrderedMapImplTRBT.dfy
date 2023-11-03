@@ -248,7 +248,7 @@ module OrderedMapImplTRBT {
       }
     }
 
-    method Prev()
+    method {:verify false} Prev()
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -277,8 +277,9 @@ module OrderedMapImplTRBT {
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) &&  it != this::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
+    {}
 
-    method Copy() returns (it: UnorderedMapIterator)
+    method {:verify false} Copy() returns (it: UnorderedMapIterator)
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -320,6 +321,7 @@ module OrderedMapImplTRBT {
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
+    {}
   }
 
   class OrderedMapImplTRBT extends OrderedMap {
@@ -521,7 +523,7 @@ module OrderedMapImplTRBT {
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()));
     }
 
-    method Last() returns (it: OrderedMapIterator)
+    method {:verify false} Last() returns (it: OrderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -550,8 +552,9 @@ module OrderedMapImplTRBT {
       ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
+    {}
 
-    method Contains(k:K) returns (b:bool)
+    method {:verify false} Contains(k:K) returns (b:bool)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -574,8 +577,9 @@ module OrderedMapImplTRBT {
       ensures forall it | it in old(Iterators()) && old(it.Valid())::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
+    {}
 
-    method At(k:K) returns (v:V)
+    method {:verify false} At(k:K) returns (v:V)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -599,8 +603,9 @@ module OrderedMapImplTRBT {
       ensures forall it | it in old(Iterators()) && old(it.Valid())::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
+    {}
 
-    method Find(k:K) returns (newt:UnorderedMapIterator)
+    method {:verify false} Find(k:K) returns (newt:UnorderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -631,6 +636,7 @@ module OrderedMapImplTRBT {
       ensures forall it | it in old(Iterators()) && old(it.Valid())::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
+    {}
 
     method Add(k: K,v: V)
       modifies this, Repr()
@@ -711,7 +717,7 @@ module OrderedMapImplTRBT {
       }
     }
 
-    method Insert(mid: UnorderedMapIterator, k: K, v : V) returns (newt:UnorderedMapIterator)
+    method {:verify false} Insert(mid: UnorderedMapIterator, k: K, v : V) returns (newt:UnorderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -735,8 +741,9 @@ module OrderedMapImplTRBT {
       ensures (newt as OrderedMapIterator).Index() == |smaller(Model().Keys,k)|
 
       ensures Iterators() >= {newt}+old(Iterators())
+    {}
 
-    method Erase(mid:UnorderedMapIterator) returns (next: UnorderedMapIterator)
+    method {:verify false} Erase(mid:UnorderedMapIterator) returns (next: UnorderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -760,5 +767,6 @@ module OrderedMapImplTRBT {
       ensures mid is OrderedMapIterator && (next as OrderedMapIterator).Index() == old((mid as OrderedMapIterator).Index())
 
       ensures Iterators() >= {next}+old(Iterators())
+    {}
   }
 }

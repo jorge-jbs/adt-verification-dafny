@@ -58,7 +58,7 @@ module ThreadedLinkedTree.Restore {
     }
 
     assert TreeModelRec(newSk) == TRBres.Restore(old(TreeModelRec(sk))) by {
-      assume false;
+      assume {:axiom} false;
     }
   }
 }
