@@ -729,13 +729,13 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     ensures sizeSmaller(t, k) <= size(t)
     ensures SearchTree(t) && k in keys(t) ==>
       sizeSmaller(t, k) < size(t)
-    ensures sizeSmaller(t, k) == |smallerKeys(t, k)|
+    ensures SearchTree(t) ==>
+      sizeSmaller(t, k) == |smallerKeys(t, k)|
   {
     if t.Node? {
       SizeSmaller(t.left, k);
       SizeSmaller(t.right, k);
       if SearchTree(t) && k in keys(t) {
-        
         if t.key < k {
           calc {
             sizeSmaller(t, k);
@@ -745,6 +745,32 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
           }
         } else if k < t.key {
         } else {
+        }
+      }
+      if SearchTree(t) {
+        if t.key < k {
+          SizeKeys(t.left);
+          calc == {
+            |smallerKeys(t, k)|;
+            |keys(t.left) + {t.key} + smallerKeys(t.right, k)|;
+            {
+              SearchImpliesUnique(t);
+              SmallerKeys(t.right, k);
+            }
+            1 + |keys(t.left)| + |smallerKeys(t.right, k)|;
+            1 + size(t.left) + sizeSmaller(t.right, k);
+            sizeSmaller(t, k);
+          }
+        } else if k < t.key {
+          assert sizeSmaller(t, k) == |smallerKeys(t, k)| by {}
+        } else {
+          calc == {
+            |smallerKeys(t, k)|;
+            |keys(t.left)|;
+            { SizeKeys(t.left); }
+            size(t.left);
+            sizeSmaller(t, k);
+          }
         }
       }
     }
