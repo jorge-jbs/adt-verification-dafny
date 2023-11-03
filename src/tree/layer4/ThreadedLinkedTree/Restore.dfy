@@ -45,20 +45,23 @@ module ThreadedLinkedTree.Restore {
     newNode := node;
     newSk := sk;
 
-    if newNode.right != null && !newNode.isThreadRight && newNode.right.color.Red? {
+    isRedRightProp(newNode, newSk);
+    if isRedRight(newNode) {
       newNode, newSk := RotateLeft(newNode, prev, newSk, next);
     }
 
+    isRedLeftProp(newNode, newSk);
+    if isRedLeft(newNode) {
+      isRedLeftProp(newNode.left, newSk.left);
+    }
     if isRedLeft(newNode) && isRedLeft(newNode.left) {
       newNode, newSk := RotateRight(newNode, prev, newSk, next);
     }
 
+    isRedLeftProp(newNode, newSk);
+    isRedRightProp(newNode, newSk);
     if isRedLeft(newNode) && isRedRight(newNode) {
       FlipColors(newNode, prev, newSk, next);
-    }
-
-    assert TreeModelRec(newSk) == TRBres.Restore(old(TreeModelRec(sk))) by {
-      assume {:axiom} false;
     }
   }
 }

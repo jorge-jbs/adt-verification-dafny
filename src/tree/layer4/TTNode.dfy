@@ -321,6 +321,12 @@ module TTNode {
     node.right != null && !node.isThreadRight && node.right.color.Red?
   }
 
+  lemma isRedRightProp(node: TTNode?, sk: ttree<TTNode>)
+    requires ValidRec(node, sk)
+    requires node != null
+    ensures isRedRight(node) <==> TRB.isRed(TreeModelRec(sk).right)
+  {}
+
   lemma isRedProp(node: TTNode?, sk: ttree<TTNode>)
     requires ValidRec(node, sk)
     ensures isRed(node) <==> TRB.isRed(TreeModelRec(sk))
