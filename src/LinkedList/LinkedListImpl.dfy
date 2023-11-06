@@ -55,7 +55,7 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
   }
 
   constructor Internal(l: LinkedListImpl<A>, n: DoublyLinkedList.DNode<A>)
-    modifies l
+    modifies l`iters
     requires l.Valid() && n in l.Repr()
     requires n in l.list.list.spine
     ensures Valid()
@@ -82,7 +82,7 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
   }
 
   constructor First(l: LinkedListImpl<A>)
-    modifies l
+    modifies l`iters
     requires l.Valid()
     ensures Valid()
     ensures Parent() == l
@@ -108,7 +108,7 @@ class LinkedListIteratorImpl<A> extends ListIterator<A> {
    }
 
   constructor Last(l: LinkedListImpl<A>)
-    modifies l
+    modifies l`iters
     requires l.Valid()
     ensures Valid()
     ensures Parent() == l

@@ -1,9 +1,15 @@
+
 // Must be verified with -allocated:2
 
-include "../../src/linear/layer1/List.dfy"
-include "../../src/linear/layer3/LinkedListImpl.dfy"
+include "../../src/List/ListSpec.dfy"
+include "../../src/LinkedList/LinkedListImpl.dfy"
 
-function Fib(n: nat): seq<nat>
+
+module FibPrefix{
+   import opened ListSpec
+   import opened LinkedListImpl
+
+ghost function Fib(n: nat): seq<nat>
   ensures |Fib(n)| == n
 {
   if n <= 2 then
@@ -107,13 +113,16 @@ method {:verify false} FibPrefixes2() returns (pres: List<List<nat>>)  // 45s
   ensures |pres.Model()| == 2
 {
   pres := new LinkedListImpl();
+  
   var pre0: List<nat> := new LinkedListImpl();
   pre0.PushBack(0);
   pres.PushBack(pre0);
+  
   var pre1: List<nat> := new LinkedListImpl();
   pre1.PushBack(0);
   pre1.PushBack(1);
   pres.PushBack(pre1);
+  
   assert |pres.Model()| == 2;
   assert pre0.Valid();
   assert pre1.Valid();
@@ -139,7 +148,7 @@ method {:verify true} {:timelimitMultiplier 400} FibPrefixes(n: nat) returns (pr
     
   ensures forall pre | pre in pres.Model() :: ({pres} + pres.Repr()) !! ({pre} + pre.Repr())
   ensures forall i, j | 0 <= i < j < |pres.Model()| ::
-      ({pres.Model()[i]}+ pres.Model()[i].Repr()) !! ({pres.Model()[j]}+pres.Model()[j].Repr());
+      ({pres.Model()[i]}+ pres.Model()[i].Repr()) !! ({pres.Model()[j]}+pres.Model()[j].Repr())
 
   ensures |pres.Model()| == n
   //ensures forall i | 0 <= i < |pres.Model()| ::
@@ -159,7 +168,7 @@ method {:verify true} {:timelimitMultiplier 400} FibPrefixes(n: nat) returns (pr
       && pre.Valid()
     invariant forall pre | pre in pres.Model() :: ({pres} + pres.Repr()) !! ({pre} + pre.Repr())
     invariant forall j, k | 0 <= j < k < |pres.Model()| ::
-      ({pres.Model()[j]}+ pres.Model()[j].Repr()) !! ({pres.Model()[k]}+pres.Model()[k].Repr());
+      ({pres.Model()[j]}+ pres.Model()[j].Repr()) !! ({pres.Model()[k]}+pres.Model()[k].Repr())
 
     invariant 2 <= i <= n
     invariant i == |pres.Model()|
@@ -228,4 +237,6 @@ method {:verify true} {:timelimitMultiplier 400} FibPrefixes(n: nat) returns (pr
 
   }
   assert i == n;
+}
+
 }

@@ -1,7 +1,7 @@
 include "../../src/List/ListSpec.dfy"
 include "../../src/LinkedList/LinkedListSpec.dfy"
-include "FillArray.dfy"
-include "DupElements.dfy"
+include "FillArray/FillArray.dfy"
+include "DupElements/DupElements.dfy"
 
 
 module ListaPersonas{
