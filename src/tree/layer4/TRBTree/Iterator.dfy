@@ -203,7 +203,38 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     if root.Node? then
       Link(minimumKey(root))
     else
-      PastTheBeginning
+      PastTheEnd
+  }
+
+  lemma FirstSpec(root: trbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    ensures Valid(First(root), root)
+  {}
+
+  lemma FirstTraversed(root: trbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    ensures Traversed(First(root), root) == {}
+  {
+    if root.Node? {
+      SearchImpliesOrdered(root);
+      SmallerKeys(root, First(root).link);
+      forall k | k in keys(root)
+        ensures !(k < minimumKey(root))
+      {
+        KeyInOrder(root, k);
+      }
+    }
+  }
+
+  lemma FirstIndex(root: trbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    ensures Index(First(root), root) == 0
+  {
+    FirstTraversed(root);
+    TraversedIndex(First(root), root);
   }
 
   function Next(it: iter, root: trbtree): iter

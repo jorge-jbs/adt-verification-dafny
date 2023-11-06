@@ -102,7 +102,7 @@ module ThreadedLinkedTree {
       ensures parent.Model() == old(parent.Model())
     {
       this.node := parent.root;
-      this.isPastTheEnd := false;
+      this.isPastTheEnd := true;
       this.parent := parent;
       new;
       ValidImp();
