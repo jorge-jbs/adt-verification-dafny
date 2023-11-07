@@ -1,4 +1,3 @@
-
 // Must be verified with -allocated:2
 
 include "../../src/List/ListSpec.dfy"
@@ -28,7 +27,7 @@ ghost function Fib(n: nat): seq<nat>
         {r} + r.Repr() !! {s} + s.Repr())
 }*/
 
-method {:verify false} NextPrefix(pre: List<nat>, n: nat)
+method NextPrefix(pre: List<nat>, n: nat)
   modifies pre, pre.Repr()
   requires allocated(pre.Repr())
   ensures allocated(pre.Repr())
@@ -48,7 +47,7 @@ method {:verify false} NextPrefix(pre: List<nat>, n: nat)
   pre.PushBack(x+y);
 }
 
-method {:verify false} Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
+method Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
   modifies l, l.Repr()
   requires l.Valid()
   requires allocated(l.Repr())
@@ -92,7 +91,7 @@ method {:verify false} Copy<A>(l: List<A>) returns (nl: List<A>)  // 49.9s
   }
 }
 
-method {:verify false} FibPrefixes2() returns (pres: List<List<nat>>)  // 45s
+method FibPrefixes2() returns (pres: List<List<nat>>)  // 45s
   ensures allocated(pres.Repr())
   ensures fresh(pres)
   ensures fresh(pres.Repr())
@@ -102,12 +101,20 @@ method {:verify false} FibPrefixes2() returns (pres: List<List<nat>>)  // 45s
     && fresh(pre)
     && fresh(pre.Repr())
   ensures forall r | r in pres.Model() :: r.Valid()
+  ensures forall i | 0 <= i < |pres.Model()| :: 
+       && allocated(pres.Model()[i].Repr())
+       && fresh(pres.Model()[i])
+       && fresh(pres.Model()[i].Repr())
+       && pres.Model()[i].Valid()
+       && ({pres.Model()[i]} + pres.Model()[i].Repr()) !! ({pres} + pres.Repr())
   ensures forall i, j | 0 <= i < j < |pres.Model()| ::
     && pres.Model()[i] != pres.Model()[j]
     && pres.Model()[i] !in pres.Model()[j].Repr()
     && pres.Model()[j] !in pres.Model()[i].Repr()
     && pres.Model()[i].Repr() !! pres.Model()[j].Repr()
-  ensures forall pre | pre in pres.Model() :: {pres} + pres.Repr() !! {pre} + pre.Repr()
+  
+
+  //ensures forall pre | pre in pres.Model() :: {pres} + pres.Repr() !! {pre} + pre.Repr()
   ensures forall i | 0 <= i < |pres.Model()| ::
     pres.Model()[i].Model() == Fib(i+1)
   ensures |pres.Model()| == 2
@@ -133,20 +140,26 @@ method {:verify false} FibPrefixes2() returns (pres: List<List<nat>>)  // 45s
 }
 
 // Compute n fibonacci prefixes of increasing length
-method {:verify true} {:timelimitMultiplier 400} FibPrefixes(n: nat) returns (pres: List<List<nat>>)
+method  {:only} {:timelimitMultiplier 400} FibPrefixes(n: nat) returns (pres: List<List<nat>>)
   requires n >= 2
 
   ensures allocated(pres.Repr())
   ensures fresh(pres)
   ensures fresh(pres.Repr())
   ensures pres.Valid()
-  ensures forall pre | pre in pres.Model() :: 
+  /*ensures forall pre | pre in pres.Model() :: 
     && allocated(pre.Repr()) 
     && fresh(pre) 
     && fresh(pre.Repr()) 
-    && pre.Valid() 
+    && pre.Valid() */
     
-  ensures forall pre | pre in pres.Model() :: ({pres} + pres.Repr()) !! ({pre} + pre.Repr())
+  //ensures forall pre | pre in pres.Model() :: ({pres} + pres.Repr()) !! ({pre} + pre.Repr())
+   ensures forall i | 0 <= i < |pres.Model()| :: 
+       && allocated(pres.Model()[i].Repr())
+       && fresh(pres.Model()[i])
+       && fresh(pres.Model()[i].Repr())
+       && pres.Model()[i].Valid()
+       && ({pres.Model()[i]} + pres.Model()[i].Repr()) !! ({pres} + pres.Repr())
   ensures forall i, j | 0 <= i < j < |pres.Model()| ::
       ({pres.Model()[i]}+ pres.Model()[i].Repr()) !! ({pres.Model()[j]}+pres.Model()[j].Repr())
 
@@ -161,12 +174,18 @@ method {:verify true} {:timelimitMultiplier 400} FibPrefixes(n: nat) returns (pr
     invariant fresh(pres)
     invariant fresh(pres.Repr())
     invariant pres.Valid()
-    invariant forall pre | pre in pres.Model() ::
+    /*invariant forall pre | pre in pres.Model() ::
       && allocated(pre.Repr())
       && fresh(pre)
       && fresh(pre.Repr())
       && pre.Valid()
-    invariant forall pre | pre in pres.Model() :: ({pres} + pres.Repr()) !! ({pre} + pre.Repr())
+    invariant forall pre | pre in pres.Model() :: ({pres} + pres.Repr()) !! ({pre} + pre.Repr())*/
+    invariant forall i | 0 <= i < |pres.Model()| :: 
+       && allocated(pres.Model()[i].Repr())
+       && fresh(pres.Model()[i])
+       && fresh(pres.Model()[i].Repr())
+       && pres.Model()[i].Valid()
+       && ({pres.Model()[i]} + pres.Model()[i].Repr()) !! ({pres} + pres.Repr())
     invariant forall j, k | 0 <= j < k < |pres.Model()| ::
       ({pres.Model()[j]}+ pres.Model()[j].Repr()) !! ({pres.Model()[k]}+pres.Model()[k].Repr())
 
@@ -178,22 +197,34 @@ method {:verify true} {:timelimitMultiplier 400} FibPrefixes(n: nat) returns (pr
 
     assert pres.Model()[|pres.Model()|-1] in pres.Model();
 
-    assert forall pre | pre in pres.Model() ::
+    /*assert forall pre | pre in pres.Model() ::
       && allocated(pre.Repr())
       && fresh(pre)
       && fresh(pre.Repr())
-      && pre.Valid();
-    assert pres.Model()[|pres.Model()|-1].Model()==Fib(|pres.Model()|);
-
+      && pre.Valid();*/
+    //assert pres.Model()[|pres.Model()|-1].Model()==Fib(|pres.Model()|);
+    ghost var omodel := pres.Model();
+  
     var lpre := pres.Back();
 
-    assume forall pre | pre in pres.Model() ::
+    assert forall i | 0 <= i < |pres.Model()| :: pres.Model()[i].Valid() && pres.Model()[i].Model() == Fib(i+1);
+    assert forall i | 0 <= i < |pres.Model()| :: 
+       && allocated(pres.Model()[i].Repr())
+       && fresh(pres.Model()[i])
+       && fresh(pres.Model()[i].Repr())
+       && pres.Model()[i].Valid()
+       && ({pres.Model()[i]} + pres.Model()[i].Repr()) !! ({pres} + pres.Repr());
+    /*assert forall pre | pre in omodel ::
       && allocated(pre.Repr())
       && fresh(pre)
       && fresh(pre.Repr())
       && pre.Valid();
+      assume false;*/
+
+
+
     assert lpre==pres.Model()[|pres.Model()|-1];
-    assert lpre.Model() == Fib(|pres.Model()|);
+    //assert lpre.Model() == Fib(|pres.Model()|);
     
     var npre := Copy(lpre);
     

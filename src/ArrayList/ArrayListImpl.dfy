@@ -230,7 +230,7 @@ class ArrayListImpl<A> extends ArrayList<A> {
   {
     {elements} + iterators 
   }
-
+  
   ghost function ReprFamily(n: nat): set<object>
     decreases n
     ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
