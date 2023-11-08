@@ -89,6 +89,30 @@ module {:options "-functionSyntax:4"} TRBTree.TRBInsert {
     }
   }
 
+  lemma TRBInsertSize(prev: threadOrEmpty, t: trbtreeOrThread, next: threadOrEmpty, k': K, v': V)
+    decreases t
+    ensures
+      if IsInserted(t, k') then
+        size(TRBInsert(prev, t, next, k', v')) == size(t) + 1
+      else
+        size(TRBInsert(prev, t, next, k', v')) == size(t)
+  {
+    match t {
+      case Empty|Thread(_) => {
+      }
+      case Node(l, k, v, r, c) => {
+        if k < k' {
+          TRBInsertSize(Thread(k), r, next, k', v');
+          RestoreSize(Node(l, k, v, TRBInsert(Thread(k), r, next, k', v'), c));
+        } else if k' < k {
+          TRBInsertSize(prev, l, Thread(k), k', v');
+          RestoreSize(Node(TRBInsert(prev, l, Thread(k), k', v'), k, v, r, c));
+        } else {
+        }
+      }
+    }
+  }
+
   lemma TRBInsertThreaded(prev: threadOrEmpty, t: trbtreeOrThread, next: threadOrEmpty, k': K, v': V)
     decreases t
     requires t.Node? ==> ThreadedTreeNe(prev, t, next)
@@ -219,6 +243,16 @@ module {:options "-functionSyntax:4"} TRBTree.TRBInsert {
     ensures RedBlackTreeRoot(TRBInsertRoot(t, k', v'))
   {
     TRBInsertSpec(Empty, t, Empty, k', v');
+  }
+
+  lemma TRBInsertRootSize(t: trbtree, k': K, v': V)
+    ensures
+      if IsInserted(t, k') then
+        size(TRBInsertRoot(t, k', v')) == size(t) + 1
+      else
+        size(TRBInsertRoot(t, k', v')) == size(t)
+  {
+    TRBInsertSize(Empty, t, Empty, k', v');
   }
 
   lemma TRBInsertRootThreaded(t: trbtree, k': K, v': V)

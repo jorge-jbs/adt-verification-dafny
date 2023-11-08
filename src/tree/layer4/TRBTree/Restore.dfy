@@ -104,6 +104,40 @@ module {:options "-functionSyntax:4"} TRBTree.Restore {
     assert t''' == Restore(t);
   }
 
+  lemma RestoreSize(t: trbtree)
+    requires t.Node?
+
+    ensures size(t) == size(Restore(t))
+  {
+    var t' :=
+      if isRed(t.right) then
+        RotateLeft(t)
+      else
+        t;
+    var t'' :=
+      if isRed(t'.left) && isRed(t'.left.left) then
+        RotateRight(t')
+      else
+        t';
+    var t''' :=
+      if isRed(t''.left) && isRed(t''.right) then
+        FlipColors(t'')
+      else
+        t'';
+
+    if isRed(t.right) {
+      RotateLeftSize(t);
+    }
+    if isRed(t'.left) && isRed(t'.left.left) {
+      RotateRightSize(t');
+    }
+    if isRed(t''.left) && isRed(t''.right) {
+      FlipColorsSize(t'');
+    } else {
+    }
+    assert t''' == Restore(t);
+  }
+
   lemma RestoreThreaded(prev: threadOrEmpty, t: trbtree, next: threadOrEmpty)
     requires t.Node?
     requires ThreadedTreeNe(prev, t, next)

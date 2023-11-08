@@ -308,6 +308,25 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     ensures Get(t, k) == Get'(t, k)
   {}
 
+  lemma Get'ToMapRec(t: trbtreeOrThread, k: K)
+    requires SearchTree(t)
+    requires k in keys(t)
+    requires assert keys(t) == toMapRec(t).Keys by {ToMapRecKeys(t);} true
+    ensures toMapRec(t)[k] == Get'(t, k)
+  {
+    SearchImpliesUnique(t);
+    ToMapRecKeys(t.left);
+    ToMapRecKeys(t.right);
+    if k == t.key {
+      assert k !in toMapRec(t.left);
+      assert k !in toMapRec(t.right);
+    } else if k in keys(t.left) {
+      Get'ToMapRec(t.left, k);
+    } else {
+      Get'ToMapRec(t.right, k);
+    }
+  }
+
   function GetSubtree(t: trbtreeOrThread, k: K): trbtree
     requires k in keys(t)
     requires SearchTree(t)
@@ -359,6 +378,10 @@ module {:options "-functionSyntax:4"} TRBTree.Base {
     requires SearchTree(t)
     //ensures toMap(t) == toMap(t.left) + toMap(t.right) + map[t.key := t.value]
     ensures toMap(t) == toMapRec(t)
+  {}
+
+  lemma ToMapRecKeys(t: trbtreeOrThread)
+    ensures toMapRec(t).Keys == keys(t)
   {}
 
   predicate Subtree(node: trbtree, root: trbtreeOrThread)

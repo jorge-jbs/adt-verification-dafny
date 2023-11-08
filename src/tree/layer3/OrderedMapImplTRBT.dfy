@@ -58,6 +58,63 @@ module OrderedMapImplTRBT {
       parent.iterators := parent.iterators + {this};
     }
 
+    constructor At(parent: OrderedMapImplTRBT, iter: ThreadedLinkedTreeIterator)
+      modifies parent`iterators
+      requires parent.Valid()
+      requires iter.Valid()
+      requires iter.parent == parent.tree
+      requires forall it <- parent.iterators :: it.iter != iter
+      requires iter.HasPeek()
+      ensures parent.Valid()
+      ensures parent.Model() == old(parent.Model())
+      ensures |parent.Model()| == |old(parent.Model())|
+      ensures Valid()
+      ensures HasPeek?()
+      ensures Peek?() == iter.Peek()
+      ensures this.parent == parent
+      ensures this.iter == iter
+      ensures parent.iterators == old(parent.iterators) + {this}
+    {
+      this.iter := iter;
+      this.parent := parent;
+      new;
+      parent.iterators := parent.iterators + {this};
+      assert
+        && HasPeek?()
+        && TRBit.HasPeek(iter.Model())
+        && TRBit.HasPeek'(iter.Model(), iter.parent.Model())
+      by {
+        assert iter.HasPeek();
+        calc <==> {
+          iter.HasPeek();
+          { iter.HasPeekEq(); }
+          iter.HasPeek'();
+          TRBit.HasPeek(iter.Model());
+          {
+            KeysAndElems(iter.parent.skeleton);
+            TRBit.HasPeekEq(iter.Model(), iter.parent.Model());
+          }
+          TRBit.HasPeek'(iter.Model(), iter.parent.Model());
+          0 <= Index() < |Parent().Model()|;
+          HasPeek?();
+        }
+      }
+      assert Peek?() == iter.Peek() by {
+        calc == {
+          Peek?();
+          TRBit.Peek'(iter.Model(), iter.parent.Model());
+          {
+            KeysAndElems(iter.parent.skeleton);
+            TRBit.PeekEq(iter.Model(), iter.parent.Model());
+          }
+          TRBit.Peek(iter.Model(), iter.parent.Model());
+          iter.Peek'();
+          { iter.PeekEq(); }
+          iter.Peek();
+        }
+      }
+    }
+
     ghost function Index(): int
       reads this, Parent(), Parent().Repr()
       requires Valid()
@@ -576,7 +633,7 @@ module OrderedMapImplTRBT {
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
     {}
 
-    method {:verify false} Find(k:K) returns (newt:UnorderedMapIterator)
+    method {:verify false} Find(k: K) returns (newt:UnorderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -623,22 +680,8 @@ module OrderedMapImplTRBT {
 
       ensures Iterators() >= old(Iterators())
     {
-      TRBi.TRBInsertRootSpec(tree.Model(), k, v);
-      TRBi.IsInsertedSpec(tree.Model(), k);
-      TRBi.TRBInsertRootModel(tree.Model(), k, v);
-      var isInserted := tree.Insert(k, v);
-      if isInserted {
-        size := size + 1;
-        assert size == TRB.size(tree.Model()) by {
-          TRB.SizeLemmas(old(tree.Model()));
-          TRB.SizeLemmas(tree.Model());
-        }
-      } else {
-        assert size == TRB.size(tree.Model()) by {
-          TRB.SizeLemmas(old(tree.Model()));
-          TRB.SizeLemmas(tree.Model());
-        }
-      }
+      var mid := First();
+      var _ := Insert(mid, k, v);
     }
 
     method Remove(k: K)  // 2'
@@ -688,7 +731,7 @@ module OrderedMapImplTRBT {
       }
     }
 
-    method {:verify false} Insert(mid: UnorderedMapIterator, k: K, v : V) returns (newt:UnorderedMapIterator)
+    method Insert(mid: UnorderedMapIterator, k: K, v : V) returns (newt:UnorderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -696,7 +739,7 @@ module OrderedMapImplTRBT {
 
       requires Valid()
       ensures Valid()
-      ensures Model() == old(Model())[k:=v]
+      ensures Model() == old(Model())[k := v]
       ensures if (k in old(Model())) then |Model()| == old(|Model()|)
               else |Model()| == 1 + old(|Model()|)
 
@@ -706,13 +749,82 @@ module OrderedMapImplTRBT {
 
       ensures newt is OrderedMapIterator
       ensures fresh(newt)
-      ensures newt.Valid() && newt.Parent() == this
-      ensures newt.HasPeek?() && newt.Peek?() == (k,v)
+      ensures newt.Valid()
+      ensures newt.Parent() == this
+      ensures newt.HasPeek?()
+      ensures newt.Peek?() == (k, v)
 
       ensures (newt as OrderedMapIterator).Index() == |smaller(Model().Keys,k)|
 
-      ensures Iterators() >= {newt}+old(Iterators())
-    {}
+      ensures Iterators() >= {newt} + old(Iterators())
+    {
+      TRBi.TRBInsertRootSpec(tree.Model(), k, v);
+      TRBi.TRBInsertRootSize(tree.Model(), k, v);
+      TRBi.IsInsertedSpec(tree.Model(), k);
+      TRBi.TRBInsertRootModel(tree.Model(), k, v);
+      var isInserted, iter := tree.Insert(k, v);
+      assert iter.Peek() == (k, v) by {
+        calc == {
+          iter.Peek();
+          { iter.PeekEq(); }
+          iter.Peek'();
+          TRBit.Peek(TRBit.Find(k), iter.parent.Model());
+          { TRBit.FindAfterInsert(k, v, iter.parent.Model()); }
+          (k, v);
+        }
+      }
+      if isInserted {
+        size := size + 1;
+      }
+      /*
+      assert {:only} size == TRB.size(tree.Model()) by {
+        assume false;
+        ToMapRecKeys(old(tree.Model()));
+        assert k !in old(Model()) <==> isInserted;
+        if isInserted {
+          calc == {
+            size;
+            old(size) + 1;
+            TRB.size(old(tree.Model())) + 1;
+            {
+              assert TRB.size(old(tree.Model())) == |keys(old(tree.Model()))| by {
+                SizeLemmas(old(tree.Model()));
+              }
+            }
+            |keys(old(tree.Model()))| + |{k}|;
+            { assert k !in keys(old(tree.Model())); }
+            |keys(old(tree.Model())) + {k}|;
+            { assert keys(old(tree.Model())) + {k} == keys(tree.Model()); }
+            |keys(tree.Model())|;
+            { SizeLemmas(tree.Model()); }
+            TRB.size(tree.Model());
+          }
+        } else {
+          calc == {
+            size;
+            old(size);
+            TRB.size(old(tree.Model()));
+            { SizeLemmas(old(tree.Model())); }
+            |keys(old(tree.Model()))|;
+            { assert keys(old(tree.Model())) == keys(tree.Model()); }
+            |keys(tree.Model())|;
+            {
+              assert |keys(tree.Model())| == TRB.size(tree.Model()) by {
+                SizeLemmas(tree.Model());
+              }
+            }
+            TRB.size(tree.Model());
+          }
+        }
+      }
+      */
+      newt := new OrderedMapIteratorTRBT.At(this, iter);
+      assert fresh(tree.Repr() - old(tree.Repr()));
+      assert fresh(iterators - old(iterators));
+      assert fresh((set it <- iterators :: it.iter) - old(set it <- iterators :: it.iter));
+      assert Repr() == {tree} + iterators + tree.Repr() + (set it <- iterators :: it.iter);
+      assert fresh(Repr() - old(Repr()));
+    }
 
     method {:verify false} Erase(mid:UnorderedMapIterator) returns (next: UnorderedMapIterator)
       modifies this, Repr()

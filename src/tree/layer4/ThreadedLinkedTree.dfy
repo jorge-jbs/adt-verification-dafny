@@ -114,6 +114,30 @@ module ThreadedLinkedTree {
       }
     }
 
+    constructor At(node: TTNode, parent: ThreadedLinkedTree)
+      modifies {}
+      requires parent.Valid()
+      requires parent.Threaded()
+      requires parent.SearchTree()
+      requires TRB.ThreadedTreeRoot(parent.Model())
+      requires node in elems(parent.skeleton)
+      ensures Valid()
+      ensures Model() == TRBit.Find(node.key)
+      ensures Parent() == parent
+      ensures parent.Valid()
+      ensures parent.Threaded()
+      ensures parent.SearchTree()
+      ensures TRB.ThreadedTreeRoot(parent.Model())
+      ensures old(parent.RedBlackTree()) ==> parent.RedBlackTree()
+      ensures parent.Model() == old(parent.Model())
+    {
+      this.node := node;
+      this.isPastTheEnd := true;
+      this.parent := parent;
+      new;
+      KeysAndElems(parent.skeleton);
+    }
+
     ghost function Index(): int
       reads this, node, parent, parent.Repr()
       requires Valid()
@@ -395,7 +419,7 @@ module ThreadedLinkedTree {
       TRB.RedBlackTreeRoot(TreeModelRec(skeleton))
     }
 
-    method Insert(k: K, v: V) returns (isInserted: bool)
+    method Insert(k: K, v: V) returns (isInserted: bool, it: ThreadedLinkedTreeIterator)
       modifies this, Repr()
 
       requires Valid()
@@ -409,6 +433,10 @@ module ThreadedLinkedTree {
       ensures RedBlackTree()
       ensures Model() == TRBi.TRBInsertRoot(old(Model()), k, v)
       ensures isInserted <==> TRBi.IsInserted(old(Model()), k)
+      ensures fresh(it)
+      ensures it.Parent() == this
+      ensures it.Valid()
+      ensures it.Model() == TRBit.Link(k)
 
       requires allocated(Repr())
       ensures fresh(Repr()-old(Repr()))
@@ -422,6 +450,9 @@ module ThreadedLinkedTree {
       TRBi.TRBInsertRootSpec(TreeModelRec(skeleton), k, v);
       var insertedNode;
       root, skeleton, insertedNode, isInserted := TRBInsertRoot(root, skeleton, k, v);
+
+      ThreadedRootImp(skeleton);
+      it := new ThreadedLinkedTreeIterator.At(insertedNode, this);
     }
 
     method Remove(k: K) returns (isRemoved: bool)
@@ -470,24 +501,24 @@ module ThreadedLinkedTree {
     assert TRB.toMap(t.Model()) == map[];
 
     TRBi.TRBInsertRootModel(t.Model(), 1, 0);
-    var _ := t.Insert(1, 0);
+    var _, _ := t.Insert(1, 0);
     assert TRB.toMap(t.Model()) == map[1 := 0];
 
     TRBi.TRBInsertRootModel(t.Model(), 3, 2);
-    var _ := t.Insert(3, 2);
+    var _, _ := t.Insert(3, 2);
     assert TRB.toMap(t.Model()) == map[1 := 0, 3 := 2];
 
     TRBi.TRBInsertRootModel(t.Model(), 2, 1);
-    var _ := t.Insert(2, 1);
+    var _, _ := t.Insert(2, 1);
     assert TRB.toMap(t.Model()) == map[1 := 0, 3 := 2, 2 := 1];
   }
 
   method {:verify false} TestThreadedLinkedTreeIterator()
   {
     var t := new ThreadedLinkedTree();
-    var _ := t.Insert(1, 0);
-    var _ := t.Insert(3, 2);
-    var _ := t.Insert(2, 1);
+    var _, _ := t.Insert(1, 0);
+    var _, _ := t.Insert(3, 2);
+    var _, _ := t.Insert(2, 1);
     print "\n";
 
     var it := t.First();
