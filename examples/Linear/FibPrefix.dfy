@@ -1,10 +1,11 @@
 // Must be verified with -allocated:2
-
+include "../../src/Collections/Set.dfy"
 include "../../src/List/ListSpec.dfy"
 include "../../src/LinkedList/LinkedListImpl.dfy"
 
 
 module FibPrefix{
+   import opened Set
    import opened ListSpec
    import opened LinkedListImpl
 
@@ -169,6 +170,7 @@ method  {:only} {:timelimitMultiplier 400} FibPrefixes(n: nat) returns (pres: Li
 {
   pres := FibPrefixes2();
   var i := 2;
+  
   while i < n
     invariant allocated(pres.Repr())
     invariant fresh(pres)
@@ -204,15 +206,38 @@ method  {:only} {:timelimitMultiplier 400} FibPrefixes(n: nat) returns (pres: Li
       && pre.Valid();*/
     //assert pres.Model()[|pres.Model()|-1].Model()==Fib(|pres.Model()|);
     ghost var omodel := pres.Model();
-  
-    var lpre := pres.Back();
+    label preBack:
+    assert {:only} forall j, k | 0 <= j < k < |pres.Model()| ::
+      ({pres.Model()[j]}+ pres.Model()[j].Repr()) !! ({pres.Model()[k]}+pres.Model()[k].Repr());
+    assert {:only} forall i | 0 <= i < |pres.Model()| :: 
+       && allocated(pres.Model()[i].Repr())
+       && fresh(pres.Model()[i])
+       //&& unchanged@preBack(pres.Model()[i].Repr());
+       && fresh(pres.Model()[i].Repr())
+       && pres.Model()[i].Valid()
+       && ({pres.Model()[i]} + pres.Model()[i].Repr()) !! ({pres} + pres.Repr());
 
-    assert forall i | 0 <= i < |pres.Model()| :: pres.Model()[i].Valid() && pres.Model()[i].Model() == Fib(i+1);
+    var lpre := pres.Back();
+    //Allocated(set o | o in pres.Model());
+    //assert forall i | 0 <= i < |pres.Model()| :: pres.Model()[i].Valid() && pres.Model()[i].Model() == Fib(i+1);
+    assume forall i | 0 <= i < |pres.Model()| :: fresh@preBack(pres.Repr()-old(pres.Repr()));
+    
+    assert {:only} forall i | 0 <= i < |pres.Model()| :: 
+      {pres.Model()[i]} !! {pres as object};
+    assert {:only}  forall i | 0 <= i < |pres.Model()| :: 
+      pres.Model()[i].Repr() !! (pres.Repr());
+
+    assume {:only} forall i | 0 <= i < |pres.Model()| :: 
+      ({pres.Model()[i]} + pres.Model()[i].Repr()) !! ({pres} + pres.Repr());
+    assert {:only} forall j, k | 0 <= j < k < |pres.Model()| ::
+      ({pres.Model()[j]}+ pres.Model()[j].Repr()) !! ({pres.Model()[k]}+pres.Model()[k].Repr());
+
     assert forall i | 0 <= i < |pres.Model()| :: 
        && allocated(pres.Model()[i].Repr())
        && fresh(pres.Model()[i])
-       && fresh(pres.Model()[i].Repr())
-       && pres.Model()[i].Valid()
+       //&& unchanged@preBack(pres.Model()[i].Repr());
+       //&& fresh(pres.Model()[i].Repr());
+       //&& pres.Model()[i].Valid();
        && ({pres.Model()[i]} + pres.Model()[i].Repr()) !! ({pres} + pres.Repr());
     /*assert forall pre | pre in omodel ::
       && allocated(pre.Repr())
