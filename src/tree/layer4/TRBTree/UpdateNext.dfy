@@ -34,6 +34,19 @@ module {:options "-functionSyntax:4"} TRBTree.UpdateNext {
     }
   }
 
+  lemma UpdateNextSize(newNext: threadOrEmpty, t: trbtree)
+    ensures size(UpdateNext(newNext, t)) == size(t)
+  {
+    match t {
+      case Empty => {}
+      case Node(l, k, v, Thread(_), c) => {}
+      case Node(l, k, v, Empty, c) => {}
+      case Node(l, k, v, r, c) => {
+        UpdateNextSize(newNext, r);
+      }
+    }
+  }
+
   lemma UpdateNextThreaded(
       newNext: threadOrEmpty,
       prev: threadOrEmpty, 

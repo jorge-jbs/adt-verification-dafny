@@ -684,7 +684,7 @@ module OrderedMapImplTRBT {
       var _ := Insert(mid, k, v);
     }
 
-    method Remove(k: K)  // 2'
+    method Remove(k: K)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -702,32 +702,12 @@ module OrderedMapImplTRBT {
       ensures Iterators() >= old(Iterators())
     {
       TRBr.RemoveRootSpec(tree.Model(), k);
+      TRBr.RemoveRootSize(tree.Model(), k);
       TRBr.IsRemovedRootSpec(tree.Model(), k);
       TRBr.RemoveRootModel(tree.Model(), k);
-      TRB.SizeLemmas(tree.Model());
       var isRemoved := tree.Remove(k);
-      TRB.SizeLemmas(tree.Model());
       if isRemoved {
         size := size - 1;
-      }
-      assert Valid()
-      by {
-        assert
-          && ReprDepth == 1
-          && tree in ReprFamily(0) && tree.Repr() <= ReprFamily(1)
-          && tree.Valid()
-          && tree.Threaded()
-          && tree.SearchTree()
-          && tree.RedBlackTree()
-          && TRB.size(tree.Model()) == size
-        by {
-          //assume false;
-        }
-        assert (forall it | it in iterators :: it.parent == this);
-        assert (
-          forall it1, it2 | it1 in iterators && it2 in iterators && it1 != it2 ::
-            it1.iter != it2.iter
-        );
       }
     }
 

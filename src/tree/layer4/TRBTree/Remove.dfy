@@ -298,6 +298,93 @@ module {:options "-functionSyntax:4"} TRBTree.Remove {
     }
   }
 
+  lemma RemoveSize(t: trbtreeOrThread, isLeft: bool, k: K)
+    decreases size(t)
+    requires Remove(t, isLeft, k).Some?
+    ensures
+      if IsRemoved(t, isLeft, k) then
+        size(Remove(t, isLeft, k).unwrap) == size(t) - 1
+      else
+        size(Remove(t, isLeft, k).unwrap) == size(t)
+  {
+    if t.Empty? || t.Thread? {
+    } else {
+      if t.key > k {
+        var t' :=
+          if isBlack(t.left) && !isRed(t.left.left) then
+            MoveRedLeftSize(t);
+            MoveRedLeft(t)
+          else
+            t;
+        if isBlack(t.left) && !isRed(t.left.left) {
+          MoveRedLeftSize(t);
+        }
+        RemoveSize(t'.left, true, k);
+        var l' := Remove(t'.left, true, k).unwrap;
+        var t'' :=
+          Node(
+            l',
+            t'.key,
+            t'.value,
+            t'.right,
+            t'.color
+          );
+        var t''' := Restore(t'');
+        RestoreSize(t'');
+      } else {
+        var t' :=
+          if isRed(t.left) then
+            RotateRightSize(t);
+            RotateRight(t)
+          else
+            t;
+        if isRed(t.left) {
+          RotateRightSize(t);
+        }
+        if k == t'.key && IsThreadOrEmpty(t'.right) {
+        } else {
+          var t'' :=
+            if isBlack(t'.right) && !isRed(t'.right.left) then
+              MoveRedRightSize(t');
+              MoveRedRight(t')
+            else
+              t';
+          if isBlack(t'.right) && !isRed(t'.right.left) {
+            MoveRedRightSize(t');
+          }
+          if k != t''.key {
+            RemoveSize(t''.right, false, k);
+            var r' := Remove(t''.right, false, k).unwrap;
+            var t''' :=
+              Node(
+                t''.left,
+                t''.key,
+                t''.value,
+                r',
+                t''.color
+              );
+            var t'''' := Restore(t''');
+            RestoreSize(t''');
+          } else {
+            RemoveMinMaintainingPrevSize(t''.right, false);
+            var (r', minK, minV) := RemoveMinMaintainingPrev(t''.right, false).unwrap;
+            var t''' :=
+              Node(
+                UpdateNext(Thread(minK), t''.left),
+                minK,
+                minV,
+                r',
+                t''.color
+              );
+            UpdateNextSize(Thread(minK), t''.left);
+            var t'''' := Restore(t''');
+            RestoreSize(t''');
+          }
+        }
+      }
+    }
+  }
+
  lemma RemoveThreaded(
       prev: threadOrEmpty, 
       t: trbtreeOrThread, 

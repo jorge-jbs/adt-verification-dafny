@@ -173,6 +173,43 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveMinMaintainingPrev {
     }
   }
 
+  lemma RemoveMinMaintainingPrevSize(t: trbtreeOrThread, isLeft: bool)
+    decreases size(t)
+
+    requires t.Node?
+    requires RemoveMinMaintainingPrev(t, isLeft).Some?
+    ensures size(RemoveMinMaintainingPrev(t, isLeft).unwrap.0) == size(t) - 1
+  {
+    if IsThreadOrEmpty(t.left) {
+    } else {
+      var pt' :=
+        if isBlack(t.left) && !isRed(t.left.left) then
+          var _ :- Guard(t.right.Node?);
+          MoveRedLeftSize(t);
+          Some(MoveRedLeft(t))
+        else
+          Some(t);
+      assert pt'.Some?;
+      var t' := pt'.unwrap;
+      if isBlack(t.left) && !isRed(t.left.left) {
+        MoveRedLeftSize(t);
+      }
+      RemoveMinMaintainingPrevSize(t'.left, true);
+      assert RemoveMinMaintainingPrev(t'.left, true).Some?;
+      var (l', minK, minV) := RemoveMinMaintainingPrev(t'.left, true).unwrap;
+      var t'' :=
+        Node(
+          l',
+          t'.key,
+          t'.value,
+          t'.right,
+          t'.color
+        );
+      var t''' := Restore(t'');
+      RestoreSize(t'');
+    }
+  }
+
   lemma RemoveMinMaintainingPrevThreaded(
       prev: threadOrEmpty, 
       t: trbtree, 
