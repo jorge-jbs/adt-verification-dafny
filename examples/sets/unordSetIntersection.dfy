@@ -1,4 +1,9 @@
-include "../../src/tree/layer1/UnorderedSet.dfy"
+include "../../src/UnorderedSet/UnorderedSetSpec.dfy"
+
+module UnordSetIntersection{
+  import opened UnorderedSetSpec
+  
+  export provides UnorderedSetSpec, UnordSetIntersection
 
 method {:timelimitMultiplier 10} UnordSetIntersection(s1:UnorderedSet,s2:UnorderedSet,su:UnorderedSet)
 modifies s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
@@ -68,3 +73,4 @@ ensures s1.Iterators()>=old(s1.Iterators()) &&
  }
 }
 
+}

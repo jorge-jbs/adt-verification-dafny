@@ -1,4 +1,11 @@
-include "../../src/tree/layer1/UnorderedMultiset.dfy"
+include "../../src/UnorderedMultiset/UnorderedMultisetSpec.dfy"
+include "../../src/Collections/KeyValue.dfy"
+
+module UnordMultisetIntersection{
+  import opened UnorderedMultisetSpec
+  import opened KeyValue
+  
+  export provides KeyValue, UnorderedMultisetSpec, UnordMultisetAdd, UnordMultisetIntersection
 
 
 method {:timelimitMultiplier 10} UnordMultisetAdd(s:UnorderedMultiset,x:K,m:nat)
@@ -162,5 +169,5 @@ ensures s1.Iterators()>=old(s1.Iterators()) &&
  }
 }
 
-
+}
 

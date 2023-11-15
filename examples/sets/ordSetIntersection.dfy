@@ -1,4 +1,9 @@
-include "../../src/tree/layer1/OrderedSet.dfy"
+include "../../src/OrderedSet/OrderedSetSpec.dfy"
+
+module OrdSetIntersection{
+  import opened OrderedSetSpec
+  
+  export provides OrderedSetSpec, OrdSetIntersection
 
 
 
@@ -169,3 +174,4 @@ ensures s1.Iterators()>=old(s1.Iterators()) &&
 
 }
 
+}

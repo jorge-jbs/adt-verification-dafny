@@ -1,4 +1,9 @@
-include "../../src/tree/layer1/UnorderedMultiSet.dfy"
+include "../../src/UnorderedMultiset/UnorderedMultisetSpec.dfy"
+
+module UnordMultisetContained{
+  import opened UnorderedMultisetSpec
+  
+  export provides UnorderedMultisetSpec, UnordMultisetContained
 
 method UnordMultisetContained(s1:UnorderedMultiset,s2:UnorderedMultiset) returns (b:bool)
 modifies s1, s1.Repr(), s2, s2.Repr()
@@ -54,3 +59,4 @@ ensures s1.Iterators() >= old(s1.Iterators()) && s2.Iterators() >= old(s2.Iterat
  }
 }
 
+}

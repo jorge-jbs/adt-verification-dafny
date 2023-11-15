@@ -1,4 +1,9 @@
-include "../../src/tree/layer1/UnorderedSet.dfy"
+include "../../src/UnorderedSet/UnorderedSetSpec.dfy"
+
+module UnordSetContained{
+  import opened UnorderedSetSpec
+  
+  export provides UnorderedSetSpec, UnordSetContained
 
 method UnordSetContained(s1:UnorderedSet,s2:UnorderedSet) returns (b:bool)
 modifies s1, s1.Repr(), s2, s2.Repr()
@@ -53,3 +58,4 @@ ensures s1.Iterators() >= old(s1.Iterators()) && s2.Iterators() >= old(s2.Iterat
  }
 }
 
+}

@@ -1,7 +1,12 @@
-include "../../src/tree/layer1/OrderedSetForward.dfy"
+include "../../src/OrderedSet/OrderedSetForwardSpec.dfy"
+
+module OrdSetForwardContained{
+  import opened OrderedSetForwardSpec
+  
+  export provides OrderedSetForwardSpec, OrdSetContained
 
 
-method {:timeLimitMultiplier 20} OrdSetContained(s1:OrderedSetForward,s2:OrderedSetForward) returns (b:bool)
+method {:timeLimitMultiplier 100} OrdSetContained(s1:OrderedSetForward,s2:OrderedSetForward) returns (b:bool)
 modifies s1, s1.Repr(), s2, s2.Repr()
 requires allocated(s1.Repr())
 requires allocated(s2.Repr())
@@ -83,3 +88,4 @@ ensures s1.Iterators()>=old(s1.Iterators()) && s2.Iterators()>=old(s2.Iterators(
 
 }
 
+}
