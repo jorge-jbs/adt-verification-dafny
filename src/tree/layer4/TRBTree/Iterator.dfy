@@ -6,6 +6,7 @@ include "../../../../src/tree/layer4/TRBTree/RemoveElemth.dfy"
 include "../../../../src/tree/layer1/OrderedSetUtils.dfy"
 
 module {:options "-functionSyntax:4"} TRBTree.Iterator {
+  import opened Utils.Set
   import opened KeyValue
   import opened Color
   import opened Base
@@ -85,7 +86,7 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     (it.link, Get'(root, it.link))
   }
 
-  function Peek'(it: iter, root: trbtree): (K, V)
+  ghost function Peek'(it: iter, root: trbtree): (K, V)
     requires SearchTree(root)
     requires HasPeek'(it, root)
   {
@@ -147,7 +148,7 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     }
   }
 
-  function Traversed'(it: iter, root: trbtree): set<K>
+  ghost function Traversed'(it: iter, root: trbtree): set<K>
     requires SearchTree(root)
   {
     if Index(it, root) == -1 || Index(it, root) == |toMapRec(root)| then
@@ -335,12 +336,12 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
       Link(maximumKey(t.left))
   }
 
-  lemma {:verify false} ModelAfterInsert(it: iter, k: K, root: trbtree, root': trbtree)
+  lemma ModelAfterInsert(it: iter, k: K, root: trbtree, root': trbtree)
     requires HasPeek(it)
     requires Valid(it, root)
-    requires Valid(it, root')
     requires keys(root') == keys(root) + {k}
 
+    ensures Valid(it, root')
     ensures k !in keys(root) || k != it.link ==> Peek(it, root') == Peek(it, root)
     ensures
       if k !in keys(root) && k < it.link then
@@ -349,21 +350,192 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
       else
         && Index(it, root') == Index(it, root)
         && Traversed(it, root') == Traversed(it, root)
-  {}
-
-  lemma {:verify false} ModelAfterRemove(it: iter, k: K, root: trbtree, root': trbtree)
-    requires HasPeek(it)
-    requires Valid(it, root)
-    requires Valid(it, root')
-    requires keys(root') == keys(root) - {k}
-
-    ensures Peek(it, root') == Peek(it, root)
-    ensures
-      if k in keys(root) && k < it.link then
-        && Index(it, root') == Index(it, root) - 1
-        && Traversed(it, root') == Traversed(it, root) - {k}
+  {
+    assert Valid(it, root');
+    assume false;
+    assert k !in keys(root) || k != it.link ==> Peek(it, root') == Peek(it, root);
+    assert
+      if k !in keys(root) && k < it.link then
+        && Index(it, root') == Index(it, root) + 1
+        && Traversed(it, root') == Traversed(it, root) + {k}
       else
         && Index(it, root') == Index(it, root)
-        && Traversed(it, root') == Traversed(it, root)
-  {}
+        && Traversed(it, root') == Traversed(it, root);
+  }
+
+  lemma ModelAfterRemove(it: iter, k: K, root: trbtree, root': trbtree)
+    requires SearchTree(root)
+    requires SearchTree(root')
+    requires Valid(it, root)
+    requires toMapRec(root') == toMapRec(root) - {k}
+
+    ensures HasPeek(it) ==>
+      if it.link == k then
+        !Valid(it, root')
+      else
+        && Valid(it, root')
+        && Peek(it, root') == Peek(it, root)
+        && (
+          if k in keys(root) && k < it.link then
+            && Traversed(it, root') == Traversed(it, root) - {k}
+            && |Traversed(it, root')| == |Traversed(it, root)| - 1
+            && Index(it, root') == Index(it, root) - 1
+          else
+            && Traversed(it, root') == Traversed(it, root)
+            && |Traversed(it, root')| == |Traversed(it, root)|
+            && Index(it, root') == Index(it, root)
+        )
+    ensures !HasPeek(it) && Index(it, root) == -1 ==>
+      && Valid(it, root')
+      && Index(it, root') == -1
+      && (
+        if k in keys(root) then
+          && Traversed(it, root') == Traversed(it, root) - {k}
+          && |Traversed(it, root')| == |Traversed(it, root)| - 1
+        else
+          && Traversed(it, root') == Traversed(it, root)
+          && |Traversed(it, root')| == |Traversed(it, root)|
+      )
+    ensures !HasPeek(it) && Index(it, root) == |toMapRec(root)| ==>
+      && Valid(it, root')
+      //&& Index(it, root') == |toMapRec(root')|
+      && (
+        if k in keys(root) then
+          && Index(it, root') == Index(it, root) - 1
+          && Traversed(it, root') == Traversed(it, root) - {k}
+          && |Traversed(it, root')| == |Traversed(it, root)| - 1
+        else
+          && Index(it, root') == Index(it, root)
+          && Traversed(it, root') == Traversed(it, root)
+          && |Traversed(it, root')| == |Traversed(it, root)|
+      )
+
+    ensures var i := |smaller(toMapRec(root).Keys, k)|;
+      true
+      //&& ((Index(it, root)) < i ==> Index(it, root') == (Index(it, root)))
+      //&& (i < (Index(it, root')) ==> Index(it, root) == (Index(it, root)) - 1)
+  {
+    if HasPeek(it) {
+      ToMapRecKeys(root);
+      ToMapRecKeys(root');
+      if it.link != k {
+        assert Valid(it, root');
+        calc == {
+          Peek(it, root');
+          (it.link, Get'(root', it.link));
+          { Get'ToMapRec(root', it.link); }
+          (it.link, toMapRec(root')[it.link]);
+          (it.link, toMapRec(root)[it.link]);
+          { Get'ToMapRec(root, it.link); }
+          (it.link, Get'(root, it.link));
+          Peek(it, root);
+        }
+        if k in keys(root) && k < it.link {
+          assert Traversed(it, root') == Traversed(it, root) - {k} by {
+            SmallerKeys(root, it.link);
+            SmallerKeys(root', it.link);
+          }
+          assert Index(it, root') == Index(it, root) - 1 by {
+            TraversedIndex(it, root);
+            calc == {
+              Index(it, root');
+              { TraversedIndex(it, root'); }
+              |Traversed(it, root')|;
+              |Traversed(it, root) - {k}|;
+              {
+                assert k in Traversed(it, root) by {
+                  SmallerKeys(root, it.link);
+                }
+                SubCard(Traversed(it, root), {k});
+              }
+              |Traversed(it, root)| - |{k}|;
+              |Traversed(it, root)| - 1;
+              { TraversedIndex(it, root); }
+              Index(it, root) - 1;
+            }
+          }
+          assert |Traversed(it, root')| == |Traversed(it, root)| - 1 by {
+            TraversedIndex(it, root);
+            TraversedIndex(it, root');
+          }
+        } else {
+          assert Traversed(it, root') == Traversed(it, root) by {
+            SmallerKeys(root, it.link);
+            SmallerKeys(root', it.link);
+          }
+          assert Index(it, root') == Index(it, root) by {
+            TraversedIndex(it, root);
+            TraversedIndex(it, root');
+          }
+          assert |Traversed(it, root')| == |Traversed(it, root)| by {
+            TraversedIndex(it, root);
+            TraversedIndex(it, root');
+          }
+        }
+      }
+    }
+    if !HasPeek(it) && Index(it, root) == -1 {
+      SizeLemmas(root);
+      SizeLemmas(root');
+      ToMapRecKeys(root);
+      ToMapRecKeys(root');
+    }
+    if !HasPeek(it) && Index(it, root) == |toMapRec(root)| {
+      SizeLemmas(root);
+      SizeLemmas(root');
+      ToMapRecKeys(root);
+      ToMapRecKeys(root');
+    }
+  }
+
+  lemma ModelAfterRemoveV2(it: iter, k: K, root: trbtree, root': trbtree)
+    requires SearchTree(root)
+    requires SearchTree(root')
+    requires Valid(it, root)
+    requires toMapRec(root') == toMapRec(root) - {k}
+
+    ensures
+      var i := |smaller(toMapRec(root).Keys, k)|;
+      if Index(it, root) == i then
+        !Valid(it, root')
+      else
+        && Valid(it, root')
+        && (HasPeek(it) ==> Peek(it, root') == Peek(it, root))
+        && (
+          if k !in toMapRec(root) then
+            && Index(it, root') == Index(it, root)
+            && |Traversed(it, root')| == |Traversed(it, root)|
+            && Traversed(it, root') == Traversed(it, root)
+          else
+            && (Index(it, root) == -1 ==>
+              && Index(it, root') == -1
+              && |Traversed(it, root')| == |Traversed(it, root)| - 1
+              && Traversed(it, root') == Traversed(it, root) - {k}
+            )
+            && (0 <= Index(it, root) < i ==>
+              && Index(it, root') == Index(it, root)
+              && |Traversed(it, root')| == |Traversed(it, root)|
+              && Traversed(it, root') == Traversed(it, root)
+            )
+            && (i < Index(it, root') ==>
+              && Index(it, root) == Index(it, root) - 1
+              && |Traversed(it, root)| == |Traversed(it, root)| - 1
+              && Traversed(it, root) == Traversed(it, root) - {k}
+            )
+        )
+      /*
+      if Index(it, root) < i || k !in toMapRec(root) then
+        Index(it, root') == Index(it, root)
+      else
+        Index(it, root) == Index(it, root) - 1
+        */
+  /*
+  {
+    ModelAfterRemove(it, k, root, root');
+    SizeLemmas(root);
+    SizeLemmas(root');
+    ToMapRecKeys(root);
+    ToMapRecKeys(root');
+  }
+  */
 }

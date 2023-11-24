@@ -1,6 +1,6 @@
 include "../../../src/MUtils.dfy"
 
-module OrderedSetUtils {
+module {:options "--function-syntax:3"} OrderedSetUtils {
   import opened Utils
 
   function Pick<A>(s: set<A>): A

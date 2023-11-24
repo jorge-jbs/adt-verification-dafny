@@ -9,6 +9,7 @@ module {:options "-functionSyntax:4"} OrderedMapSpec {
 
   trait {:termination false} OrderedMapIterator extends UnorderedMapIterator {
     ghost function Parent(): UnorderedMap
+      decreases 0
       reads this
 
     ghost predicate Valid()

@@ -210,6 +210,11 @@ module {:options "-functionSyntax:4"} Utils {
       requires r !! s
       ensures |r + s| == |r| + |s|
     {}
+
+    lemma SubCard<A>(r: set<A>, s: set<A>)
+      requires s <= r
+      ensures |r - s| == |r| - |s|
+    {}
   }
 
   module Printer {

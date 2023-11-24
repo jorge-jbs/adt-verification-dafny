@@ -38,7 +38,8 @@ module ThreadedLinkedTree {
     ghost predicate Valid()
       reads this, parent
     {
-      node != null ==> node in elems(parent.skeleton)
+      && (node != null ==> node in elems(parent.skeleton))
+      && this in parent.iterators
     }
 
     ghost function Skeleton(): ttree<TTNode>
@@ -86,7 +87,7 @@ module ThreadedLinkedTree {
     }
 
     constructor First(parent: ThreadedLinkedTree)
-      modifies {}
+      modifies parent`iterators
       requires parent.Valid()
       requires parent.Threaded()
       requires parent.SearchTree()
@@ -100,11 +101,16 @@ module ThreadedLinkedTree {
       ensures TRB.ThreadedTreeRoot(parent.Model())
       ensures old(parent.RedBlackTree()) ==> parent.RedBlackTree()
       ensures parent.Model() == old(parent.Model())
+      ensures parent.iterators == {this} + old(parent.iterators)
+      requires allocated(parent.Repr())
+      ensures fresh(parent.Repr() - old(parent.Repr()))
+      ensures allocated(parent.Repr())
     {
       this.node := parent.root;
       this.isPastTheEnd := true;
       this.parent := parent;
       new;
+      parent.iterators := parent.iterators + {this};
       ValidImp();
       if parent.root == null {
         this.node := null;
@@ -115,7 +121,7 @@ module ThreadedLinkedTree {
     }
 
     constructor At(node: TTNode, parent: ThreadedLinkedTree)
-      modifies {}
+      modifies parent`iterators
       requires parent.Valid()
       requires parent.Threaded()
       requires parent.SearchTree()
@@ -130,11 +136,16 @@ module ThreadedLinkedTree {
       ensures TRB.ThreadedTreeRoot(parent.Model())
       ensures old(parent.RedBlackTree()) ==> parent.RedBlackTree()
       ensures parent.Model() == old(parent.Model())
+      ensures parent.iterators == {this} + old(parent.iterators)
+      requires allocated(parent.Repr())
+      ensures fresh(parent.Repr() - old(parent.Repr()))
+      ensures allocated(parent.Repr())
     {
       this.node := node;
       this.isPastTheEnd := true;
       this.parent := parent;
       new;
+      parent.iterators := parent.iterators + {this};
       KeysAndElems(parent.skeleton);
     }
 
@@ -197,7 +208,7 @@ module ThreadedLinkedTree {
       requires parent.SearchTree()
       requires Valid()
       requires assert Valid'() by {ValidImp();} true
-      requires assert TRB.ThreadedTreeRoot(parent.Model()) by {ThreadedRootImp(parent.skeleton);} true
+      requires assert TRB.ThreadedTreeRoot(parent.Model()) by {parent.ThreadedImp();} true
       requires HasPeek()
 
       ensures parent.Valid()
@@ -210,7 +221,7 @@ module ThreadedLinkedTree {
       ensures allocated(parent.Repr())
     {
       assert TRB.ThreadedTreeRoot(parent.Model()) by {
-        ThreadedRootImp(parent.skeleton);
+        parent.ThreadedImp();
       }
       if node.right == null {
         assert ValidRec(node.right, Skeleton().right);
@@ -279,6 +290,14 @@ module ThreadedLinkedTree {
       && forall it | it in iterators :: it.Parent() == this
     }
 
+    lemma ThreadedImp()
+      requires Valid()
+      requires Threaded()
+      ensures TRB.ThreadedTreeRoot(Model())
+    {
+      ThreadedRootImp(skeleton);
+    }
+
     constructor()
       ensures Valid()
       ensures Threaded()
@@ -332,6 +351,7 @@ module ThreadedLinkedTree {
       requires SearchTree()
       requires Threaded()
       ensures Valid()
+      ensures Threaded()
       ensures Model() == old(Model())
 
       ensures fresh(it)
@@ -344,9 +364,8 @@ module ThreadedLinkedTree {
         && it.Valid()
         && it.Model() == old(it.Model())
     {
-      ThreadedRootImp(skeleton);
+      ThreadedImp();
       it := new ThreadedLinkedTreeIterator.First(this);
-      iterators := iterators + {it};
     }
 
 /*
@@ -451,7 +470,7 @@ module ThreadedLinkedTree {
       var insertedNode;
       root, skeleton, insertedNode, isInserted := TRBInsertRoot(root, skeleton, k, v);
 
-      ThreadedRootImp(skeleton);
+      ThreadedImp();
       it := new ThreadedLinkedTreeIterator.At(insertedNode, this);
     }
 
@@ -481,6 +500,7 @@ module ThreadedLinkedTree {
           && old(it.Valid())
           && (old(it.HasPeek()) ==> old(it.Peek().0) != k) ::
         && it.Valid()
+        //&& it.Parent() == old(it.Parent())  // obvious since it.parent is const
         && it.Model() == old(it.Model())
         && it.HasPeek() == old(it.HasPeek())
     {
@@ -527,7 +547,7 @@ module ThreadedLinkedTree {
     print "\n";
 
     it.ValidImp();
-    ThreadedRootImp(t.skeleton);
+    t.ThreadedImp();
     assume {:axiom} false;  // Dafny cannot verify anything below
     it.Next();
     assert it.Peek() == (2, 1);
@@ -535,14 +555,14 @@ module ThreadedLinkedTree {
     print "\n";
 
     it.ValidImp();
-    ThreadedRootImp(t.skeleton);
+    t.ThreadedImp();
     it.Next();
     assert it.Peek() == (3, 2);
     print it.node.key;
     print "\n";
 
     it.ValidImp();
-    ThreadedRootImp(t.skeleton);
+    t.ThreadedImp();
     it.Next();
     assert !it.HasPeek();
   }

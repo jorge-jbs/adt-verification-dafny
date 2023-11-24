@@ -1,10 +1,8 @@
 include "../../../../src/MUtils.dfy"
 include "../../../../src/tree/KeyValue.dfy"
 include "../../../../src/tree/layer4/TRBTree/Base.dfy"
-include "../../../../src/tree/layer1/OrderedSetUtils.dfy"
 
 module {:options "-functionSyntax:4"} TRBTree.RemoveElemth {
-  //import opened Utils
   import opened KeyValue
   import opened Base
   import opened OrderedSetUtils

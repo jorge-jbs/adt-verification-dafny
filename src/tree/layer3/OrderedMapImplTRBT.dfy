@@ -1,3 +1,4 @@
+include "../../../src/MUtils.dfy"
 include "../../../src/tree/KeyValue.dfy"
 include "../../../src/tree/layer1/UnorderedMap.dfy"
 include "../../../src/tree/layer1/OrderedMap.dfy"
@@ -7,6 +8,7 @@ include "../../../src/tree/layer4/TRBTree/Base.dfy"
 include "../../../src/tree/layer4/TRBTree/TRBInsert.dfy"
 
 module OrderedMapImplTRBT {
+  import opened Utils
   import opened KeyValue
   import opened UnorderedMapSpec
   import opened OrderedMapSpec
@@ -23,7 +25,7 @@ module OrderedMapImplTRBT {
     ghost const parent: OrderedMapImplTRBT
 
     ghost function Parent(): UnorderedMap
-      reads this
+      decreases 0
     {
       parent
     }
@@ -38,80 +40,90 @@ module OrderedMapImplTRBT {
       && iter.Valid()
     }
 
-    constructor First(parent: OrderedMapImplTRBT)
-      modifies parent`iterators
-      requires parent.Valid()
-      ensures parent.Valid()
-      ensures parent.Model() == old(parent.Model())
-      ensures |parent.Model()| == |old(parent.Model())|
-      ensures Valid()
-      ensures this.parent == parent
-      ensures fresh(iter)
-      ensures Index() == 0
-      ensures parent.iterators == old(parent.iterators) + {this}
-    {
-      ThreadedRootImp(parent.tree.skeleton);
-      TRBit.FirstIndex(parent.tree.Model());
-      this.iter := new ThreadedLinkedTreeIterator.First(parent.tree);
-      this.parent := parent;
-      new;
-      parent.iterators := parent.iterators + {this};
-    }
-
-    constructor At(parent: OrderedMapImplTRBT, iter: ThreadedLinkedTreeIterator)
+    constructor (parent: OrderedMapImplTRBT, iter: ThreadedLinkedTreeIterator)
       modifies parent`iterators
       requires parent.Valid()
       requires iter.Valid()
-      requires iter.parent == parent.tree
+      requires iter.Parent() == parent.tree
       requires forall it <- parent.iterators :: it.iter != iter
-      requires iter.HasPeek()
       ensures parent.Valid()
       ensures parent.Model() == old(parent.Model())
       ensures |parent.Model()| == |old(parent.Model())|
+      ensures parent.Valid()
       ensures Valid()
-      ensures HasPeek?()
-      ensures Peek?() == iter.Peek()
       ensures this.parent == parent
-      ensures this.iter == iter
-      ensures parent.iterators == old(parent.iterators) + {this}
+      ensures HasPeek?() == iter.HasPeek()
+      ensures HasPeek?() ==> Peek?() == iter.Peek()
+      ensures Index() == iter.Index()
+      ensures parent.iterators == {this} + old(parent.iterators)
+      ensures forall it <- old(parent.Iterators()) | old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())
+                && |it.Traversed()| == old(|it.Traversed()|)
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+
+      ensures forall it <- old(parent.Iterators()) | old(it.Valid()) ::
+                (it is OrderedMapIterator &&
+                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()))
+      requires allocated(parent.Repr())
+      ensures fresh(parent.Repr() - old(parent.Repr()))
+      ensures allocated(parent.Repr())
     {
       this.iter := iter;
       this.parent := parent;
       new;
       parent.iterators := parent.iterators + {this};
-      assert
-        && HasPeek?()
-        && TRBit.HasPeek(iter.Model())
-        && TRBit.HasPeek'(iter.Model(), iter.parent.Model())
-      by {
-        assert iter.HasPeek();
-        calc <==> {
-          iter.HasPeek();
-          { iter.HasPeekEq(); }
-          iter.HasPeek'();
-          TRBit.HasPeek(iter.Model());
-          {
-            KeysAndElems(iter.parent.skeleton);
-            TRBit.HasPeekEq(iter.Model(), iter.parent.Model());
-          }
-          TRBit.HasPeek'(iter.Model(), iter.parent.Model());
-          0 <= Index() < |Parent().Model()|;
-          HasPeek?();
-        }
+      HasPeekEq();
+      if HasPeek?() {
+        PeekEq();
       }
-      assert Peek?() == iter.Peek() by {
-        calc == {
-          Peek?();
-          TRBit.Peek'(iter.Model(), iter.parent.Model());
-          {
-            KeysAndElems(iter.parent.skeleton);
-            TRBit.PeekEq(iter.Model(), iter.parent.Model());
-          }
-          TRBit.Peek(iter.Model(), iter.parent.Model());
-          iter.Peek'();
-          { iter.PeekEq(); }
-          iter.Peek();
+    }
+
+    lemma HasPeekEq()
+      requires Valid()
+      ensures HasPeek?() <==> iter.HasPeek()
+    {
+      calc <==> {
+        iter.HasPeek();
+        { iter.HasPeekEq(); }
+        iter.HasPeek'();
+        TRBit.HasPeek(iter.Model());
+        {
+          KeysAndElems(iter.parent.skeleton);
+          TRBit.HasPeekEq(iter.Model(), iter.parent.Model());
         }
+        TRBit.HasPeek'(iter.Model(), iter.parent.Model());
+        0 <= Index() < |Parent().Model()|;
+        HasPeek?();
+      }
+    }
+
+    lemma PeekEq()
+      requires Valid()
+      requires HasPeek?()
+      requires iter.HasPeek()
+      ensures Peek?() == iter.Peek()
+    {
+      calc == {
+        Peek?();
+        (
+          var k := elemth(Parent().Model().Keys, Index());
+          (k, Parent().Model()[k])
+        );
+        (
+          var k := elemth(toMapRec(iter.parent.Model()).Keys, TRBit.Index(iter.Model(), iter.parent.Model()));
+          (k, toMapRec(iter.parent.Model())[k])
+        );
+        TRBit.Peek'(iter.Model(), iter.parent.Model());
+        {
+          KeysAndElems(iter.parent.skeleton);
+          TRBit.PeekEq(iter.Model(), iter.parent.Model());
+        }
+        TRBit.Peek(iter.Model(), iter.parent.Model());
+        iter.Peek'();
+        { iter.PeekEq(); }
+        iter.Peek();
       }
     }
 
@@ -407,8 +419,9 @@ module OrderedMapImplTRBT {
       && tree.RedBlackTree()
       && TRB.size(tree.Model()) == size
       && (forall it | it in iterators :: it.parent == this)
+      && (forall it | it in iterators :: it.iter in tree.iterators)
       && (
-        forall it1, it2 | it1 in iterators && it2 in iterators && it1 != it2 ::
+        forall it1 <- iterators, it2 <- iterators | && it1 != it2 ::
           it1.iter != it2.iter
       )
     }
@@ -547,7 +560,10 @@ module OrderedMapImplTRBT {
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()))
     {
-      var it' := new OrderedMapIteratorTRBT.First(this);
+      ThreadedRootImp(tree.skeleton);
+      TRBit.FirstIndex(tree.Model());
+      var iter := tree.First();
+      var it' := new OrderedMapIteratorTRBT(this, iter);
       return it' as UnorderedMapIterator;
     }
 
@@ -684,6 +700,119 @@ module OrderedMapImplTRBT {
       var _ := Insert(mid, k, v);
     }
 
+    twostate predicate RemoveIteratorsPrecondition(k: K, oldRepr: set<object>)
+      reads this, Repr(), oldRepr
+      requires oldRepr == old(Repr())
+    {
+      && old(Valid())
+      && Valid()
+      && Model() == old(Model()) - {k}
+      && Iterators() >= old(Iterators())
+      && (
+        forall it | it in old(Iterators())
+          :: var it' := it as OrderedMapIteratorTRBT;
+          && old(it'.iter.Valid()) ==> old(it'.iter.Valid'())
+      )
+      && (
+        forall it | it in old(Iterators()) && old(it.Valid())
+          :: var it' := it as OrderedMapIteratorTRBT;
+          assert old(it'.Valid());
+          && (old(it.HasPeek?()) <==> old(it'.iter.HasPeek()))
+          && (old(it.HasPeek?()) <==> old(it'.iter.HasPeek'()))
+          && ((old(it.HasPeek?()) && old(it'.iter.HasPeek())) ==>
+            old(it.Peek?()) == old(it'.iter.Peek()) == old(it'.iter.Peek'())
+          )
+      )
+      && (
+        forall it
+            | it in old(tree.Iterators())
+            && old(it.Valid())
+            && (old(it.HasPeek()) ==> old(it.Peek().0) != k) ::
+          && it.Valid()
+          //&& it.Parent() == old(it.Parent())  // obvious since it.parent is const
+          && it.Model() == old(it.Model())
+          && it.HasPeek() == old(it.HasPeek())
+      )
+    }
+
+    twostate predicate RemoveIteratorsPostcondition(k: K, oldRepr: set<object>)
+      reads this, Repr(), oldRepr
+      requires oldRepr == old(Repr())
+      requires RemoveIteratorsPrecondition(k, oldRepr)
+    {
+      forall it | it in old(Iterators())
+          && old(it.Valid())
+          && (old(it.HasPeek?()) ==> old(it.Peek?().0) != k)
+        :: it is OrderedMapIteratorTRBT
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && (it.HasPeek?() <==> old(it.HasPeek?()))
+        && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+        && (it.HasPeek?() ==>
+          var it' := it as OrderedMapIteratorTRBT;
+          if k in old(Model()) && k < it.Peek?().0 then
+            && it.Traversed() == old(it.Traversed()) - {k}
+            && |it.Traversed()| == old(|it.Traversed()|) - 1
+            && it'.Index() == old(it'.Index()) - 1
+          else
+            && it.Traversed() == old(it.Traversed())
+            && |it.Traversed()| == old(|it.Traversed()|)
+            && it'.Index() == old(it'.Index())
+        )
+    }
+
+    twostate lemma {:verify false} RemoveIterators(k: K)
+      requires RemoveIteratorsPrecondition(k, old(Repr()))
+      ensures RemoveIteratorsPostcondition(k, old(Repr()))
+    {
+      forall it | it in old(Iterators())
+          && old(it.Valid())
+          && (old(it.HasPeek?()) ==> old(it.Peek?().0) != k)
+        ensures it is OrderedMapIteratorTRBT
+        ensures it.Valid()
+        ensures it.Parent() == old(it.Parent())
+        ensures it.HasPeek?() <==> old(it.HasPeek?())
+        ensures it.HasPeek?() ==> it.Peek?() == old(it.Peek?())
+        ensures it.HasPeek?() ==>
+          var it' := it as OrderedMapIteratorTRBT;
+          if k in old(Model()) && k < it.Peek?().0 then
+            && it.Traversed() == old(it.Traversed()) - {k}
+            && |it.Traversed()| == old(|it.Traversed()|) - 1
+            && it'.Index() == old(it'.Index()) - 1
+          else
+            && it.Traversed() == old(it.Traversed())
+            && |it.Traversed()| == old(|it.Traversed()|)
+            && it'.Index() == old(it'.Index())
+      {
+        assert it is OrderedMapIterator;
+        var it' := it as OrderedMapIteratorTRBT;
+        assert it.Parent() == old(it.Parent());
+        assert
+          && it'.Valid()
+          //&& it'.iter.Model() == old(it'.iter.Model())
+        by {
+          assume false;
+          assert old(it'.iter.Valid()) by {
+            assert old(it'.Valid());
+          }
+          assert old(it'.iter.HasPeek()) ==> old(it'.iter.Peek().0) != k;
+        }
+        it'.iter.ValidImp();
+        it'.iter.parent.ThreadedImp();
+        it'.HasPeekEq();
+        it'.iter.HasPeekEq();
+        TRBit.HasPeekEq(it'.iter.Model(), it'.iter.parent.Model());
+        assert it.HasPeek?() == old(it.HasPeek?());
+        if it.HasPeek?() {
+          it'.PeekEq();
+          it'.iter.PeekEq();
+          assert it.Peek?().0 != k by {
+            assert old(it.Peek?().0) != k;
+          }
+        }
+      }
+    }
+
     method Remove(k: K)
       modifies this, Repr()
       requires allocated(Repr())
@@ -700,18 +829,106 @@ module OrderedMapImplTRBT {
           |Model()| == old(|Model()|)
 
       ensures Iterators() >= old(Iterators())
+      ensures
+        forall it | it in old(Iterators())
+            && old(it.Valid())
+            && (old(it.HasPeek?()) ==> old(it.Peek?().0) != k)
+          :: it is OrderedMapIteratorTRBT
+          && it.Valid()
+          && it.Parent() == old(it.Parent())
+          && (it.HasPeek?() <==> old(it.HasPeek?()))
+          && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+          && (it.HasPeek?() ==>
+            var it' := it as OrderedMapIteratorTRBT;
+            if k in old(Model()) && k < it.Peek?().0 then
+              && it.Traversed() == old(it.Traversed()) - {k}
+              && |it.Traversed()| == old(|it.Traversed()|) - 1
+              && it'.Index() == old(it'.Index()) - 1
+            else
+              && it.Traversed() == old(it.Traversed())
+              && |it.Traversed()| == old(|it.Traversed()|)
+              && it'.Index() == old(it'.Index())
+          )
     {
+      ghost var oldRepr := Repr();
+      assert somepreconditions: 
+        && (
+          forall it | it in old(tree.Iterators())
+            :: it.Valid() ==> it.Valid'()
+        )
+        && (
+          forall it | it in Iterators() && it.Valid()
+            :: (it.HasPeek?() <==> (it as OrderedMapIteratorTRBT).iter.HasPeek())
+            && (it.HasPeek?() <==> (it as OrderedMapIteratorTRBT).iter.HasPeek'())
+            && ((it.HasPeek?() && (it as OrderedMapIteratorTRBT).iter.HasPeek()) ==>
+              it.Peek?()
+                == (it as OrderedMapIteratorTRBT).iter.Peek()
+                == (it as OrderedMapIteratorTRBT).iter.Peek'()
+            )
+        )
+      by {
+        forall it | it in old(tree.Iterators())
+          ensures it.Valid() ==> it.Valid'()
+        {
+          it.ValidImp();
+        }
+        forall it | it in Iterators() && it.Valid()
+          ensures it.HasPeek?() <==> (it as OrderedMapIteratorTRBT).iter.HasPeek()
+          ensures it.HasPeek?() <==> (it as OrderedMapIteratorTRBT).iter.HasPeek'()
+          ensures (it.HasPeek?() && (it as OrderedMapIteratorTRBT).iter.HasPeek()) ==>
+            it.Peek?()
+              == (it as OrderedMapIteratorTRBT).iter.Peek()
+              == (it as OrderedMapIteratorTRBT).iter.Peek'()
+        {
+          var it' := it as OrderedMapIteratorTRBT;
+          it'.HasPeekEq();
+          it'.iter.HasPeekEq();
+          if it'.HasPeek?() {
+            it'.PeekEq();
+            it'.iter.PeekEq();
+          }
+        }
+      }
       TRBr.RemoveRootSpec(tree.Model(), k);
       TRBr.RemoveRootSize(tree.Model(), k);
       TRBr.IsRemovedRootSpec(tree.Model(), k);
       TRBr.RemoveRootModel(tree.Model(), k);
       var isRemoved := tree.Remove(k);
+      assert
+        forall it
+            | it in old(tree.Iterators())
+            && old(it.Valid())
+            && (old(it.HasPeek()) ==> old(it.Peek().0) != k) ::
+          && it.Valid()
+          //&& it.Parent() == old(it.Parent())  // obvious since it.parent is const
+          && it.Model() == old(it.Model())
+          && it.HasPeek() == old(it.HasPeek());
       if isRemoved {
         size := size - 1;
       }
+      assert
+        forall it
+            | it in old(tree.Iterators())
+            && old(it.Valid())
+            && (old(it.HasPeek()) ==> old(it.Peek().0) != k) ::
+          && it.Valid()
+          //&& it.Parent() == old(it.Parent())  // obvious since it.parent is const
+          && it.Model() == old(it.Model())
+          && it.HasPeek() == old(it.HasPeek());
+      assert oldRepr == old(Repr());
+      assert RemoveIteratorsPrecondition(k, oldRepr) by {
+        assert old(Valid());
+        assert Valid();
+        assert Model() == old(Model()) - {k};
+        assert Iterators() >= old(Iterators());
+        reveal somepreconditions;
+      }
+      assert RemoveIteratorsPostcondition(k, oldRepr) by {
+        RemoveIterators(k);
+      }
     }
 
-    method Insert(mid: UnorderedMapIterator, k: K, v : V) returns (newt:UnorderedMapIterator)
+    method Insert(mid: UnorderedMapIterator, k: K, v: V) returns (newt:UnorderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -756,54 +973,7 @@ module OrderedMapImplTRBT {
       if isInserted {
         size := size + 1;
       }
-      /*
-      assert {:only} size == TRB.size(tree.Model()) by {
-        assume false;
-        ToMapRecKeys(old(tree.Model()));
-        assert k !in old(Model()) <==> isInserted;
-        if isInserted {
-          calc == {
-            size;
-            old(size) + 1;
-            TRB.size(old(tree.Model())) + 1;
-            {
-              assert TRB.size(old(tree.Model())) == |keys(old(tree.Model()))| by {
-                SizeLemmas(old(tree.Model()));
-              }
-            }
-            |keys(old(tree.Model()))| + |{k}|;
-            { assert k !in keys(old(tree.Model())); }
-            |keys(old(tree.Model())) + {k}|;
-            { assert keys(old(tree.Model())) + {k} == keys(tree.Model()); }
-            |keys(tree.Model())|;
-            { SizeLemmas(tree.Model()); }
-            TRB.size(tree.Model());
-          }
-        } else {
-          calc == {
-            size;
-            old(size);
-            TRB.size(old(tree.Model()));
-            { SizeLemmas(old(tree.Model())); }
-            |keys(old(tree.Model()))|;
-            { assert keys(old(tree.Model())) == keys(tree.Model()); }
-            |keys(tree.Model())|;
-            {
-              assert |keys(tree.Model())| == TRB.size(tree.Model()) by {
-                SizeLemmas(tree.Model());
-              }
-            }
-            TRB.size(tree.Model());
-          }
-        }
-      }
-      */
-      newt := new OrderedMapIteratorTRBT.At(this, iter);
-      assert fresh(tree.Repr() - old(tree.Repr()));
-      assert fresh(iterators - old(iterators));
-      assert fresh((set it <- iterators :: it.iter) - old(set it <- iterators :: it.iter));
-      assert Repr() == {tree} + iterators + tree.Repr() + (set it <- iterators :: it.iter);
-      assert fresh(Repr() - old(Repr()));
+      newt := new OrderedMapIteratorTRBT(this, iter);
     }
 
     method {:verify false} Erase(mid:UnorderedMapIterator) returns (next: UnorderedMapIterator)
@@ -818,18 +988,52 @@ module OrderedMapImplTRBT {
       requires mid.HasPeek?()
       requires mid in Iterators()
       ensures Valid()
-      ensures Model()== old(Model()) - {key(old(mid.Peek?()))}
-      ensures |Model()|==|old(Model())|-1
+      ensures Model() == old(Model()) - {key(old(mid.Peek?()))}
+      ensures |Model()| == |old(Model())| - 1
 
       ensures next is OrderedMapIterator
       ensures fresh(next)
-      ensures next.Valid() && next.Parent() == this
+      ensures next.Valid()
+      ensures next.Parent() == this
       ensures next.Traversed() == old(mid.Traversed())
       ensures |next.Traversed()| == old(|mid.Traversed()|)
 
-      ensures mid is OrderedMapIterator && (next as OrderedMapIterator).Index() == old((mid as OrderedMapIterator).Index())
+      ensures mid is OrderedMapIterator 
+      ensures (next as OrderedMapIterator).Index() == old((mid as OrderedMapIterator).Index())
 
-      ensures Iterators() >= {next}+old(Iterators())
-    {}
+      ensures Iterators() >= {next} + old(Iterators())
+    {
+      next := mid.Copy();
+      next.Next();
+      var p := mid.Peek();
+      assert next.Valid();
+      assert next.Parent() == this;
+      assert next in Iterators();
+      assert p.0 in Model();
+      assert next is OrderedMapIterator;
+      assert fresh(next);
+      Remove(p.0);
+      assert Valid();
+      assert Model() == old(Model()) - {p.0};
+      assert |Model()| == old(|Model()|) - 1;
+      assert fresh(Repr() - old(Repr()));
+      assert allocated(Repr()) by {
+        assume false;
+        Allocated(Repr());
+      }
+      assert
+        && next is OrderedMapIterator
+        && fresh(next)
+        && next.Valid()
+        && next.Parent() == this
+        && next.Traversed() == old(mid.Traversed())
+        && |next.Traversed()| == old(|mid.Traversed()|)
+        && mid is OrderedMapIterator 
+        && (next as OrderedMapIterator).Index() == old((mid as OrderedMapIterator).Index())
+      by {
+        assume false;
+      }
+      assert Iterators() >= {next} + old(Iterators());
+    }
   }
 }
