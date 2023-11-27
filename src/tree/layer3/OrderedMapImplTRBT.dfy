@@ -74,10 +74,7 @@ module OrderedMapImplTRBT {
       this.parent := parent;
       new;
       parent.iterators := parent.iterators + {this};
-      HasPeekEq();
-      if HasPeek?() {
-        PeekEq();
-      }
+      ModelEq();
     }
 
     lemma HasPeekEq()
@@ -103,7 +100,7 @@ module OrderedMapImplTRBT {
       requires Valid()
       requires HasPeek?()
       requires iter.HasPeek()
-      ensures Peek?() == iter.Peek()
+      ensures Peek?() == iter.Peek() == iter.Peek'()
     {
       calc == {
         Peek?();
@@ -125,6 +122,60 @@ module OrderedMapImplTRBT {
         { iter.PeekEq(); }
         iter.Peek();
       }
+      assert iter.Peek() == iter.Peek'() by {
+        KeysAndElems(iter.parent.skeleton);
+        TRBit.PeekEq(iter.Model(), iter.parent.Model());
+      }
+    }
+
+    lemma PeekEqOfHasPeek()
+      requires Valid()
+      ensures (HasPeek?() && iter.HasPeek()) ==> Peek?() == iter.Peek() == iter.Peek'()
+    {
+      HasPeekEq();
+      if HasPeek?() {
+        PeekEq();
+      }
+    }
+
+    lemma IndexEq()
+      requires Valid()
+      ensures Index() == TRBit.Index(iter.Model(), iter.parent.Model())
+    {
+      TRB.SizeLemmas(parent.tree.Model());
+    }
+
+    lemma TraversedEq()
+      requires Valid()
+      ensures Traversed() == TRBit.Traversed(iter.Model(), iter.parent.Model())
+      ensures (HasPeek?() || Index() == |parent.Model()|) ==> |Traversed()| == Index()
+    {
+      IndexEq();
+      iter.ValidImp();
+      iter.parent.ThreadedImp();
+      TRBit.TraversedEq(iter.Model(), iter.parent.Model());
+      HasPeekEq();
+      if HasPeek?() || Index() == |parent.Model()| {
+        TRBit.TraversedIndex(iter.Model(), iter.parent.Model());
+      }
+    }
+
+    lemma ModelEq()
+      requires Valid()
+      ensures TRBit.Valid(iter.Model(), iter.parent.Model())
+      ensures ThreadedTreeRoot(iter.parent.Model())
+      ensures HasPeek?() <==> iter.HasPeek()
+      ensures (HasPeek?() && iter.HasPeek()) ==> Peek?() == iter.Peek() == iter.Peek'()
+      ensures Index() == TRBit.Index(iter.Model(), iter.parent.Model())
+      ensures Traversed() == TRBit.Traversed(iter.Model(), iter.parent.Model())
+      ensures (HasPeek?() || Index() != -1) ==> |Traversed()| == Index()
+    {
+      iter.ValidImp();
+      iter.parent.ThreadedImp();
+      HasPeekEq();
+      PeekEqOfHasPeek();
+      IndexEq();
+      TraversedEq();
     }
 
     ghost function Index(): int
@@ -177,7 +228,7 @@ module OrderedMapImplTRBT {
       return iter.HasPeek();
     }
 
-    method Peek() returns (p:(K,V))
+    method Peek() returns (p: (K, V))
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -251,67 +302,10 @@ module OrderedMapImplTRBT {
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
     {
-      assert iter.parent.Valid();
-      assert iter.parent.Threaded();
-      assert iter.parent.SearchTree();
-      assert iter.Valid();
-      assert iter.HasPeek() by {
-        iter.ValidImp();
-        TRBit.HasPeekEq(iter.Model(), parent.tree.Model());
-      }
-      assert iter.Valid'() by {
-        iter.ValidImp();
-      }
-      assert iter.Peek() == iter.Peek'() by {
-        iter.PeekEq();
-      }
-      assert ThreadedTreeRoot(iter.parent.Model()) by {
-        ThreadedRootImp(iter.parent.skeleton);
-      }
-      ghost var oldIterModel := iter.Model();
-      ghost var oldParentModel := iter.parent.Model();
+      ModelEq();
+      TRBit.NextTraversed(iter.Model(), iter.parent.Model());
       iter.Next();
-      assert
-        && fresh(Parent().Repr() - old(Parent().Repr()))
-        && allocated(Parent().Repr())
-        && Valid()
-        && Parent().Valid()
-        && Parent() == old(Parent())
-        && Parent().Model() == old(Parent().Model())
-        && |Parent().Model()| == old(|Parent().Model()|)
-        && Parent().Iterators() >= old(Parent().Iterators())
-      by {
-        //assume false;
-      }
-      assert
-        && Traversed() == {key(old(Peek?()))} + old(Traversed())
-        && |Traversed()| == 1 + old(|Traversed()|)
-        && Index() == old(Index()) + 1
-        && (forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && (it != this ==> it.Traversed() == old(it.Traversed())
-                                   && |it.Traversed()| == old(|it.Traversed()|)
-                                   && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))))
-        && forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this::
-                (it is OrderedMapIterator &&
-                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
-      by {
-        TRBit.TraversedEq(oldIterModel, oldParentModel);
-        TRBit.HasPeekEq(oldIterModel, oldParentModel);
-        TRBit.PeekEq(oldIterModel, oldParentModel);
-        TRBit.TraversedEq(oldIterModel, oldParentModel);
-        iter.ValidImp();
-        ThreadedRootImp(iter.parent.skeleton);
-        TRBit.TraversedEq(iter.Model(), iter.parent.Model());
-        TRBit.NextTraversed(oldIterModel, oldParentModel);
-
-        assert TRBit.Traversed(iter.Model(), iter.parent.Model())
-          == TRBit.Traversed(oldIterModel, oldParentModel) + {TRBit.Peek(oldIterModel, oldParentModel).0};
-
-        TRBit.TraversedIndex(oldIterModel, oldParentModel);
-        TRBit.TraversedIndex(iter.Model(), iter.parent.Model());
-      }
+      ModelEq();
     }
 
     method {:verify false} Prev()
@@ -709,21 +703,6 @@ module OrderedMapImplTRBT {
       && Model() == old(Model()) - {k}
       && Iterators() >= old(Iterators())
       && (
-        forall it | it in old(Iterators())
-          :: var it' := it as OrderedMapIteratorTRBT;
-          && old(it'.iter.Valid()) ==> old(it'.iter.Valid'())
-      )
-      && (
-        forall it | it in old(Iterators()) && old(it.Valid())
-          :: var it' := it as OrderedMapIteratorTRBT;
-          assert old(it'.Valid());
-          && (old(it.HasPeek?()) <==> old(it'.iter.HasPeek()))
-          && (old(it.HasPeek?()) <==> old(it'.iter.HasPeek'()))
-          && ((old(it.HasPeek?()) && old(it'.iter.HasPeek())) ==>
-            old(it.Peek?()) == old(it'.iter.Peek()) == old(it'.iter.Peek'())
-          )
-      )
-      && (
         forall it
             | it in old(tree.Iterators())
             && old(it.Valid())
@@ -761,7 +740,7 @@ module OrderedMapImplTRBT {
         )
     }
 
-    twostate lemma {:verify false} RemoveIterators(k: K)
+    twostate lemma RemoveIterators(k: K)
       requires RemoveIteratorsPrecondition(k, old(Repr()))
       ensures RemoveIteratorsPostcondition(k, old(Repr()))
     {
@@ -783,33 +762,44 @@ module OrderedMapImplTRBT {
             && it.Traversed() == old(it.Traversed())
             && |it.Traversed()| == old(|it.Traversed()|)
             && it'.Index() == old(it'.Index())
+
+        ensures
+          var it' := it as OrderedMapIteratorTRBT;
+          (!it.HasPeek?() && old(it'.Index()) == -1) ==>
+            && it'.Index() == -1
+            && (
+              if k in old(Model()) then
+                && it'.Traversed() == old(it'.Traversed()) - {k}
+                && |it'.Traversed()| == |old(it'.Traversed())| - 1
+              else
+                && it'.Traversed() == old(it'.Traversed())
+                && |it'.Traversed()| == |old(it'.Traversed())|
+            )
+
+        ensures
+          var it' := it as OrderedMapIteratorTRBT;
+          (!it.HasPeek?() && old(it'.Index()) == |old(Model())|) ==>
+            && it.Valid()
+            && (
+              if k in old(Model()) then
+                && it'.Index() == old(it'.Index()) - 1
+                && it'.Traversed() == old(it'.Traversed()) - {k}
+                && |it'.Traversed()| == |old(it'.Traversed())| - 1
+              else
+                && it'.Index() == old(it'.Index())
+                && it'.Traversed() == old(it'.Traversed())
+                && |it'.Traversed()| == |old(it'.Traversed())|
+            )
       {
-        assert it is OrderedMapIterator;
         var it' := it as OrderedMapIteratorTRBT;
-        assert it.Parent() == old(it.Parent());
-        assert
-          && it'.Valid()
-          //&& it'.iter.Model() == old(it'.iter.Model())
-        by {
-          assume false;
-          assert old(it'.iter.Valid()) by {
-            assert old(it'.Valid());
-          }
-          assert old(it'.iter.HasPeek()) ==> old(it'.iter.Peek().0) != k;
-        }
-        it'.iter.ValidImp();
-        it'.iter.parent.ThreadedImp();
-        it'.HasPeekEq();
-        it'.iter.HasPeekEq();
-        TRBit.HasPeekEq(it'.iter.Model(), it'.iter.parent.Model());
-        assert it.HasPeek?() == old(it.HasPeek?());
-        if it.HasPeek?() {
-          it'.PeekEq();
-          it'.iter.PeekEq();
-          assert it.Peek?().0 != k by {
-            assert old(it.Peek?().0) != k;
-          }
-        }
+        assert old(it'.ModelEq(); true);
+        it'.ModelEq();
+        TRBit.ModelAfterRemove(
+          it'.iter.Model(), 
+          k, 
+          old(it'.iter.parent.Model()), 
+          it'.iter.parent.Model()
+        );
       }
     }
 
@@ -851,77 +841,13 @@ module OrderedMapImplTRBT {
           )
     {
       ghost var oldRepr := Repr();
-      assert somepreconditions: 
-        && (
-          forall it | it in old(tree.Iterators())
-            :: it.Valid() ==> it.Valid'()
-        )
-        && (
-          forall it | it in Iterators() && it.Valid()
-            :: (it.HasPeek?() <==> (it as OrderedMapIteratorTRBT).iter.HasPeek())
-            && (it.HasPeek?() <==> (it as OrderedMapIteratorTRBT).iter.HasPeek'())
-            && ((it.HasPeek?() && (it as OrderedMapIteratorTRBT).iter.HasPeek()) ==>
-              it.Peek?()
-                == (it as OrderedMapIteratorTRBT).iter.Peek()
-                == (it as OrderedMapIteratorTRBT).iter.Peek'()
-            )
-        )
-      by {
-        forall it | it in old(tree.Iterators())
-          ensures it.Valid() ==> it.Valid'()
-        {
-          it.ValidImp();
-        }
-        forall it | it in Iterators() && it.Valid()
-          ensures it.HasPeek?() <==> (it as OrderedMapIteratorTRBT).iter.HasPeek()
-          ensures it.HasPeek?() <==> (it as OrderedMapIteratorTRBT).iter.HasPeek'()
-          ensures (it.HasPeek?() && (it as OrderedMapIteratorTRBT).iter.HasPeek()) ==>
-            it.Peek?()
-              == (it as OrderedMapIteratorTRBT).iter.Peek()
-              == (it as OrderedMapIteratorTRBT).iter.Peek'()
-        {
-          var it' := it as OrderedMapIteratorTRBT;
-          it'.HasPeekEq();
-          it'.iter.HasPeekEq();
-          if it'.HasPeek?() {
-            it'.PeekEq();
-            it'.iter.PeekEq();
-          }
-        }
-      }
       TRBr.RemoveRootSpec(tree.Model(), k);
       TRBr.RemoveRootSize(tree.Model(), k);
       TRBr.IsRemovedRootSpec(tree.Model(), k);
       TRBr.RemoveRootModel(tree.Model(), k);
       var isRemoved := tree.Remove(k);
-      assert
-        forall it
-            | it in old(tree.Iterators())
-            && old(it.Valid())
-            && (old(it.HasPeek()) ==> old(it.Peek().0) != k) ::
-          && it.Valid()
-          //&& it.Parent() == old(it.Parent())  // obvious since it.parent is const
-          && it.Model() == old(it.Model())
-          && it.HasPeek() == old(it.HasPeek());
       if isRemoved {
         size := size - 1;
-      }
-      assert
-        forall it
-            | it in old(tree.Iterators())
-            && old(it.Valid())
-            && (old(it.HasPeek()) ==> old(it.Peek().0) != k) ::
-          && it.Valid()
-          //&& it.Parent() == old(it.Parent())  // obvious since it.parent is const
-          && it.Model() == old(it.Model())
-          && it.HasPeek() == old(it.HasPeek());
-      assert oldRepr == old(Repr());
-      assert RemoveIteratorsPrecondition(k, oldRepr) by {
-        assert old(Valid());
-        assert Valid();
-        assert Model() == old(Model()) - {k};
-        assert Iterators() >= old(Iterators());
-        reveal somepreconditions;
       }
       assert RemoveIteratorsPostcondition(k, oldRepr) by {
         RemoveIterators(k);
