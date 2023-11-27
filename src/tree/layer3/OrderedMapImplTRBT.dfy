@@ -727,8 +727,8 @@ module OrderedMapImplTRBT {
         && it.Parent() == old(it.Parent())
         && (it.HasPeek?() <==> old(it.HasPeek?()))
         && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+        && var it' := it as OrderedMapIteratorTRBT;
         && (it.HasPeek?() ==>
-          var it' := it as OrderedMapIteratorTRBT;
           if k in old(Model()) && k < it.Peek?().0 then
             && it.Traversed() == old(it.Traversed()) - {k}
             && |it.Traversed()| == old(|it.Traversed()|) - 1
@@ -737,6 +737,30 @@ module OrderedMapImplTRBT {
             && it.Traversed() == old(it.Traversed())
             && |it.Traversed()| == old(|it.Traversed()|)
             && it'.Index() == old(it'.Index())
+        )
+        && ((!it.HasPeek?() && old(it'.Index()) == -1) ==>
+          && it'.Index() == -1
+          && (
+            if k in old(Model()) then
+              && it'.Traversed() == old(it'.Traversed()) - {k}
+              && |it'.Traversed()| == |old(it'.Traversed())| - 1
+            else
+              && it'.Traversed() == old(it'.Traversed())
+              && |it'.Traversed()| == |old(it'.Traversed())|
+          )
+        )
+        && ((!it.HasPeek?() && old(it'.Index()) == |old(Model())|) ==>
+          && it.Valid()
+          && (
+            if k in old(Model()) then
+              && it'.Index() == old(it'.Index()) - 1
+              && it'.Traversed() == old(it'.Traversed()) - {k}
+              && |it'.Traversed()| == |old(it'.Traversed())| - 1
+            else
+              && it'.Index() == old(it'.Index())
+              && it'.Traversed() == old(it'.Traversed())
+              && |it'.Traversed()| == |old(it'.Traversed())|
+          )
         )
     }
 
@@ -828,8 +852,8 @@ module OrderedMapImplTRBT {
           && it.Parent() == old(it.Parent())
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+          && var it' := it as OrderedMapIteratorTRBT;
           && (it.HasPeek?() ==>
-            var it' := it as OrderedMapIteratorTRBT;
             if k in old(Model()) && k < it.Peek?().0 then
               && it.Traversed() == old(it.Traversed()) - {k}
               && |it.Traversed()| == old(|it.Traversed()|) - 1
@@ -838,6 +862,30 @@ module OrderedMapImplTRBT {
               && it.Traversed() == old(it.Traversed())
               && |it.Traversed()| == old(|it.Traversed()|)
               && it'.Index() == old(it'.Index())
+          )
+          && ((!it.HasPeek?() && old(it'.Index()) == -1) ==>
+            && it'.Index() == -1
+            && (
+              if k in old(Model()) then
+                && it'.Traversed() == old(it'.Traversed()) - {k}
+                && |it'.Traversed()| == |old(it'.Traversed())| - 1
+              else
+                && it'.Traversed() == old(it'.Traversed())
+                && |it'.Traversed()| == |old(it'.Traversed())|
+            )
+          )
+          && ((!it.HasPeek?() && old(it'.Index()) == |old(Model())|) ==>
+            && it.Valid()
+            && (
+              if k in old(Model()) then
+                && it'.Index() == old(it'.Index()) - 1
+                && it'.Traversed() == old(it'.Traversed()) - {k}
+                && |it'.Traversed()| == |old(it'.Traversed())| - 1
+              else
+                && it'.Index() == old(it'.Index())
+                && it'.Traversed() == old(it'.Traversed())
+                && |it'.Traversed()| == |old(it'.Traversed())|
+            )
           )
     {
       ghost var oldRepr := Repr();
@@ -902,7 +950,7 @@ module OrderedMapImplTRBT {
       newt := new OrderedMapIteratorTRBT(this, iter);
     }
 
-    method {:verify false} Erase(mid:UnorderedMapIterator) returns (next: UnorderedMapIterator)
+    method Erase(mid:UnorderedMapIterator) returns (next: UnorderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -924,42 +972,58 @@ module OrderedMapImplTRBT {
       ensures next.Traversed() == old(mid.Traversed())
       ensures |next.Traversed()| == old(|mid.Traversed()|)
 
-      ensures mid is OrderedMapIterator 
+      ensures mid is OrderedMapIterator
       ensures (next as OrderedMapIterator).Index() == old((mid as OrderedMapIterator).Index())
 
       ensures Iterators() >= {next} + old(Iterators())
     {
-      next := mid.Copy();
-      next.Next();
-      var p := mid.Peek();
+      var mid' := mid as OrderedMapIteratorTRBT;
+      next := mid'.Copy();
+      var next' := next as OrderedMapIteratorTRBT;
+    label L1:
+      next'.Next();
+    label L2:
+      var p := mid'.Peek();
+      mid'.ModelEq();
+      next'.ModelEq();
       assert next.Valid();
       assert next.Parent() == this;
       assert next in Iterators();
       assert p.0 in Model();
       assert next is OrderedMapIterator;
       assert fresh(next);
+      assert next.HasPeek?() ==> p.0 < next.Peek?().0;
+      assert next'.Index() == mid'.Index() + 1;
+    label L3:
       Remove(p.0);
       assert Valid();
       assert Model() == old(Model()) - {p.0};
       assert |Model()| == old(|Model()|) - 1;
-      assert fresh(Repr() - old(Repr()));
-      assert allocated(Repr()) by {
-        assume false;
-        Allocated(Repr());
-      }
-      assert
-        && next is OrderedMapIterator
-        && fresh(next)
-        && next.Valid()
-        && next.Parent() == this
-        && next.Traversed() == old(mid.Traversed())
-        && |next.Traversed()| == old(|mid.Traversed()|)
-        && mid is OrderedMapIterator 
-        && (next as OrderedMapIterator).Index() == old((mid as OrderedMapIterator).Index())
-      by {
-        assume false;
-      }
+      
+      assert Repr() == {tree} + iterators + tree.Repr() + (set it <- iterators :: it.iter);
+
+/*
+      assert next'.Valid();
+      assert next'.Index() == old@L3(next'.Index()) - 1;
+      assert next'.Index() == old(mid'.Index());
+
+      assert Valid();
+      assert Model() == old(Model()) - {key(old(mid.Peek?()))};
+      assert |Model()| == |old(Model())| - 1;
+      assume false;
+
+      assert next is OrderedMapIterator;
+      assert fresh(next);
+      assert next.Valid();
+      assert next.Parent() == this;
+      assert next.Traversed() == old(mid.Traversed());
+      assert |next.Traversed()| == old(|mid.Traversed()|);
+
+      assert mid is OrderedMapIterator;
+      assert (next as OrderedMapIterator).Index() == old((mid as OrderedMapIterator).Index());
+
       assert Iterators() >= {next} + old(Iterators());
+      */
     }
   }
 }
