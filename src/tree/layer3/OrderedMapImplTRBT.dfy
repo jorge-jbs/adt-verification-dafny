@@ -934,20 +934,12 @@ module OrderedMapImplTRBT {
       TRBi.IsInsertedSpec(tree.Model(), k);
       TRBi.TRBInsertRootModel(tree.Model(), k, v);
       var isInserted, iter := tree.Insert(k, v);
-      assert iter.Peek() == (k, v) by {
-        calc == {
-          iter.Peek();
-          { iter.PeekEq(); }
-          iter.Peek'();
-          TRBit.Peek(TRBit.Find(k), iter.parent.Model());
-          { TRBit.FindAfterInsert(k, v, iter.parent.Model()); }
-          (k, v);
-        }
-      }
+      TRBit.FindAfterInsert(k, v, iter.parent.Model());
       if isInserted {
         size := size + 1;
       }
       newt := new OrderedMapIteratorTRBT(this, iter);
+      (newt as OrderedMapIteratorTRBT).ModelEq();
     }
 
     method Erase(mid:UnorderedMapIterator) returns (next: UnorderedMapIterator)
