@@ -86,6 +86,42 @@ module ThreadedLinkedTree {
       this.parent := parent;
     }
 
+    constructor(node: TTNode?, ghost isPastTheEnd: bool, ghost parent: ThreadedLinkedTree)
+      modifies parent`iterators
+      requires parent.Valid()
+      requires parent.Threaded()
+      requires parent.SearchTree()
+      requires TRB.ThreadedTreeRoot(parent.Model())
+      requires node != null ==> node in elems(parent.skeleton)
+      ensures Valid()
+      ensures
+        if node == null then
+          if isPastTheEnd then
+            Model() == TRBit.PastTheEnd
+          else
+            Model() == TRBit.PastTheBeginning
+        else
+          Model() == TRBit.Link(node.key)
+      ensures Parent() == parent
+      ensures parent.Valid()
+      ensures parent.Threaded()
+      ensures parent.SearchTree()
+      ensures TRB.ThreadedTreeRoot(parent.Model())
+      ensures old(parent.RedBlackTree()) ==> parent.RedBlackTree()
+      ensures parent.Model() == old(parent.Model())
+      ensures parent.iterators == {this} + old(parent.iterators)
+      requires allocated(parent.Repr())
+      ensures fresh(parent.Repr() - old(parent.Repr()))
+      ensures allocated(parent.Repr())
+    {
+      this.node := node;
+      this.isPastTheEnd := isPastTheEnd;
+      this.parent := parent;
+      new;
+      parent.iterators := parent.iterators + {this};
+      KeysAndElems(parent.skeleton);
+    }
+
     constructor First(parent: ThreadedLinkedTree)
       modifies parent`iterators
       requires parent.Valid()

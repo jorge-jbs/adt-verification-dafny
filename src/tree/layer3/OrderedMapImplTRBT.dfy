@@ -40,7 +40,7 @@ module OrderedMapImplTRBT {
       && iter.Valid()
     }
 
-    constructor (parent: OrderedMapImplTRBT, iter: ThreadedLinkedTreeIterator)
+    constructor (ghost parent: OrderedMapImplTRBT, iter: ThreadedLinkedTreeIterator)
       modifies parent`iterators
       requires parent.Valid()
       requires iter.Valid()
@@ -335,7 +335,7 @@ module OrderedMapImplTRBT {
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
     {}
 
-    method {:verify false} Copy() returns (it: UnorderedMapIterator)
+    method Copy() returns (it: UnorderedMapIterator)
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -375,8 +375,14 @@ module OrderedMapImplTRBT {
 
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
                 (it is OrderedMapIterator &&
-                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
-    {}
+                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()))
+    {
+      ModelEq();
+      var iter' := new ThreadedLinkedTreeIterator(iter.node, iter.isPastTheEnd, iter.parent);
+      it := new OrderedMapIteratorTRBT(parent, iter');
+      (it as OrderedMapIteratorTRBT).ModelEq();
+      ModelEq();
+    }
   }
 
   class OrderedMapImplTRBT extends OrderedMap {
