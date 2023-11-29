@@ -491,7 +491,7 @@ module ThreadedLinkedTree {
       ensures fresh(it)
       ensures it.Parent() == this
       ensures it.Valid()
-      ensures it.Model() == TRBit.Find(k)
+      ensures it.Model() == TRBit.Link(k)
 
       requires allocated(Repr())
       ensures fresh(Repr()-old(Repr()))

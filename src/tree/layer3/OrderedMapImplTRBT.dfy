@@ -199,6 +199,7 @@ module OrderedMapImplTRBT {
       requires Parent().Valid()
       ensures Valid()
       ensures Parent().Valid()
+      ensures Parent() == old(Parent())
       ensures Parent().Model() == old(Parent().Model())
       ensures |Parent().Model()| == old(|Parent().Model()|)
 
@@ -239,6 +240,7 @@ module OrderedMapImplTRBT {
       requires HasPeek?()
       ensures Valid()
       ensures Parent().Valid()
+      ensures Parent() == old(Parent())
       ensures Parent().Model() == old(Parent().Model())
       ensures |Parent().Model()| == old(|Parent().Model()|)
 
@@ -269,7 +271,7 @@ module OrderedMapImplTRBT {
       return iter.Peek();
     }
 
-    method Next()
+    method Next()  // 3'
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -281,6 +283,7 @@ module OrderedMapImplTRBT {
       requires HasPeek?()
       ensures Valid()
       ensures Parent().Valid()
+      ensures Parent() == old(Parent())
       ensures Parent().Model() == old(Parent().Model())
       ensures |Parent().Model()| == old(|Parent().Model()|)
 
@@ -317,6 +320,7 @@ module OrderedMapImplTRBT {
       requires HasPeek?()
       ensures Valid()
       ensures Parent().Valid()
+      ensures Parent() == old(Parent())
       ensures Parent().Model() == old(Parent().Model())
       ensures |Parent().Model()| == old(|Parent().Model()|)
 
@@ -346,6 +350,7 @@ module OrderedMapImplTRBT {
       requires Parent().Valid()
       ensures Valid()
       ensures Parent().Valid()
+      ensures Parent() == old(Parent())
       ensures Parent().Model() == old(Parent().Model())
       ensures |Parent().Model()| == old(|Parent().Model()|)
 
@@ -360,7 +365,7 @@ module OrderedMapImplTRBT {
       ensures it.Valid()
       ensures Parent() == it.Parent()
       ensures it is OrderedMapIterator
-      ensures (it as OrderedMapIterator).Index() == Index()
+      ensures  (it as OrderedMapIterator).Index() == Index()
       ensures Traversed() == it.Traversed()
       ensures |Traversed()| == |it.Traversed()|
       ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
