@@ -238,14 +238,17 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     TraversedIndex(First(root), root);
   }
 
-  function Find(k: K): iter
+  function Find(k: K, root: trbtree): iter
   {
-    Link(k)
+    if k in keys(root) then
+      Link(k)
+    else
+      PastTheEnd
   }
 
   lemma FindPeek(k: K, root: trbtree)
     requires k in keys(root)
-    ensures Peek(Find(k), root) == (k, Get'(root, k))
+    ensures Peek(Find(k, root), root) == (k, Get'(root, k))
   {}
 
   lemma FindAfterInsert(k: K, v: V, root: trbtree)
@@ -253,10 +256,10 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     requires k in keys(root)
     requires assert keys(root) == toMapRec(root).Keys by {ToMapRecKeys(root);} true
     requires toMapRec(root)[k] == v
-    ensures Peek(Find(k), root) == (k, v)
+    ensures Peek(Find(k, root), root) == (k, v)
   {
-    assert Peek(Find(k), root).0 == k;
-    assert Peek(Find(k), root).1 == v by {
+    assert Peek(Find(k, root), root).0 == k;
+    assert Peek(Find(k, root), root).1 == v by {
       Get'ToMapRec(root, k);
     }
   }

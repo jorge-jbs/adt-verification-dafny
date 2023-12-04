@@ -2,10 +2,12 @@ include "../../../src/MUtils.dfy"
 include "../../../src/tree/layer1/OrderedSetUtils.dfy"
 include "../../../src/tree/layer4/TRBTree/Base.dfy"
 include "../../../src/tree/layer4/TRBTree/Iterator.dfy"
+include "../../../src/tree/layer4/TRBTree/Find.dfy"
 include "../../../src/tree/layer4/TRBTree/TRBInsert.dfy"
 include "../../../src/tree/layer4/TTree.dfy"
 include "../../../src/tree/KeyValue.dfy"
 include "../../../src/tree/layer4/TTNode.dfy"
+include "../../../src/tree/layer4/ThreadedLinkedTree/Find.dfy"
 include "../../../src/tree/layer4/ThreadedLinkedTree/TRBInsert.dfy"
 include "../../../src/tree/layer4/ThreadedLinkedTree/RemoveRoot.dfy"
 include "../../../src/tree/layer4/ThreadedLinkedTree/Min.dfy"
@@ -15,12 +17,14 @@ module ThreadedLinkedTree {
   import opened Utils
   import opened TTNode
   import TRB = TRBTree.Base
+  import TRBf = TRBTree.Find
   import TRBi = TRBTree.TRBInsert
   import TRBr = TRBTree.RemoveRoot
   import TRBit = TRBTree.Iterator
   import opened T = TTree
   import opened KeyValue
   import opened TRBInsert
+  import opened Find
   import opened R = RemoveRoot
   import opened Min
   import opened OrderedSetUtils
@@ -164,7 +168,7 @@ module ThreadedLinkedTree {
       requires TRB.ThreadedTreeRoot(parent.Model())
       requires node in elems(parent.skeleton)
       ensures Valid()
-      ensures Model() == TRBit.Find(node.key)
+      ensures Model() == TRBit.Find(node.key, parent.Model())
       ensures Parent() == parent
       ensures parent.Valid()
       ensures parent.Threaded()
@@ -414,21 +418,37 @@ module ThreadedLinkedTree {
     }
     */
 
-    /*
-    method Find(k: K) returns (foundNode: TTNode?)
+    method Find(k: K) returns (it: ThreadedLinkedTreeIterator)
+      modifies this, Repr()
+
       requires Valid()
       requires SearchTree()
+      requires Threaded()
+      
+      ensures Valid()
+      ensures Threaded()
+      ensures SearchTree()
+      ensures Model() == old(Model())
 
-      ensures foundNode != null <==> k in RB.keys(TreeModel())
-      ensures foundNode != null ==> foundNode.key == k
-      ensures foundNode != null ==> foundNode.value == RB.Get(TreeModel(), k)
+      ensures fresh(it)
+      ensures it.Parent() == this
+      ensures it.Valid()
+      ensures it.Model() == TRBit.Find(k, Model())
 
       requires allocated(Repr())
+      ensures fresh(Repr()-old(Repr()))
       ensures allocated(Repr())
+
+      ensures Iterators() >= old(Iterators())
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Model() == old(it.Model())
     {
-      foundNode := FindRec(root, skeleton, k);
+      ThreadedImp();
+      TRBf.FindSpec(Model(), k);
+      var foundNode, foundSk := FindRec(root, false, skeleton, k);
+      it := new ThreadedLinkedTreeIterator(foundNode, true, this);
     }
-    */
 
     /*
     method {:verify false} Insert(k: K, v: V)

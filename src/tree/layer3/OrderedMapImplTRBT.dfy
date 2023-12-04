@@ -598,7 +598,7 @@ module OrderedMapImplTRBT {
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
     {}
 
-    method {:verify false} Contains(k:K) returns (b:bool)
+    method Contains(k:K) returns (b:bool)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -621,9 +621,12 @@ module OrderedMapImplTRBT {
       ensures forall it | it in old(Iterators()) && old(it.Valid())::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
-    {}
+    {
+      var it: OrderedMapIteratorTRBT := Find(k);
+      b := it.HasPeek();
+    }
 
-    method {:verify false} At(k:K) returns (v:V)
+    method At(k:K) returns (v:V)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -647,9 +650,13 @@ module OrderedMapImplTRBT {
       ensures forall it | it in old(Iterators()) && old(it.Valid())::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
-    {}
+    {
+      var it: OrderedMapIteratorTRBT := Find(k);
+      var p := it.Peek();
+      return p.1;
+    }
 
-    method {:verify false} Find(k: K) returns (newt:UnorderedMapIterator)
+    method Find(k: K) returns (newt: UnorderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -680,7 +687,11 @@ module OrderedMapImplTRBT {
       ensures forall it | it in old(Iterators()) && old(it.Valid())::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
-    {}
+    {
+      var it := tree.Find(k);
+      newt := new OrderedMapIteratorTRBT(this, it);
+      (newt as OrderedMapIteratorTRBT).ModelEq();
+    }
 
     method Add(k: K,v: V)
       modifies this, Repr()
