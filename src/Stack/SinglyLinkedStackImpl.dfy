@@ -59,8 +59,8 @@ class SinglyLinkedStackImpl<A> extends Stack<A> {
   constructor()
     ensures Valid()
     ensures Model() == []
-    ensures forall x | x in Repr() :: fresh(x)
-    ensures forall x | x in Repr() :: allocated(x)
+    ensures fresh(Repr())
+    ensures allocated(Repr())
   {
     ReprDepth := 1;
     list := new SinglyLinkedList();

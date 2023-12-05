@@ -16,6 +16,14 @@ module  Int {
       x
   }
 
-}
+  method MMax(x :int, y:int) returns (r:int)
+  ensures r == Max(x,y)
+  { if x < y 
+      { r := y; }
+    else
+      { r := x; }
+
+  }
   
 
+}

@@ -48,11 +48,11 @@ ensures s1.Iterators()>=old(s1.Iterators()) && s2.Iterators()>=old(s2.Iterators(
    invariant it1.Valid() && it2.Valid() 
    invariant it1 in s1.Iterators() && it2 in s2.Iterators()
    invariant it1.Parent() == s1 && it2.Parent() == s2
-   invariant it1.Traversed() <= s1.Model() && it2.Traversed() <= s2.Model()
+   invariant it1.Traversed() <= s1.Model() && it2.Traversed() <= s2.Model() 
    invariant 0 <= it1.Index() <= |s1.Model()| && 0 <= it2.Index() <= |s2.Model()|
    //invariant !it2.HasNext()==> b
-   invariant b ==> it1.Traversed() <= it2.Traversed()
-   invariant !b ==> !(it1.Traversed() <= s2.Model())
+   invariant b ==> it1.Traversed() <= it2.Traversed()//commented
+   invariant !b ==> !(it1.Traversed() <= s2.Model())//commented
    invariant it1.HasPeek?() ==> it1.Peek?() !in it2.Traversed()
    invariant forall u | u in it2.Traversed() && it1.Traversed() < s1.Model() :: u < it1.Peek?()
 

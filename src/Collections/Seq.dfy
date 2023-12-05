@@ -1,5 +1,14 @@
 
   module Seq {
+    
+    ghost function First<A>(xs: seq<A>): A
+     requires xs != []
+    { xs[0] } 
+    
+    ghost function Last<A>(xs: seq<A>): A
+     requires xs != []
+    { xs[|xs|-1] } 
+    
     ghost function Rev<A>(xs: seq<A>): seq<A>
       ensures |xs| == |Rev(xs)|
     {
@@ -9,6 +18,7 @@
         Rev(xs[1..]) + [xs[0]]
     }
 
+   
     lemma LastRev<A>(xs: seq<A>)
       requires |xs| > 0
       ensures Rev(xs) == [xs[|xs|-1]] + Rev(xs[..|xs|-1])
@@ -29,6 +39,11 @@
         }
       }
     }
+
+
+  lemma ConsRev<A>(x: A, xs: seq<A>)
+    ensures [x] + Rev(xs) == Rev(xs + [x])
+    {LastRev(xs+[x]);}
 
     lemma LeRev(xs: seq<int>)
       requires forall i | 0 <= i < |xs|-1 :: xs[i] >= xs[i+1]
