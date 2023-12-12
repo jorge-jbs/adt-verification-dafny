@@ -339,31 +339,68 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
       Link(maximumKey(t.left))
   }
 
-  lemma ModelAfterInsert(it: iter, k: K, root: trbtree, root': trbtree)
-    requires HasPeek(it)
+  lemma ModelAfterInsert(it: iter, k: K, v: V, root: trbtree, root': trbtree)
+    requires SearchTree(root)
+    requires SearchTree(root')
     requires Valid(it, root)
-    requires keys(root') == keys(root) + {k}
+    requires toMapRec(root') == toMapRec(root)[k := v]
 
     ensures Valid(it, root')
-    ensures k !in keys(root) || k != it.link ==> Peek(it, root') == Peek(it, root)
+    ensures HasPeek(it) && (k !in keys(root) || k != it.link) ==>
+      Peek(it, root') == Peek(it, root)
     ensures
-      if k !in keys(root) && k < it.link then
-        && Index(it, root') == Index(it, root) + 1
-        && Traversed(it, root') == Traversed(it, root) + {k}
+      if k in keys(root) || it.PastTheBeginning? || (it.Link? && it.link < k) then
+        Index(it, root') == Index(it, root)
       else
-        && Index(it, root') == Index(it, root)
+        Index(it, root') == Index(it, root) + 1
+    ensures
+      if k in keys(root) || (it.Link? && it.link < k) then
         && Traversed(it, root') == Traversed(it, root)
-  {
-    assert Valid(it, root');
-    assume false;
-    assert k !in keys(root) || k != it.link ==> Peek(it, root') == Peek(it, root);
-    assert
-      if k !in keys(root) && k < it.link then
-        && Index(it, root') == Index(it, root) + 1
-        && Traversed(it, root') == Traversed(it, root) + {k}
+        && |Traversed(it, root')| == |Traversed(it, root)|
       else
-        && Index(it, root') == Index(it, root)
-        && Traversed(it, root') == Traversed(it, root);
+        && Traversed(it, root') == Traversed(it, root) + {k}
+        && |Traversed(it, root')| == |Traversed(it, root)| + 1
+  {
+    ToMapRecKeys(root);
+    ToMapRecKeys(root');
+    assert Valid(it, root');
+    if HasPeek(it) && (k !in keys(root) || k != it.link) {
+      calc == {
+        Peek(it, root');
+        (it.link, Get'(root', it.link));
+        { Get'ToMapRec(root', it.link); }
+        (it.link, toMapRec(root')[it.link]);
+        (it.link, toMapRec(root)[it.link]);
+        { Get'ToMapRec(root, it.link); }
+        (it.link, Get'(root, it.link));
+        Peek(it, root);
+      }
+    }
+    if it.Link? {
+      SmallerKeys(root, it.link);
+      SmallerKeys(root', it.link);
+    }
+    if k in keys(root) {
+      assert Traversed(it, root') == Traversed(it, root) by {
+      }
+    } else if !it.Link? || k < it.link {
+      assert Traversed(it, root') == Traversed(it, root) + {k} by {
+      }
+    } else {
+      assert Traversed(it, root') == Traversed(it, root) by {
+      }
+    }
+    if it.Link? || it.PastTheEnd? {
+      TraversedIndex(it, root);
+      TraversedIndex(it, root');
+    }
+    if k in keys(root) || it.PastTheBeginning? || (it.Link? && it.link < k) {
+      assert Index(it, root') == Index(it, root) by {
+      }
+    } else {
+      assert Index(it, root') == Index(it, root) + 1 by {
+      }
+    }
   }
 
   lemma ModelAfterRemove(it: iter, k: K, root: trbtree, root': trbtree)

@@ -521,6 +521,7 @@ module ThreadedLinkedTree {
       ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
         && it.Valid()
         && it.Model() == old(it.Model())
+        && it.HasPeek() == old(it.HasPeek())
     {
       TRBi.TRBInsertRootSpec(TreeModelRec(skeleton), k, v);
       var insertedNode;

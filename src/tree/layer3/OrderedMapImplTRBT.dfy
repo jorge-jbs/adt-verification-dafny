@@ -61,6 +61,7 @@ module OrderedMapImplTRBT {
                 && it.Parent() == old(it.Parent())
                 && it.Traversed() == old(it.Traversed())
                 && |it.Traversed()| == old(|it.Traversed()|)
+                && (it.HasPeek?() <==> old(it.HasPeek?()))
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
       ensures forall it <- old(parent.Iterators()) | old(it.Valid()) ::
@@ -919,6 +920,82 @@ module OrderedMapImplTRBT {
       }
     }
 
+    twostate predicate InsertIteratorsPrecondition(k: K, v: V, oldRepr: set<object>)
+      reads this, Repr(), oldRepr
+      requires oldRepr == old(Repr())
+    {
+      && old(Valid())
+      && Valid()
+      && Model() == old(Model())[k := v]
+      && Iterators() >= old(Iterators())
+      && (
+        forall it
+            | it in old(tree.Iterators())
+            && old(it.Valid()) ::
+          && it.Valid()
+          //&& it.Parent() == old(it.Parent())  // obvious since it.parent is const
+          && it.Model() == old(it.Model())
+          && it.HasPeek() == old(it.HasPeek())
+      )
+    }
+
+    twostate predicate InsertIteratorsPostcondition(
+      k: K, 
+      v: V, 
+      oldRepr: set<object>,
+      it: OrderedMapIteratorTRBT
+    )
+      reads this, Repr(), oldRepr
+      requires oldRepr == old(Repr())
+      requires old(Valid())
+      requires Valid()
+      requires it in old(Iterators())
+      requires old(it.Valid())
+    {
+      && it.Valid()
+      && it.Parent() == old(it.Parent())
+      && (it.HasPeek?() <==> old(it.HasPeek?()))
+      && (
+        it.HasPeek?() && (k !in old(Model()) || k != it.Peek?().0) ==>
+          it.Peek?() == old(it.Peek?())
+      )
+      && (
+        if k in old(Model()) || it.Index() == -1 || (it.HasPeek?() && it.Peek?().0 < k) then
+          it.Index() == old(it.Index())
+        else
+          it.Index() == old(it.Index()) + 1
+      )
+      && (
+        if k in old(Model()) || (it.HasPeek?() && it.Peek?().0 < k) then
+          && it.Traversed() == old(it.Traversed())
+          && |it.Traversed()| == |old(it.Traversed())|
+        else
+          && it.Traversed() == old(it.Traversed()) + {k}
+          && |it.Traversed()| == |old(it.Traversed())| + 1
+      )
+    }
+
+    twostate lemma InsertIterators(k: K, v: V)
+      requires InsertIteratorsPrecondition(k, v, old(Repr()))
+      ensures forall it <- old(Iterators()) | old(it.Valid())
+        :: InsertIteratorsPostcondition(k, v, old(Repr()), it)
+    {
+      forall it <- old(Iterators()) | old(it.Valid())
+        ensures InsertIteratorsPostcondition(k, v, old(Repr()), it)
+      {
+        var it' := it as OrderedMapIteratorTRBT;
+        assert old(it'.ModelEq(); true);
+        it'.ModelEq();
+        TRBit.ModelAfterInsert(
+          it'.iter.Model(), 
+          k, 
+          v,
+          old(it'.iter.parent.Model()), 
+          it'.iter.parent.Model()
+        );
+      }
+    }
+
     method Insert(mid: UnorderedMapIterator, k: K, v: V) returns (newt:UnorderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())
@@ -945,6 +1022,29 @@ module OrderedMapImplTRBT {
       ensures (newt as OrderedMapIterator).Index() == |smaller(Model().Keys,k)|
 
       ensures Iterators() >= {newt} + old(Iterators())
+      ensures forall it <- old(Iterators()) | old(it.Valid())
+        :: var it' := it as OrderedMapIterator;
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && (it.HasPeek?() <==> old(it.HasPeek?()))
+        && (
+          it.HasPeek?() && (k !in old(Model()) || k != it.Peek?().0) ==>
+            it.Peek?() == old(it.Peek?())
+        )
+        && (
+          if k in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?().0 < k) then
+            it'.Index() == old(it'.Index())
+          else
+            it'.Index() == old(it'.Index()) + 1
+        )
+        && (
+          if k in old(Model()) || (it.HasPeek?() && it.Peek?().0 < k) then
+            && it.Traversed() == old(it.Traversed())
+            && |it.Traversed()| == |old(it.Traversed())|
+          else
+            && it.Traversed() == old(it.Traversed()) + {k}
+            && |it.Traversed()| == |old(it.Traversed())| + 1
+        )
     {
       TRBi.TRBInsertRootSpec(tree.Model(), k, v);
       TRBi.TRBInsertRootSize(tree.Model(), k, v);
@@ -954,6 +1054,11 @@ module OrderedMapImplTRBT {
       TRBit.FindAfterInsert(k, v, iter.parent.Model());
       if isInserted {
         size := size + 1;
+      }
+      assert forall it <- old(Iterators()) | old(it.Valid())
+        :: InsertIteratorsPostcondition(k, v, old(Repr()), it)
+      by {
+        InsertIterators(k, v);
       }
       newt := new OrderedMapIteratorTRBT(this, iter);
       (newt as OrderedMapIteratorTRBT).ModelEq();
