@@ -959,7 +959,7 @@ module OrderedMapImplTRBT {
       (newt as OrderedMapIteratorTRBT).ModelEq();
     }
 
-    method Erase(mid:UnorderedMapIterator) returns (next: UnorderedMapIterator)
+    method Erase(mid: UnorderedMapIterator) returns (next: UnorderedMapIterator)  // 4'30"
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -986,53 +986,39 @@ module OrderedMapImplTRBT {
 
       ensures Iterators() >= {next} + old(Iterators())
     {
-      var mid' := mid as OrderedMapIteratorTRBT;
-      next := mid'.Copy();
-      var next' := next as OrderedMapIteratorTRBT;
+      next := mid.Copy();
+      assert (next as OrderedMapIteratorTRBT).Index() == (mid as OrderedMapIteratorTRBT).Index();
     label L1:
-      next'.Next();
+      (next as OrderedMapIteratorTRBT).Next();
+      assert (mid as OrderedMapIteratorTRBT).Index() == old((mid as OrderedMapIteratorTRBT).Index());
+      calc == {
+        (next as OrderedMapIteratorTRBT).Index();
+        old@L1((next as OrderedMapIteratorTRBT).Index())+1;
+        (mid as OrderedMapIteratorTRBT).Index()+1;
+      }
+      assert (next as OrderedMapIteratorTRBT).Index() != -1;
     label L2:
-      var p := mid'.Peek();
-      mid'.ModelEq();
-      next'.ModelEq();
-      assert next.Valid();
-      assert next.Parent() == this;
-      assert next in Iterators();
-      assert p.0 in Model();
-      assert next is OrderedMapIterator;
-      assert fresh(next);
-      assert next.HasPeek?() ==> p.0 < next.Peek?().0;
-      assert next'.Index() == mid'.Index() + 1;
+      var p := (mid as OrderedMapIteratorTRBT).Peek();
+      assert (next as OrderedMapIteratorTRBT).Index() != -1;
+      assert p.0 in old(Model()) by {
+      }
+      if next.HasPeek?() {
+        assert p.0 < next.Peek?().0 by {
+        }
+      } else {
+        assert (next as OrderedMapIteratorTRBT).Index() == |Model()| by {
+          assert (next as OrderedMapIteratorTRBT).Index() != -1;
+        }
+      }
     label L3:
       Remove(p.0);
-      assert Valid();
-      assert Model() == old(Model()) - {p.0};
-      assert |Model()| == old(|Model()|) - 1;
-      
-      assert Repr() == {tree} + iterators + tree.Repr() + (set it <- iterators :: it.iter);
-
-/*
-      assert next'.Valid();
-      assert next'.Index() == old@L3(next'.Index()) - 1;
-      assert next'.Index() == old(mid'.Index());
-
-      assert Valid();
-      assert Model() == old(Model()) - {key(old(mid.Peek?()))};
-      assert |Model()| == |old(Model())| - 1;
-      assume false;
-
-      assert next is OrderedMapIterator;
-      assert fresh(next);
-      assert next.Valid();
-      assert next.Parent() == this;
-      assert next.Traversed() == old(mid.Traversed());
-      assert |next.Traversed()| == old(|mid.Traversed()|);
-
-      assert mid is OrderedMapIterator;
-      assert (next as OrderedMapIterator).Index() == old((mid as OrderedMapIterator).Index());
-
-      assert Iterators() >= {next} + old(Iterators());
-      */
+      calc == {
+        (next as OrderedMapIteratorTRBT).Index();
+        old@L3((next as OrderedMapIteratorTRBT).Index())-1;
+        old@L3((mid as OrderedMapIteratorTRBT).Index()+1)-1;
+        old@L3((mid as OrderedMapIteratorTRBT).Index());
+        old((mid as OrderedMapIteratorTRBT).Index());
+      }
     }
   }
 }
