@@ -408,16 +408,6 @@ module ThreadedLinkedTree {
       it := new ThreadedLinkedTreeIterator.First(this);
     }
 
-/*
-    ghost function MapModel(): map<K, V>
-      reads this, elems(skeleton)
-      requires Valid()
-      requires SearchTree()
-    {
-      RB.toMap(TreeModel())
-    }
-    */
-
     method Find(k: K) returns (it: ThreadedLinkedTreeIterator)
       modifies this, Repr()
 
@@ -449,26 +439,6 @@ module ThreadedLinkedTree {
       var foundNode, foundSk := FindRec(root, false, skeleton, k);
       it := new ThreadedLinkedTreeIterator(foundNode, true, this);
     }
-
-    /*
-    method {:verify false} Insert(k: K, v: V)
-      modifies this, Repr()
-      requires Valid()
-      requires SearchTree()
-      ensures Valid()
-      ensures SearchTree()
-      ensures MapModel() == old(MapModel())[k := v]
-
-      requires allocated(Repr())
-      ensures fresh(Repr()-old(Repr()))
-      ensures allocated(Repr())
-    {
-      ghost var z;
-      root, skeleton, z := SInsertRec(root, skeleton, k, v);
-      RBs.SInsertSpec(old(TreeModelRec(skeleton)), k, v);
-      RBs.SInsertModel(old(TreeModelRec(skeleton)), k, v);
-    }
-    */
 
     lemma ElemsOfThread()
       requires Valid()

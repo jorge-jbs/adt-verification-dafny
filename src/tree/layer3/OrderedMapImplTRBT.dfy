@@ -259,11 +259,12 @@ module OrderedMapImplTRBT {
                 && it.Parent() == old(it.Parent())
                 && it.Traversed() == old(it.Traversed())
                 && |it.Traversed()| == old(|it.Traversed()|)
+                && (it.HasPeek?() <==> old(it.HasPeek?()))
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid())::
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
                 (it is OrderedMapIterator &&
-                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
+                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()))
     {
       iter.ValidImp();
       TRBit.HasPeekEq(iter.Model(), parent.tree.Model());
@@ -298,10 +299,11 @@ module OrderedMapImplTRBT {
                 && it.Parent() == old(it.Parent())
                 && (it != this ==> it.Traversed() == old(it.Traversed())
                                    && |it.Traversed()| == old(|it.Traversed()|)
+                                   && (it.HasPeek?() <==> old(it.HasPeek?()))
                                    && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this::
                 (it is OrderedMapIterator &&
-                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
+                 (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()))
     {
       ModelEq();
       TRBit.NextTraversed(iter.Model(), iter.parent.Model());
@@ -377,6 +379,7 @@ module OrderedMapImplTRBT {
                 && it.Parent() == old(it.Parent())
                 && it.Traversed() == old(it.Traversed())
                 && |it.Traversed()| == old(|it.Traversed()|)
+                && (it.HasPeek?() <==> old(it.HasPeek?()))
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
@@ -694,7 +697,7 @@ module OrderedMapImplTRBT {
       (newt as OrderedMapIteratorTRBT).ModelEq();
     }
 
-    method Add(k: K,v: V)
+    method Add(k: K, v: V)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -707,6 +710,29 @@ module OrderedMapImplTRBT {
               else |Model()| == 1 + old(|Model()|)
 
       ensures Iterators() >= old(Iterators())
+      ensures forall it <- old(Iterators()) | old(it.Valid())
+        :: var it' := it as OrderedMapIterator;
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && (it.HasPeek?() <==> old(it.HasPeek?()))
+        && (
+          it.HasPeek?() && (k !in old(Model()) || k != it.Peek?().0) ==>
+            it.Peek?() == old(it.Peek?())
+        )
+        && (
+          if k in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?().0 < k) then
+            it'.Index() == old(it'.Index())
+          else
+            it'.Index() == old(it'.Index()) + 1
+        )
+        && (
+          if k in old(Model()) || (it.HasPeek?() && it.Peek?().0 < k) then
+            && it.Traversed() == old(it.Traversed())
+            && |it.Traversed()| == |old(it.Traversed())|
+          else
+            && it.Traversed() == old(it.Traversed()) + {k}
+            && |it.Traversed()| == |old(it.Traversed())| + 1
+        )
     {
       var mid := First();
       var _ := Insert(mid, k, v);
@@ -732,106 +758,51 @@ module OrderedMapImplTRBT {
       )
     }
 
-    twostate predicate RemoveIteratorsPostcondition(k: K, oldRepr: set<object>)
+    twostate predicate RemoveIteratorsPostcondition(
+        k: K, 
+        oldRepr: set<object>, 
+        it: OrderedMapIteratorTRBT
+      )
       reads this, Repr(), oldRepr
       requires oldRepr == old(Repr())
       requires RemoveIteratorsPrecondition(k, oldRepr)
+      requires it in old(Iterators())
+      requires old(it.Valid())
+      requires old(it.HasPeek?()) ==> old(it.Peek?().0) != k
     {
-      forall it | it in old(Iterators())
-          && old(it.Valid())
-          && (old(it.HasPeek?()) ==> old(it.Peek?().0) != k)
-        :: it is OrderedMapIteratorTRBT
-        && it.Valid()
-        && it.Parent() == old(it.Parent())
-        && (it.HasPeek?() <==> old(it.HasPeek?()))
-        && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-        && var it' := it as OrderedMapIteratorTRBT;
-        && (it.HasPeek?() ==>
-          if k in old(Model()) && k < it.Peek?().0 then
-            && it.Traversed() == old(it.Traversed()) - {k}
-            && |it.Traversed()| == old(|it.Traversed()|) - 1
-            && it'.Index() == old(it'.Index()) - 1
-          else
-            && it.Traversed() == old(it.Traversed())
-            && |it.Traversed()| == old(|it.Traversed()|)
-            && it'.Index() == old(it'.Index())
-        )
-        && ((!it.HasPeek?() && old(it'.Index()) == -1) ==>
-          && it'.Index() == -1
-          && (
-            if k in old(Model()) then
-              && it'.Traversed() == old(it'.Traversed()) - {k}
-              && |it'.Traversed()| == |old(it'.Traversed())| - 1
-            else
-              && it'.Traversed() == old(it'.Traversed())
-              && |it'.Traversed()| == |old(it'.Traversed())|
-          )
-        )
-        && ((!it.HasPeek?() && old(it'.Index()) == |old(Model())|) ==>
-          && it.Valid()
-          && (
-            if k in old(Model()) then
-              && it'.Index() == old(it'.Index()) - 1
-              && it'.Traversed() == old(it'.Traversed()) - {k}
-              && |it'.Traversed()| == |old(it'.Traversed())| - 1
-            else
-              && it'.Index() == old(it'.Index())
-              && it'.Traversed() == old(it'.Traversed())
-              && |it'.Traversed()| == |old(it'.Traversed())|
-          )
-        )
+      && it.Valid()
+      && it.Parent() == old(it.Parent())
+      && (it.HasPeek?() <==> old(it.HasPeek?()))
+      && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+      && var it' := it as OrderedMapIteratorTRBT;
+      && (
+        if k in old(Model()) && ((it.HasPeek?() && k < it.Peek?().0) || old(it.Index()) == old(|Model()|)) then
+          it'.Index() == old(it'.Index()) - 1
+        else
+          it'.Index() == old(it'.Index())
+      )
+      && (
+        if k in old(Model()) && (it.HasPeek?() ==> k < it.Peek?().0) then
+          && it'.Traversed() == old(it'.Traversed()) - {k}
+          && |it'.Traversed()| == |old(it'.Traversed())| - 1
+        else
+          && it'.Traversed() == old(it'.Traversed())
+          && |it'.Traversed()| == |old(it'.Traversed())|
+      )
     }
 
     twostate lemma RemoveIterators(k: K)
       requires RemoveIteratorsPrecondition(k, old(Repr()))
-      ensures RemoveIteratorsPostcondition(k, old(Repr()))
+      ensures
+        forall it <- old(Iterators())
+          | old(it.Valid())
+          && (old(it.HasPeek?()) ==> old(it.Peek?().0) != k)
+        :: RemoveIteratorsPostcondition(k, old(Repr()), it)
     {
       forall it | it in old(Iterators())
           && old(it.Valid())
           && (old(it.HasPeek?()) ==> old(it.Peek?().0) != k)
-        ensures it is OrderedMapIteratorTRBT
-        ensures it.Valid()
-        ensures it.Parent() == old(it.Parent())
-        ensures it.HasPeek?() <==> old(it.HasPeek?())
-        ensures it.HasPeek?() ==> it.Peek?() == old(it.Peek?())
-        ensures it.HasPeek?() ==>
-          var it' := it as OrderedMapIteratorTRBT;
-          if k in old(Model()) && k < it.Peek?().0 then
-            && it.Traversed() == old(it.Traversed()) - {k}
-            && |it.Traversed()| == old(|it.Traversed()|) - 1
-            && it'.Index() == old(it'.Index()) - 1
-          else
-            && it.Traversed() == old(it.Traversed())
-            && |it.Traversed()| == old(|it.Traversed()|)
-            && it'.Index() == old(it'.Index())
-
-        ensures
-          var it' := it as OrderedMapIteratorTRBT;
-          (!it.HasPeek?() && old(it'.Index()) == -1) ==>
-            && it'.Index() == -1
-            && (
-              if k in old(Model()) then
-                && it'.Traversed() == old(it'.Traversed()) - {k}
-                && |it'.Traversed()| == |old(it'.Traversed())| - 1
-              else
-                && it'.Traversed() == old(it'.Traversed())
-                && |it'.Traversed()| == |old(it'.Traversed())|
-            )
-
-        ensures
-          var it' := it as OrderedMapIteratorTRBT;
-          (!it.HasPeek?() && old(it'.Index()) == |old(Model())|) ==>
-            && it.Valid()
-            && (
-              if k in old(Model()) then
-                && it'.Index() == old(it'.Index()) - 1
-                && it'.Traversed() == old(it'.Traversed()) - {k}
-                && |it'.Traversed()| == |old(it'.Traversed())| - 1
-              else
-                && it'.Index() == old(it'.Index())
-                && it'.Traversed() == old(it'.Traversed())
-                && |it'.Traversed()| == |old(it'.Traversed())|
-            )
+        ensures RemoveIteratorsPostcondition(k, old(Repr()), it)
       {
         var it' := it as OrderedMapIteratorTRBT;
         assert old(it'.ModelEq(); true);
@@ -871,39 +842,19 @@ module OrderedMapImplTRBT {
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
           && var it' := it as OrderedMapIteratorTRBT;
-          && (it.HasPeek?() ==>
-            if k in old(Model()) && k < it.Peek?().0 then
-              && it.Traversed() == old(it.Traversed()) - {k}
-              && |it.Traversed()| == old(|it.Traversed()|) - 1
-              && it'.Index() == old(it'.Index()) - 1
+          && (
+            if k in old(Model()) && ((it.HasPeek?() && k < it.Peek?().0) || old(it'.Index()) == old(|Model()|)) then
+              it'.Index() == old(it'.Index()) - 1
             else
-              && it.Traversed() == old(it.Traversed())
-              && |it.Traversed()| == old(|it.Traversed()|)
-              && it'.Index() == old(it'.Index())
+              it'.Index() == old(it'.Index())
           )
-          && ((!it.HasPeek?() && old(it'.Index()) == -1) ==>
-            && it'.Index() == -1
-            && (
-              if k in old(Model()) then
-                && it'.Traversed() == old(it'.Traversed()) - {k}
-                && |it'.Traversed()| == |old(it'.Traversed())| - 1
-              else
-                && it'.Traversed() == old(it'.Traversed())
-                && |it'.Traversed()| == |old(it'.Traversed())|
-            )
-          )
-          && ((!it.HasPeek?() && old(it'.Index()) == |old(Model())|) ==>
-            && it.Valid()
-            && (
-              if k in old(Model()) then
-                && it'.Index() == old(it'.Index()) - 1
-                && it'.Traversed() == old(it'.Traversed()) - {k}
-                && |it'.Traversed()| == |old(it'.Traversed())| - 1
-              else
-                && it'.Index() == old(it'.Index())
-                && it'.Traversed() == old(it'.Traversed())
-                && |it'.Traversed()| == |old(it'.Traversed())|
-            )
+          && (
+            if k in old(Model()) && (it.HasPeek?() ==> k < it.Peek?().0) then
+              && it'.Traversed() == old(it'.Traversed()) - {k}
+              && |it'.Traversed()| == |old(it'.Traversed())| - 1
+            else
+              && it'.Traversed() == old(it'.Traversed())
+              && |it'.Traversed()| == |old(it'.Traversed())|
           )
     {
       ghost var oldRepr := Repr();
@@ -915,7 +866,11 @@ module OrderedMapImplTRBT {
       if isRemoved {
         size := size - 1;
       }
-      assert RemoveIteratorsPostcondition(k, oldRepr) by {
+      assert forall it | it in old(Iterators())
+          && old(it.Valid())
+          && (old(it.HasPeek?()) ==> old(it.Peek?().0) != k)
+        :: RemoveIteratorsPostcondition(k, old(Repr()), it)
+      by {
         RemoveIterators(k);
       }
     }
@@ -1090,8 +1045,33 @@ module OrderedMapImplTRBT {
       ensures (next as OrderedMapIterator).Index() == old((mid as OrderedMapIterator).Index())
 
       ensures Iterators() >= {next} + old(Iterators())
+      ensures
+        var k := old(mid.Peek?().0);
+        forall it | it in old(Iterators())
+            && old(it.Valid())
+            && (old(it.HasPeek?()) ==> old(it.Peek?().0) != k)
+          :: it is OrderedMapIteratorTRBT
+          && it.Valid()
+          && it.Parent() == old(it.Parent())
+          && (it.HasPeek?() <==> old(it.HasPeek?()))
+          && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+          && var it' := it as OrderedMapIteratorTRBT;
+          && (
+            if k in old(Model()) && ((it.HasPeek?() && k < it.Peek?().0) || old(it'.Index()) == old(|Model()|)) then
+              it'.Index() == old(it'.Index()) - 1
+            else
+              it'.Index() == old(it'.Index())
+          )
+          && (
+            if k in old(Model()) && (it.HasPeek?() ==> k < it.Peek?().0) then
+              && it'.Traversed() == old(it'.Traversed()) - {k}
+              && |it'.Traversed()| == |old(it'.Traversed())| - 1
+            else
+              && it'.Traversed() == old(it'.Traversed())
+              && |it'.Traversed()| == |old(it'.Traversed())|
+          )
     {
-      next := mid.Copy();
+      next := (mid as OrderedMapIteratorTRBT).Copy();
       assert (next as OrderedMapIteratorTRBT).Index() == (mid as OrderedMapIteratorTRBT).Index();
     label L1:
       (next as OrderedMapIteratorTRBT).Next();
@@ -1124,6 +1104,32 @@ module OrderedMapImplTRBT {
         old@L3((mid as OrderedMapIteratorTRBT).Index());
         old((mid as OrderedMapIteratorTRBT).Index());
       }
+      
+      var k := old(mid.Peek?().0);
+      assert
+        forall it | it in old(Iterators())
+            && old(it.Valid())
+            && (old(it.HasPeek?()) ==> old(it.Peek?().0) != k)
+          :: it is OrderedMapIteratorTRBT
+          && it.Valid()
+          && it.Parent() == old(it.Parent())
+          && (it.HasPeek?() <==> old(it.HasPeek?()))
+          && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+          && var it' := it as OrderedMapIteratorTRBT;
+          && (
+            if k in old(Model()) && ((it.HasPeek?() && k < it.Peek?().0) || old(it'.Index()) == old(|Model()|)) then
+              it'.Index() == old(it'.Index()) - 1
+            else
+              it'.Index() == old(it'.Index())
+          )
+          && (
+            if k in old(Model()) && (it.HasPeek?() ==> k < it.Peek?().0) then
+              && it'.Traversed() == old(it'.Traversed()) - {k}
+              && |it'.Traversed()| == |old(it'.Traversed())| - 1
+            else
+              && it'.Traversed() == old(it'.Traversed())
+              && |it'.Traversed()| == |old(it'.Traversed())|
+          );
     }
   }
 }
