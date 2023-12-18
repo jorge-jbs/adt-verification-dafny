@@ -162,6 +162,40 @@ module ThreadedLinkedTree {
       }
     }
 
+    constructor Last(parent: ThreadedLinkedTree)
+      modifies parent`iterators
+      requires parent.Valid()
+      requires parent.Threaded()
+      requires parent.SearchTree()
+      requires TRB.ThreadedTreeRoot(parent.Model())
+      ensures Valid()
+      ensures Model() == TRBit.Last(parent.Model())
+      ensures Parent() == parent
+      ensures parent.Valid()
+      ensures parent.Threaded()
+      ensures parent.SearchTree()
+      ensures TRB.ThreadedTreeRoot(parent.Model())
+      ensures old(parent.RedBlackTree()) ==> parent.RedBlackTree()
+      ensures parent.Model() == old(parent.Model())
+      ensures parent.iterators == {this} + old(parent.iterators)
+      requires allocated(parent.Repr())
+      ensures fresh(parent.Repr() - old(parent.Repr()))
+      ensures allocated(parent.Repr())
+    {
+      this.node := parent.root;
+      this.isPastTheEnd := false;
+      this.parent := parent;
+      new;
+      parent.iterators := parent.iterators + {this};
+      ValidImp();
+      if parent.root == null {
+        this.node := null;
+      } else {
+        ghost var sk;
+        this.node, sk := Max.Max(parent.root, parent.skeleton);
+      }
+    }
+
     constructor At(node: TTNode, parent: ThreadedLinkedTree)
       modifies parent`iterators
       requires parent.Valid()
@@ -478,6 +512,33 @@ module ThreadedLinkedTree {
     {
       ThreadedImp();
       it := new ThreadedLinkedTreeIterator.First(this);
+    }
+
+    method Last() returns (it: ThreadedLinkedTreeIterator)
+      modifies this, Repr()
+      requires allocated(Repr())
+      ensures fresh(Repr() - old(Repr()))
+      ensures allocated(Repr())
+
+      requires Valid()
+      requires SearchTree()
+      requires Threaded()
+      ensures Valid()
+      ensures Threaded()
+      ensures Model() == old(Model())
+
+      ensures fresh(it)
+      ensures it.Valid()
+      ensures it.Parent() == this
+      ensures it.Model() == TRBit.Last(Model())
+
+      ensures Iterators() >= {it} + old(Iterators())
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Model() == old(it.Model())
+    {
+      ThreadedImp();
+      it := new ThreadedLinkedTreeIterator.Last(this);
     }
 
     method Find(k: K) returns (it: ThreadedLinkedTreeIterator)

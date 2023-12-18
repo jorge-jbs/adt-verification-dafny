@@ -238,6 +238,47 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     TraversedIndex(First(root), root);
   }
 
+  function Last(root: trbtree): iter
+  {
+    if root.Node? then
+      Link(maximumKey(root))
+    else
+      PastTheBeginning
+  }
+
+  lemma LastSpec(root: trbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    ensures Valid(Last(root), root)
+  {}
+
+  lemma LastTraversed(root: trbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    requires root.Node?
+    ensures Traversed(Last(root), root) == keys(root) - {maximumKey(root)}
+  {
+    SearchImpliesOrdered(root);
+    SmallerKeys(root, Last(root).link);
+    forall k | k in keys(root)
+      ensures !(maximumKey(root) < k)
+    {
+      KeyInOrder(root, k);
+    }
+  }
+
+  lemma LastIndex(root: trbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    ensures Index(Last(root), root) == |toMapRec(root)| - 1
+  {
+    ToMapRecKeys(root);
+    if root.Node? {
+      LastTraversed(root);
+      TraversedIndex(Last(root), root);
+    }
+  }
+
   function Find(k: K, root: trbtree): iter
   {
     if k in keys(root) then

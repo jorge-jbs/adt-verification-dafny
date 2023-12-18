@@ -576,7 +576,7 @@ module OrderedMapImplTRBT {
       return it' as UnorderedMapIterator;
     }
 
-    method {:verify false} Last() returns (it: OrderedMapIterator)
+    method Last() returns (it: OrderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -605,7 +605,13 @@ module OrderedMapImplTRBT {
       ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
-    {}
+    {
+      ThreadedRootImp(tree.skeleton);
+      TRBit.LastIndex(tree.Model());
+      var iter := tree.Last();
+      var it' := new OrderedMapIteratorTRBT(this, iter);
+      return it' as UnorderedMapIterator;
+    }
 
     method Contains(k:K) returns (b:bool)
       modifies this, Repr()
