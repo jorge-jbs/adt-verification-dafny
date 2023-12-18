@@ -311,7 +311,7 @@ module OrderedMapImplTRBT {
       ModelEq();
     }
 
-    method {:verify false} Prev()
+    method Prev()
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -340,7 +340,12 @@ module OrderedMapImplTRBT {
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) &&  it != this::
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
-    {}
+    {
+      ModelEq();
+      TRBit.PrevIndex(iter.Model(), iter.parent.Model());
+      iter.Prev();
+      ModelEq();
+    }
 
     method Copy() returns (it: UnorderedMapIterator)
       modifies this, Parent(), Parent().Repr()

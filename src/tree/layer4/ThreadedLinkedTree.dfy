@@ -11,6 +11,7 @@ include "../../../src/tree/layer4/ThreadedLinkedTree/Find.dfy"
 include "../../../src/tree/layer4/ThreadedLinkedTree/TRBInsert.dfy"
 include "../../../src/tree/layer4/ThreadedLinkedTree/RemoveRoot.dfy"
 include "../../../src/tree/layer4/ThreadedLinkedTree/Min.dfy"
+include "../../../src/tree/layer4/ThreadedLinkedTree/Max.dfy"
 include "../../../src/MUtils.dfy"
 
 module ThreadedLinkedTree {
@@ -27,6 +28,7 @@ module ThreadedLinkedTree {
   import opened Find
   import opened R = RemoveRoot
   import opened Min
+  import opened Max
   import opened OrderedSetUtils
 
   class ThreadedLinkedTreeIterator {
@@ -308,6 +310,76 @@ module ThreadedLinkedTree {
         parent.ElemsOfThread();
         ghost var sk;
         node, sk := Min.Min(node.right, Skeleton().right);
+      }
+    }
+
+    method Prev()  // 8"
+      modifies this
+      requires parent.Valid()
+      requires parent.Threaded()
+      requires parent.SearchTree()
+      requires Valid()
+      requires assert Valid'() by {ValidImp();} true
+      requires assert TRB.ThreadedTreeRoot(parent.Model()) by {parent.ThreadedImp();} true
+      requires HasPeek()
+
+      ensures parent.Valid()
+      ensures parent.Threaded()
+      ensures parent.SearchTree()
+      ensures Valid()
+      ensures Model() == TRBit.Prev(old(Model()), old(parent.Model()))
+
+      requires allocated(parent.Repr())
+      ensures allocated(parent.Repr())
+    {
+      assert TRB.ThreadedTreeRoot(parent.Model()) by {
+        parent.ThreadedImp();
+      }
+      if node.left == null {
+        assert ValidRec(node.left, Skeleton().left);
+        assert Skeleton().left.Empty?;
+        assert TreeModelRec(Skeleton()).left.Empty?;
+        node := null;
+        isPastTheEnd := false;
+      } else if node.isThreadLeft {
+        assert ValidChild(node.left, Skeleton().left, true);
+        assert Skeleton().left.Thread?;
+        assert TreeModelRec(Skeleton()).left.Thread?;
+        assert TreeModelRec(Skeleton()) == TRB.GetSubtree(parent.Model(), Model().link);
+        assert TreeModelRec(Skeleton()).left.thread == node.left.key;
+        assert node.left in elems(parent.skeleton) by {
+          assert node.left in elemsAndThreads(Skeleton());
+          calc {
+            elemsAndThreads(Skeleton());
+            <= {parent.SubtreeOfInElems(node, Skeleton());} elemsAndThreads(parent.skeleton);
+            == {parent.ElemsOfThread();} elems(parent.skeleton);
+          }
+        }
+        node := node.left;
+        assert Model() == TRBit.Prev(old(Model()), old(parent.Model())) by {
+          calc == {
+            TRBit.Prev(old(Model()), old(parent.Model()));
+            TRBit.Link(old(TreeModelRec(Skeleton()).left.thread));
+            TRBit.Link(old(node.left.key));
+            Model();
+          }
+        }
+      } else {
+        assert ValidRec(node.left, Skeleton().left);
+        assert Skeleton().left.Node?;
+        assert TreeModelRec(Skeleton()).left.Node?;
+        assert node.left in elems(Skeleton());
+        assert elems(Skeleton()) <= elems(parent.skeleton) by {
+          calc {
+            elems(Skeleton());
+            <= {ElemsInElemsAndThreads(Skeleton());} elemsAndThreads(Skeleton());
+            <= {parent.SubtreeOfInElems(node, Skeleton());} elemsAndThreads(parent.skeleton);
+            == {parent.ElemsOfThread();} elems(parent.skeleton);
+          }
+        }
+        parent.ElemsOfThread();
+        ghost var sk;
+        node, sk := Max.Max(node.left, Skeleton().left);
       }
     }
   }

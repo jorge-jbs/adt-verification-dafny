@@ -36,9 +36,6 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
     requires SearchTree(root)
     ensures Index(it, root) <= |toMapRec(root)|
   {
-    if it.Link? {
-      SizeSmaller(root, it.link);
-    }
     SizeLemmas(root);
   }
 
@@ -340,6 +337,76 @@ module {:options "-functionSyntax:4"} TRBTree.Iterator {
       Link(k)
     case Node(_, _, _, _, _) =>
       Link(maximumKey(t.left))
+  }
+
+  lemma PrevSpec(it: iter, root: trbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    requires HasPeek(it)
+    requires Valid(it, root)
+    ensures Valid(Prev(it, root), root)
+  {
+    var t := GetSubtree(root, it.link);
+    match t.left
+    case Empty =>
+    case Thread(k) =>
+      assert k in keysAndThreads(t);
+      assert k in keysAndThreads(root);
+      ThreadedKeys(root);
+    case Node(_, _, _, _, _) =>
+  }
+
+  lemma PrevIndex(it: iter, root: trbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    requires HasPeek(it)
+    requires Valid(it, root)
+    ensures Index(Prev(it, root), root) == Index(it, root) - 1
+  {
+    var t := GetSubtree(root, it.link);
+    match t.left
+    case Empty =>
+      SmallerKeysLeftEmpty(t, root);
+      SizeLemmas(t);
+      calc == {
+        Index(Prev(it, root), root) + 1;
+        -1 + 1;
+        0;
+        |smallerKeys(root, it.link)|;
+        { SizeSmaller(root, it.link); }
+        sizeSmaller(root, it.link);
+        Index(it, root);
+      }
+    case Thread(k) =>
+      SmallerKeysLeftThread(t, root);
+      SizeLemmas(t);
+      calc == {
+        Index(Prev(it, root), root) + 1;
+        sizeSmaller(root, Prev(it, root).link) + 1;
+        { SizeSmaller(root, Prev(it, root).link); }
+        |smallerKeys(root, Prev(it, root).link)| + |{Prev(it, root).link}|;
+        { SmallerKeys(root, Prev(it, root).link); }
+        |smallerKeys(root, Prev(it, root).link) + {Prev(it, root).link}|;
+        |smallerKeys(root, it.link)|;
+        { SizeSmaller(root, it.link); }
+        sizeSmaller(root, it.link);
+        Index(it, root);
+      }
+    case Node(_, _, _, _, _) =>
+      SmallerKeysMax(t, root);
+      SizeLemmas(t);
+      calc == {
+        Index(Prev(it, root), root) + 1;
+        sizeSmaller(root, Prev(it, root).link) + 1;
+        { SizeSmaller(root, Prev(it, root).link); }
+        |smallerKeys(root, Prev(it, root).link)| + |{Prev(it, root).link}|;
+        { SmallerKeys(root, Prev(it, root).link); }
+        |smallerKeys(root, Prev(it, root).link) + {Prev(it, root).link}|;
+        |smallerKeys(root, it.link)|;
+        { SizeSmaller(root, it.link); }
+        sizeSmaller(root, it.link);
+        Index(it, root);
+      }
   }
 
   lemma ModelAfterInsert(it: iter, k: K, v: V, root: trbtree, root': trbtree)
