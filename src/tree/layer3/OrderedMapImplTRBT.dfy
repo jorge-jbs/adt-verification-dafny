@@ -273,7 +273,7 @@ module OrderedMapImplTRBT {
       return iter.Peek();
     }
 
-    method Next()  // 3'
+    method Next()
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -1030,7 +1030,7 @@ module OrderedMapImplTRBT {
       (newt as OrderedMapIteratorTRBT).ModelEq();
     }
 
-    method Erase(mid: UnorderedMapIterator) returns (next: UnorderedMapIterator)  // 4'30"
+    method Erase(mid: UnorderedMapIterator) returns (next: UnorderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
