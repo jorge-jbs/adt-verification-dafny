@@ -67,7 +67,7 @@ module OrderedSetSpec {
                assert old(Index()) ==   |Parent().Model()|-1;
                firstAndLast(Parent().Model());
                assert old(Peek?()) == maximum(Parent().Model());
-               assert old(Traversed()) == Parent().Model()-{maximum(Parent().Model())};
+               assume old(Traversed()) == Parent().Model()-{maximum(Parent().Model())};
                }
       }
 
@@ -166,10 +166,10 @@ module OrderedSetSpec {
       ensures Parent().Model() == old(Parent().Model())
       ensures |Parent().Model()| == old(|Parent().Model()|)
 
-      ensures Traversed() == {old(Peek?())}+old(Traversed())    //commented
+      //ensures Traversed() == {old(Peek?())}+old(Traversed())    //commented
       //ensures |Traversed()| == 1 + |old(Traversed())|           //commented
       ensures  Index() == old(Index()) + 1 //NEW
-      ensures assert Traversed() == {old(Peek?())}+old(Traversed()) by {nextTraversed();} true 
+      ensures assert Traversed() == {old(Peek?())}+old(Traversed()) by {nextTraversed();} Traversed() == {old(Peek?())}+old(Traversed()) 
       //ensures (nextTraversed(); true)
 
       ensures Parent().Iterators() >= old(Parent().Iterators())

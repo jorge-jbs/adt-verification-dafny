@@ -61,12 +61,14 @@ ensures s1.Iterators()>=old(s1.Iterators()) && s2.Iterators()>=old(s2.Iterators(
 
    invariant s1.Iterators() >= old(s1.Iterators()) && s2.Iterators() >= old(s2.Iterators())
  { 
+  label bodyLoop:
 
   var it1Peek := it1.Peek();
   var it2Peek := it2.Peek();
   if (it1Peek == it2Peek)
   { 
         it1.Next(); it2.Next(); 
+        it1.nextTraversed@bodyLoop();it2.nextTraversed@bodyLoop();
    
   }
   else if (it1Peek <it2Peek)
@@ -76,9 +78,11 @@ ensures s1.Iterators()>=old(s1.Iterators()) && s2.Iterators()>=old(s2.Iterators(
       assert forall z | z in s2.Model()-it2.Traversed()-{it2.Peek?()} :: it1.Peek?() < it2.Peek?() < z;
      b:=false;  
      it1.Next();
+     it1.nextTraversed@bodyLoop();
     }
   else { 
     it2.Next();
+    it2.nextTraversed@bodyLoop();
     }
   it1HasPeek := it1.HasPeek();
   it2HasPeek := it2.HasPeek();

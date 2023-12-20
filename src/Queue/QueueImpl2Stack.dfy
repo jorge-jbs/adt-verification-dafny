@@ -1,6 +1,8 @@
 include "../Stack/StackSpec.dfy"
 include "QueueSpec.dfy"
 include "../Stack/SinglyLinkedStackImpl.dfy"
+include "../Stack/ArrayStackImpl.dfy"
+
 include "../Collections/Int.dfy"
 include "../Collections/Seq.dfy"
 
@@ -9,9 +11,10 @@ module QueueImpl2Stack{
    import opened QueueSpec
    import opened StackSpec
    import opened SinglyLinkedStackImpl
+   import opened ArrayStackImpl
    import opened Int
    import opened Seq
-   export provides QueueSpec, StackSpec, SinglyLinkedStackImpl, Int, Seq
+   export provides QueueSpec, StackSpec, ArrayStackImpl,SinglyLinkedStackImpl, Int, Seq
           reveals QueueImpl2Stack
           provides QueueImpl2Stack.Model, QueueImpl2Stack.Valid, QueueImpl2Stack.ReprFamily
           provides QueueImpl2Stack.Empty, QueueImpl2Stack.Size
@@ -64,8 +67,11 @@ class QueueImpl2Stack<A> extends Queue<A> {
     ensures fresh(Repr())
     ensures allocated(Repr())
   {
-    var inbox := new SinglyLinkedStackImpl();
-    var outbox := new SinglyLinkedStackImpl();
+   // var inbox := new SinglyLinkedStackImpl();
+   // var outbox := new SinglyLinkedStackImpl();
+    var inbox := new ArrayStackImpl();
+    var outbox := new ArrayStackImpl();
+  
     var maxDepth := MMax(inbox.ReprDepth, outbox.ReprDepth);
     ReprDepth := maxDepth + 1;
     this.inbox := inbox;
