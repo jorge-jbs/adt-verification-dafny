@@ -472,8 +472,8 @@ class SinglyLinkedList<A> {
     
     { // GHOST
       spine := spine[..i+1] + spine[i+2..];
-      assert GetIndex(mid) == old(GetIndex(mid));
       ModelRelationWithSpine();
+      assert GetIndex(mid) == old(GetIndex(mid));
       assert Model() == old(Seq.Remove(Model(), GetIndex(mid)+1));
     }
   }

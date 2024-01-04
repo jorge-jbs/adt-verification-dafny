@@ -1,7 +1,7 @@
-include "../../../src/MUtils.dfy"
+include "../../../src/Collections/Seq.dfy"
 
-module OrderedSetUtils {
-  import opened Utils
+module {:options "--function-syntax:3"} OrderedSetUtils {
+  import Seq
 
   function Pick<A>(s: set<A>): A
     requires s != {}
@@ -452,7 +452,7 @@ module OrderedSetUtils {
   lemma existsOne(xs:seq<int>,i:int,j:int)
     requires isSet(xs) && |xs| > 0
     requires 0<=i<=j<=|xs| && j-i < |xs|
-    ensures exists k | 0 <= k < |xs| :: xs[k] !in xs[i..j];
+    ensures exists k | 0 <= k < |xs| :: xs[k] !in xs[i..j]
   {
     assert i>0 || j<|xs|;
     assert (i>0) ==> xs[0] !in xs[i..j];

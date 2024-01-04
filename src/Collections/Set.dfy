@@ -37,4 +37,13 @@ module  Set {
    assert forall y | y in x && y !in z :: fresh(y);
   }
 
+  lemma AddCard<A>(r: set<A>, s: set<A>)
+    requires r !! s
+    ensures |r + s| == |r| + |s|
+  {}
+
+  lemma SubCard<A>(r: set<A>, s: set<A>)
+    requires s <= r
+    ensures |r - s| == |r| - |s|
+  {}
 }

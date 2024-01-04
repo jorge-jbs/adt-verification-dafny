@@ -10,7 +10,12 @@ module ThreadedLinkedTree.Rotate {
   import opened TTNode
   import opened Color
 
-  method RotateLeft(node: TTNode, ghost sk: ttree<TTNode>)
+  method RotateLeft(
+      node: TTNode,
+      ghost prev: threadOrEmpty<TTNode>,
+      ghost sk: ttree<TTNode>,
+      ghost next: threadOrEmpty<TTNode>
+    )
     returns (newNode: TTNode, ghost newSk: ttree<TTNode>)
 
     modifies node`color
@@ -21,12 +26,13 @@ module ThreadedLinkedTree.Rotate {
     modifies node.right`color
 
     requires ValidRec(node, sk)
+    requires ThreadedNe(prev, sk, next)
     requires node.right != null
     requires !node.isThreadRight
-    requires TreeModelRec(sk).right.Child?  /* redundant */
-    requires TreeModelRec(sk).right.child.Node?  /* redundant */
+    requires TreeModelRec(sk).right.Node?  /* redundant */
 
     ensures ValidRec(newNode, newSk)
+    ensures ThreadedNe(prev, newSk, next)
     ensures TreeModelRec(newSk) == TRBr.RotateLeft(old(TreeModelRec(sk)))
     ensures elems(newSk) == elems(sk)
 
@@ -34,60 +40,57 @@ module ThreadedLinkedTree.Rotate {
     ensures fresh(elems(newSk)-elems(sk))
     ensures allocated(elems(newSk))
   {
-    assert node.right.isThreadLeft <==> sk.right.child.left.Thread? by {
-      assert ValidRec(node.right, sk.right.child);
-      assert ValidRecP(node.right.left, sk.right.child.left, node.right.isThreadLeft);
-    }
-    assert sk.right.child.left.Thread? <==> TreeModelRec(sk).right.child.left.Thread? by {
-      assert sk.right.child.left.Thread? <==> TreeModelRecP(sk.right.child.left).Thread?;
-      assert sk.right.child.left.Thread? <==> TreeModelRec(sk.right.child).left.Thread?;
-      assert sk.right.child.left.Thread? <==> TreeModelRecP(sk.right).child.left.Thread?;
-      assert sk.right.child.left.Thread? <==> TreeModelRec(sk).right.child.left.Thread?;
-    }
+    ghost var t := TreeModelRec(sk);
+    assert trl: ThreadedRecL(Thread(sk.data), sk.right.left, Thread(sk.right.data));
     newNode := node.right;
-    ghost var newChildLeftRight;
-    assert newNode.isThreadLeft <==> old(TreeModelRec(sk)).right.child.left.Thread?;
+    assert t.right.left.Thread? <==> newNode.isThreadLeft by {
+      assert TreeModelRec(sk.right.left) == t.right.left;
+    }
+    ghost var newSkLeftRight;
     if newNode.isThreadLeft {
       node.right := newNode;
       node.isThreadRight := true;
-      newChildLeftRight := T.Thread(newNode);
-      assert ValidRecP(node.right, newChildLeftRight, true);
-      assert TreeModelRecP(newChildLeftRight) == RB.Thread(old(TreeModelRec(sk)).right.child.key);
+      newSkLeftRight := T.Thread(newNode);
     } else {
       node.right := newNode.left;
       node.isThreadRight := false;
-      newChildLeftRight := sk.right.child.left;
-      assert ValidRecP(node.right, newChildLeftRight, false);
-      assert TreeModelRecP(newChildLeftRight) == old(TreeModelRec(sk)).right.child.left;
+      newSkLeftRight := sk.right.left;
     }
-    assert vlr: ValidRecP(node.right, newChildLeftRight, node.isThreadRight);
-    assert TreeModelRecP(newChildLeftRight) == if old(TreeModelRec(sk)).right.child.left.Thread? then
-          RB.Thread(old(TreeModelRec(sk)).right.child.key)
-        else
-          old(TreeModelRec(sk)).right.child.left;
+    ghost var leftRight := TreeModelRec(newSkLeftRight);
     newNode.color := node.color;
     node.color := Red;
     newNode.left := node;
     newNode.isThreadLeft := false;
-    newSk := T.Node(T.Child(T.Node(sk.left, node, newChildLeftRight)), newNode, sk.right.child.right);
-    assert ValidRec(newNode, newSk) by {
-      assert ValidRec(newNode.left, newSk.left.child) by {
-        assert ValidRecP(newNode.left.left, sk.left, newNode.left.isThreadLeft) by {
-          assert newNode.left.left == node.left;
-          assert ValidRecP(node.left, sk.left, node.isThreadLeft);
-        }
-        assert ValidRecP(newNode.left.right, newChildLeftRight, newNode.left.isThreadRight) by {
-          assert newNode.left.right == node.right;
-          assert newNode.left.isThreadRight == node.isThreadRight;
-          assert ValidRecP(node.right, newChildLeftRight, node.isThreadRight) by {
-            reveal vlr;
+    newSk := T.Node(T.Node(sk.left, node, newSkLeftRight), newNode, sk.right.right);
+    assert ValidRec(newNode, newSk);
+    assert elems(newSk) == elems(sk);
+    assert ThreadedNe(prev, newSk, next) by {
+      assert ThreadedRecL(prev, newSk.left, Thread(newSk.data)) by {
+        assert ThreadedNe(prev, newSk.left, Thread(newSk.data)) by {
+          assert ThreadedRecL(prev, newSk.left.left, Thread(newSk.left.data));
+          assert ThreadedRecR(Thread(newSk.left.data), newSk.left.right, Thread(newSk.data)) by {
+            reveal trl;
           }
         }
       }
+      assert ThreadedRecR(Thread(newSk.data), newSk.right, next);
+    }
+    assert TreeModelRec(newSk) == TRBr.RotateLeft(old(TreeModelRec(sk))) by {
+      assert leftRight ==
+        (if t.right.left.Thread? then
+          TRB.Thread(t.right.key)
+        else
+          t.right.left);
     }
   }
 
-  method RotateRight(node: TTNode, ghost sk: ttree<TTNode>)
+  method RotateRight(
+      node: TTNode, 
+      ghost prev: threadOrEmpty<TTNode>,
+      ghost sk: ttree<TTNode>,
+      ghost next: threadOrEmpty<TTNode>
+      //parents: set<TTNode>
+    )
     returns (newNode: TTNode, ghost newSk: ttree<TTNode>)
 
     modifies node`color
@@ -98,12 +101,13 @@ module ThreadedLinkedTree.Rotate {
     modifies node.left`color
 
     requires ValidRec(node, sk)
+    requires ThreadedNe(prev, sk, next)
     requires node.left != null
     requires !node.isThreadLeft
-    requires TreeModelRec(sk).left.Child?  /* redundant */
-    requires TreeModelRec(sk).left.child.Node?  /* redundant */
+    requires TreeModelRec(sk).left.Node?  /* redundant */
 
     ensures ValidRec(newNode, newSk)
+    ensures ThreadedNe(prev, newSk, next)
     ensures TreeModelRec(newSk) == TRBr.RotateRight(old(TreeModelRec(sk)))
     ensures elems(newSk) == elems(sk)
 
@@ -111,55 +115,47 @@ module ThreadedLinkedTree.Rotate {
     ensures fresh(elems(newSk)-elems(sk))
     ensures allocated(elems(newSk))
   {
-    assert node.left.isThreadRight <==> sk.left.child.right.Thread? by {
-      assert ValidRec(node.left, sk.left.child);
-      assert ValidRecP(node.left.right, sk.left.child.right, node.left.isThreadRight);
-    }
-    assert sk.left.child.right.Thread? <==> TreeModelRec(sk).left.child.right.Thread? by {
-      assert sk.left.child.right.Thread? <==> TreeModelRecP(sk.left.child.right).Thread?;
-      assert sk.left.child.right.Thread? <==> TreeModelRec(sk.left.child).right.Thread?;
-      assert sk.left.child.right.Thread? <==> TreeModelRecP(sk.left).child.right.Thread?;
-      assert sk.left.child.right.Thread? <==> TreeModelRec(sk).left.child.right.Thread?;
-    }
+    ghost var t := TreeModelRec(sk);
+    assert tlr: ThreadedRecR(Thread(sk.left.data), sk.left.right, Thread(sk.data));
     newNode := node.left;
-    ghost var newChildRightLeft;
+    assert t.left.right.Thread? <==> newNode.isThreadRight by {
+      assert TreeModelRec(sk.left.right) == t.left.right;
+    }
+    ghost var newSkRightLeft;
     if newNode.isThreadRight {
       node.left := newNode;
       node.isThreadLeft := true;
-      newChildRightLeft := T.Thread(newNode);
-      assert ValidRecP(node.left, newChildRightLeft, true);
-      assert TreeModelRecP(newChildRightLeft) == RB.Thread(old(TreeModelRec(sk)).left.child.key);
+      newSkRightLeft := T.Thread(newNode);
     } else {
       node.left := newNode.right;
       node.isThreadLeft := false;
-      newChildRightLeft := sk.left.child.right;
-      assert ValidRecP(node.left, newChildRightLeft, false);
-      assert TreeModelRecP(newChildRightLeft) == old(TreeModelRec(sk)).left.child.right;
+      newSkRightLeft := sk.left.right;
     }
-    assert vrl: ValidRecP(node.left, newChildRightLeft, node.isThreadLeft);
-    assert TreeModelRecP(newChildRightLeft) == if old(TreeModelRec(sk)).left.child.right.Thread? then
-          RB.Thread(old(TreeModelRec(sk)).left.child.key)
-        else
-          old(TreeModelRec(sk)).left.child.right;
+    ghost var rightLeft := TreeModelRec(newSkRightLeft);
     newNode.right := node;
     newNode.isThreadRight := false;
     newNode.color := node.color;
     node.color := Red;
-    newSk := T.Node(sk.left.child.left, newNode, T.Child(T.Node(newChildRightLeft, node, sk.right)));
-    assert ValidRec(newNode, newSk) by {
-      assert ValidRec(newNode.right, newSk.right.child) by {
-        assert ValidRecP(newNode.right.left, newChildRightLeft, newNode.right.isThreadLeft) by {
-          assert newNode.right.left == node.left;
-          assert newNode.right.isThreadLeft == node.isThreadLeft;
-          assert ValidRecP(node.left, newChildRightLeft, node.isThreadLeft) by {
-            reveal vrl;
+    newSk := T.Node(sk.left.left, newNode, T.Node(newSkRightLeft, node, sk.right));
+    assert ValidRec(newNode, newSk);
+    assert elems(newSk) == elems(sk);
+    assert ThreadedNe(prev, newSk, next) by {
+      assert ThreadedRecL(prev, newSk.left, Thread(newSk.data));
+      assert ThreadedRecR(Thread(newSk.data), newSk.right, next) by {
+        assert ThreadedNe(Thread(newSk.data), newSk.right, next) by {
+          assert ThreadedRecL(Thread(newSk.data), newSk.right.left, Thread(newSk.right.data)) by {
+            reveal tlr;
           }
-        }
-        assert ValidRecP(newNode.right.right, sk.right, newNode.right.isThreadRight) by {
-          assert newNode.right.right == node.right;
-          assert ValidRecP(node.right, sk.right, node.isThreadRight);
+          assert ThreadedRecR(Thread(newSk.right.data), newSk.right.right, next);
         }
       }
+    }
+    assert TreeModelRec(newSk) == TRBr.RotateRight(old(TreeModelRec(sk))) by {
+      assert rightLeft ==
+        (if t.left.right.Thread? then
+          TRB.Thread(t.left.key)
+        else
+          t.left.right);
     }
   }
 }

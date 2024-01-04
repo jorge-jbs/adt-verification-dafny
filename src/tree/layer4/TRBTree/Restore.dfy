@@ -9,43 +9,43 @@ module {:options "-functionSyntax:4"} TRBTree.Restore {
   import opened FC = FlipColors
   import opened Rotate
 
-  function Restore(t: rbtree): rbtree
+  function Restore(t: trbtree): trbtree
     requires t.Node?
   {
     var t' :=
-      if isRedP(t.right) then
+      if isRed(t.right) then
         RotateLeft(t)
       else
         t;
     var t'' :=
-      if isRedP(t'.left) && isRedP(t'.left.child.left) then
+      if isRed(t'.left) && isRed(t'.left.left) then
         RotateRight(t')
       else
         t';
-    if isRedP(t''.left) && isRedP(t''.right) then
+    if isRed(t''.left) && isRed(t''.right) then
       FlipColors(t'')
     else
       t''
   }
 
-  lemma RestoreSpec(t: rbtree)
+  lemma RestoreSpec(t: trbtree)
     requires t.Node?
     requires SearchTree(t)
-    requires isRedP(t.right) && isRedP(t.right.child.left) ==>
-      isBlack(t) && isRedP(t.left)
+    requires isRed(t.right) && isRed(t.right.left) ==>
+      isBlack(t) && isRed(t.left)
     requires !(
       && isRed(t)
-      && isRedP(t.left)
-      && isRedP(t.right)
+      && isRed(t.left)
+      && isRed(t.right)
     )
     requires !(
       && isRed(t)
-      && isRedP(t.left)
-      && isRedP(t.left.child.left)
+      && isRed(t.left)
+      && isRed(t.left.left)
     )
-    requires BlackHeightP(t.left) == BlackHeightP(t.right)
-    requires RedBlackTreeP(t.left)
-    requires RedBlackTreeP(t.right)
+    requires BlackHeight(t.left) == BlackHeight(t.right)
+    requires RedBlackTree(t.left)
+    requires RedBlackTree(t.right)
 
     ensures keys(t) == keys(Restore(t))
     ensures SearchTree(Restore(t))
@@ -53,86 +53,120 @@ module {:options "-functionSyntax:4"} TRBTree.Restore {
 
     ensures BlackHeight(Restore(t)) == BlackHeight(t)
     ensures isBlack(t) && isRed(Restore(t)) ==>
-      !isRedP(Restore(t).left)
+      !isRed(Restore(t).left)
     ensures isRed(t) ==> isRed(Restore(t))
-    ensures isRed(Restore(t)) && isRedP(Restore(t).left) ==>
-      isRed(t) && (isRedP(t.left) || isRedP(t.right))
+    ensures isRed(Restore(t)) && isRed(Restore(t).left) ==>
+      isRed(t) && (isRed(t.left) || isRed(t.right))
     ensures isRed(Restore(t)) && isBlack(t) ==>
-      || (isRedP(t.left) && isRedP(t.right))
-      || (isRedP(t.left) && isRedP(t.left.child.left))
+      || (isRed(t.left) && isRed(t.right))
+      || (isRed(t.left) && isRed(t.left.left))
   {
     var t' :=
-      if isRedP(t.right) then
+      if isRed(t.right) then
         RotateLeft(t)
       else
         t;
     var t'' :=
-      if isRedP(t'.left) && isRedP(t'.left.child.left) then
+      if isRed(t'.left) && isRed(t'.left.left) then
         RotateRight(t')
       else
         t';
     var t''' :=
-      if isRedP(t''.left) && isRedP(t''.right) then
+      if isRed(t''.left) && isRed(t''.right) then
         FlipColors(t'')
       else
         t'';
 
-    if isRedP(t.right) {
+    if isRed(t.right) {
       RotateLeftSpec(t);
     }
-    if isRedP(t'.left) && isRedP(t'.left.child.left) {
+    if isRed(t'.left) && isRed(t'.left.left) {
       RotateRightSpec(t');
     }
-    if isRedP(t''.left) && isRedP(t''.right) {
+    if isRed(t''.left) && isRed(t''.right) {
       FlipColorsSpec(t'');
       assert RedBlackTree(Restore(t)) by {
-        assert BlackHeightP(t'''.left) == BlackHeightP(t'''.right);
-        assert RedBlackTreeP(t'''.left);
-        assert RedBlackTreeP(t'''.right);
-        assert (isNode(t'''.right) ==> isBlackP(t'''.right));
-        assert (isRedP(t'''.left) && isNode(t'''.left.child.left) ==> isBlackP(t'''.left.child.left));
+        assert BlackHeight(t'''.left) == BlackHeight(t'''.right);
+        assert RedBlackTree(t'''.left);
+        assert RedBlackTree(t'''.right);
+        assert (t'''.right.Node? ==> isBlack(t'''.right));
+        assert (isRed(t'''.left) && t'''.left.left.Node? ==> isBlack(t'''.left.left));
       }
     } else {
       assert RedBlackTree(Restore(t)) by {
-        assert BlackHeightP(t'''.left) == BlackHeightP(t'''.right);
-        assert RedBlackTreeP(t'''.left);
-        assert RedBlackTreeP(t'''.right);
-        assert (isNode(t'''.right) ==> isBlackP(t'''.right));
-        assert (isRedP(t'''.left) && isNode(t'''.left.child.left) ==> isBlackP(t'''.left.child.left));
+        assert BlackHeight(t'''.left) == BlackHeight(t'''.right);
+        assert RedBlackTree(t'''.left);
+        assert RedBlackTree(t'''.right);
+        assert (t'''.right.Node? ==> isBlack(t'''.right));
+        assert (isRed(t'''.left) && t'''.left.left.Node? ==> isBlack(t'''.left.left));
       }
     }
     assert t''' == Restore(t);
   }
 
-  lemma RestoreThreaded(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty)
+  lemma RestoreSize(t: trbtree)
     requires t.Node?
-    requires ThreadedTreeRec(prev, t, next)
-    ensures ThreadedTreeRec(prev, Restore(t), next)
+
+    ensures size(t) == size(Restore(t))
   {
     var t' :=
-      if isRedP(t.right) then
+      if isRed(t.right) then
         RotateLeft(t)
       else
         t;
     var t'' :=
-      if isRedP(t'.left) && isRedP(t'.left.child.left) then
+      if isRed(t'.left) && isRed(t'.left.left) then
         RotateRight(t')
       else
         t';
     var t''' :=
-      if isRedP(t''.left) && isRedP(t''.right) then
+      if isRed(t''.left) && isRed(t''.right) then
         FlipColors(t'')
       else
         t'';
-    if isRedP(t.right) {
+
+    if isRed(t.right) {
+      RotateLeftSize(t);
+    }
+    if isRed(t'.left) && isRed(t'.left.left) {
+      RotateRightSize(t');
+    }
+    if isRed(t''.left) && isRed(t''.right) {
+      FlipColorsSize(t'');
+    } else {
+    }
+    assert t''' == Restore(t);
+  }
+
+  lemma RestoreThreaded(prev: threadOrEmpty, t: trbtree, next: threadOrEmpty)
+    requires t.Node?
+    requires ThreadedTreeNe(prev, t, next)
+    ensures ThreadedTreeNe(prev, Restore(t), next)
+  {
+    var t' :=
+      if isRed(t.right) then
+        RotateLeft(t)
+      else
+        t;
+    var t'' :=
+      if isRed(t'.left) && isRed(t'.left.left) then
+        RotateRight(t')
+      else
+        t';
+    var t''' :=
+      if isRed(t''.left) && isRed(t''.right) then
+        FlipColors(t'')
+      else
+        t'';
+    if isRed(t.right) {
       RotateLeftThreaded(prev, t, next);
     }
-    if isRedP(t'.left) && isRedP(t'.left.child.left) {
+    if isRed(t'.left) && isRed(t'.left.left) {
       RotateRightThreaded(prev, t', next);
     }
   }
-/*
-  lemma {:verify false} RestoreModel(t: rbtree)
+
+  lemma RestoreModel(t: trbtree)
     requires t.Node?
     requires SearchTree(t)
     requires isRed(t.right) && isRed(t.right.left) ==>
@@ -152,7 +186,7 @@ module {:options "-functionSyntax:4"} TRBTree.Restore {
     requires RedBlackTree(t.right)
 
     ensures SearchTree(Restore(t))
-    ensures toMap(t) == toMap(Restore(t))
+    ensures toMapRec(t) == toMapRec(Restore(t))
   {
     RestoreSpec(t);
     var t' :=
@@ -174,23 +208,22 @@ module {:options "-functionSyntax:4"} TRBTree.Restore {
 
     if isRed(t.right) {
       RotateLeftModel(t);
-      assert toMap(RotateLeft(t)) == toMap(t);
+      assert toMapRec(RotateLeft(t)) == toMapRec(t);
     }
-    assert toMap(t) == toMap(t');
+    assert toMapRec(t) == toMapRec(t');
 
     if isRed(t'.left) && isRed(t'.left.left) {
       RotateRightModel(t');
-      assert toMap(RotateRight(t')) == toMap(t');
+      assert toMapRec(RotateRight(t')) == toMapRec(t');
     }
-    assert toMap(t') == toMap(t'');
+    assert toMapRec(t') == toMapRec(t'');
 
     if isRed(t''.left) && isRed(t''.right) {
       FlipColorsModel(t'');
-      assert toMap(FlipColors(t'')) == toMap(t'');
+      assert toMapRec(FlipColors(t'')) == toMapRec(t'');
     }
-    assert toMap(t'') == toMap(t''');
+    assert toMapRec(t'') == toMapRec(t''');
 
     assert t''' == Restore(t);
   }
-*/
 }

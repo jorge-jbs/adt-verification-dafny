@@ -1,89 +1,135 @@
-include "../../../src/MUtils.dfy"
-
 module TTree {
-  import opened Utils
+  datatype ttreeOrThread<A>
+    = Empty
+    | Thread(thread: A)
+    | Node(left: ttreeOrThread<A>, data: A, right: ttreeOrThread<A>)
 
-  datatype ttree<A> = Empty | Node(left: ttreePointer<A>, data: A, right: ttreePointer<A>)
-  datatype ttreePointer<A> = Child(child: ttree<A>) | Thread(thread: A)
+  type ttree<A> = t: ttreeOrThread<A> | t.Empty? || t.Node? witness Empty
+  type nettree<A> = t: ttreeOrThread<A> | t.Node? witness *
+  type threadOrEmpty<A> = t: ttreeOrThread<A> | t.Empty? || t.Thread? witness Empty
 
-  function elemsP<A>(p: ttreePointer<A>): set<A>
-    ensures p.Child? ==> elemsP(p) == elems(p.child)
+  function elems<A>(t: ttreeOrThread<A>): set<A>
   {
-    match p {
-      case Child(p) => elems(p)
-      case Thread(_) => {}
+    match t
+    case Empty => {}
+    case Thread(_) => {}
+    case Node(l, x, r) => elems(l) + {x} + elems(r)
+  }
+
+  function elemsAndThreads<A>(t: ttreeOrThread<A>): set<A>
+  {
+    match t
+    case Empty => {}
+    case Thread(x) => {x}
+    case Node(l, x, r) => elemsAndThreads(l) + {x} + elemsAndThreads(r)
+  }
+
+  lemma ElemsInElemsAndThreads<A>(t: ttreeOrThread<A>)
+    ensures elems(t) <= elemsAndThreads(t)
+  {
+    if t.Node? {
+      ElemsInElemsAndThreads(t.left);
+      ElemsInElemsAndThreads(t.right);
     }
   }
 
-  function elems<A>(t: ttree<A>): set<A>
-    //ensures t.Empty? ==> elems(t) == {}
-    //ensures t.Node? ==> elems(t) == elemsP(t.left) + {t.data} + elemsP(t.right)
+  lemma ElemsAndThreadsRec<A>(
+      prev: threadOrEmpty, 
+      sk: ttreeOrThread<A>, 
+      next: threadOrEmpty, 
+      visited: set<A>
+    )
+      returns (threads: set<A>)
+    decreases sk
+    requires prev.Thread? ==> prev.thread in visited
+    requires next.Thread? ==> next.thread in visited
+    requires ThreadedRecL(prev, sk, next) || ThreadedRecR(prev, sk, next)
+    ensures elemsAndThreads(sk) <= elems(sk) + visited
+    ensures threads <= visited
+    ensures elemsAndThreads(sk) == elems(sk) + threads
+  {
+    match sk
+    case Empty => {
+      return {};
+    }
+    case Thread(n) => {
+      return {n};
+    }
+    case Node(l, x, r) => {
+      var threadsL := ElemsAndThreadsRec(prev, sk.left, Thread(sk.data), visited + {sk.data});
+      var threadsR := ElemsAndThreadsRec(Thread(sk.data), sk.right, next, visited + {sk.data});
+      return threadsL + threadsR - {sk.data};
+    }
+  }
+
+  lemma ElemsAndThreads<A>(t: ttree<A>)
+    requires ThreadedRoot(t)
+    ensures elems(t) == elemsAndThreads(t)
+  {
+    var _ := ElemsAndThreadsRec(Empty, t, Empty, {});
+  }
+
+  function ThreadedRecL<A(==)>(prev: threadOrEmpty<A>, t: ttreeOrThread<A>, next: threadOrEmpty<A>): bool
+    decreases t, 1
   {
     match t {
-      case Empty => {}
-      case Node(l, x, r) => elemsP(l) + {x} + elemsP(r)
+      case Empty => prev.Empty?
+      case Thread(k) => prev.Thread? && prev.thread == k
+      //case Node(_, _, _, _, _) => ThreadedNe(prev, t, next)
+      case Node(l, x, r) =>
+        && ThreadedRecL(prev, l, Thread(x))
+        && ThreadedRecR(Thread(x), r, next)
     }
   }
 
-  function elemsAndThreadsP<A>(t: ttreePointer<A>): set<A>
+  function ThreadedRecR<A(==)>(prev: threadOrEmpty<A>, t: ttreeOrThread<A>, next: threadOrEmpty<A>): bool
+    decreases t, 1
   {
     match t {
-      case Child(t) => elemsAndThreads(t)
-      case Thread(x) => {x}
+      case Empty => next.Empty?
+      case Thread(x) => next.Thread? && next.thread == x
+      //case Node(_, _, _, _, _) => ThreadedNe(prev, t, next)
+      case Node(l, x, r) =>
+        && ThreadedRecL(prev, l, Thread(x))
+        && ThreadedRecR(Thread(x), r, next)
     }
   }
 
-  function elemsAndThreads<A>(t: ttree<A>): set<A>
+  function ThreadedRecCond<A(==)>(
+      prev: threadOrEmpty<A>,
+      t: ttreeOrThread<A>,
+      next: threadOrEmpty<A>,
+      isLeft: bool
+    ): bool
+  {
+    if isLeft then
+      ThreadedRecL(prev, t, next)
+    else
+      ThreadedRecR(prev, t, next)
+  }
+
+  function ThreadedNe<A(==)>(prev: threadOrEmpty<A>, t: nettree<A>, next: threadOrEmpty<A>): bool
+    decreases t, 0
   {
     match t {
-      case Empty => {}
-      case Node(l, x, r) => elemsAndThreadsP(l) + {x} + elemsAndThreadsP(r)
+      case Node(l, x, r) =>
+        && ThreadedRecL(prev, l, Thread(x))
+        && ThreadedRecR(Thread(x), r, next)
     }
   }
 
-  predicate SubtreeP<A(==)>(node: ttree<A>, proot: ttreePointer<A>)
-    ensures SubtreeP(node, proot) ==> elems(node) <= elemsP(proot)
-    ensures SubtreeP(node, proot) ==> elemsAndThreads(node) <= elemsAndThreadsP(proot)
+  function ThreadedRoot<A(==)>(t: ttree<A>): bool
   {
-    match proot {
-      case Child(root) => Subtree(node, root)
-      case Thread(_) => false
-    }
+    t.Empty? || ThreadedNe(Empty, t, Empty)
   }
 
-  predicate Subtree<A(==)>(node: ttree<A>, root: ttree<A>)
+  predicate Subtree<A(==)>(node: ttreeOrThread<A>, root: ttreeOrThread<A>)
     ensures Subtree(node, root) ==> elems(node) <= elems(root)
     ensures Subtree(node, root) ==> elemsAndThreads(node) <= elemsAndThreads(root)
   {
     || root == node
     || (
       && root.Node?
-      && (SubtreeP(node, root.left) || SubtreeP(node, root.right)))
+      && (Subtree(node, root.left) || Subtree(node, root.right)))
   }
-
-/*
-  function elemsAndThreads<A>(t: ttree<A>): set<A>
-    ensures t.Empty? ==> elemsAndThreads(t) == {}
-    ensures t.Thread? ==> elemsAndThreads(t) == {t.thread}
-    ensures t.Node? ==> elemsAndThreads(t) == elemsAndThreads(t.left) + {t.data} + elemsAndThreads(t.right)
-  {
-    match t {
-      case Empty => {}
-      case Thread(x) => {x}
-      case Node(l, x, r) => elemsAndThreads(l) + {x} + elemsAndThreads(r)
-    }
-  }
-
-  function subtrees<A(==)>(t: ttree<A>): set<ttree<A>>
-    ensures t.Empty? ==> elemsAndThreads(t) == {}
-    ensures t.Thread? ==> elemsAndThreads(t) == {t.thread}
-    ensures t.Node? ==> elemsAndThreads(t) == elemsAndThreads(t.left) + {t.data} + elemsAndThreads(t.right)
-  {
-    match t {
-      case Empty => {}
-      case Thread(x) => {t}
-      case Node(l, x, r) => subtrees(l) + {t} + subtrees(r)
-    }
-  }
-  */
 }

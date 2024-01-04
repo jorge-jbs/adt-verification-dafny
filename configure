@@ -79,6 +79,40 @@ files=(
     src/UnorderedMap/UnorderedMapSpec.dfy
     src/UnorderedMultiset/UnorderedMultisetSpec.dfy
     src/UnorderedSet/UnorderedSetSpec.dfy
+
+    src/tree/layer1/OrderedMap.dfy
+    src/tree/layer3/OrderedMapImplTRBT.dfy
+    src/tree/layer4/TRBTree/Base.dfy
+    src/tree/layer4/TRBTree/FlipColors.dfy
+    src/tree/layer4/TRBTree/Restore.dfy
+    src/tree/layer4/TRBTree/Rotate.dfy
+    src/tree/layer4/TRBTree/TRBInsert.dfy
+    src/tree/layer4/TRBTree/MoveRed.dfy
+    src/tree/layer4/TRBTree/RemoveMinMaintainingPrev.dfy
+    src/tree/layer4/TRBTree/Remove.dfy
+    src/tree/layer4/TRBTree/UpdateNext.dfy
+    src/tree/layer4/TRBTree/Iterator.dfy
+    src/tree/layer4/TRBTree/RemoveElemth.dfy
+    src/tree/layer4/TRBTree/RemoveRoot.dfy
+    src/tree/layer4/TRBTree/Find.dfy
+    src/tree/layer4/ThreadedLinkedTree.dfy
+    src/tree/layer4/ThreadedLinkedTree/FlipColors.dfy
+    src/tree/layer4/ThreadedLinkedTree/Restore.dfy
+    src/tree/layer4/ThreadedLinkedTree/Rotate.dfy
+    src/tree/layer4/ThreadedLinkedTree/TRBInsert.dfy
+    src/tree/layer4/ThreadedLinkedTree/MoveRed.dfy
+    src/tree/layer4/ThreadedLinkedTree/RemoveMinMaintainingPrev.dfy
+    src/tree/layer4/ThreadedLinkedTree/UpdateNext.dfy
+    src/tree/layer4/ThreadedLinkedTree/Remove.dfy
+    src/tree/layer4/ThreadedLinkedTree/Min.dfy
+    src/tree/layer4/ThreadedLinkedTree/RemoveRoot.dfy
+    src/tree/layer4/ThreadedLinkedTree/BlackenRoot.dfy
+    src/tree/layer4/ThreadedLinkedTree/ConditionalReddenRoot.dfy
+    src/tree/layer4/ThreadedLinkedTree/Find.dfy
+    src/tree/layer4/TTree.dfy
+    src/tree/layer4/TTNode.dfy
+    src/tree/layer4/Color.dfy
+    examples/sets/ExecuteTRBT.dfy
 )
 
 NINJA_FILE=build.ninja

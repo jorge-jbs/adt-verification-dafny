@@ -1,36 +1,64 @@
-include "../../../src/MUtils.dfy"
 include "../../../src/tree/layer1/OrderedSetUtils.dfy"
 include "../../../src/tree/layer4/TRBTree/Base.dfy"
 include "../../../src/tree/layer4/TRBTree/Iterator.dfy"
+include "../../../src/tree/layer4/TRBTree/Find.dfy"
 include "../../../src/tree/layer4/TRBTree/TRBInsert.dfy"
 include "../../../src/tree/layer4/TTree.dfy"
 include "../../../src/tree/KeyValue.dfy"
 include "../../../src/tree/layer4/TTNode.dfy"
+include "../../../src/tree/layer4/ThreadedLinkedTree/Find.dfy"
 include "../../../src/tree/layer4/ThreadedLinkedTree/TRBInsert.dfy"
+include "../../../src/tree/layer4/ThreadedLinkedTree/RemoveRoot.dfy"
 include "../../../src/tree/layer4/ThreadedLinkedTree/Min.dfy"
-include "../../../src/MUtils.dfy"
+include "../../../src/tree/layer4/ThreadedLinkedTree/Max.dfy"
 
 module ThreadedLinkedTree {
-  import opened Utils
   import opened TTNode
   import TRB = TRBTree.Base
+  import TRBf = TRBTree.Find
   import TRBi = TRBTree.TRBInsert
+  import TRBr = TRBTree.RemoveRoot
   import TRBit = TRBTree.Iterator
   import opened T = TTree
   import opened KeyValue
   import opened TRBInsert
+  import opened Find
+  import opened R = RemoveRoot
   import opened Min
+  import opened Max
   import opened OrderedSetUtils
 
   class ThreadedLinkedTreeIterator {
     var node: TTNode?
-    ghost var sk: ttree<TTNode>
     ghost var isPastTheEnd: bool
-    ghost var parent: ThreadedLinkedTree
+    ghost const parent: ThreadedLinkedTree
 
-    ghost function ItModel(): TRBit.iter
-      reads this, node, elems(sk)
-      requires ValidRec(node, sk)
+    ghost function Parent(): ThreadedLinkedTree
+    {
+      parent
+    }
+
+    ghost predicate Valid()
+      reads this, parent
+    {
+      && (node != null ==> node in elems(parent.skeleton))
+      && this in parent.iterators
+    }
+
+    ghost function Skeleton(): ttree<TTNode>
+      reads this, parent, parent.Repr()
+      requires Valid()
+      requires parent.Valid()
+      requires parent.SearchTree()
+    {
+      if node == null then
+        Empty
+      else
+        GetSk(node, parent.root, parent.skeleton)
+    }
+
+    ghost function Model(): TRBit.iter
+      reads this
     {
       if node == null then
         if isPastTheEnd then
@@ -38,118 +66,351 @@ module ThreadedLinkedTree {
         else
           TRBit.PastTheBeginning
       else
-        TRBit.Link(TreeModelRec(sk))
+        // we do not need `reads node` because `key` is a constant
+        TRBit.Link(node.key)
     }
 
-    ghost predicate Valid()
-      reads this, elems(sk), parent, parent.Repr()
+    ghost predicate Valid'()
+      reads this, node, parent, parent.Repr()
     {
-      && (node != null ==> node in elems(parent.skeleton))
-      && ValidRec(node, sk)
-      && TRBit.Valid(ItModel(), parent.TreeModel())
+      TRBit.Valid(Model(), parent.Model())
+    }
+
+    lemma ValidImp()
+      ensures Valid() ==> Valid'()
+    {
+      KeysAndElems(parent.skeleton);
     }
 
     constructor Root(parent: ThreadedLinkedTree)
     {
       this.node := parent.root;
-      this.sk := parent.skeleton;
       this.isPastTheEnd := false;
       this.parent := parent;
     }
 
+    constructor(node: TTNode?, ghost isPastTheEnd: bool, ghost parent: ThreadedLinkedTree)
+      modifies parent`iterators
+      requires parent.Valid()
+      requires parent.Threaded()
+      requires parent.SearchTree()
+      requires TRB.ThreadedTreeRoot(parent.Model())
+      requires node != null ==> node in elems(parent.skeleton)
+      ensures Valid()
+      ensures
+        if node == null then
+          if isPastTheEnd then
+            Model() == TRBit.PastTheEnd
+          else
+            Model() == TRBit.PastTheBeginning
+        else
+          Model() == TRBit.Link(node.key)
+      ensures Parent() == parent
+      ensures parent.Valid()
+      ensures parent.Threaded()
+      ensures parent.SearchTree()
+      ensures TRB.ThreadedTreeRoot(parent.Model())
+      ensures old(parent.RedBlackTree()) ==> parent.RedBlackTree()
+      ensures parent.Model() == old(parent.Model())
+      ensures parent.iterators == {this} + old(parent.iterators)
+      requires allocated(parent.Repr())
+      ensures fresh(parent.Repr() - old(parent.Repr()))
+      ensures allocated(parent.Repr())
+    {
+      this.node := node;
+      this.isPastTheEnd := isPastTheEnd;
+      this.parent := parent;
+      new;
+      parent.iterators := parent.iterators + {this};
+      KeysAndElems(parent.skeleton);
+    }
+
+    constructor First(parent: ThreadedLinkedTree)
+      modifies parent`iterators
+      requires parent.Valid()
+      requires parent.Threaded()
+      requires parent.SearchTree()
+      requires TRB.ThreadedTreeRoot(parent.Model())
+      ensures Valid()
+      ensures Model() == TRBit.First(parent.Model())
+      ensures Parent() == parent
+      ensures parent.Valid()
+      ensures parent.Threaded()
+      ensures parent.SearchTree()
+      ensures TRB.ThreadedTreeRoot(parent.Model())
+      ensures old(parent.RedBlackTree()) ==> parent.RedBlackTree()
+      ensures parent.Model() == old(parent.Model())
+      ensures parent.iterators == {this} + old(parent.iterators)
+      requires allocated(parent.Repr())
+      ensures fresh(parent.Repr() - old(parent.Repr()))
+      ensures allocated(parent.Repr())
+    {
+      this.node := parent.root;
+      this.isPastTheEnd := true;
+      this.parent := parent;
+      new;
+      parent.iterators := parent.iterators + {this};
+      ValidImp();
+      if parent.root == null {
+        this.node := null;
+      } else {
+        ghost var sk;
+        this.node, sk := Min.Min(parent.root, parent.skeleton);
+      }
+    }
+
+    constructor Last(parent: ThreadedLinkedTree)
+      modifies parent`iterators
+      requires parent.Valid()
+      requires parent.Threaded()
+      requires parent.SearchTree()
+      requires TRB.ThreadedTreeRoot(parent.Model())
+      ensures Valid()
+      ensures Model() == TRBit.Last(parent.Model())
+      ensures Parent() == parent
+      ensures parent.Valid()
+      ensures parent.Threaded()
+      ensures parent.SearchTree()
+      ensures TRB.ThreadedTreeRoot(parent.Model())
+      ensures old(parent.RedBlackTree()) ==> parent.RedBlackTree()
+      ensures parent.Model() == old(parent.Model())
+      ensures parent.iterators == {this} + old(parent.iterators)
+      requires allocated(parent.Repr())
+      ensures fresh(parent.Repr() - old(parent.Repr()))
+      ensures allocated(parent.Repr())
+    {
+      this.node := parent.root;
+      this.isPastTheEnd := false;
+      this.parent := parent;
+      new;
+      parent.iterators := parent.iterators + {this};
+      ValidImp();
+      if parent.root == null {
+        this.node := null;
+      } else {
+        ghost var sk;
+        this.node, sk := Max.Max(parent.root, parent.skeleton);
+      }
+    }
+
+    constructor At(node: TTNode, parent: ThreadedLinkedTree)
+      modifies parent`iterators
+      requires parent.Valid()
+      requires parent.Threaded()
+      requires parent.SearchTree()
+      requires TRB.ThreadedTreeRoot(parent.Model())
+      requires node in elems(parent.skeleton)
+      ensures Valid()
+      ensures Model() == TRBit.Find(node.key, parent.Model())
+      ensures Parent() == parent
+      ensures parent.Valid()
+      ensures parent.Threaded()
+      ensures parent.SearchTree()
+      ensures TRB.ThreadedTreeRoot(parent.Model())
+      ensures old(parent.RedBlackTree()) ==> parent.RedBlackTree()
+      ensures parent.Model() == old(parent.Model())
+      ensures parent.iterators == {this} + old(parent.iterators)
+      requires allocated(parent.Repr())
+      ensures fresh(parent.Repr() - old(parent.Repr()))
+      ensures allocated(parent.Repr())
+    {
+      this.node := node;
+      this.isPastTheEnd := true;
+      this.parent := parent;
+      new;
+      parent.iterators := parent.iterators + {this};
+      KeysAndElems(parent.skeleton);
+    }
+
     ghost function Index(): int
-      reads this, node, elems(sk), parent, elems(parent.skeleton)
-      requires ValidRec(node, sk)
+      reads this, node, parent, parent.Repr()
+      requires Valid()
+      requires parent.Valid()
+      requires parent.SearchTree()
     {
-      TRBit.Index(ItModel(), parent.TreeModel())
+      TRBit.Index(Model(), parent.Model())
     }
 
-    ghost predicate HasPeek()
-      reads this, node, elems(sk)
-      requires ValidRec(node, sk)
+    predicate HasPeek()
+      reads this
     {
-      TRBit.HasPeek(ItModel())
+      node != null
     }
 
-    ghost function Peek(): (K, V)
-      reads this, node, elems(sk), parent, elems(parent.skeleton)
-      requires ValidRec(node, sk)
+    ghost predicate HasPeek'()
+      reads this
+    {
+      TRBit.HasPeek(Model())
+    }
+
+    lemma HasPeekEq()
+      ensures HasPeek() <==> HasPeek'()
+    {}
+
+    function Peek(): (K, V)
+      reads this, parent, parent.Repr()
+      requires Valid()
       requires HasPeek()
     {
-      TRBit.Peek(ItModel(), parent.TreeModel())
+      (node.key, node.value)
     }
 
-    method {:verify false} Next()  // 3'
-      modifies this
+    ghost function Peek'(): (K, V)
+      reads this, parent, parent.Repr()
+      requires Valid()
+      requires HasPeek()
+    {
+      ValidImp();
+      TRBit.Peek(Model(), parent.Model())
+    }
+
+    lemma PeekEq()
       requires Valid()
       requires HasPeek()
       requires parent.Valid()
       requires parent.SearchTree()
-      requires parent.Threaded()
-      ensures Valid()
-      ensures ItModel() == TRBit.Next(old(ItModel()), old(parent.TreeModel()))
+      ensures Peek() == Peek'()
+    {
+      GetValue(node, parent.root, parent.skeleton);
+    }
 
-      requires allocated(elems(sk))
+    method Next()  // 8"
+      modifies this
+      requires parent.Valid()
+      requires parent.Threaded()
+      requires parent.SearchTree()
+      requires Valid()
+      requires assert Valid'() by {ValidImp();} true
+      requires assert TRB.ThreadedTreeRoot(parent.Model()) by {parent.ThreadedImp();} true
+      requires HasPeek()
+
+      ensures parent.Valid()
+      ensures parent.Threaded()
+      ensures parent.SearchTree()
+      ensures Valid()
+      ensures Model() == TRBit.Next(old(Model()), old(parent.Model()))
+
       requires allocated(parent.Repr())
-      ensures allocated(elems(sk))
       ensures allocated(parent.Repr())
     {
-      assert node != null;
-      if node.isThreadRight {
-        assert ValidRecP(node.right, sk.right, node.isThreadRight);
-        assert TreeModelRecP(sk.right).Thread?;
-        assert node.right != null;
+      assert TRB.ThreadedTreeRoot(parent.Model()) by {
+        parent.ThreadedImp();
+      }
+      if node.right == null {
+        assert ValidRec(node.right, Skeleton().right);
+        assert Skeleton().right.Empty?;
+        assert TreeModelRec(Skeleton()).right.Empty?;
+        node := null;
+        isPastTheEnd := true;
+      } else if node.isThreadRight {
+        assert ValidChild(node.right, Skeleton().right, true);
+        assert Skeleton().right.Thread?;
+        assert TreeModelRec(Skeleton()).right.Thread?;
+        assert TreeModelRec(Skeleton()) == TRB.GetSubtree(parent.Model(), Model().link);
+        assert TreeModelRec(Skeleton()).right.thread == node.right.key;
         assert node.right in elems(parent.skeleton) by {
-          assert node.right in elemsAndThreadsP(sk.right);
+          assert node.right in elemsAndThreads(Skeleton());
           calc {
-            elemsAndThreadsP(sk.right);
-            <= elemsAndThreads(sk);
-            <= {parent.SubtreeOfInElems(node, sk);} elemsAndThreads(parent.skeleton);
+            elemsAndThreads(Skeleton());
+            <= {parent.SubtreeOfInElems(node, Skeleton());} elemsAndThreads(parent.skeleton);
             == {parent.ElemsOfThread();} elems(parent.skeleton);
           }
         }
         node := node.right;
-        sk := GetSk(node, parent.root, parent.skeleton);
-        Allocated(elems(sk));
-      } else if node.right == null {
-        assert ValidRecP(node.right, sk.right, node.isThreadRight);
-        assert TreeModelRecP(sk.right) == TRB.Child(TRB.Empty());
-        node := null;
-        sk := Empty;
-        isPastTheEnd := true;
+        assert Model() == TRBit.Next(old(Model()), old(parent.Model())) by {
+          calc == {
+            TRBit.Next(old(Model()), old(parent.Model()));
+            TRBit.Link(old(TreeModelRec(Skeleton()).right.thread));
+            TRBit.Link(old(node.right.key));
+            Model();
+          }
+        }
       } else {
-        ghost var oldSk := sk;
-        assert TRB.Subtree(TreeModelRec(oldSk), parent.TreeModel());
-        assert oldSkInSkeleton: elemsAndThreads(oldSk) <= elems(parent.skeleton) by {
+        assert ValidRec(node.right, Skeleton().right);
+        assert Skeleton().right.Node?;
+        assert TreeModelRec(Skeleton()).right.Node?;
+        assert node.right in elems(Skeleton());
+        assert elems(Skeleton()) <= elems(parent.skeleton) by {
           calc {
-            elemsAndThreads(oldSk);
-            <= {parent.SubtreeOfInElems(node, oldSk);} elemsAndThreads(parent.skeleton);
+            elems(Skeleton());
+            <= {ElemsInElemsAndThreads(Skeleton());} elemsAndThreads(Skeleton());
+            <= {parent.SubtreeOfInElems(node, Skeleton());} elemsAndThreads(parent.skeleton);
             == {parent.ElemsOfThread();} elems(parent.skeleton);
           }
         }
-        node, sk := MinP(node.right, sk.right);
-        assert Valid() by {
-          assert TRB.Subtree(TreeModelRec(sk), parent.TreeModel()) by {
-            assert TRB.SubtreeP(TreeModelRec(sk), TreeModelRecP(oldSk.right));
-            assert TRB.Subtree(TreeModelRec(sk), TreeModelRec(oldSk));
-            assert TRB.Subtree(TreeModelRec(oldSk), parent.TreeModel());
-            TRB.SubtreeTrans(TreeModelRec(sk), TreeModelRec(oldSk), parent.TreeModel());
+        parent.ElemsOfThread();
+        ghost var sk;
+        node, sk := Min.Min(node.right, Skeleton().right);
+      }
+    }
+
+    method Prev()  // 8"
+      modifies this
+      requires parent.Valid()
+      requires parent.Threaded()
+      requires parent.SearchTree()
+      requires Valid()
+      requires assert Valid'() by {ValidImp();} true
+      requires assert TRB.ThreadedTreeRoot(parent.Model()) by {parent.ThreadedImp();} true
+      requires HasPeek()
+
+      ensures parent.Valid()
+      ensures parent.Threaded()
+      ensures parent.SearchTree()
+      ensures Valid()
+      ensures Model() == TRBit.Prev(old(Model()), old(parent.Model()))
+
+      requires allocated(parent.Repr())
+      ensures allocated(parent.Repr())
+    {
+      assert TRB.ThreadedTreeRoot(parent.Model()) by {
+        parent.ThreadedImp();
+      }
+      if node.left == null {
+        assert ValidRec(node.left, Skeleton().left);
+        assert Skeleton().left.Empty?;
+        assert TreeModelRec(Skeleton()).left.Empty?;
+        node := null;
+        isPastTheEnd := false;
+      } else if node.isThreadLeft {
+        assert ValidChild(node.left, Skeleton().left, true);
+        assert Skeleton().left.Thread?;
+        assert TreeModelRec(Skeleton()).left.Thread?;
+        assert TreeModelRec(Skeleton()) == TRB.GetSubtree(parent.Model(), Model().link);
+        assert TreeModelRec(Skeleton()).left.thread == node.left.key;
+        assert node.left in elems(parent.skeleton) by {
+          assert node.left in elemsAndThreads(Skeleton());
+          calc {
+            elemsAndThreads(Skeleton());
+            <= {parent.SubtreeOfInElems(node, Skeleton());} elemsAndThreads(parent.skeleton);
+            == {parent.ElemsOfThread();} elems(parent.skeleton);
           }
-          assert node in elems(parent.skeleton) by {
-            assert node in elemsAndThreads(sk);
-            calc {
-              elemsAndThreads(sk);
-              <= elemsAndThreadsP(oldSk.right);
-              <= elemsAndThreads(oldSk);
-              <= {reveal oldSkInSkeleton;} elems(parent.skeleton);
-            }
-          }
-          assert ValidRec(node, sk);
-          assert TRBit.Valid(ItModel(), parent.TreeModel());
         }
-        assert TreeModelRec(sk)
-          == TRB.minSubtreeP(old(TreeModelRecP(sk.right)));
-        assert ItModel() == TRBit.Link(TRB.minSubtreeP(old(TreeModelRecP(sk.right))));
+        node := node.left;
+        assert Model() == TRBit.Prev(old(Model()), old(parent.Model())) by {
+          calc == {
+            TRBit.Prev(old(Model()), old(parent.Model()));
+            TRBit.Link(old(TreeModelRec(Skeleton()).left.thread));
+            TRBit.Link(old(node.left.key));
+            Model();
+          }
+        }
+      } else {
+        assert ValidRec(node.left, Skeleton().left);
+        assert Skeleton().left.Node?;
+        assert TreeModelRec(Skeleton()).left.Node?;
+        assert node.left in elems(Skeleton());
+        assert elems(Skeleton()) <= elems(parent.skeleton) by {
+          calc {
+            elems(Skeleton());
+            <= {ElemsInElemsAndThreads(Skeleton());} elemsAndThreads(Skeleton());
+            <= {parent.SubtreeOfInElems(node, Skeleton());} elemsAndThreads(parent.skeleton);
+            == {parent.ElemsOfThread();} elems(parent.skeleton);
+          }
+        }
+        parent.ElemsOfThread();
+        ghost var sk;
+        node, sk := Max.Max(node.left, Skeleton().left);
       }
     }
   }
@@ -157,29 +418,42 @@ module ThreadedLinkedTree {
   class ThreadedLinkedTree {
     var root: TTNode?
     ghost var skeleton: ttree<TTNode>
+    ghost var iterators: set<ThreadedLinkedTreeIterator>
 
     ghost function Repr(): set<object>
       reads this
     {
-      elems(skeleton)
+      elems(skeleton) + iterators
     }
 
     ghost predicate Valid()
       reads this, Repr()
     {
-      ValidRec(root, skeleton)
+      && ValidRec(root, skeleton)
+      && forall it | it in iterators :: it.Parent() == this
+    }
+
+    lemma ThreadedImp()
+      requires Valid()
+      requires Threaded()
+      ensures TRB.ThreadedTreeRoot(Model())
+    {
+      ThreadedRootImp(skeleton);
     }
 
     constructor()
       ensures Valid()
-      ensures TreeModel().Empty?
+      ensures Threaded()
+      ensures Model().Empty?
       ensures SearchTree()
       ensures RedBlackTree()
+      ensures Iterators() == {}
       ensures fresh(Repr())
       ensures allocated(Repr())
     {
       root := null;
       skeleton := Empty;
+      iterators := {};
     }
 
     ghost predicate SearchTree()
@@ -193,63 +467,107 @@ module ThreadedLinkedTree {
       reads this, Repr()
       requires Valid()
     {
-      ThreadedRoot(root, skeleton)
+      ThreadedRoot(skeleton)
     }
 
-    ghost function TreeModel(): RB.rbtree
+    ghost function Model(): TRB.trbtree
       reads this, elems(skeleton)
     {
       TreeModelRec(skeleton)
     }
 
-    ghost function MapModel(): map<K, V>
-      reads this, elems(skeleton)
+    ghost function Iterators(): set<ThreadedLinkedTreeIterator>
+      reads this, Repr()
       requires Valid()
-      requires SearchTree()
+      ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
     {
-      RB.toMap(TreeModel())
+      iterators
     }
 
-    /*
-    method Find(k: K) returns (foundNode: TTNode?)
-      requires Valid()
-      requires SearchTree()
-
-      ensures foundNode != null <==> k in RB.keys(TreeModel())
-      ensures foundNode != null ==> foundNode.key == k
-      ensures foundNode != null ==> foundNode.value == RB.Get(TreeModel(), k)
-
-      requires allocated(Repr())
-      ensures allocated(Repr())
-    {
-      foundNode := FindRec(root, skeleton, k);
-    }
-    */
-
-    /*
-    method {:verify false} Insert(k: K, v: V)
+    method First() returns (it: ThreadedLinkedTreeIterator)
       modifies this, Repr()
+      requires allocated(Repr())
+      ensures fresh(Repr() - old(Repr()))
+      ensures allocated(Repr())
+
       requires Valid()
       requires SearchTree()
+      requires Threaded()
       ensures Valid()
+      ensures Threaded()
+      ensures Model() == old(Model())
+
+      ensures fresh(it)
+      ensures it.Valid()
+      ensures it.Parent() == this
+      ensures it.Model() == TRBit.First(Model())
+
+      ensures Iterators() >= {it} + old(Iterators())
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Model() == old(it.Model())
+    {
+      ThreadedImp();
+      it := new ThreadedLinkedTreeIterator.First(this);
+    }
+
+    method Last() returns (it: ThreadedLinkedTreeIterator)
+      modifies this, Repr()
+      requires allocated(Repr())
+      ensures fresh(Repr() - old(Repr()))
+      ensures allocated(Repr())
+
+      requires Valid()
+      requires SearchTree()
+      requires Threaded()
+      ensures Valid()
+      ensures Threaded()
+      ensures Model() == old(Model())
+
+      ensures fresh(it)
+      ensures it.Valid()
+      ensures it.Parent() == this
+      ensures it.Model() == TRBit.Last(Model())
+
+      ensures Iterators() >= {it} + old(Iterators())
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Model() == old(it.Model())
+    {
+      ThreadedImp();
+      it := new ThreadedLinkedTreeIterator.Last(this);
+    }
+
+    method Find(k: K) returns (it: ThreadedLinkedTreeIterator)
+      modifies this, Repr()
+
+      requires Valid()
+      requires SearchTree()
+      requires Threaded()
+      
+      ensures Valid()
+      ensures Threaded()
       ensures SearchTree()
-      ensures MapModel() == old(MapModel())[k := v]
+      ensures Model() == old(Model())
+
+      ensures fresh(it)
+      ensures it.Parent() == this
+      ensures it.Valid()
+      ensures it.Model() == TRBit.Find(k, Model())
 
       requires allocated(Repr())
       ensures fresh(Repr()-old(Repr()))
       ensures allocated(Repr())
-    {
-      ghost var z;
-      root, skeleton, z := SInsertRec(root, skeleton, k, v);
-      RBs.SInsertSpec(old(TreeModelRec(skeleton)), k, v);
-      RBs.SInsertModel(old(TreeModelRec(skeleton)), k, v);
-    }
-    */
 
-    ghost predicate ThreadedTree()
-      reads this, elems(skeleton)
+      ensures Iterators() >= old(Iterators())
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Model() == old(it.Model())
     {
-      RB.ThreadedTreeRoot(TreeModelRec(skeleton))
+      ThreadedImp();
+      TRBf.FindSpec(Model(), k);
+      var foundNode, foundSk := FindRec(root, false, skeleton, k);
+      it := new ThreadedLinkedTreeIterator(foundNode, true, this);
     }
 
     lemma ElemsOfThread()
@@ -257,7 +575,7 @@ module ThreadedLinkedTree {
       requires Threaded()
       ensures elems(skeleton) == elemsAndThreads(skeleton)
     {
-      ElemsOfThreadRoot(root, skeleton);
+      T.ElemsAndThreads(skeleton);
     }
 
     lemma SubtreeOfInElems(node: TTNode?, sk: ttree<TTNode>)
@@ -273,65 +591,136 @@ module ThreadedLinkedTree {
     ghost predicate RedBlackTree()
       reads this, elems(skeleton)
     {
-      RB.RedBlackTreeRoot(TreeModelRec(skeleton))
+      TRB.RedBlackTreeRoot(TreeModelRec(skeleton))
     }
 
-    // 32"
-    method {:verify false} RBInsert(k: K, v: V)
+    method Insert(k: K, v: V) returns (isInserted: bool, it: ThreadedLinkedTreeIterator)
       modifies this, Repr()
 
       requires Valid()
-      requires SearchTree()
-      requires ThreadedTree()
-      requires RedBlackTree()
-
-      ensures Valid()
-      ensures SearchTree()
-      ensures ThreadedTree()
-      ensures RedBlackTree()
-      ensures MapModel() == old(MapModel())[k := v]
-
-      requires allocated(Repr())
-      ensures fresh(Repr()-old(Repr()))
-      ensures allocated(Repr())
-    {
-      ghost var z;
-      root, skeleton, z := TRBInsertRoot(root, skeleton, k, v);
-      TRBi.TRBInsertRootSpec(old(TreeModelRec(skeleton)), k, v);
-      TRBi.TRBInsertRootThreaded(old(TreeModelRec(skeleton)), k, v);
-      TRBi.TRBInsertRootModel(old(TreeModelRec(skeleton)), k, v);
-    }
-
-    /*
-    // 45"
-    method {:verify false} RBRemove(k: K)
-      modifies this, Repr()
-
-      requires Valid()
+      requires Threaded()
       requires SearchTree()
       requires RedBlackTree()
 
       ensures Valid()
+      ensures Threaded()
       ensures SearchTree()
       ensures RedBlackTree()
-      //ensures Model() == old(RB.Remove(Model()))
-      ensures MapModel() == old(MapModel()) - {k}
+      ensures Model() == TRBi.TRBInsertRoot(old(Model()), k, v)
+      ensures isInserted <==> TRBi.IsInserted(old(Model()), k)
+      ensures fresh(it)
+      ensures it.Parent() == this
+      ensures it.Valid()
+      ensures it.Model() == TRBit.Link(k)
 
       requires allocated(Repr())
       ensures fresh(Repr()-old(Repr()))
       ensures allocated(Repr())
+
+      ensures Iterators() >= old(Iterators())
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+        && it.Valid()
+        && it.Model() == old(it.Model())
+        && it.HasPeek() == old(it.HasPeek())
     {
-      ghost var z;
-      root, skeleton, z := RemoveRoot(root, skeleton, k);
-      RBr.RemoveRootSpec(old(TreeModelRec(skeleton)), k);
-      RBr.RemoveRootModel(old(TreeModelRec(skeleton)), k);
+      TRBi.TRBInsertRootSpec(TreeModelRec(skeleton), k, v);
+      var insertedNode;
+      root, skeleton, insertedNode, isInserted := TRBInsertRoot(root, skeleton, k, v);
+
+      ThreadedImp();
+      it := new ThreadedLinkedTreeIterator.At(insertedNode, this);
     }
-    */
+
+    method Remove(k: K) returns (isRemoved: bool)
+      modifies this, Repr()
+
+      requires Valid()
+      requires Threaded()
+      requires SearchTree()
+      requires RedBlackTree()
+
+      ensures Valid()
+      ensures Threaded()
+      ensures SearchTree()
+      ensures RedBlackTree()
+      ensures TRBr.RemoveRoot(old(Model()), k).Some?
+      ensures Model() == TRBr.RemoveRoot(old(Model()), k).unwrap
+      ensures isRemoved <==> TRBr.IsRemovedRoot(old(Model()), k)
+
+      requires allocated(Repr())
+      ensures fresh(Repr()-old(Repr()))
+      ensures allocated(Repr())
+
+      ensures Iterators() >= old(Iterators())
+      ensures forall it
+          | it in old(Iterators())
+          && old(it.Valid())
+          && (old(it.HasPeek()) ==> old(it.Peek().0) != k) ::
+        && it.Valid()
+        //&& it.Parent() == old(it.Parent())  // obvious since it.parent is const
+        && it.Model() == old(it.Model())
+        && it.HasPeek() == old(it.HasPeek())
+    {
+      TRBr.RemoveRootSpec(TreeModelRec(skeleton), k);
+      ghost var removedNode;
+      root, skeleton, removedNode, isRemoved := R.RemoveRoot(root, skeleton, k);
+      forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek())
+        ensures old(it.Peek().0) == k <==> it.node == removedNode
+      {
+        KeysAndElems(skeleton);
+      }
+    }
   }
 
-  method {:main} TestThreadedLinkedTree()
+  method {:verify false} TestThreadedLinkedTree()
   {
     var t := new ThreadedLinkedTree();
-    t.RBInsert(1, 0);
+    assert TRB.toMap(t.Model()) == map[];
+
+    TRBi.TRBInsertRootModel(t.Model(), 1, 0);
+    var _, _ := t.Insert(1, 0);
+    assert TRB.toMap(t.Model()) == map[1 := 0];
+
+    TRBi.TRBInsertRootModel(t.Model(), 3, 2);
+    var _, _ := t.Insert(3, 2);
+    assert TRB.toMap(t.Model()) == map[1 := 0, 3 := 2];
+
+    TRBi.TRBInsertRootModel(t.Model(), 2, 1);
+    var _, _ := t.Insert(2, 1);
+    assert TRB.toMap(t.Model()) == map[1 := 0, 3 := 2, 2 := 1];
+  }
+
+  method {:verify false} TestThreadedLinkedTreeIterator()
+  {
+    var t := new ThreadedLinkedTree();
+    var _, _ := t.Insert(1, 0);
+    var _, _ := t.Insert(3, 2);
+    var _, _ := t.Insert(2, 1);
+    print "\n";
+
+    var it := t.First();
+    assert it.Peek() == (1, 0);
+    print it.node.key;
+    print "\n";
+
+    it.ValidImp();
+    t.ThreadedImp();
+    assume {:axiom} false;  // Dafny cannot verify anything below
+    it.Next();
+    assert it.Peek() == (2, 1);
+    print it.node.key;
+    print "\n";
+
+    it.ValidImp();
+    t.ThreadedImp();
+    it.Next();
+    assert it.Peek() == (3, 2);
+    print it.node.key;
+    print "\n";
+
+    it.ValidImp();
+    t.ThreadedImp();
+    it.Next();
+    assert !it.HasPeek();
   }
 }

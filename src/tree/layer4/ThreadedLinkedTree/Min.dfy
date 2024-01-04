@@ -10,40 +10,22 @@ module ThreadedLinkedTree.Min {
   import opened T = TTree
   import opened TTNode
 
-  method MinP(node: TTNode, ghost sk: ttreePointer<TTNode>)
-      returns (newNode: TTNode, ghost newSk: ttree<TTNode>)
-    requires ValidRecP(node, sk, false)
-    ensures ValidRec(newNode, newSk)
-    ensures TreeModelRec(newSk)
-      == TRB.minSubtreeP(TreeModelRecP(sk))
-    ensures newNode in elemsP(sk)
-    ensures T.SubtreeP(newSk, sk)
-    ensures TRB.SubtreeP(TreeModelRec(newSk), TreeModelRecP(sk))
-
-    requires allocated(elemsP(sk))
-    ensures allocated(elemsP(sk))
-    ensures allocated(elems(newSk))
-  {
-    newNode, newSk := Min(node, sk.child);
-  }
-
-  method Min(node: TTNode, ghost sk: ttree<TTNode>)
-      returns (newNode: TTNode, ghost newSk: ttree<TTNode>)
+  method Min(node: TTNode, ghost sk: nettree<TTNode>)
+      returns (minNode: TTNode, ghost minSk: ttree<TTNode>)
     requires ValidRec(node, sk)
-    ensures ValidRec(newNode, newSk)
-    ensures newNode in elems(sk)
-    ensures T.Subtree(newSk, sk)
-    ensures TreeModelRec(newSk)
-      == TRB.minSubtree(TreeModelRec(sk))
+    ensures ValidRec(minNode, minSk)
+    ensures minNode in elems(sk)
+    ensures T.Subtree(minSk, sk)
+    ensures TreeModelRec(minSk) == TRB.minSubtree(TreeModelRec(sk))
 
     requires allocated(elems(sk))
     ensures allocated(elems(sk))
-    ensures allocated(elems(newSk))
+    ensures allocated(elems(minSk))
   {
     if node.left != null && !node.isThreadLeft {
-      newNode, newSk := MinP(node.left, sk.left);
+      minNode, minSk := Min(node.left, sk.left);
     } else {
-      newNode, newSk := node, sk;
+      minNode, minSk := node, sk;
     }
   }
 }

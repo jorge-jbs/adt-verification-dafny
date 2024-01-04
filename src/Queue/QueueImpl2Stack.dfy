@@ -72,8 +72,7 @@ class QueueImpl2Stack<A> extends Queue<A> {
     var inbox := new ArrayStackImpl();
     var outbox := new ArrayStackImpl();
   
-    var maxDepth := MMax(inbox.ReprDepth, outbox.ReprDepth);
-    ReprDepth := maxDepth + 1;
+    ReprDepth := Max(inbox.ReprDepth, outbox.ReprDepth) + 1;
     this.inbox := inbox;
     this.outbox := outbox;
     new;

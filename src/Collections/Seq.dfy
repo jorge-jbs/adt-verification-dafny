@@ -1,4 +1,3 @@
-
   module Seq {
     
     ghost function First<A>(xs: seq<A>): A

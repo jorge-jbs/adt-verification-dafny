@@ -1,36 +1,23 @@
-include "../../../../src/MUtils.dfy"
 include "../../../../src/tree/KeyValue.dfy"
 include "../../../../src/tree/layer4/TRBTree/Base.dfy"
-include "../../../../src/tree/layer1/OrderedSetUtils.dfy"
 
 module {:options "-functionSyntax:4"} TRBTree.RemoveElemth {
-  //import opened Utils
   import opened KeyValue
   import opened Base
   import opened OrderedSetUtils
 
-  function SRemoveMinP(p: pointer): (pointer, K, V)
-    requires !IsThreadOrEmpty(p)
-    requires SearchTreeP(p)
-  {
-    var (t', k, v) := SRemoveMin(p.child);
-    (Child(t'), k, v)
-  }
-
-  function SRemoveMin(t: rbtree): (rbtree, K, V)
+  function SRemoveMin(t: trbtreeOrThread): (trbtreeOrThread, K, V)
     requires t.Node?
     requires SearchTree(t)
   {
-    if IsThreadOrEmpty(t.left) then
-      ( if t.right.Child? then
-          t.right.child
-        else
-          Empty
+    match t.left
+    case Empty|Thread(_) =>
+      ( t.right
       , t.key
       , t.value
       )
-    else
-      var (l', minK, minV) := SRemoveMinP(t.left);
+    case Node(_, _, _, _, _) =>
+      var (l', minK, minV) := SRemoveMin(t.left);
       ( Node(
           l',
           t.key,
@@ -43,29 +30,13 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveElemth {
       )
   }
 
-  lemma SRemoveMinPSpec(p: pointer)
-    requires !IsThreadOrEmpty(p)
-    requires SearchTreeP(p)
-
-    ensures keysP(SRemoveMinP(p).0) == keysP(p) - {SRemoveMinP(p).1}
-    ensures inorderP(p) == [(SRemoveMinP(p).1, SRemoveMinP(p).2)] + inorderP(SRemoveMinP(p).0)
-    ensures |inorderP(SRemoveMinP(p).0)| == |inorderP(p)| - 1;
-    ensures SRemoveMinP(p).1 in keysP(p)
-    ensures SRemoveMinP(p).1 !in keysP(SRemoveMinP(p).0)
-    ensures forall k | k in keysP(SRemoveMinP(p).0) :: SRemoveMinP(p).1 < k
-
-    ensures SearchTreeP(SRemoveMinP(p).0)
-  {
-    SRemoveMinSpec(p.child);
-  }
-
-  lemma SRemoveMinSpec(t: rbtree)
+  lemma SRemoveMinSpec(t: trbtree)
     requires t.Node?
     requires SearchTree(t)
 
     ensures keys(SRemoveMin(t).0) == keys(t) - {SRemoveMin(t).1}
     ensures inorder(t) == [(SRemoveMin(t).1, SRemoveMin(t).2)] + inorder(SRemoveMin(t).0)
-    ensures |inorder(SRemoveMin(t).0)| == |inorder(t)| - 1;
+    ensures |inorder(SRemoveMin(t).0)| == |inorder(t)| - 1
     ensures SRemoveMin(t).1 in keys(t)
     ensures SRemoveMin(t).1 !in keys(SRemoveMin(t).0)
     ensures forall k | k in keys(SRemoveMin(t).0) :: SRemoveMin(t).1 < k
@@ -74,13 +45,14 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveElemth {
   {
     if IsThreadOrEmpty(t.left) {
     } else {
-      SRemoveMinPSpec(t.left);
+      SRemoveMinSpec(t.left);
     }
   }
 
-  lemma SRemoveMinMinimum(t: rbtree)
+  lemma SRemoveMinMinimum(t: trbtree)
     requires t.Node?
     requires SearchTree(t)
+    ensures assert toMap(t).Keys == keys(t); true
     ensures minimum(toMap(t).Keys) == minimum(keys(t)) == SRemoveMin(t).1
   {
     assert toMap(t).Keys == keys(t);
@@ -88,13 +60,13 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveElemth {
     lminimumrev(keys(t), SRemoveMin(t).1);
   }
 
-  lemma SRemoveMinCard(t: rbtree)
+  lemma SRemoveMinCard(t: trbtree)
     requires t.Node?
     requires SearchTree(t)
     requires SearchTree(SRemoveMin(t).0)
 
-    ensures |keys(SRemoveMin(t).0)| == |keys(t)| - 1;
-    ensures |toMap(SRemoveMin(t).0)| == |toMap(t)| - 1;
+    ensures |keys(SRemoveMin(t).0)| == |keys(t)| - 1
+    ensures |toMap(SRemoveMin(t).0)| == |toMap(t)| - 1
   {
     SRemoveMinSpec(t);
     calc == {
@@ -114,9 +86,10 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveElemth {
     ensures s[i] == s[1..][i-1]
   {}
 
-  lemma ElemthInorder0(t: rbtree)
+  lemma ElemthInorder0(t: trbtree)
     requires SearchTree(t)
     requires toMap(t) != map[] || t.Node?
+    ensures assert toMap(t).Keys == keys(t); true
     ensures elemth(toMap(t).Keys, 0) == inorder(t)[0].0
   {
     assert elemth(toMap(t).Keys, 0) == minimum(toMap(t).Keys);
@@ -141,7 +114,7 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveElemth {
     }
   }
 
-  lemma ElemthInorder(t: rbtree, i: nat)
+  lemma ElemthInorder(t: trbtree, i: nat)
     decreases i
     requires SearchTree(t)
     requires toMap(t) != map[] || t.Node?
@@ -185,7 +158,7 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveElemth {
     }
   }
 
-  lemma PeekKeyElemth(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
+  lemma PeekKeyElemth(t: trbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
     requires SearchTree(t)
     requires inorder(t) == traversed + st
     requires st != []
@@ -207,7 +180,7 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveElemth {
     }
   }
 
-  lemma PeekElemth(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
+  lemma PeekElemth(t: trbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
     requires SearchTree(t)
     requires inorder(t) == traversed + st
     requires st != []
@@ -219,7 +192,7 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveElemth {
     GetInorder(t, |traversed|);
   }
 
-  lemma TraversedSmaller(t: rbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
+  lemma TraversedSmaller(t: trbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
     requires SearchTree(t)
     requires inorder(t) == traversed + st
     requires st != []
@@ -239,9 +212,13 @@ module {:options "-functionSyntax:4"} TRBTree.RemoveElemth {
         |inorder(t)|;
       }
       forall k
-        ensures k in orderKeysToSet(traversed)
-          <==> k in smaller(keys(t), elemth(keys(t), |traversed|))
+        ensures (
+          k in orderKeysToSet(traversed) <==>
+            k in smaller(keys(t), elemth(keys(t), |traversed|))
+        )
       {
+        
+        assert toMap(t).Keys == keys(t);
         if k in orderKeysToSet(traversed) {
           var i :| 0 <= i < |traversed| && traversed[i].0 == k;
           assert inorder(t)[i] == traversed[i];

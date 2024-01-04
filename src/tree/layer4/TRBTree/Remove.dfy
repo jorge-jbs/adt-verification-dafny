@@ -1,64 +1,48 @@
 include "../../../../src/tree/KeyValue.dfy"
-include "../../../../src/MUtils.dfy"
+include "../../../../src/Collections/Option.dfy"
 include "../../../../src/tree/layer4/Color.dfy"
 include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 include "../../../../src/tree/layer4/TRBTree/Rotate.dfy"
 include "../../../../src/tree/layer4/TRBTree/Restore.dfy"
 include "../../../../src/tree/layer4/TRBTree/MoveRed.dfy"
 include "../../../../src/tree/layer4/TRBTree/RemoveMinMaintainingPrev.dfy"
-include "../../../../src/tree/layer4/TRBTree/UpdatePrev.dfy"
 include "../../../../src/tree/layer4/TRBTree/UpdateNext.dfy"
 
 module {:options "-functionSyntax:4"} TRBTree.Remove {
   import opened KeyValue
-  import opened Utils
-  import opened Utils.Option
+  import opened Option
   import opened Color
   import opened Base
   import opened Rotate
   import opened Res = Restore
   import opened MoveRed
   import opened RM = RemoveMinMaintainingPrev
-  import opened UP = UpdatePrev
   import opened UN = UpdateNext
 
-  function RemoveP(
-      p: pointer,
-      isLeft: bool,
-      k: K
-    ): option<pointer>
-    decreases sizeWithPointersP(p)
-  {
-    match p {
-      case Thread(k) => Some(Thread(k))
-      case Child(t) => Remove(t, isLeft, k)
-    }
-  }
-
   function Remove(
-      t: rbtree,
+      t: trbtreeOrThread,
       isLeft: bool,
       k: K
-    ): option<pointer>
-    decreases sizeWithPointers(t)
+    ): option<trbtreeOrThread>
+    decreases size(t)
   {
-    if t.Empty? then
-      Some(Child(t))
-    else
+    match t
+    case Empty|Thread(_) => Some(t)
+    case Node(_, _, _, _, _) =>
       if t.key > k then
         var t' :-
-          if isBlackP(t.left) && !isRedP(t.left.child.left) then
-            var _ :- Guard(t.right.Child? && t.right.child.Node?);
+          if isBlack(t.left) && !isRed(t.left.left) then
+            var _ :- Guard(t.right.Node?);
             MoveRedLeftSize(t);
             Some(MoveRedLeft(t))
           else
             Some(t);
-        var l' :- RemoveP(t'.left, true, k);
-        Some(Child(Restore(t'.(left := l'))))
+        var l' :- Remove(t'.left, true, k);
+        Some(Restore(t'.(left := l')))
       else
         var t' :=
-          if isRedP(t.left) then
-            RotateRightSizeWithPointers(t);
+          if isRed(t.left) then
+            RotateRightSize(t);
             RotateRight(t)
           else
             t;
@@ -70,57 +54,146 @@ module {:options "-functionSyntax:4"} TRBTree.Remove {
             Some(t'.right)
         else
           var t'' :-
-            if isBlackP(t'.right) && !isRedP(t'.right.child.left) then
-              var _ :- Guard(t.left.Child? && t.left.child.Node?);
+            if isBlack(t'.right) && !isRed(t'.right.left) then
+              var _ :- Guard(t.left.Node?);
               MoveRedRightSize(t');
               Some(MoveRedRight(t'))
             else
               Some(t');
           if k != t''.key then
-            var r' :- RemoveP(t''.right, false, k);
-            Some(Child(Restore(t''.(right := r'))))
+            var r' :- Remove(t''.right, false, k);
+            Some(Restore(t''.(right := r')))
           else
-            var (r', minK, minV) :- RemoveMinMaintainingPrev(t''.right.child, false);
+            var (r', minK, minV) :- RemoveMinMaintainingPrev(t''.right, false);
             var _ :- Guard(!IsThreadOrEmpty(t''.left));
-            Some(Child(Restore(Node(
-              UpdateNextP(Thread(minK), t''.left),
+            Some(Restore(Node(
+              UpdateNext(Thread(minK), t''.left),
               minK,
               minV,
               r',
               t''.color
-            ))))
+            )))
   }
 
-  method {:verify false} RemoveTest1()
+  predicate IsRemoved(t: trbtreeOrThread, isLeft: bool, k: K)
+    decreases size(t)
+    requires Remove(t, isLeft, k).Some?
+{
+    match t
+    case Empty|Thread(_) => false
+    case Node(_, _, _, _, _) =>
+      if t.key > k then
+        var t' :=
+          if isBlack(t.left) && !isRed(t.left.left) then
+            MoveRedLeftSize(t);
+            MoveRedLeft(t)
+          else
+            t;
+        IsRemoved(t'.left, true, k)
+      else
+        var t' :=
+          if isRed(t.left) then
+            RotateRightSize(t);
+            RotateRight(t)
+          else
+            t;
+        if k == t'.key && IsThreadOrEmpty(t'.right) then
+          true
+        else
+          var t'' :=
+            if isBlack(t'.right) && !isRed(t'.right.left) then
+              MoveRedRightSize(t');
+              MoveRedRight(t')
+            else
+              t';
+          if k != t''.key then
+            IsRemoved(t''.right, false, k)
+          else
+            true
+  }
+
+  lemma IsRemovedSpec(t: trbtreeOrThread, isLeft: bool, k: K)
+    decreases size(t)
+    requires SearchTree(t)
+    requires RedBlackTree(t)
+    requires t.Empty? || t.Thread? || isRed(t) || isRed(t.left)
+    requires !(isRed(t) && isRed(t.left))
+    requires Remove(t, isLeft, k).Some?
+    ensures IsRemoved(t, isLeft, k) <==> k in keys(t)
+  {
+    if t.Empty? || t.Thread? {
+    } else {
+      if t.key > k {
+        var t' :=
+          if isBlack(t.left) && !isRed(t.left.left) then
+            MoveRedLeftSize(t);
+            MoveRedLeft(t)
+          else
+            t;
+        if isBlack(t.left) && !isRed(t.left.left) {
+          MoveRedLeftSpec(t);
+        }
+        IsRemovedSpec(t'.left, true, k);
+      } else {
+        var t' :=
+          if isRed(t.left) then
+            RotateRightSize(t);
+            RotateRight(t)
+          else
+            t;
+        if isRed(t.left) {
+          RotateRightSpec(t);
+        }
+        if k == t'.key && IsThreadOrEmpty(t'.right) {
+        } else {
+          var t'' :=
+            if isBlack(t'.right) && !isRed(t'.right.left) then
+              MoveRedRightSize(t');
+              MoveRedRight(t')
+            else
+              t';
+          if isBlack(t'.right) && !isRed(t'.right.left) {
+            MoveRedRightSpec(t');
+          }
+          if k != t''.key {
+            IsRemovedSpec(t''.right, false, k);
+          } else {
+          }
+        }
+      }
+    }
+  }
+
+  method RemoveTest1()
   {
     var t1 := ThreadedTreeExample1();
     var t1' := ConditionalReddenRoot(t1);
     assert ThreadedTreeRoot(t1);
     assert RedBlackTreeRoot(t1);
     assert SearchTree(t1);
-    var t2 := Remove(t1', true, 1).unwrap.child;
+    var t2 := Remove(t1', true, 1).unwrap;
     var t2' := BlackenRoot(t2);
-    print rbtreeToString(t1') + "\n\n";
-    print rbtreeToString(t2') + "\n\n";
+    print trbtreeToString(t1') + "\n\n";
+    print trbtreeToString(t2') + "\n\n";
     assert ThreadedTreeRoot(t2');
     assert RedBlackTree(t2');
     assert RedBlackTreeRoot(t2');
     assert SearchTree(t2');
     /*
-    var t3 := BlackenRoot(Remove(ConditionalReddenRoot(t2'), true, 2).unwrap.child);
-    print rbtreeToString(t3) + "\n\n";
+    var t3 := BlackenRoot(Remove(ConditionalReddenRoot(t2'), true, 2).unwrap);
+    print trbtreeToString(t3) + "\n\n";
     assert ThreadedTreeRoot(t3);
     assert RedBlackTree(t3);
     assert RedBlackTreeRoot(t3);
     assert SearchTree(t3);
-    var t4 := BlackenRoot(Remove(ConditionalReddenRoot(t3), true, 3).unwrap.child);
-    print rbtreeToString(t4) + "\n\n";
+    var t4 := BlackenRoot(Remove(ConditionalReddenRoot(t3), true, 3).unwrap);
+    print trbtreeToString(t4) + "\n\n";
     assert ThreadedTreeRoot(t4);
     assert RedBlackTree(t4);
     assert RedBlackTreeRoot(t4);
     assert SearchTree(t4);
-    var t5 := BlackenRoot(Remove(ConditionalReddenRoot(t4), true, 4).unwrap.child);
-    print rbtreeToString(t5) + "\n\n";
+    var t5 := BlackenRoot(Remove(ConditionalReddenRoot(t4), true, 4).unwrap);
+    print trbtreeToString(t5) + "\n\n";
     assert ThreadedTreeRoot(t5);
     assert RedBlackTree(t5);
     assert RedBlackTreeRoot(t5);
@@ -128,62 +201,37 @@ module {:options "-functionSyntax:4"} TRBTree.Remove {
     */
   }
 
-  lemma RemovePSpec(p: pointer, isLeft: bool, k: K)
-    decreases sizeWithPointersP(p)
-
-    requires SearchTreeP(p)
-    requires RedBlackTreeP(p)
-    requires p.Thread? || p.child.Empty? || isRedP(p) || isRedP(p.child.left)
-    requires !(isRedP(p) && isRedP(p.child.left))
-
-    ensures RemoveP(p, isLeft, k).Some?
-    ensures SearchTreeP(RemoveP(p, isLeft, k).unwrap)
-    ensures RedBlackTreeP(RemoveP(p, isLeft, k).unwrap)
-    ensures BlackHeightP(RemoveP(p, isLeft, k).unwrap) == BlackHeightP(p)
-    ensures isRedP(RemoveP(p, isLeft, k).unwrap) ==> !isRedP(RemoveP(p, isLeft, k).unwrap.child.left)
-    ensures !isRedP(p) ==> !isRedP(RemoveP(p, isLeft, k).unwrap)
-
-    ensures keysP(RemoveP(p, isLeft, k).unwrap) == keysP(p) - {k}
-  {
-    match p {
-      case Thread(k) => {}
-      case Child(t) => {
-        RemoveSpec(t, isLeft, k);
-      }
-    }
-  }
-
-  lemma RemoveSpec(t: rbtree, isLeft: bool, k: K)  // 60"
-    decreases sizeWithPointers(t)
+  lemma RemoveSpec(t: trbtreeOrThread, isLeft: bool, k: K)
+    decreases size(t)
 
     requires SearchTree(t)
     requires RedBlackTree(t)
-    requires t.Empty? || isRed(t) || isRedP(t.left)
-    requires !(isRed(t) && isRedP(t.left))
+    requires t.Empty? || t.Thread? || isRed(t) || isRed(t.left)
+    requires !(isRed(t) && isRed(t.left))
 
     ensures Remove(t, isLeft, k).Some?
-    ensures SearchTreeP(Remove(t, isLeft, k).unwrap)
-    ensures RedBlackTreeP(Remove(t, isLeft, k).unwrap)
-    ensures BlackHeightP(Remove(t, isLeft, k).unwrap) == BlackHeight(t)
-    ensures isRedP(Remove(t, isLeft, k).unwrap) ==> !isRedP(Remove(t, isLeft, k).unwrap.child.left)
-    ensures !isRed(t) ==> !isRedP(Remove(t, isLeft, k).unwrap)
+    ensures SearchTree(Remove(t, isLeft, k).unwrap)
+    ensures RedBlackTree(Remove(t, isLeft, k).unwrap)
+    ensures BlackHeight(Remove(t, isLeft, k).unwrap) == BlackHeight(t)
+    ensures isRed(Remove(t, isLeft, k).unwrap) ==> !isRed(Remove(t, isLeft, k).unwrap.left)
+    ensures !isRed(t) ==> !isRed(Remove(t, isLeft, k).unwrap)
 
-    ensures keysP(Remove(t, isLeft, k).unwrap) == keys(t) - {k}
+    ensures keys(Remove(t, isLeft, k).unwrap) == keys(t) - {k}
   {
-    if t.Empty? {
+    if t.Empty? || t.Thread? {
     } else {
       if t.key > k {  // 6"
         var t' :=
-          if isBlackP(t.left) && !isRedP(t.left.child.left) then
+          if isBlack(t.left) && !isRed(t.left.left) then
             MoveRedLeftSize(t);
             MoveRedLeft(t)
           else
             t;
-        if isBlackP(t.left) && !isRedP(t.left.child.left) {
+        if isBlack(t.left) && !isRed(t.left.left) {
           MoveRedLeftSpec(t);
         }
-        RemovePSpec(t'.left, true, k);
-        var l' := RemoveP(t'.left, true, k).unwrap;
+        RemoveSpec(t'.left, true, k);
+        var l' := Remove(t'.left, true, k).unwrap;
         var t'' :=
           Node(
             l',
@@ -196,28 +244,28 @@ module {:options "-functionSyntax:4"} TRBTree.Remove {
         RestoreSpec(t'');
       } else {
         var t' :=
-          if isRedP(t.left) then
-            RotateRightSizeWithPointers(t);
+          if isRed(t.left) then
+            RotateRightSize(t);
             RotateRight(t)
           else
             t;
-        if isRedP(t.left) {
+        if isRed(t.left) {
           RotateRightSpec(t);
         }
         if k == t'.key && IsThreadOrEmpty(t'.right) {
         } else {
           var t'' :=
-            if isBlackP(t'.right) && !isRedP(t'.right.child.left) then
+            if isBlack(t'.right) && !isRed(t'.right.left) then
               MoveRedRightSize(t');
               MoveRedRight(t')
             else
               t';
-          if isBlackP(t'.right) && !isRedP(t'.right.child.left) {
+          if isBlack(t'.right) && !isRed(t'.right.left) {
             MoveRedRightSpec(t');
           }
           if k != t''.key {  // 22"
-            RemovePSpec(t''.right, false, k);
-            var r' := RemoveP(t''.right, false, k).unwrap;
+            RemoveSpec(t''.right, false, k);
+            var r' := Remove(t''.right, false, k).unwrap;
             var t''' :=
               Node(
                 t''.left,
@@ -229,18 +277,18 @@ module {:options "-functionSyntax:4"} TRBTree.Remove {
             var t'''' := Restore(t''');
             RestoreSpec(t''');
           } else {  // 16"
-            RemoveMinMaintainingPrevPSpec(t''.right, false);
-            assert forall m | m in keysP(t''.right) :: t''.key < m;
-            var (r', minK, minV) := RemoveMinMaintainingPrevP(t''.right, false).unwrap;
+            RemoveMinMaintainingPrevSpec(t''.right, false);
+            assert forall m | m in keys(t''.right) :: t''.key < m;
+            var (r', minK, minV) := RemoveMinMaintainingPrev(t''.right, false).unwrap;
             var t''' :=
               Node(
-                UpdateNextP(Thread(minK), t''.left),
+                UpdateNext(Thread(minK), t''.left),
                 minK,
                 minV,
                 r',
                 t''.color
               );
-            UpdateNextPSpec(Thread(minK), t''.left);
+            UpdateNextSpec(Thread(minK), t''.left);
             var t'''' := Restore(t''');
             RestoreSpec(t''');
           }
@@ -249,43 +297,119 @@ module {:options "-functionSyntax:4"} TRBTree.Remove {
     }
   }
 
-  lemma RemovePThreaded(prev: threadOrEmpty, p: pointer, next: threadOrEmpty, isLeft: bool, k: K)
-    decreases sizeWithPointersP(p)
-
-    requires ThreadedTreeRecPCond(prev, p, next, isLeft)
-    requires RemoveP(p, isLeft, k).Some?
-    ensures ThreadedTreeRecPCond(prev, RemoveP(p, isLeft, k).unwrap, next, isLeft)
+  lemma RemoveSize(t: trbtreeOrThread, isLeft: bool, k: K)
+    decreases size(t)
+    requires Remove(t, isLeft, k).Some?
+    ensures
+      if IsRemoved(t, isLeft, k) then
+        size(Remove(t, isLeft, k).unwrap) == size(t) - 1
+      else
+        size(Remove(t, isLeft, k).unwrap) == size(t)
   {
-    match p {
-      case Thread(k) => {}
-      case Child(t) => {
-        if t.Node? {
-          RemoveThreaded(prev, t, next, isLeft, k);
+    if t.Empty? || t.Thread? {
+    } else {
+      if t.key > k {
+        var t' :=
+          if isBlack(t.left) && !isRed(t.left.left) then
+            MoveRedLeftSize(t);
+            MoveRedLeft(t)
+          else
+            t;
+        if isBlack(t.left) && !isRed(t.left.left) {
+          MoveRedLeftSize(t);
+        }
+        RemoveSize(t'.left, true, k);
+        var l' := Remove(t'.left, true, k).unwrap;
+        var t'' :=
+          Node(
+            l',
+            t'.key,
+            t'.value,
+            t'.right,
+            t'.color
+          );
+        var t''' := Restore(t'');
+        RestoreSize(t'');
+      } else {
+        var t' :=
+          if isRed(t.left) then
+            RotateRightSize(t);
+            RotateRight(t)
+          else
+            t;
+        if isRed(t.left) {
+          RotateRightSize(t);
+        }
+        if k == t'.key && IsThreadOrEmpty(t'.right) {
+        } else {
+          var t'' :=
+            if isBlack(t'.right) && !isRed(t'.right.left) then
+              MoveRedRightSize(t');
+              MoveRedRight(t')
+            else
+              t';
+          if isBlack(t'.right) && !isRed(t'.right.left) {
+            MoveRedRightSize(t');
+          }
+          if k != t''.key {
+            RemoveSize(t''.right, false, k);
+            var r' := Remove(t''.right, false, k).unwrap;
+            var t''' :=
+              Node(
+                t''.left,
+                t''.key,
+                t''.value,
+                r',
+                t''.color
+              );
+            var t'''' := Restore(t''');
+            RestoreSize(t''');
+          } else {
+            RemoveMinMaintainingPrevSize(t''.right, false);
+            var (r', minK, minV) := RemoveMinMaintainingPrev(t''.right, false).unwrap;
+            var t''' :=
+              Node(
+                UpdateNext(Thread(minK), t''.left),
+                minK,
+                minV,
+                r',
+                t''.color
+              );
+            UpdateNextSize(Thread(minK), t''.left);
+            var t'''' := Restore(t''');
+            RestoreSize(t''');
+          }
         }
       }
     }
   }
 
-  lemma RemoveThreaded(prev: threadOrEmpty, t: rbtree, next: threadOrEmpty, isLeft: bool, k: K)  // 24"
-    decreases sizeWithPointers(t)
+ lemma RemoveThreaded(
+      prev: threadOrEmpty, 
+      t: trbtreeOrThread, 
+      next: threadOrEmpty, 
+      isLeft: bool, 
+      k: K
+    )
+    decreases size(t)
 
-    requires t.Node?
-    requires ThreadedTreeRec(prev, t, next)
     requires Remove(t, isLeft, k).Some?
-    ensures ThreadedTreeRecPCond(prev, Remove(t, isLeft, k).unwrap, next, isLeft)
+    requires ThreadedTreeRecCond(prev, t, next, isLeft)
+    ensures ThreadedTreeRecCond(prev, Remove(t, isLeft, k).unwrap, next, isLeft)
   {
-    if t.key > k {
+    if t.Empty? || t.Thread? {
+    } else if t.key > k {
       var t' :=
-        if isBlackP(t.left) && !isRedP(t.left.child.left) then
+        if isBlack(t.left) && !isRed(t.left.left) then
           MoveRedLeftSize(t);
           MoveRedLeft(t)
         else
           t;
-      if isBlackP(t.left) && !isRedP(t.left.child.left) {
+      if isBlack(t.left) && !isRed(t.left.left) {
         MoveRedLeftThreaded(prev, t, next);
       }
-      RemovePThreaded(prev, t'.left, Thread(t'.key), true, k);
-      var l' := RemoveP(t'.left, true, k).unwrap;
+      RemoveThreaded(prev, t'.left, Thread(t'.key), true, k);
+      var l' := Remove(t'.left, true, k).unwrap;
       var t'' :=
         Node(
           l',
@@ -298,29 +422,34 @@ module {:options "-functionSyntax:4"} TRBTree.Remove {
       RestoreThreaded(prev, t'', next);
     } else {
       var t' :=
-        if isRedP(t.left) then
-          RotateRightSizeWithPointers(t);
+        if isRed(t.left) then
+          RotateRightSize(t);
           RotateRight(t)
         else
           t;
-      if isRedP(t.left) {
+      if isRed(t.left) {
         RotateRightThreaded(prev, t, next);
       }
       if k == t'.key && IsThreadOrEmpty(t'.right) {
+        if isLeft {
+          assert ThreadedTreeRecL(prev, t'.left, Thread(t.key));
+        } else {
+          assert ThreadedTreeRecR(Thread(t.key), t'.right, next);
+        }
       } else {
         var t'' :=
-          if isBlackP(t'.right) && !isRedP(t'.right.child.left) then
+          if isBlack(t'.right) && !isRed(t'.right.left) then
             MoveRedRightSize(t');
             MoveRedRight(t')
           else
             t';
-        if isBlackP(t'.right) && !isRedP(t'.right.child.left) {
+        if isBlack(t'.right) && !isRed(t'.right.left) {
           MoveRedRightThreaded(prev, t', next);
         }
-        if k != t''.key {  // 22"
-          RemovePThreaded(Thread(t''.key), t''.right, next, false, k);
-          var r' := RemoveP(t''.right, false, k).unwrap;
-          assert ThreadedTreeRecPR(Thread(t''.key), t''.right, next);
+        if k != t''.key {
+          RemoveThreaded(Thread(t''.key), t''.right, next, false, k);
+          var r' := Remove(t''.right, false, k).unwrap;
+          assert ThreadedTreeRecR(Thread(t''.key), t''.right, next);
           var t''' :=
             Node(
               t''.left,
@@ -331,20 +460,268 @@ module {:options "-functionSyntax:4"} TRBTree.Remove {
             );
           var t'''' := Restore(t''');
           RestoreThreaded(prev, t''', next);
-        } else {  // 16"
-          RemoveMinMaintainingPrevPThreaded(Thread(t''.key), t''.right, next, false);
-          var (r', minK, minV) := RemoveMinMaintainingPrevP(t''.right, false).unwrap;
+        } else {
+          assert ThreadedTreeNe(Thread(t''.key), t''.right, next) by {
+            assert ThreadedTreeNe(prev, t'', next);
+            assert ThreadedTreeRecR(Thread(t''.key), t''.right, next);
+          }
+          RemoveMinMaintainingPrevThreaded(Thread(t''.key), t''.right, next, false);
+          var (r', minK, minV) := RemoveMinMaintainingPrev(t''.right, false).unwrap;
           var t''' :=
             Node(
-              UpdateNextP(Thread(minK), t''.left),
+              UpdateNext(Thread(minK), t''.left),
               minK,
               minV,
               r',
               t''.color
             );
-          UpdateNextPThreaded(Thread(minK), prev, t''.left, Thread(t''.key));
+          assert ThreadedTreeNe(prev, t''.left, Thread(t''.key)) by {
+            assert ThreadedTreeNe(prev, t'', next);
+            assert ThreadedTreeRecL(prev, t''.left, Thread(t''.key));
+          }
+          UpdateNextThreaded(Thread(minK), prev, t''.left, Thread(t''.key));
           var t'''' := Restore(t''');
           RestoreThreaded(prev, t''', next);
+        }
+      }
+    }
+  }
+
+  lemma RemoveModelLemmaL<A, B>(a: map<A, B>, b: map<A, B>, c: map<A, B>, k: A)
+    requires k !in b
+    requires k !in c
+    ensures (a - {k}) + b + c == (a + b + c) - {k}
+  {}
+
+  lemma RemoveModelLemmaR<A, B>(a: map<A, B>, b: map<A, B>, c: map<A, B>, k: A)
+    requires k !in a
+    requires k !in b
+    ensures a + b + (c - {k}) == (a + b + c) - {k}
+  {}
+
+  lemma RemoveModelLemmaMin1<A, B>(a: map<A, B>, b: map<A, B>, k: A, v: B)
+    requires k in b.Keys
+    requires b[k] == v
+    ensures a + map[k := v] + (b - {k}) == a + b
+  {}
+
+  lemma RemoveModelLemmaMin2<A, B>(a: map<A, B>, b: map<A, B>, k: A, v: B)
+    requires k !in a.Keys
+    requires k !in b.Keys
+    ensures (a + map[k := v] + b) - {k} == a + b
+  {}
+
+  lemma RemoveModel(t: trbtreeOrThread, isLeft: bool, k: K)  // 2'
+    decreases size(t)
+
+    requires SearchTree(t)
+    requires RedBlackTree(t)
+    requires t.Empty? || t.Thread? || isRed(t) || isRed(t.left)
+    requires !(isRed(t) && isRed(t.left))
+
+    ensures Remove(t, isLeft, k).Some?
+    ensures toMapRec(Remove(t, isLeft, k).unwrap) == toMapRec(t) - {k}
+  {
+    if t.Empty? || t.Thread? {
+      //assume false;
+    } else {
+      if t.key > k {  // 22"
+        //assume false;
+        var t' :=
+          if isBlack(t.left) && !isRed(t.left.left) then
+            MoveRedLeftSize(t);
+            MoveRedLeft(t)
+          else
+            t;
+        if isBlack(t.left) && !isRed(t.left.left) {
+          MoveRedLeftSpec(t);
+          MoveRedLeftModel(t);
+        }
+        RemoveSpec(t'.left, true, k);
+        RemoveModel(t'.left, true, k);
+        var l' := Remove(t'.left, true, k).unwrap;
+        var t'' :=
+          Node(
+            l',
+            t'.key,
+            t'.value,
+            t'.right,
+            t'.color
+          );
+        var t''' := Restore(t'');
+        RestoreSpec(t'');
+        assert Remove(t, isLeft, k).Some?;
+        calc == {
+          toMapRec(Remove(t, isLeft, k).unwrap);
+          toMapRec(t''');
+          toMapRec(Restore(t''));
+          { RestoreModel(t''); }
+          toMapRec(t'');
+          toMapRec(t''.left)
+            + map[t''.key := t''.value]
+            + toMapRec(t''.right);
+          toMapRec(Remove(t'.left, true, k).unwrap)
+            + map[t'.key := t'.value]
+            + toMapRec(t'.right);
+          (toMapRec(t'.left) - {k})
+            + map[t'.key := t'.value]
+            + toMapRec(t'.right);
+          {
+            assert k !in toMapRec(t'.right) by {
+              ToMapRec(t'.right);
+            }
+            RemoveModelLemmaL(
+              toMapRec(t'.left),
+              map[t'.key := t'.value],
+              toMapRec(t'.right),
+              k
+            );
+          }
+          (toMapRec(t'.left)
+            + map[t'.key := t'.value]
+            + toMapRec(t'.right)) - {k};
+          toMapRec(t') - {k};
+          toMapRec(t) - {k};
+        }
+      } else {
+        var t' :=
+          if isRed(t.left) then
+            RotateRightSize(t);
+            RotateRight(t)
+          else
+            t;
+        if isRed(t.left) {
+          RotateRightSpec(t);
+          RotateRightModel(t);
+        }
+        if k == t'.key && IsThreadOrEmpty(t'.right) {
+          //assume false;
+        } else {
+          var t'' :=
+            if isBlack(t'.right) && !isRed(t'.right.left) then
+              MoveRedRightSize(t');
+              MoveRedRight(t')
+            else
+              t';
+          if isBlack(t'.right) && !isRed(t'.right.left) {
+            MoveRedRightSpec(t');
+            MoveRedRightModel(t');
+          }
+          if k != t''.key {  // 33"
+            //assume false;
+            RemoveSpec(t''.right, false, k);
+            RemoveModel(t''.right, false, k);
+            var r' := Remove(t''.right, false, k).unwrap;
+            var t''' :=
+              Node(
+                t''.left,
+                t''.key,
+                t''.value,
+                r',
+                t''.color
+              );
+            var t'''' := Restore(t''');
+            RestoreSpec(t''');
+            calc == {
+              toMapRec(Remove(t, isLeft, k).unwrap);
+              toMapRec(t'''');
+              toMapRec(Restore(t'''));
+              { RestoreModel(t'''); }
+              toMapRec(t''');
+              toMapRec(t'''.left)
+                + map[t'''.key := t'''.value]
+                + toMapRec(t'''.right);
+              toMapRec(t''.left)
+                + map[t''.key := t''.value]
+                + toMapRec(Remove(t''.right, false, k).unwrap);
+              { RemoveModel(t''.right, false, k); }
+              toMapRec(t''.left)
+                + map[t''.key := t''.value]
+                + (toMapRec(t''.right) - {k});
+              {
+                assert k !in toMapRec(t''.left) by {
+                  ToMapRec(t''.left);
+                }
+                RemoveModelLemmaR(
+                  toMapRec(t''.left),
+                  map[t''.key := t''.value],
+                  toMapRec(t''.right),
+                  k
+                );
+              }
+              (toMapRec(t''.left)
+                + map[t''.key := t''.value]
+                + toMapRec(t''.right)) - {k};
+              toMapRec(t'') - {k};
+              toMapRec(t') - {k};
+              toMapRec(t) - {k};
+            }
+          } else {  // 60"
+            //assume false;
+            RemoveMinMaintainingPrevSpec(t''.right, false);
+            RemoveMinMaintainingPrevModel(t''.right, false);
+            assert forall m | m in keys(t''.right) :: t''.key < m;
+            var (r', minK, minV) := RemoveMinMaintainingPrev(t''.right, false).unwrap;
+            var t''' :=
+              Node(
+                UpdateNext(Thread(minK), t''.left),
+                minK,
+                minV,
+                r',
+                t''.color
+              );
+            UpdateNextSpec(Thread(minK), t''.left);
+            UpdateNextModel(Thread(minK), t''.left);
+            var t'''' := Restore(t''');
+            RestoreSpec(t''');
+            RestoreModel(t''');
+            calc == {
+              toMapRec(Remove(t, isLeft, k).unwrap);
+              toMapRec(t'''');
+              toMapRec(Restore(t'''));
+              { RestoreModel(t'''); }
+              toMapRec(t''');
+              toMapRec(t'''.left)
+                + map[t'''.key := t'''.value]
+                + toMapRec(t'''.right);
+              toMapRec(UpdateNext(Thread(minK), t''.left))
+                + map[minK := minV]
+                + toMapRec(RemoveMinMaintainingPrev(t''.right, false).unwrap.0);
+              toMapRec(t''.left)
+                + map[minK := minV]
+                + (toMapRec(t''.right) - {minK});
+              {
+                RemoveModelLemmaMin1(
+                  toMapRec(t''.left),
+                  toMapRec(t''.right),
+                  minK, minV
+                );
+              }
+              toMapRec(t''.left) + toMapRec(t''.right);
+              {
+                assert k !in toMapRec(t''.left).Keys by {
+                  ToMapRec(t''.left);
+                }
+                assert k !in toMapRec(t''.right).Keys by {
+                  ToMapRec(t''.right);
+                }
+                RemoveModelLemmaMin2(
+                  toMapRec(t''.left),
+                  toMapRec(t''.right),
+                  k, t''.value
+                );
+              }
+              (toMapRec(t''.left)
+                + map[k := t''.value]
+                + toMapRec(t''.right)) - {k};
+              (toMapRec(t''.left)
+                + map[t''.key := t''.value]
+                + toMapRec(t''.right)) - {k};
+              toMapRec(t'') - {k};
+              toMapRec(t') - {k};
+              toMapRec(t) - {k};
+            }
+          }
         }
       }
     }

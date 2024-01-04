@@ -1,6 +1,5 @@
 module  Int {
-  
-  ghost function Abs(x: int): int
+  function Abs(x: int): int
   {
     if x < 0 then
       -x
@@ -8,7 +7,7 @@ module  Int {
       x
   }
 
-  ghost function Max(x: int, y: int): int
+  function Max(x: int, y: int): int
   {
     if x < y then
       y
@@ -17,13 +16,12 @@ module  Int {
   }
 
   method MMax(x :int, y:int) returns (r:int)
-  ensures r == Max(x,y)
-  { if x < y 
-      { r := y; }
-    else
-      { r := x; }
-
+    ensures r == Max(x,y)
+  {
+    if x < y {
+      r := y;
+    } else {
+      r := x;
+    }
   }
-  
-
 }

@@ -16,8 +16,12 @@ module ThreadedLinkedTree.Restore {
   import opened TTNode
   import opened Color
 
-  // 4"
-  method Restore(node: TTNode, ghost sk: ttree<TTNode>)
+  method Restore(
+      node: TTNode, 
+      ghost prev: threadOrEmpty<TTNode>,
+      ghost sk: ttree<TTNode>,
+      ghost next: threadOrEmpty<TTNode>
+    )
     returns (newNode: TTNode, ghost newSk: ttree<TTNode>)
 
     modifies set x | x in elems(sk) :: x`isThreadLeft
@@ -27,8 +31,10 @@ module ThreadedLinkedTree.Restore {
     modifies set x | x in elems(sk) :: x`color
 
     requires ValidRec(node, sk)
+    requires ThreadedNe(prev, sk, next)
 
     ensures ValidRec(newNode, newSk)
+    ensures ThreadedNe(prev, newSk, next)
     ensures TreeModelRec(newSk) == TRBres.Restore(old(TreeModelRec(sk)))
     ensures elems(newSk) == elems(sk)
 
@@ -36,49 +42,26 @@ module ThreadedLinkedTree.Restore {
     ensures fresh(elems(newSk)-elems(sk))
     ensures allocated(elems(newSk))
   {
-    ghost var t := TreeModelRec(sk);
-    ghost var t' :=
-      if TRB.isRedP(t.right) then
-        TRBr.RotateLeft(t)
-      else
-        t;
-    ghost var t'' :=
-      if TRB.isRedP(t'.left) && TRB.isRedP(t'.left.child.left) then
-        TRBr.RotateRight(t')
-      else
-        t';
-    ghost var t''' :=
-      if TRB.isRedP(t''.left) && TRB.isRedP(t''.right) then
-        TRBf.FlipColors(t'')
-      else
-        t'';
     newNode := node;
     newSk := sk;
 
-    if newNode.right != null && !newNode.isThreadRight && newNode.right.color.Red? {
-      newNode, newSk := RotateLeft(newNode, newSk);
+    isRedRightProp(newNode, newSk);
+    if isRedRight(newNode) {
+      newNode, newSk := RotateLeft(newNode, prev, newSk, next);
     }
-
-    assert TreeModelRec(newSk) == t';
 
     isRedLeftProp(newNode, newSk);
-    assert isRedLeft(newNode) <==> TRB.isRedP(t'.left);
-    if newNode.left != null && !newNode.isThreadLeft {
-      assert TreeModelRecP(newSk.left.child.left) == t'.left.child.left;
-      isRedLeftProp(newNode.left, newSk.left.child);
-      assert isRedLeft(newNode.left) <==> TRB.isRedP(t'.left.child.left);
+    if isRedLeft(newNode) {
+      isRedLeftProp(newNode.left, newSk.left);
     }
     if isRedLeft(newNode) && isRedLeft(newNode.left) {
-      newNode, newSk := RotateRight(newNode, newSk);
-      assert TreeModelRec(newSk) == TRBr.RotateRight(t');
+      newNode, newSk := RotateRight(newNode, prev, newSk, next);
     }
 
-    assert TreeModelRec(newSk) == t'';
-
+    isRedLeftProp(newNode, newSk);
+    isRedRightProp(newNode, newSk);
     if isRedLeft(newNode) && isRedRight(newNode) {
-      FlipColors(newNode, newSk);
+      FlipColors(newNode, prev, newSk, next);
     }
-
-    assert TreeModelRec(newSk) == t''';
   }
 }

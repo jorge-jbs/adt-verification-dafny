@@ -6,10 +6,11 @@ module ADT {
   type pos = n: int | n > 0 witness 1
 
   trait {:termination false} ADT<M> {
-    const ReprDepth: pos
+    ghost const ReprDepth: pos
 
     ghost function ReprFamily(n: nat): set<object>
       decreases n
+      //ensures forall i, j | 0 <= i < j <= n :: ReprFamily(i) <= ReprFamily(j)
       ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
       reads this, if n == 0 then {} else ReprFamily(n-1)
 
