@@ -1,4 +1,4 @@
-include "../UnorderedMultiSet/UnorderedMultiSetSpec.dfy"
+include "../UnorderedMultiset/UnorderedMultisetSpec.dfy"
 include "../Collections/OrderedMultisetUtils.dfy"
 
 module OrderedMultiSetSpec {

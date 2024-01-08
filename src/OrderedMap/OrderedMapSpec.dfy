@@ -1,5 +1,5 @@
 include "../Collections/KeyValue.dfy"
-include "../UnOrderedMap/UnorderedMapSpec.dfy"
+include "../UnorderedMap/UnorderedMapSpec.dfy"
 include "../Collections/OrderedSetUtils.dfy"
 
 module OrderedMapSpec {
