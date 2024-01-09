@@ -1,5 +1,5 @@
-include "../../src/tree/layer1/UnorderedMap.dfy"
-include "../../src/tree/layer1/OrderedMap.dfy"
+include "../../src/UnorderedMap/UnorderedMapSpec.dfy"
+include "../../src/OrderedMap/OrderedMapSpec.dfy"
 include "../../src/tree/layer3/OrderedMapImplTRBT.dfy"
 
 module PruebaTRBT {

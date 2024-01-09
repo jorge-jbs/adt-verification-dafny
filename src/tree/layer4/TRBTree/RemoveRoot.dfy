@@ -1,6 +1,6 @@
 include "../../../../src/Collections/Option.dfy"
 include "../../../../src/Collections/Set.dfy"
-include "../../../../src/tree/KeyValue.dfy"
+include "../../../../src/Collections/KeyValue.dfy"
 include "../../../../src/tree/layer4/Color.dfy"
 include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 include "../../../../src/tree/layer4/TRBTree/Remove.dfy"

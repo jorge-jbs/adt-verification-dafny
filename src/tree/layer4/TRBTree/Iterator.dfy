@@ -1,9 +1,9 @@
 include "../../../../src/Collections/Set.dfy"
-include "../../../../src/tree/KeyValue.dfy"
+include "../../../../src/Collections/KeyValue.dfy"
 include "../../../../src/tree/layer4/Color.dfy"
 include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 include "../../../../src/tree/layer4/TRBTree/RemoveElemth.dfy"
-include "../../../../src/tree/layer1/OrderedSetUtils.dfy"
+include "../../../../src/Collections/OrderedSetUtils.dfy"
 
 module {:options "-functionSyntax:4"} TRBTree.Iterator {
   import opened Set

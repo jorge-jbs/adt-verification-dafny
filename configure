@@ -80,7 +80,6 @@ files=(
     src/UnorderedMultiset/UnorderedMultisetSpec.dfy
     src/UnorderedSet/UnorderedSetSpec.dfy
 
-    src/tree/layer1/OrderedMap.dfy
     src/tree/layer3/OrderedMapImplTRBT.dfy
     src/tree/layer4/TRBTree/Base.dfy
     src/tree/layer4/TRBTree/FlipColors.dfy

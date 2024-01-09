@@ -1,8 +1,8 @@
 include "../../../../src/Collections/Int.dfy"
 include "../../../../src/Collections/Utils.dfy"
-include "../../../../src/tree/KeyValue.dfy"
+include "../../../../src/Collections/KeyValue.dfy"
 include "../../../../src/tree/layer4/Color.dfy"
-include "../../../../src/tree/layer1/OrderedSetUtils.dfy"
+include "../../../../src/Collections/OrderedSetUtils.dfy"
 
 module {:options "-functionSyntax:4"} TRBTree.Base {
   import Int

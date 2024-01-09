@@ -1,5 +1,5 @@
-include "../Collections/KeyValue.dfy"
-include "../ADT.dfy"
+include "../../src/Collections/KeyValue.dfy"
+include "../../src/ADT.dfy"
 
 module UnorderedMapSpec {
   import opened KeyValue
@@ -7,6 +7,7 @@ module UnorderedMapSpec {
 
   trait {:termination false} UnorderedMapIterator {
     ghost function Parent(): UnorderedMap
+      decreases 0
       reads this
 
     ghost predicate Valid()
@@ -20,7 +21,7 @@ module UnorderedMapSpec {
       ensures Traversed() <= (Parent().Model().Keys)
       ensures 0 <= |Traversed()| <= |Parent().Model().Keys|
 
-    ghost function Peek?():(K,V)
+    ghost function Peek?(): (K, V)
       reads this, Parent(), Parent().Repr()
       requires Valid()
       requires Parent().Valid()
@@ -120,7 +121,6 @@ module UnorderedMapSpec {
                                    && |it.Traversed()| == old(|it.Traversed()|)
                                    && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
 
-
     method Copy() returns (it: UnorderedMapIterator)
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
@@ -202,7 +202,6 @@ module UnorderedMapSpec {
                 && it.Traversed() == old(it.Traversed())
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
-
 
     ghost function Iterators(): set<UnorderedMapIterator>
       reads this, Repr()
@@ -371,7 +370,6 @@ module UnorderedMapSpec {
 
       ensures Iterators() >= {next}+old(Iterators())
   }
-
 
   method {:verify true} main(s:UnorderedMap)
     modifies s, s.Repr()

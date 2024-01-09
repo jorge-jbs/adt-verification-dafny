@@ -1,6 +1,6 @@
-include "../Collections/KeyValue.dfy"
-include "../UnorderedMap/UnorderedMapSpec.dfy"
-include "../Collections/OrderedSetUtils.dfy"
+include "../../src/Collections/KeyValue.dfy"
+include "../../src/UnorderedMap/UnorderedMapSpec.dfy"
+include "../../src/Collections/OrderedSetUtils.dfy"
 
 module OrderedMapSpec {
   import opened KeyValue
@@ -9,6 +9,7 @@ module OrderedMapSpec {
 
   trait {:termination false} OrderedMapIterator extends UnorderedMapIterator {
     ghost function Parent(): UnorderedMap
+      decreases 0
       reads this
 
     ghost predicate Valid()
@@ -24,7 +25,7 @@ module OrderedMapSpec {
     //ensures HasNext() ==> Index()==|Traversed()|==|smaller(Parent().Model().Keys,key(Peek()))|
     //ensures !HasNext() ==> Index()==|Parent().Model()|
 
-    ghost function Traversed():set<K>
+    ghost function Traversed(): set<K>
       reads this, Parent(), Parent().Repr()
       requires Valid()
       requires Parent().Valid()
@@ -40,7 +41,7 @@ module OrderedMapSpec {
     }
     //ensures forall x,y | x in Traversed() && y in Parent().Model().Keys-Traversed() :: x < y
 
-    ghost function Peek?():(K,V)
+    ghost function Peek?(): (K, V)
       reads this, Parent(), Parent().Repr()
       requires Valid()
       requires Parent().Valid()
@@ -139,7 +140,6 @@ module OrderedMapSpec {
                 (it is OrderedMapIterator &&
                  (it as OrderedMapIterator).Index() == old((it as OrderedMapIterator).Index()) )
 
-
     method Next()
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
@@ -158,6 +158,7 @@ module OrderedMapSpec {
 
       ensures Traversed() == {key(old(Peek?()))} + old(Traversed())
       ensures |Traversed()| == 1 + old(|Traversed()|)
+      ensures Index() == old(Index()) + 1
 
       ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::

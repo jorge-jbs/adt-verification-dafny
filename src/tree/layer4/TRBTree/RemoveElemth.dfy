@@ -1,4 +1,4 @@
-include "../../../../src/tree/KeyValue.dfy"
+include "../../../../src/Collections/KeyValue.dfy"
 include "../../../../src/tree/layer4/TRBTree/Base.dfy"
 
 module {:options "-functionSyntax:4"} TRBTree.RemoveElemth {
