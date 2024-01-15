@@ -6,6 +6,7 @@ files=(
     #examples/sets/ordSetIntersection.dfy  # takes to long (and fails?)
     examples/sets/unordSetContained.dfy
     examples/sets/unordSetIntersection.dfy
+    examples/sets/ExecuteTRBT.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos-main.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos.dfy
     examples/Linear/CheckListProperties/AllRelated.dfy
@@ -71,6 +72,7 @@ files=(
     src/Stack/SinglyLinkedStackImpl.dfy
     src/OrderedMap/OrderedMapForwardSpec.dfy
     src/OrderedMap/OrderedMapSpec.dfy
+    src/OrderedMap/OrderedMapImplTRBT.dfy
     src/OrderedMultiset/OrderedMultisetForward.dfy
     src/OrderedMultiset/OrderedMultisetSpec.dfy
     src/OrderedSet/OrderedSetForwardSpec.dfy
@@ -80,38 +82,37 @@ files=(
     src/UnorderedMultiset/UnorderedMultisetSpec.dfy
     src/UnorderedSet/UnorderedSetSpec.dfy
 
-    src/tree/layer3/OrderedMapImplTRBT.dfy
-    src/tree/layer4/TRBTree/Base.dfy
-    src/tree/layer4/TRBTree/FlipColors.dfy
-    src/tree/layer4/TRBTree/Restore.dfy
-    src/tree/layer4/TRBTree/Rotate.dfy
-    src/tree/layer4/TRBTree/TRBInsert.dfy
-    src/tree/layer4/TRBTree/MoveRed.dfy
-    src/tree/layer4/TRBTree/RemoveMinMaintainingPrev.dfy
-    src/tree/layer4/TRBTree/Remove.dfy
-    src/tree/layer4/TRBTree/UpdateNext.dfy
-    src/tree/layer4/TRBTree/Iterator.dfy
-    src/tree/layer4/TRBTree/RemoveElemth.dfy
-    src/tree/layer4/TRBTree/RemoveRoot.dfy
-    src/tree/layer4/TRBTree/Find.dfy
-    src/tree/layer4/ThreadedLinkedTree.dfy
-    src/tree/layer4/ThreadedLinkedTree/FlipColors.dfy
-    src/tree/layer4/ThreadedLinkedTree/Restore.dfy
-    src/tree/layer4/ThreadedLinkedTree/Rotate.dfy
-    src/tree/layer4/ThreadedLinkedTree/TRBInsert.dfy
-    src/tree/layer4/ThreadedLinkedTree/MoveRed.dfy
-    src/tree/layer4/ThreadedLinkedTree/RemoveMinMaintainingPrev.dfy
-    src/tree/layer4/ThreadedLinkedTree/UpdateNext.dfy
-    src/tree/layer4/ThreadedLinkedTree/Remove.dfy
-    src/tree/layer4/ThreadedLinkedTree/Min.dfy
-    src/tree/layer4/ThreadedLinkedTree/RemoveRoot.dfy
-    src/tree/layer4/ThreadedLinkedTree/BlackenRoot.dfy
-    src/tree/layer4/ThreadedLinkedTree/ConditionalReddenRoot.dfy
-    src/tree/layer4/ThreadedLinkedTree/Find.dfy
-    src/tree/layer4/TTree.dfy
-    src/tree/layer4/TTNode.dfy
-    src/tree/layer4/Color.dfy
-    examples/sets/ExecuteTRBT.dfy
+    src/DataStructures/ThreadedLinkedTree.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/Base.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/Find.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/FlipColors.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/Iterator.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/MoveRed.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/Remove.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/RemoveElemth.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/RemoveMinMaintainingPrev.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/RemoveRoot.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/Restore.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/Rotate.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/UpdateNext.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/Color.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/Insert.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/BlackenRoot.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/ConditionalReddenRoot.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/Find.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/FlipColors.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/Max.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/Min.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/MoveRed.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/Remove.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/RemoveMinMaintainingPrev.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/RemoveRoot.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/Restore.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/Rotate.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/UpdateNext.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/TTNode.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/TTree.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/Insert.dfy
 )
 
 NINJA_FILE=build.ninja

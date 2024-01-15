@@ -1,6 +1,6 @@
 include "../../src/UnorderedMap/UnorderedMapSpec.dfy"
 include "../../src/OrderedMap/OrderedMapSpec.dfy"
-include "../../src/tree/layer3/OrderedMapImplTRBT.dfy"
+include "../../src/OrderedMap/OrderedMapImplTRBT.dfy"
 
 module PruebaTRBT {
   import opened UnorderedMapSpec
