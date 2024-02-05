@@ -6,7 +6,6 @@ files=(
     #examples/Sets/OrdSetIntersection.dfy  # takes to long (and fails?)
     examples/Sets/UnordSetContained.dfy
     examples/Sets/UnordSetIntersection.dfy
-    examples/Sets/ExecuteTRBT.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos-main.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos.dfy
     examples/Linear/CheckListProperties/AllRelated.dfy
@@ -34,6 +33,7 @@ files=(
     examples/Linear/ReordenandoCola/reordenando-la-cola.dfy
     examples/Linear/TestArrayList.dfy
     examples/Linear/FibPrefix.dfy
+    examples/Maps/ExecuteTreeMap.dfy
     examples/Maps/UnordMapIntersection.dfy
     examples/Multisets/UnordMultisetContained.dfy
     examples/Multisets/UnordMultisetIntersection.dfy
@@ -70,9 +70,10 @@ files=(
     src/Stack/ArrayStackImpl.dfy
     src/Stack/StackSpec.dfy
     src/Stack/SinglyLinkedStackImpl.dfy
+    src/TreeMap/TreeMapImpl.dfy
+    src/TreeMap/TreeMapSpec.dfy
     src/OrderedMap/OrderedMapForwardSpec.dfy
     src/OrderedMap/OrderedMapSpec.dfy
-    src/OrderedMap/OrderedMapImplTRBT.dfy
     src/OrderedMultiset/OrderedMultisetForward.dfy
     src/OrderedMultiset/OrderedMultisetSpec.dfy
     src/OrderedSet/OrderedSetForwardSpec.dfy

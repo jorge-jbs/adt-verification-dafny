@@ -302,6 +302,20 @@ module OrderedMapSpec {
       ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
       ensures forall it | it in Iterators() :: it is OrderedMapIterator
 
+    function Cast(it: UnorderedMapIterator): OrderedMapIterator
+      reads this, Repr()
+      requires Valid()
+      requires it in Iterators()
+      ensures it is OrderedMapIterator
+      ensures it == Cast(it)
+      /*
+    {
+      assert forall it | it in Iterators() :: it is OrderedMapIterator;
+      assert it is OrderedMapIterator;
+      it as OrderedMapIterator
+    }
+    */
+
     method First() returns (it: UnorderedMapIterator)
       modifies this, Repr()
       requires allocated(Repr())

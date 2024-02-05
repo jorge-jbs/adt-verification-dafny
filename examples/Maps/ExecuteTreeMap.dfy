@@ -1,11 +1,11 @@
 include "../../src/UnorderedMap/UnorderedMapSpec.dfy"
 include "../../src/OrderedMap/OrderedMapSpec.dfy"
-include "../../src/OrderedMap/OrderedMapImplTRBT.dfy"
+include "../../src/TreeMap/TreeMapImpl.dfy"
 
-module PruebaTRBT {
+module ExecuteTreeMap {
   import opened UnorderedMapSpec
   import opened OrderedMapSpec
-  import opened OrderedMapImplTRBT
+  import opened TreeMapImpl
 
   method Populate(s: OrderedMap)
     modifies s, s.Repr()
@@ -56,7 +56,7 @@ module PruebaTRBT {
   }
 
   method {:main} Main() {
-    var s: OrderedMap := new OrderedMapImplTRBT();
+    var s: OrderedMap := new TreeMapImpl();
     Populate(s);
     Print(s);
   }
