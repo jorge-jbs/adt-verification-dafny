@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 
 files=(
-    #examples/sets/ordSetContained.dfy  # time out
-    #examples/sets/ordSetForwardContained.dfy  # time out
-    #examples/sets/ordSetIntersection.dfy  # takes to long (and fails?)
-    examples/sets/unordSetContained.dfy
-    examples/sets/unordSetIntersection.dfy
-    examples/sets/ExecuteTRBT.dfy
+    #examples/Sets/OrdSetContained.dfy  # time out
+    #examples/Sets/OrdSetForwardContained.dfy  # time out
+    #examples/Sets/OrdSetIntersection.dfy  # takes to long (and fails?)
+    examples/Sets/UnordSetContained.dfy
+    examples/Sets/UnordSetIntersection.dfy
+    examples/Sets/ExecuteTRBT.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos-main.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos.dfy
     examples/Linear/CheckListProperties/AllRelated.dfy
@@ -35,8 +35,8 @@ files=(
     examples/Linear/TestArrayList.dfy
     examples/Linear/FibPrefix.dfy
     examples/Maps/UnordMapIntersection.dfy
-    examples/Multisets/unordMultiSetContained.dfy
-    examples/Multisets/unordMultisetIntersection.dfy
+    examples/Multisets/UnordMultisetContained.dfy
+    examples/Multisets/UnordMultisetIntersection.dfy
     src/ADT.dfy
     src/ArrayList/ArrayListSpec.dfy
     src/ArrayList/ArrayListImpl.dfy
