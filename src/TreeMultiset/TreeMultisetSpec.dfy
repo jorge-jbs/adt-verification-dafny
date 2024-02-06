@@ -45,7 +45,7 @@ module TreeMultisetSpec {
         )
         && (
           if (it.HasPeek?() && it.Peek?() < x) then
-          //          if (it.HasPeek?() && it.Peek?() <= x) then //another option, insert at the end
+          // if (it.HasPeek?() && it.Peek?() <= x) then //another option, insert at the end
 
             && it.Traversed() == old(it.Traversed())
             && |it.Traversed()| == |old(it.Traversed())|
@@ -181,11 +181,13 @@ module TreeMultisetSpec {
 
       ensures
         var x := old(mid.Peek?());
+        var mid' := old((mid as OrderedMultisetIterator).Index());
         forall it | it in old(Iterators())
             && old(it.Valid())
             && it is OrderedMultisetIterator
+            && var it' := it as OrderedMultisetIterator;
             //&& (old(it.HasPeek?()) ==> old(it.Peek?()) != x)
-            && old((mid as OrderedMultisetIterator).Index()) != old((it as OrderedMultisetIterator).Index())
+            && mid' != old(it'.Index())
           :: it is OrderedMultisetIterator
           && it.Valid()
           && it.Parent() == old(it.Parent())
@@ -193,13 +195,13 @@ module TreeMultisetSpec {
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
           && var it' := it as OrderedMultisetIterator;
           && (
-            if x in old(Model()) && ((it.HasPeek?() && x < it.Peek?()) || old(it'.Index()) == old(|Model()|)) then
+            if mid' < old(it'.Index()) then
               it'.Index() == old(it'.Index()) - 1
             else
               it'.Index() == old(it'.Index()) 
           )
           && (
-            if x in old(Model()) && (it.HasPeek?() ==> x < it.Peek?()) then
+            if mid' < old(it'.Index()) then
               && it'.Traversed() == old(it'.Traversed()) - multiset{x}
               && |it'.Traversed()| == |old(it'.Traversed())| - 1
             else

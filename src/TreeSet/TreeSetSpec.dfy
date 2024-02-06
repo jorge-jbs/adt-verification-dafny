@@ -184,13 +184,13 @@ module TreeSetSpec {
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
           && var it' := it as OrderedSetIterator;
           && (
-            if x in old(Model()) && ((it.HasPeek?() && x < it.Peek?()) || old(it'.Index()) == old(|Model()|)) then
+            if ((it.HasPeek?() && x < it.Peek?()) || old(it'.Index()) == old(|Model()|)) then
               it'.Index() == old(it'.Index()) - 1
             else
               it'.Index() == old(it'.Index())
           )
           && (
-            if x in old(Model()) && (it.HasPeek?() ==> x < it.Peek?()) then
+            if (it.HasPeek?() ==> x < it.Peek?()) then
               && it'.Traversed() == old(it'.Traversed()) - {x}
               && |it'.Traversed()| == |old(it'.Traversed())| - 1
             else
