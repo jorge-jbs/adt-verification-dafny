@@ -36,10 +36,7 @@ module TreeSetSpec {
         && it.Valid()
         && it.Parent() == old(it.Parent())
         && (it.HasPeek?() <==> old(it.HasPeek?()))
-        && (
-          it.HasPeek?() && (x !in old(Model()) || x != it.Peek?()) ==>
-            it.Peek?() == old(it.Peek?())
-        )
+        && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
         && (
           if x in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
             it'.Index() == old(it'.Index())
@@ -131,10 +128,7 @@ module TreeSetSpec {
         && it.Valid()
         && it.Parent() == old(it.Parent())
         && (it.HasPeek?() <==> old(it.HasPeek?()))
-        && (
-          it.HasPeek?() && (x !in old(Model()) || x != it.Peek?()) ==>
-            it.Peek?() == old(it.Peek?())
-        )
+        && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
         && (
           if x in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
             it'.Index() == old(it'.Index())

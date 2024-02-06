@@ -1,12 +1,12 @@
 include "../UnorderedMultiset/UnorderedMultisetSpec.dfy"
 include "../Collections/OrderedMultisetUtils.dfy"
 
-module OrderedMultsetSpec {
+module OrderedMultisetSpec {
   import opened KeyValue
   import opened UnorderedMultisetSpec
   import opened OrderedMultisetUtils
 
-  trait OrderedMultisetIterator extends UnorderedMultisetIterator {
+  trait {:termination false} OrderedMultisetIterator extends UnorderedMultisetIterator {
     ghost function Parent(): UnorderedMultiset
       reads this
       ensures Parent() is OrderedMultiset
@@ -239,7 +239,7 @@ module OrderedMultsetSpec {
                  (it as OrderedMultisetIterator).Index() == old((it as OrderedMultisetIterator).Index()) )
   }
 
-  trait OrderedMultiset extends UnorderedMultiset {
+  trait {:termination false} OrderedMultiset extends UnorderedMultiset {
     //Novelties respect UnorderedSet
     // Last iterator method
     // Find knows the traversed elements
