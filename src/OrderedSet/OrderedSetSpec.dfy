@@ -129,26 +129,25 @@ module OrderedSetSpec {
       ensures |Parent().Model()| == old(|Parent().Model()|)
 
       ensures Index() == old(Index())//NEW
-      ensures (sameTraversed(); true)
-      //ensures Traversed() == old(Traversed())     //commented
-      //ensures |Traversed()| == old(|Traversed()|) //commented
-      //old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?()) //commented
+      
+      //ensures (sameTraversed(); true)
+      ensures Traversed() == old(Traversed())     
+      ensures |Traversed()| == old(|Traversed()|) 
+      ensures old(HasPeek?()) ==> HasPeek?() && Peek?() == old(Peek?()) 
       ensures b == HasPeek?()
 
       ensures Parent().Iterators() >= old(Parent().Iterators())
-      //ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      //          && it.Valid()
-      //          && it.Parent() == old(it.Parent())
-      //          && it.Traversed() == old(it.Traversed())      //commented
-      //          && |it.Traversed()| == old(|it.Traversed()|)  //commented
-      //          && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))//commented
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())      
+                && |it.Traversed()| == old(|it.Traversed()|) 
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) :://NEW
                 && it is OrderedSetIterator
-                && it.Valid() 
-                && it.Parent() == old(it.Parent()) 
                 && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
-                && ((it as OrderedSetIterator).sameTraversed(); true) 
+      //          && ((it as OrderedSetIterator).sameTraversed(); true) 
 
     method Next()
       modifies this, Parent(), Parent().Repr()
@@ -166,19 +165,20 @@ module OrderedSetSpec {
       ensures Parent().Model() == old(Parent().Model())
       ensures |Parent().Model()| == old(|Parent().Model()|)
 
-      //ensures Traversed() == {old(Peek?())}+old(Traversed())    //commented
-      //ensures |Traversed()| == 1 + |old(Traversed())|           //commented
+      ensures Traversed() == {old(Peek?())} + old(Traversed())   
+      ensures |Traversed()| == 1 + |old(Traversed())|           
+      
       ensures  Index() == old(Index()) + 1 //NEW
-      ensures assert Traversed() == {old(Peek?())}+old(Traversed()) by {nextTraversed();} Traversed() == {old(Peek?())}+old(Traversed()) 
+      //ensures assert Traversed() == {old(Peek?())}+old(Traversed()) by {nextTraversed();} Traversed() == {old(Peek?())}+old(Traversed()) 
       //ensures (nextTraversed(); true)
 
       ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
                 && it.Valid()
                 && it.Parent() == old(it.Parent())
-                //&& (it != this ==> //it.Traversed() == old(it.Traversed())        //commented
-                                   //&& |it.Traversed()| == old(|it.Traversed()|) //commented
-                                //   && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))) //commented
+                && (it != this ==> it.Traversed() == old(it.Traversed())        
+                                   && |it.Traversed()| == old(|it.Traversed()|) 
+                                   && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))) 
 
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this:://NEW
                 && it is OrderedSetIterator
@@ -202,26 +202,24 @@ module OrderedSetSpec {
 
       ensures Index() == old(Index()) //NEW
 
-      //ensures Traversed() == old(Traversed())       //commented
-      //ensures |Traversed()| == old(|Traversed()|)   //commented
+      ensures Traversed() == old(Traversed())       
+      ensures |Traversed()| == old(|Traversed()|)   
 
-      //ensures HasPeek?() && Peek?()==old(Peek?()) // no debería ser necesario pero lo es //commented
+      ensures HasPeek?() && Peek?()==old(Peek?()) // no debería ser necesario pero lo es 
       ensures p == Peek?()
 
       ensures Parent().Iterators() >= old(Parent().Iterators())
-      //ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      //          && it.Valid()
-      //          && it.Parent() == old(it.Parent())
-              //  && it.Traversed() == old(it.Traversed())        //commented
-              //  && |it.Traversed()| == old(|it.Traversed()|)    //commented
-              //  && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())        
+                && |it.Traversed()| == old(|it.Traversed()|)    
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) :://NEW
                 && it is OrderedSetIterator
-                && it.Valid() 
-                && it.Parent() == old(it.Parent()) 
                 && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
-                && ((it as OrderedSetIterator).sameTraversed(); true) 
+      //          && ((it as OrderedSetIterator).sameTraversed(); true) 
 
 
 
@@ -247,13 +245,13 @@ module OrderedSetSpec {
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
                 && it.Valid()
                 && it.Parent() == old(it.Parent())
-               // && (it != this ==> // it.Traversed() == old(it.Traversed())         //commented
-                                   // && |it.Traversed()| == old(|it.Traversed()|)  //commented
-                                  // && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))) //commented
+                && (it != this ==>  it.Traversed() == old(it.Traversed())         
+                                    && |it.Traversed()| == old(|it.Traversed()|)  
+                                    && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))) 
 
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) &&  it != this:://NEW
                 (it is OrderedSetIterator &&
-                 (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()) )
+                (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()) )
 
     method Copy() returns (it: UnorderedSetIterator)
       modifies this, Parent(), Parent().Repr()
@@ -273,37 +271,35 @@ module OrderedSetSpec {
 
       ensures Index() == old(Index()) //NEW
 
-      //ensures Traversed() == old(Traversed())     //commented
-      //ensures |Traversed()| == old(|Traversed()|) //commented
-      //ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?()) //commented
+      ensures Traversed() == old(Traversed())     
+      ensures |Traversed()| == old(|Traversed()|) 
+      ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?()) 
 
 
       ensures it.Valid()
       ensures Parent() == it.Parent()
       ensures it is OrderedSetIterator
       ensures  (it as OrderedSetIterator).Index() == Index()
-      //ensures Traversed() == it.Traversed()       //commented
-      //ensures |Traversed()| == |it.Traversed()|   //commented
-      //ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
+      ensures Traversed() == it.Traversed()       
+      ensures |Traversed()| == |it.Traversed()|   
+      ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
 
       ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
-      //ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-      //          && it.Valid()
-      //          && it.Parent() == old(it.Parent())
-               // && it.Traversed() == old(it.Traversed())      //commented
-               // && |it.Traversed()| == old(|it.Traversed()|)  //commented
-            //    && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())      
+                && |it.Traversed()| == old(|it.Traversed()|)  
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
     ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) :://NEW
                 && it is OrderedSetIterator
-                && it.Valid() 
-                && it.Parent() == old(it.Parent()) 
                 && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
-                && ((it as OrderedSetIterator).sameTraversed(); true) 
+    //          && ((it as OrderedSetIterator).sameTraversed(); true) 
 
   }
 
-  trait OrderedSet extends UnorderedSet{
+  trait {:termination false} OrderedSet extends UnorderedSet{
 
 
     //Novelties respect UnorderedSet
@@ -328,20 +324,17 @@ module OrderedSetSpec {
       ensures b == Empty?()
 
       ensures Iterators() >= old(Iterators())
-     // ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-     //           && it.Valid()
-     //           && it.Parent() == old(it.Parent())
-                
-                //&& it.Traversed() == old(it.Traversed())      //commented
-                //&& |it.Traversed()| == old(|it.Traversed()|)  //commented
-      //          && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())) //commented
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())        
+                && it.Traversed() == old(it.Traversed())      
+                && |it.Traversed()| == old(|it.Traversed()|)  
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?() == old(it.Peek?())) 
 
       ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
                 && it is OrderedSetIterator
-                && it.Valid() 
-                && it.Parent() == old(it.Parent()) 
                 && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
-                && ((it as OrderedSetIterator).sameTraversed(); true) 
+      //        && ((it as OrderedSetIterator).sameTraversed(); true) 
 
 
     method Size() returns (s: nat)
@@ -357,19 +350,19 @@ module OrderedSetSpec {
       ensures s == |Model()|
 
       ensures Iterators() >= old(Iterators())
-      //ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      //          && it.Valid()
-      //          && it.Parent() == old(it.Parent())
-                //&& it.Traversed() == old(it.Traversed())        //commented
-                //&& |it.Traversed()| == old(|it.Traversed()|)    //commented
-      //          && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())) //commented
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())        
+                && |it.Traversed()| == old(|it.Traversed()|)    
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?() == old(it.Peek?())) 
 
             ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
                 && it is OrderedSetIterator
                 && it.Valid() 
                 && it.Parent() == old(it.Parent()) 
                 && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
-                && ((it as OrderedSetIterator).sameTraversed(); true) 
+      //        && ((it as OrderedSetIterator).sameTraversed(); true) 
 
 
     ghost function Iterators(): set<UnorderedSetIterator>
@@ -397,19 +390,17 @@ module OrderedSetSpec {
       ensures (it as OrderedSetIterator).Index() == 0
 
       ensures Iterators() >= {it} + old(Iterators())
-      //ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      //          && it.Valid()
-      //          && it.Parent() == old(it.Parent())
-                //&& it.Traversed() == old(it.Traversed())      //commented
-                //&& |it.Traversed()| == old(|it.Traversed()|)  //commented
-                //&& (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())) //commented
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())      
+                && |it.Traversed()| == old(|it.Traversed()|)  
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())) 
 
       ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
                 && it is OrderedSetIterator
-                && it.Valid() 
-                && it.Parent() == old(it.Parent()) 
                 && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
-                && ((it as OrderedSetIterator).sameTraversed(); true) 
+      //        && ((it as OrderedSetIterator).sameTraversed(); true) 
 
 
     method Last() returns (it: OrderedSetIterator)//iterator to the last element
@@ -430,19 +421,17 @@ module OrderedSetSpec {
       ensures it.Index() ==  |Model()|-1
 
       ensures Iterators() >= {it} + old(Iterators())
-      //ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      //          && it.Valid()
-      //          && it.Parent() == old(it.Parent())
-                //&& it.Traversed() == old(it.Traversed())      //commented
-                //&& |it.Traversed()| == old(|it.Traversed()|)  //commented
-                //&& (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())) //commented
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())      
+                && |it.Traversed()| == old(|it.Traversed()|)  
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?() == old(it.Peek?())) 
 
       ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
                 && it is OrderedSetIterator
-                && it.Valid() 
-                && it.Parent() == old(it.Parent()) 
                 && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
-                && ((it as OrderedSetIterator).sameTraversed(); true) 
+      //          && ((it as OrderedSetIterator).sameTraversed(); true) 
 
 
     method Contains(x:K) returns (b:bool)
@@ -458,19 +447,17 @@ module OrderedSetSpec {
       ensures b == (x in Model())
 
       ensures Iterators() >= old(Iterators())
-      //ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      //          && it.Valid()
-      //          && it.Parent() == old(it.Parent())
-                //&& it.Traversed() == old(it.Traversed())      //commented
-                //&& |it.Traversed()| == old(|it.Traversed()|)  //commented
-      //          && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())) //commented
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())      
+                && |it.Traversed()| == old(|it.Traversed()|)  
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?() == old(it.Peek?())) 
 
       ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
                 && it is OrderedSetIterator
-                && it.Valid() 
-                && it.Parent() == old(it.Parent()) 
                 && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
-                && ((it as OrderedSetIterator).sameTraversed(); true) 
+      //          && ((it as OrderedSetIterator).sameTraversed(); true) 
 
 
 
@@ -492,25 +479,23 @@ module OrderedSetSpec {
       ensures fresh(newt)
       ensures newt.Valid() && newt.Parent()==this
       ensures x in old(Model()) ==> newt.HasPeek?() && newt.Peek?() == x
-      //ensures x !in old(Model()) ==> newt.Traversed() == Model() && |newt.Traversed()| == |Model()|
+      ensures x !in old(Model()) ==> newt.Traversed() == Model() && |newt.Traversed()| == |Model()|
 
       ensures x in old(Model()) ==> (newt as OrderedSetIterator).Index() == |smaller(Model(),x)| //NEW
       ensures x !in old(Model()) ==> (newt as OrderedSetIterator).Index() == |Model()|
 
-      ensures Iterators() >= {newt}+old(Iterators())
-      //ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-      //          && it.Valid()
-      //          && it.Parent() == old(it.Parent())
-                //&& it.Traversed() == old(it.Traversed())        //commented
-                //&& |it.Traversed()| == old(|it.Traversed()|)    //commented
-                //&& (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())) //commented
+      ensures Iterators() >= {newt} + old(Iterators())
+      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
+                && it.Valid()
+                && it.Parent() == old(it.Parent())
+                && it.Traversed() == old(it.Traversed())       
+                && |it.Traversed()| == old(|it.Traversed()|)    
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())) 
 
       ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
                 && it is OrderedSetIterator
-                && it.Valid() 
-                && it.Parent() == old(it.Parent()) 
                 && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
-                && ((it as OrderedSetIterator).sameTraversed(); true) 
+      //          && ((it as OrderedSetIterator).sameTraversed(); true) 
 
     method Insert(mid: UnorderedSetIterator, x: K) returns (newt:UnorderedSetIterator)
       modifies this, Repr()
@@ -532,7 +517,7 @@ module OrderedSetSpec {
       ensures newt is OrderedSetIterator
       ensures fresh(newt)
       ensures newt.Valid() && newt.Parent()==this
-      //ensures newt.HasPeek?() && newt.Peek?()==x
+      ensures newt.HasPeek?() && newt.Peek?()==x
 
       ensures (newt as OrderedSetIterator).Index() ==  |smaller(Model(),x)|//NEW
 
@@ -560,8 +545,8 @@ module OrderedSetSpec {
       ensures next is OrderedSetIterator
       ensures fresh(next)
       ensures next.Valid() && next.Parent()==this
-      //ensures next.Traversed()==old(mid.Traversed())      //commented
-      //ensures |next.Traversed()| == old(|mid.Traversed()|)//commented
+      ensures next.Traversed()==old(mid.Traversed())      
+      ensures |next.Traversed()| == old(|mid.Traversed()|)
 
       ensures mid is OrderedSetIterator && (next as OrderedSetIterator).Index() == old((mid as OrderedSetIterator).Index())
 
