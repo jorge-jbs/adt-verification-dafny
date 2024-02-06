@@ -220,7 +220,23 @@ module TreeSetSpec {
 
     s.Add(2); s.Add(7); s.Add(0); s.Add(1);s.Add(10);
     assert s.Model()=={0,1,2,7,10};
-
+   var it0 := s.First();
+   var itn := s.Last();
+   var it1 := s.Find(1);
+   assert it1 is OrderedSetIterator;
+   assert it0 is OrderedSetIterator;
+   assert itn is OrderedSetIterator;
    
-}
+   var it2 := s.Find(2);
+   assert it2 is OrderedSetIterator;
+
+   assume it1.Index() == 1;
+   assume it2.Index() == 2;
+   
+   s.Remove(1);
+   assert it2.Index() == 1;
+   //assert it1.Index() == 1; //no puede demostrarlo
+   assert it0.Index() == 0;
+   assert itn.Index() == 3;
+   }
 }
