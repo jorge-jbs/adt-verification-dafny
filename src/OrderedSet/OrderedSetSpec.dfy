@@ -419,13 +419,13 @@ module OrderedSetSpec {
       ensures x in old(Model()) ==> (newt as OrderedSetIterator).Index() == |smaller(Model(),x)| //NEW
       ensures x !in old(Model()) ==> (newt as OrderedSetIterator).Index() == |Model()|
 
-      ensures Iterators() >= {newt}+old(Iterators())
+      ensures Iterators() >= {newt} + old(Iterators())
       ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
                 && it.Valid()
                 && it.Parent() == old(it.Parent())
-                && it.Traversed() == old(it.Traversed())
-                && |it.Traversed()| == old(|it.Traversed()|)
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+                && it.Traversed() == old(it.Traversed())       
+                && |it.Traversed()| == old(|it.Traversed()|)    
+                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())) 
 
       ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
                 && it is OrderedSetIterator

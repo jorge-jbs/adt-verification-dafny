@@ -51,8 +51,8 @@ ensures s1.Iterators()>=old(s1.Iterators()) && s2.Iterators()>=old(s2.Iterators(
    invariant it1.Traversed() <= s1.Model() && it2.Traversed() <= s2.Model() 
    invariant 0 <= it1.Index() <= |s1.Model()| && 0 <= it2.Index() <= |s2.Model()|
    //invariant !it2.HasNext()==> b
-   invariant b ==> it1.Traversed() <= it2.Traversed()//commented
-   invariant !b ==> !(it1.Traversed() <= s2.Model())//commented
+   invariant b ==> it1.Traversed() <= it2.Traversed()
+   invariant !b ==> !(it1.Traversed() <= s2.Model())
    invariant it1.HasPeek?() ==> it1.Peek?() !in it2.Traversed()
    invariant forall u | u in it2.Traversed() && it1.Traversed() < s1.Model() :: u < it1.Peek?()
 
@@ -68,8 +68,7 @@ ensures s1.Iterators()>=old(s1.Iterators()) && s2.Iterators()>=old(s2.Iterators(
   if (it1Peek == it2Peek)
   { 
         it1.Next(); it2.Next(); 
-        it1.nextTraversed@bodyLoop();it2.nextTraversed@bodyLoop();
-   
+       
   }
   else if (it1Peek <it2Peek)
    { 
@@ -78,11 +77,9 @@ ensures s1.Iterators()>=old(s1.Iterators()) && s2.Iterators()>=old(s2.Iterators(
       assert forall z | z in s2.Model()-it2.Traversed()-{it2.Peek?()} :: it1.Peek?() < it2.Peek?() < z;
      b:=false;  
      it1.Next();
-     it1.nextTraversed@bodyLoop();
     }
   else { 
     it2.Next();
-    it2.nextTraversed@bodyLoop();
     }
   it1HasPeek := it1.HasPeek();
   it2HasPeek := it2.HasPeek();
