@@ -94,9 +94,41 @@ module TreeMultisetSpec {
               && it'.Traversed() == old(it'.Traversed())
               && |it'.Traversed()| == |old(it'.Traversed())|
           )
-      //TO DO: que pasa con los que son iguales a x? Cual eliminamos? 
-      //El primero creo que es razonable, ¿como expresarlo?
-  
+
+      ensures
+          forall it | it in old(Iterators())
+            && old(it.Valid())
+            && old(it.HasPeek?()) 
+            && old(it.Peek?()) == x 
+            && it is OrderedMultisetIterator
+            && var it' := it as OrderedMultisetIterator;
+            && var ssmaller := |msmaller(old(Model()),x)|;
+            && x in old(Model())  ==> old(it'.Index()) !=  ssmaller
+            //we remove the first appearance
+            ::  
+          && it.Valid()
+          && it.Parent() == old(it.Parent())
+          && (it.HasPeek?() <==> old(it.HasPeek?()))
+          && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+          && var it' := it as OrderedMultisetIterator;
+          && var ssmaller := |msmaller(old(Model()),x)|;
+            (
+              if x in old(Model()) && old(it'.Index()) > ssmaller then
+                it'.Index() == old(it'.Index()) - 1
+              else
+                it'.Index() == old(it'.Index())
+            )
+          && 
+            ( 
+              if x in old(Model()) && (old(it'.Index()) > ssmaller || old(it'.Index()) == -1) then
+                && it'.Traversed() == old(it'.Traversed()) - multiset{x}
+                && |it'.Traversed()| == |old(it'.Traversed())| - 1
+              else
+                && it'.Traversed() == old(it'.Traversed())
+                && |it'.Traversed()| == |old(it'.Traversed())|
+            )
+
+               
     //insertion after the strictly smaller elements
     method Insert(mid: UnorderedMultisetIterator, x: K) returns (newt:UnorderedMultisetIterator)
       modifies this, Repr()
@@ -201,7 +233,7 @@ module TreeMultisetSpec {
               it'.Index() == old(it'.Index()) 
           )
           && (
-            if mid' < old(it'.Index()) then
+            if mid' < old(it'.Index()) || old(it'.Index()) == -1 then
               && it'.Traversed() == old(it'.Traversed()) - multiset{x}
               && |it'.Traversed()| == |old(it'.Traversed())| - 1
             else
