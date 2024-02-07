@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 
 files=(
-    #examples/Sets/OrdSetContained.dfy  # time out
-    #examples/Sets/OrdSetForwardContained.dfy  # time out
-    #examples/Sets/OrdSetIntersection.dfy  # takes to long (and fails?)
-    examples/Sets/UnordSetContained.dfy
-    examples/Sets/UnordSetIntersection.dfy
+    ##examples/Sets/OrdSetContained.dfy  # time out
+    ##examples/Sets/OrdSetForwardContained.dfy  # time out
+    ##examples/Sets/OrdSetIntersection.dfy  # takes to long (and fails?)
+    #examples/Sets/UnordSetContained.dfy
+    #examples/Sets/UnordSetIntersection.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos-main.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos.dfy
     examples/Linear/CheckListProperties/AllRelated.dfy
@@ -79,6 +79,7 @@ files=(
     src/OrderedSet/OrderedSetForwardSpec.dfy
     #src/OrderedSet/OrderedSetL.dfy  # fails
     src/OrderedSet/OrderedSetSpec.dfy
+    src/TreeSet/TreeSetImpl.dfy
     src/UnorderedMap/UnorderedMapSpec.dfy
     src/UnorderedMultiset/UnorderedMultisetSpec.dfy
     src/UnorderedSet/UnorderedSetSpec.dfy

@@ -443,8 +443,9 @@ module TreeMapImpl {
       toMapRec(tree.Model())
     }
 
-    constructor()
+    constructor ()
       ensures Valid()
+      ensures Model() == map[]
       ensures fresh(Repr())
     {
       ReprDepth := 1;
@@ -562,6 +563,7 @@ module TreeMapImpl {
       ensures |Model()| == old(|Model()|)
 
       ensures it is OrderedMapIterator
+      ensures it is TreeMapIteratorImpl
       ensures fresh(it)
       ensures it.Valid()
       ensures it.Parent() == this

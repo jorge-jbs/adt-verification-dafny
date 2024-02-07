@@ -34,8 +34,7 @@ module UnorderedSetSpec {
       ensures HasPeek?() ==> Traversed() < Parent().Model() &&  |Traversed()| < |Parent().Model()|
       ensures !HasPeek?() ==> Traversed() == Parent().Model() && |Traversed()| == |Parent().Model()|
 
-
-    method HasPeek() returns (b:bool)
+    method HasPeek() returns (b: bool)
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -49,9 +48,9 @@ module UnorderedSetSpec {
       ensures Parent() == old(Parent())
       ensures Parent().Model() == old(Parent().Model())
       ensures |Parent().Model()| == old(|Parent().Model()|)
+
       ensures Traversed() == old(Traversed())
       ensures |Traversed()| == old(|Traversed()|)
-
       ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
       ensures b == HasPeek?()
 
@@ -79,7 +78,7 @@ module UnorderedSetSpec {
       ensures Parent().Model() == old(Parent().Model())
       ensures |Parent().Model()| == old(|Parent().Model()|)
 
-      ensures Traversed() == {old(Peek?())}+old(Traversed())
+      ensures Traversed() == {old(Peek?())} + old(Traversed())
       ensures |Traversed()| == 1 + old(|Traversed()|)
 
       ensures Parent().Iterators() >= old(Parent().Iterators())
@@ -91,7 +90,7 @@ module UnorderedSetSpec {
                                    && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
 
 
-    method Peek() returns (p:K)
+    method Peek() returns (p: K)
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -183,7 +182,6 @@ module UnorderedSetSpec {
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-
     method Size() returns (s: nat)
       modifies this, Repr()
       requires allocated(Repr())
@@ -203,7 +201,6 @@ module UnorderedSetSpec {
                 && it.Traversed() == old(it.Traversed())
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
-
 
     ghost function Iterators(): set<UnorderedSetIterator>
       reads this, Repr()
@@ -234,7 +231,7 @@ module UnorderedSetSpec {
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-    method Contains(x:K) returns (b:bool)
+    method Contains(x: K) returns (b: bool)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -254,8 +251,7 @@ module UnorderedSetSpec {
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-
-    method Add(x:K)
+    method Add(x: K)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -269,7 +265,7 @@ module UnorderedSetSpec {
 
       ensures Iterators() >= old(Iterators())
 
-    method Remove(x:K)
+    method Remove(x: K)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -283,7 +279,7 @@ module UnorderedSetSpec {
 
       ensures Iterators() >= old(Iterators())
 
-    method Find(x:K) returns (newt:UnorderedSetIterator)
+    method Find(x: K) returns (newt: UnorderedSetIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -308,7 +304,7 @@ module UnorderedSetSpec {
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
 
-    method Insert(mid: UnorderedSetIterator, x: K) returns (newt:UnorderedSetIterator)
+    method Insert(mid: UnorderedSetIterator, x: K) returns (newt: UnorderedSetIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -331,7 +327,7 @@ module UnorderedSetSpec {
       ensures Iterators() >= {newt}+old(Iterators())
     //points either to the inserted elemento or to the already existing one
 
-    method Erase(mid:UnorderedSetIterator) returns (next: UnorderedSetIterator)
+    method Erase(mid: UnorderedSetIterator) returns (next: UnorderedSetIterator)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
@@ -352,10 +348,9 @@ module UnorderedSetSpec {
       ensures |next.Traversed()| == old(|mid.Traversed()|)
 
       ensures Iterators() >= {next}+old(Iterators())
-
   }
 
-  method {:verify true} main(s:UnorderedSet)
+  method {:verify true} main(s: UnorderedSet)
     modifies s, s.Repr()
     requires allocated(s.Repr())
     ensures fresh(s.Repr()-old(s.Repr()))
@@ -390,7 +385,7 @@ module UnorderedSetSpec {
     assert it.Traversed() == s.Model();
   }
 
-  method {:verify false} {:timeLimitMultiplier 100} otry(s:UnorderedSet)
+  method {:verify false} {:timeLimitMultiplier 100} otry(s: UnorderedSet)
     modifies s, s.Repr()
     requires allocated(s.Repr())
     ensures fresh(s.Repr()-old(s.Repr()))
