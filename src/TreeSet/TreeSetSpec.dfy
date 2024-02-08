@@ -11,11 +11,7 @@ module TreeSetSpec {
   import opened OrderedSetSpec
   import opened OrderedSetUtils
 
-  
-
   trait {:termination false} TreeSet extends OrderedSet {
-
-    
     method Add(x:K)
       modifies this, Repr()
       requires allocated(Repr())
@@ -30,8 +26,8 @@ module TreeSetSpec {
 
       ensures Iterators() >= old(Iterators())
 
-      ensures forall it <- old(Iterators()) | old(it.Valid())
-        :: it is OrderedSetIterator
+      ensures forall it <- old(Iterators()) | old(it.Valid()) ::
+        && it is OrderedSetIterator
         && var it' := it as OrderedSetIterator;
         && it.Valid()
         && it.Parent() == old(it.Parent())
@@ -61,39 +57,37 @@ module TreeSetSpec {
       requires Valid()
       ensures Valid()
       ensures Model() == old(Model()) - {x}
-      ensures if (x in old(Model())) then 
+      ensures if (x in old(Model())) then
                 |Model()| == old(|Model()|) - 1
-              else 
+              else
                 |Model()| == old(|Model()|)
 
       ensures Iterators() >= old(Iterators())
-      
+
       ensures
         forall it | it in old(Iterators())
             && old(it.Valid())
-            && (old(it.HasPeek?()) ==> old(it.Peek?()) != x)
-          :: it is OrderedSetIterator
+            && (old(it.HasPeek?()) ==> old(it.Peek?()) != x) ::
+          && it is OrderedSetIterator
           && it.Valid()
           && it.Parent() == old(it.Parent())
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
           && var it' := it as OrderedSetIterator;
           && (
-            if x in old(Model()) && ((it.HasPeek?() && x < it.Peek?()) || old(it'.Index()) == old(|Model()|)) then
-              it'.Index() == old(it'.Index()) - 1
-            else
+            if x !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
               it'.Index() == old(it'.Index())
+            else
+              it'.Index() == old(it'.Index()) - 1
           )
           && (
-            if x in old(Model()) && (it.HasPeek?() ==> x < it.Peek?()) then
-              && it'.Traversed() == old(it'.Traversed()) - {x}
-              && |it'.Traversed()| == |old(it'.Traversed())| - 1
+            if x !in old(Model()) || (it.HasPeek?() && it.Peek?() < x) then
+                && it'.Traversed() == old(it'.Traversed())
+                && |it'.Traversed()| == |old(it'.Traversed())|
             else
-              && it'.Traversed() == old(it'.Traversed())
-              && |it'.Traversed()| == |old(it'.Traversed())|
+                && it'.Traversed() == old(it'.Traversed()) - {x}
+                && |it'.Traversed()| == |old(it'.Traversed())| - 1
           )
-
-
 
     method Insert(mid: UnorderedSetIterator, x: K) returns (newt:UnorderedSetIterator)
       modifies this, Repr()
@@ -122,8 +116,8 @@ module TreeSetSpec {
       ensures Iterators() >= {newt} + old(Iterators())
 
       //specific invalidation policy
-      ensures forall it <- old(Iterators()) | old(it.Valid())  
-        :: it is OrderedSetIterator
+      ensures forall it <- old(Iterators()) | old(it.Valid()) ::
+        && it is OrderedSetIterator
         && var it' := it as OrderedSetIterator;
         && it.Valid()
         && it.Parent() == old(it.Parent())
@@ -165,7 +159,7 @@ module TreeSetSpec {
       ensures next is OrderedSetIterator
       ensures fresh(next)
       ensures next.Valid() && next.Parent()==this
-      ensures next.Traversed()==old(mid.Traversed())      
+      ensures next.Traversed()==old(mid.Traversed())
       ensures |next.Traversed()| == old(|mid.Traversed()|)
 
       ensures mid is OrderedSetIterator && (next as OrderedSetIterator).Index() == old((mid as OrderedSetIterator).Index())
@@ -176,31 +170,28 @@ module TreeSetSpec {
         var x := old(mid.Peek?());
         forall it | it in old(Iterators())
             && old(it.Valid())
-            && (old(it.HasPeek?()) ==> old(it.Peek?()) != x)
-          :: it is OrderedSetIterator
+            && (old(it.HasPeek?()) ==> old(it.Peek?()) != x) ::
+          && it is OrderedSetIterator
           && it.Valid()
           && it.Parent() == old(it.Parent())
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
           && var it' := it as OrderedSetIterator;
           && (
-            if ((it.HasPeek?() && x < it.Peek?()) || old(it'.Index()) == old(|Model()|)) then
-              it'.Index() == old(it'.Index()) - 1
-            else
+            if (it.HasPeek?() ==> it.Peek?() < x) && old(it'.Index()) != old(|Model()|) then
               it'.Index() == old(it'.Index())
+            else
+              it'.Index() == old(it'.Index()) - 1
           )
           && (
-            if (it.HasPeek?() ==> x < it.Peek?()) then
-              && it'.Traversed() == old(it'.Traversed()) - {x}
-              && |it'.Traversed()| == |old(it'.Traversed())| - 1
-            else
+            if it.HasPeek?() ==> it.Peek?() < x then
               && it'.Traversed() == old(it'.Traversed())
               && |it'.Traversed()| == |old(it'.Traversed())|
+            else
+              && it'.Traversed() == old(it'.Traversed()) - {x}
+              && |it'.Traversed()| == |old(it'.Traversed())| - 1
           )
-
   }
-
-
 
   method {:verify true} {:timeLimitMultiplier 100} try(s:TreeSet)
     modifies s, s.Repr()
@@ -210,27 +201,25 @@ module TreeSetSpec {
     ensures fresh(s.Repr()-old(s.Repr()))
     ensures  allocated(s.Repr())
   {
-
-
     s.Add(2); s.Add(7); s.Add(0); s.Add(1);s.Add(10);
     assert s.Model()=={0,1,2,7,10};
-   var it0 := s.First();
-   var itn := s.Last();
-   var it1 := s.Find(1);
-   assert it1 is OrderedSetIterator;
-   assert it0 is OrderedSetIterator;
-   assert itn is OrderedSetIterator;
-   
-   var it2 := s.Find(2);
-   assert it2 is OrderedSetIterator;
+    var it0 := s.First();
+    var itn := s.Last();
+    var it1 := s.Find(1);
+    assert it1 is OrderedSetIterator;
+    assert it0 is OrderedSetIterator;
+    assert itn is OrderedSetIterator;
 
-   assume it1.Index() == 1;
-   assume it2.Index() == 2;
-   
-   s.Remove(1);
-   assert it2.Index() == 1;
-   //assert it1.Index() == 1; //no puede demostrarlo
-   assert it0.Index() == 0;
-   assert itn.Index() == 3;
-   }
+    var it2 := s.Find(2);
+    assert it2 is OrderedSetIterator;
+
+    assume it1.Index() == 1;
+    assume it2.Index() == 2;
+
+    s.Remove(1);
+    assert it2.Index() == 1;
+    //assert it1.Index() == 1; //no puede demostrarlo
+    assert it0.Index() == 0;
+    assert itn.Index() == 3;
+  }
 }
