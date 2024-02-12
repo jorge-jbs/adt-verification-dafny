@@ -362,6 +362,16 @@ module TreeSetImpl {
       iterators
     }
 
+    function Cast(it: UnorderedSetIterator): OrderedSetIterator
+      reads this, Repr()
+      requires Valid()
+      requires it in Iterators()
+      ensures it is OrderedSetIterator
+      ensures it == Cast(it)
+    {
+      it
+    }
+
     method Size() returns (s: nat)
       modifies this, Repr()
       requires allocated(Repr())
