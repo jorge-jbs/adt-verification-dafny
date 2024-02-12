@@ -300,6 +300,13 @@ module OrderedMultisetSpec {
       requires Valid()
       ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
       ensures forall it | it in Iterators() :: it is OrderedMultisetIterator
+    
+    function Cast(it: UnorderedMultisetIterator): OrderedMultisetIterator
+      reads this, Repr()
+      requires Valid()
+      requires it in Iterators()
+      ensures it is OrderedMultisetIterator
+      ensures it == Cast(it)
 
     method First() returns (it: UnorderedMultisetIterator)
       modifies this, Repr()

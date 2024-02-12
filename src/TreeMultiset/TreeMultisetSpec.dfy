@@ -28,7 +28,7 @@ module TreeMultisetSpec {
       //specific invalidation policy
       //x is added as the last occurrence of equal elements
       ensures forall it: OrderedMultisetIterator <- old(Iterators()) | old(it.Valid()) ::
-        && var it' := it as OrderedMultisetIterator;
+        && var it' := Cast(it);
         && it.Valid()
         && it.Parent() == old(it.Parent())
         && (it.HasPeek?() <==> old(it.HasPeek?()))
@@ -72,7 +72,7 @@ module TreeMultisetSpec {
           && it.Parent() == old(it.Parent())
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-          && var it' := it as OrderedMultisetIterator;
+          && var it' := Cast(it);
           && (
             if x !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
               it'.Index() == old(it'.Index())
@@ -137,7 +137,7 @@ module TreeMultisetSpec {
           && it.Parent() == old(it.Parent())
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-          && var it' := it as OrderedMultisetIterator;
+          && var it' := Cast(it);
           && (
             if x !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
               it'.Index() == old(it'.Index())
@@ -184,7 +184,7 @@ module TreeMultisetSpec {
       //specific invalidation policy
       //mid is like the rest of iterators
       ensures forall it: OrderedMultisetIterator <- old(Iterators()) | old(it.Valid()) ::
-        && var it' := it as OrderedMultisetIterator;
+        && var it' := Cast(it);
         && it.Valid()
         && it.Parent() == old(it.Parent())
         && (it.HasPeek?() <==> old(it.HasPeek?()))
@@ -245,7 +245,7 @@ module TreeMultisetSpec {
           && it.Parent() == old(it.Parent())
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-          && var it' := it as OrderedMultisetIterator;
+          && var it' := Cast(it);
           && (
             if x !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
               it'.Index() == old(it'.Index())

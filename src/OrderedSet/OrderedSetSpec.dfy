@@ -316,6 +316,13 @@ module OrderedSetSpec {
       ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
       ensures forall it | it in Iterators() :: it is OrderedSetIterator
 
+    function Cast(it: UnorderedSetIterator): OrderedSetIterator
+      reads this, Repr()
+      requires Valid()
+      requires it in Iterators()
+      ensures it is OrderedSetIterator
+      ensures it == Cast(it)
+
     method First() returns (it: UnorderedSetIterator)
       modifies this, Repr()
       requires allocated(Repr())
