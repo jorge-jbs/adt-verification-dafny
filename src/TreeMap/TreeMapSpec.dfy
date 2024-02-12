@@ -155,7 +155,7 @@ module TreeMapSpec {
         && it.Parent() == old(it.Parent())
         && (it.HasPeek?() <==> old(it.HasPeek?()))
         && (
-          it.HasPeek?() && (k !in old(Model()) || k != it.Peek?().0) ==>
+          it.HasPeek?() && (k !in old(Model()) || k != old(it.Peek?().0)) ==>
             it.Peek?() == old(it.Peek?())
         )
         && ( //value update
