@@ -20,8 +20,6 @@ module ThreadedLinkedTree.Impl.MoveRed {
   import opened R = Rotate
   import opened TTNode
 
-  function hue(): int { 1 }
-
   // 15"
   method MoveRedLeft(
       node: TTNode, 
