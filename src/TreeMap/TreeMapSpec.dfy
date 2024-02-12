@@ -53,14 +53,20 @@ module TreeMapSpec {
               else |Model()| == 1 + old(|Model()|)
 
       ensures Iterators() >= old(Iterators())
-      ensures forall it <- old(Iterators()) | old(it.Valid())
-        :: var it' := Cast(it);
+
+      //specific invalidation policy
+      ensures forall it: OrderedMapIterator <- old(Iterators()) | old(it.Valid()) ::
+        && var it' := Cast(it);
         && it.Valid()
         && it.Parent() == old(it.Parent())
         && (it.HasPeek?() <==> old(it.HasPeek?()))
         && (
-          it.HasPeek?() && (k !in old(Model()) || k != it.Peek?().0) ==>
+          it.HasPeek?() && (k !in old(Model()) || k != old(it.Peek?().0)) ==>
             it.Peek?() == old(it.Peek?())
+        )
+        && ( //value update
+          it.HasPeek?() && k in old(Model()) && k == old(it.Peek?().0) ==>
+            it.Peek?() == (k,v)
         )
         && (
           if k in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?().0 < k) then
@@ -90,8 +96,10 @@ module TreeMapSpec {
               else |Model()| == old(|Model()|)
 
       ensures Iterators() >= old(Iterators())
+      
+      //specific invalidation policy
       ensures
-        forall it | it in old(Iterators())
+          forall it: OrderedMapIterator <- old(Iterators()) | 
             && old(it.Valid())
             && (old(it.HasPeek?()) ==> old(it.Peek?().0) != k)
           :: it.Valid()
@@ -99,19 +107,19 @@ module TreeMapSpec {
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
           && var it' := Cast(it);
-          && (
-            if k in old(Model()) && ((it.HasPeek?() && k < it.Peek?().0) || old(it'.Index()) == old(|Model()|)) then
-              it'.Index() == old(it'.Index()) - 1
-            else
+          && (           
+            if k !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?().0 < k) then
               it'.Index() == old(it'.Index())
-          )
-          && (
-            if k in old(Model()) && (it.HasPeek?() ==> k < it.Peek?().0) then
-              && it'.Traversed() == old(it'.Traversed()) - {k}
-              && |it'.Traversed()| == |old(it'.Traversed())| - 1
             else
-              && it'.Traversed() == old(it'.Traversed())
-              && |it'.Traversed()| == |old(it'.Traversed())|
+              it'.Index() == old(it'.Index()) - 1
+            )
+          && (
+            if k !in old(Model()) || (it.HasPeek?() && it.Peek?().0 < k) then
+                && it'.Traversed() == old(it'.Traversed())
+                && |it'.Traversed()| == |old(it'.Traversed())|
+            else
+                && it'.Traversed() == old(it'.Traversed()) - {k}
+                && |it'.Traversed()| == |old(it'.Traversed())| - 1
           )
 
     method Insert(mid: UnorderedMapIterator, k: K, v : V) returns (newt: UnorderedMapIterator)
@@ -138,14 +146,21 @@ module TreeMapSpec {
       ensures (newt as OrderedMapIterator).Index() ==  |smaller(Model().Keys,k)|//NEW
 
       ensures Iterators() >= {newt}+old(Iterators())
-      ensures forall it <- old(Iterators()) | old(it.Valid())
-        :: var it' := Cast(it);
+
+      //specific invalidation policy
+      //mid is like the rest of iterators
+      ensures forall it: OrderedMapIterator <- old(Iterators()) | old(it.Valid()) ::
+        && var it' := Cast(it);
         && it.Valid()
         && it.Parent() == old(it.Parent())
         && (it.HasPeek?() <==> old(it.HasPeek?()))
         && (
           it.HasPeek?() && (k !in old(Model()) || k != it.Peek?().0) ==>
             it.Peek?() == old(it.Peek?())
+        )
+        && ( //value update
+          it.HasPeek?() && k in old(Model()) && k == old(it.Peek?().0) ==>
+            it.Peek?() == (k,v)
         )
         && (
           if k in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?().0 < k) then
@@ -186,9 +201,11 @@ module TreeMapSpec {
       ensures mid is OrderedMapIterator && (next as OrderedMapIterator).Index() == old((mid as OrderedMapIterator).Index())
 
       ensures Iterators() >= {next}+old(Iterators())
+      
+      //specific invalidation policy
       ensures
         var k := old(mid.Peek?().0);
-        forall it | it in old(Iterators())
+       forall it: OrderedMapIterator <- old(Iterators()) | 
             && old(it.Valid())
             && (old(it.HasPeek?()) ==> old(it.Peek?().0) != k)
           :: it.Valid()
@@ -197,18 +214,18 @@ module TreeMapSpec {
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
           && var it' := Cast(it);
           && (
-            if k in old(Model()) && ((it.HasPeek?() && k < it.Peek?().0) || old(it'.Index()) == old(|Model()|)) then
-              it'.Index() == old(it'.Index()) - 1
-            else
+            if k !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?().0 < k) then
               it'.Index() == old(it'.Index())
+            else
+              it'.Index() == old(it'.Index()) - 1
           )
           && (
-            if k in old(Model()) && (it.HasPeek?() ==> k < it.Peek?().0) then
-              && it'.Traversed() == old(it'.Traversed()) - {k}
-              && |it'.Traversed()| == |old(it'.Traversed())| - 1
+            if k !in old(Model()) || (it.HasPeek?() && it.Peek?().0 < k) then
+                && it'.Traversed() == old(it'.Traversed())
+                && |it'.Traversed()| == |old(it'.Traversed())|
             else
-              && it'.Traversed() == old(it'.Traversed())
-              && |it'.Traversed()| == |old(it'.Traversed())|
-          )
+                && it'.Traversed() == old(it'.Traversed()) - {k}
+                && |it'.Traversed()| == |old(it'.Traversed())| - 1
+         )
   }
 }

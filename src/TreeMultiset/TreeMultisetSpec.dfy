@@ -25,8 +25,9 @@ module TreeMultisetSpec {
 
       ensures Iterators() >= old(Iterators())
 
-      ensures forall it <- old(Iterators()) | old(it.Valid())
-        :: it is OrderedMultisetIterator
+      //specific invalidation policy
+      //x is added as the last occurrence of equal elements
+      ensures forall it: OrderedMultisetIterator <- old(Iterators()) | old(it.Valid()) ::
         && var it' := it as OrderedMultisetIterator;
         && it.Valid()
         && it.Parent() == old(it.Parent())
@@ -63,11 +64,10 @@ module TreeMultisetSpec {
 
       ensures Iterators() >= old(Iterators())
 
-      ensures
-        forall it | it in old(Iterators())
+      //specific invalidation policy
+      ensures forall it: OrderedMultisetIterator <- old(Iterators()) | 
             && old(it.Valid())
             && (old(it.HasPeek?()) ==> old(it.Peek?()) != x) ::
-          && it is OrderedMultisetIterator
           && it.Valid()
           && it.Parent() == old(it.Parent())
           && (it.HasPeek?() <==> old(it.HasPeek?()))
@@ -88,6 +88,7 @@ module TreeMultisetSpec {
                 && |it'.Traversed()| == |old(it'.Traversed())| - 1
           )
 
+      //last occurrence is removed
       ensures
         forall it: OrderedMultisetIterator <- old(Iterators()) |
           && old(it.Valid())
@@ -114,6 +115,44 @@ module TreeMultisetSpec {
             && it.Traversed() == old(it.Traversed()) - multiset{x}
             && |it.Traversed()| == |old(it.Traversed())| - 1
         )
+
+    method RemoveAll(x:K)
+      modifies this, Repr()
+      requires allocated(Repr())
+      ensures fresh(Repr() - old(Repr()))
+      ensures allocated(Repr())
+
+      requires Valid()
+      ensures Valid()
+      ensures Model()== old(Model())[x:=0]
+      ensures |Model()|== old(|Model()|) - old(Model()[x])
+
+      ensures Iterators() >= old(Iterators())
+
+      //specific invalidation policy
+      ensures forall it: OrderedMultisetIterator <- old(Iterators()) | 
+            && old(it.Valid())
+            && (old(it.HasPeek?()) ==> old(it.Peek?()) != x) ::
+          && it.Valid()
+          && it.Parent() == old(it.Parent())
+          && (it.HasPeek?() <==> old(it.HasPeek?()))
+          && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+          && var it' := it as OrderedMultisetIterator;
+          && (
+            if x !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
+              it'.Index() == old(it'.Index())
+            else
+              it'.Index() == old(it'.Index()) - old(Model()[x])
+          )
+          && (
+            if x !in old(Model()) || (it.HasPeek?() && it.Peek?() < x) then
+                && it'.Traversed() == old(it'.Traversed())
+                && |it'.Traversed()| == |old(it'.Traversed())|
+            else
+                && it'.Traversed() == old(it'.Traversed()) - multiset{}[x:=old(Model()[x])]
+                && |it'.Traversed()| == |old(it'.Traversed())| - old(Model()[x])
+          )
+
 
     //insertion after the strictly smaller elements
     method Insert(mid: UnorderedMultisetIterator, x: K) returns (newt:UnorderedMultisetIterator)
@@ -143,8 +182,8 @@ module TreeMultisetSpec {
       ensures Iterators() >= {newt} + old(Iterators())
 
       //specific invalidation policy
-      ensures forall it <- old(Iterators()) | old(it.Valid())
-        :: it is OrderedMultisetIterator
+      //mid is like the rest of iterators
+      ensures forall it: OrderedMultisetIterator <- old(Iterators()) | old(it.Valid()) ::
         && var it' := it as OrderedMultisetIterator;
         && it.Valid()
         && it.Parent() == old(it.Parent())
@@ -165,6 +204,7 @@ module TreeMultisetSpec {
             && |it.Traversed()| == |old(it.Traversed())| + 1
         )
 
+    //mid is not used, it removes the last appearance
     method Erase(mid:UnorderedMultisetIterator) returns (next: UnorderedMultisetIterator)
       modifies this, Repr()
       requires allocated(Repr())
@@ -193,16 +233,73 @@ module TreeMultisetSpec {
 
       ensures Iterators() >= {next}+old(Iterators())
 
+      //specific invalidation policy
+      //it behaves as Remove, unlike sets and maps
+      // mid is not used to erase
       ensures
+          var x :=  old(mid.Peek?());
+          forall it: OrderedMultisetIterator <- old(Iterators()) | 
+            && old(it.Valid())
+            && (old(it.HasPeek?()) ==> old(it.Peek?()) != x)::
+          && it.Valid()
+          && it.Parent() == old(it.Parent())
+          && (it.HasPeek?() <==> old(it.HasPeek?()))
+          && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+          && var it' := it as OrderedMultisetIterator;
+          && (
+            if x !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
+              it'.Index() == old(it'.Index())
+            else
+              it'.Index() == old(it'.Index()) - 1
+          )
+          && (
+            if x !in old(Model()) || (it.HasPeek?() && it.Peek?() < x) then
+                && it'.Traversed() == old(it'.Traversed())
+                && |it'.Traversed()| == |old(it'.Traversed())|
+            else
+                && it'.Traversed() == old(it'.Traversed()) - multiset{x}
+                && |it'.Traversed()| == |old(it'.Traversed())| - 1
+          )
+
+      //last occurrence is removed
+      ensures
+        var x :=  old(mid.Peek?());
+        forall it: OrderedMultisetIterator <- old(Iterators()) |
+          && old(it.Valid())
+          && old(it.HasPeek?())
+          && old(it.Peek?()) == x
+          && var ssmaller := |msmaller(old(Model()),x)| + old(Model()[x]) - 1;
+          && x in old(Model()) ==> old(it.Index()) != ssmaller ::
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && (it.HasPeek?() <==> old(it.HasPeek?()))
+        && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+        && var ssmaller := |msmaller(old(Model()), x)| + old(Model()[x]) - 1;
+        && (
+          if x !in old(Model()) || old(it.Index()) < ssmaller then
+            it.Index() == old(it.Index())
+          else
+            it.Index() == old(it.Index()) - 1
+        )
+        && (
+          if x !in old(Model()) || (old(it.Index()) < ssmaller && old(it.Index()) != -1) then
+            && it.Traversed() == old(it.Traversed())
+            && |it.Traversed()| == |old(it.Traversed())|
+          else
+            && it.Traversed() == old(it.Traversed()) - multiset{x}
+            && |it.Traversed()| == |old(it.Traversed())| - 1
+        )
+
+
+
+
+      //This is what C++ does by means of duplication of key nodes
+      /*ensures
         var x := old(mid.Peek?());
         var mid' := old((mid as OrderedMultisetIterator).Index());
-        forall it | it in old(Iterators())
+        forall it: OrderedMultisetIterator <- old(Iterators()) |
             && old(it.Valid())
-            && it is OrderedMultisetIterator
-            && var it' := it as OrderedMultisetIterator;
-            //&& (old(it.HasPeek?()) ==> old(it.Peek?()) != x)
-            && mid' != old(it'.Index())
-          :: it is OrderedMultisetIterator
+            && mid' != old((it as OrderedMultisetIterator).Index()) :: 
           && it.Valid()
           && it.Parent() == old(it.Parent())
           && (it.HasPeek?() <==> old(it.HasPeek?()))
@@ -221,7 +318,7 @@ module TreeMultisetSpec {
             else
               && it'.Traversed() == old(it'.Traversed()) - multiset{x}
               && |it'.Traversed()| == |old(it'.Traversed())| - 1
-          )
+          )*/
   }
 
   method {:verify false} {:timeLimitMultiplier 100} try(s:TreeMultiset)

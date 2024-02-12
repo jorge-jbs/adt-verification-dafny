@@ -26,6 +26,7 @@ module TreeSetSpec {
 
       ensures Iterators() >= old(Iterators())
 
+      //specific invalidation policy
       ensures forall it: OrderedSetIterator <- old(Iterators()) | old(it.Valid()) ::
         && var it' := it as OrderedSetIterator;
         && it.Valid()
@@ -63,6 +64,7 @@ module TreeSetSpec {
 
       ensures Iterators() >= old(Iterators())
 
+      //specific invalidation policy
       ensures forall it: OrderedSetIterator <- old(Iterators()) | 
             && old(it.Valid())
             && (old(it.HasPeek?()) ==> old(it.Peek?()) != x) ::
@@ -113,6 +115,7 @@ module TreeSetSpec {
       ensures Iterators() >= {newt} + old(Iterators())
 
       //specific invalidation policy
+      //mid is like the rest of iterators
       ensures forall it: OrderedSetIterator <- old(Iterators()) | old(it.Valid()) ::
         && var it' := it as OrderedSetIterator;
         && it.Valid()
@@ -162,6 +165,8 @@ module TreeSetSpec {
 
       ensures Iterators() >= {next}+old(Iterators())
 
+      //specific invalidation policy
+      //mid is used to erase and no longer valid
       ensures
         var x := old(mid.Peek?());
         forall it: OrderedSetIterator <- old(Iterators()) | 
