@@ -71,6 +71,7 @@ files=(
     src/Stack/StackSpec.dfy
     src/Stack/SinglyLinkedStackImpl.dfy
     src/TreeMap/TreeMapImpl.dfy
+    src/TreeMap/TreeMapImpl/EraseImpl.dfy
     src/TreeMap/TreeMapSpec.dfy
     src/OrderedMap/OrderedMapForwardSpec.dfy
     src/OrderedMap/OrderedMapSpec.dfy

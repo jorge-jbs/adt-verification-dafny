@@ -2,6 +2,7 @@ include "../../src/ADT.dfy"
 include "../../src/Collections/KeyValue.dfy"
 include "../../src/TreeMap/TreeMapImpl.dfy"
 include "../../src/TreeMap/TreeMapSpec.dfy"
+include "../../src/TreeSet/TreeSetSpec.dfy"
 include "../../src/UnorderedSet/UnorderedSetSpec.dfy"
 include "../../src/UnorderedMap/UnorderedMapSpec.dfy"
 include "../../src/OrderedSet/OrderedSetSpec.dfy"
@@ -10,6 +11,7 @@ include "../../src/OrderedMap/OrderedMapSpec.dfy"
 module TreeSetImpl {
   import opened TreeMapImpl
   import opened TreeMapSpec
+  import opened TreeSetSpec
   import opened UnorderedSetSpec
   import opened UnorderedMapSpec
   import opened OrderedSetSpec
@@ -59,6 +61,10 @@ module TreeSetImpl {
       this.parent := parent;
       new;
       parent.iterators := parent.iterators + {this};
+      assert parent.Valid();
+      assert Parent().Valid();
+      assert parent.Model() == Parent().Model();
+      assert |parent.treemap.Model().Keys| == |parent.treemap.Model()|;
     }
 
     ghost function Parent(): UnorderedSet
@@ -171,6 +177,7 @@ module TreeSetImpl {
       assert parent.Model() == parent.treemap.Model().Keys;
       iter.Next();
       assert parent.Model() == parent.treemap.Model().Keys;
+      assert parent.Valid() == Parent().Valid();
     }
 
     method Peek() returns (k: K)
@@ -251,6 +258,7 @@ module TreeSetImpl {
       assert parent.Model() == parent.treemap.Model().Keys;
       iter.Prev();
       assert parent.Model() == parent.treemap.Model().Keys;
+      assert parent.Valid() == Parent().Valid();
     }
 
     method Copy() returns (it: UnorderedSetIterator)
@@ -302,7 +310,7 @@ module TreeSetImpl {
     }
   }
 
-  class TreeSetImpl extends OrderedSet {
+  class TreeSetImpl extends TreeSet {
     const treemap: TreeMap
     ghost var iterators: set<TreeSetIteratorImpl>
 
@@ -439,6 +447,14 @@ module TreeSetImpl {
                 && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
     {
       b := treemap.Empty();
+      calc <==> {
+        b;
+        treemap.Empty?();
+        treemap.Model() == map[];
+        treemap.Model().Keys == {};
+        Model() == {};
+        Empty?();
+      }
     }
 
     method First() returns (it: UnorderedSetIterator)
@@ -550,6 +566,26 @@ module TreeSetImpl {
               else |Model()| == 1 + old(|Model()|)
 
       ensures Iterators() >= old(Iterators())
+      ensures forall it: OrderedSetIterator <- old(Iterators()) | old(it.Valid()) ::
+        && var it' := Cast(it);
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && (it.HasPeek?() <==> old(it.HasPeek?()))
+        && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+        && (
+          if x in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
+            it'.Index() == old(it'.Index())
+          else
+            it'.Index() == old(it'.Index()) + 1
+        )
+        && (
+          if x in old(Model()) || (it.HasPeek?() && it.Peek?() < x) then
+            && it.Traversed() == old(it.Traversed())
+            && |it.Traversed()| == |old(it.Traversed())|
+          else
+            && it.Traversed() == old(it.Traversed()) + {x}
+            && |it.Traversed()| == |old(it.Traversed())| + 1
+        )
     {
       treemap.Add(x, 0);
     }
@@ -567,6 +603,28 @@ module TreeSetImpl {
               else |Model()| == old(|Model()|)
 
       ensures Iterators() >= old(Iterators())
+      ensures forall it: OrderedSetIterator <- old(Iterators()) | 
+            && old(it.Valid())
+            && (old(it.HasPeek?()) ==> old(it.Peek?()) != x) ::
+          && it.Valid()
+          && it.Parent() == old(it.Parent())
+          && (it.HasPeek?() <==> old(it.HasPeek?()))
+          && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+          && var it' := Cast(it);
+          && (
+            if x !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
+              it'.Index() == old(it'.Index())
+            else
+              it'.Index() == old(it'.Index()) - 1
+          )
+          && (
+            if x !in old(Model()) || (it.HasPeek?() && it.Peek?() < x) then
+                && it'.Traversed() == old(it'.Traversed())
+                && |it'.Traversed()| == |old(it'.Traversed())|
+            else
+                && it'.Traversed() == old(it'.Traversed()) - {x}
+                && |it'.Traversed()| == |old(it'.Traversed())| - 1
+          )
     {
       treemap.Remove(x);
     }
@@ -620,6 +678,26 @@ module TreeSetImpl {
       ensures newt.HasPeek?() && newt.Peek?() == x
 
       ensures Iterators() >= {newt}+old(Iterators())
+      ensures forall it: OrderedSetIterator <- old(Iterators()) | old(it.Valid()) ::
+        && var it' := Cast(it);
+        && it.Valid()
+        && it.Parent() == old(it.Parent())
+        && (it.HasPeek?() <==> old(it.HasPeek?()))
+        && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+        && (
+          if x in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
+            it'.Index() == old(it'.Index())
+          else
+            it'.Index() == old(it'.Index()) + 1
+        )
+        && (
+          if x in old(Model()) || (it.HasPeek?() && it.Peek?() < x) then
+            && it.Traversed() == old(it.Traversed())
+            && |it.Traversed()| == |old(it.Traversed())|
+          else
+            && it.Traversed() == old(it.Traversed()) + {x}
+            && |it.Traversed()| == |old(it.Traversed())| + 1
+        )
     {
       var iter: UnorderedMapIterator := treemap.Insert((mid as TreeSetIteratorImpl).iter, x, 0);
       newt := new TreeSetIteratorImpl(this, iter);
@@ -645,7 +723,30 @@ module TreeSetImpl {
       ensures next.Traversed() == old(mid.Traversed())
       ensures |next.Traversed()| == old(|mid.Traversed()|)
 
-      ensures Iterators() >= {next}+old(Iterators())
+      ensures Iterators() >= {next} + old(Iterators())
+      ensures
+        var x := old(mid.Peek?());
+        forall it: OrderedSetIterator <- old(Iterators()) | 
+            && old(it.Valid())
+            && (old(it.HasPeek?()) ==> old(it.Peek?()) != x) ::
+          && it.Valid()
+          && it.Parent() == old(it.Parent())
+          && (it.HasPeek?() <==> old(it.HasPeek?()))
+          && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+          && (
+            if (it.HasPeek?() ==> it.Peek?() < x) && old(it.Index()) != old(|Model()|) then
+              it.Index() == old(it.Index())
+            else
+              it.Index() == old(it.Index()) - 1
+          )
+          && (
+            if it.HasPeek?() && it.Peek?() < x then
+              && it.Traversed() == old(it.Traversed())
+              && |it.Traversed()| == |old(it.Traversed())|
+            else
+              && it.Traversed() == old(it.Traversed()) - {x}
+              && |it.Traversed()| == |old(it.Traversed())| - 1
+          )
     {
       var mid' := mid as TreeSetIteratorImpl;
       assert Model() == treemap.Model().Keys;

@@ -164,9 +164,7 @@ module TreeSetSpec {
       ensures mid is OrderedSetIterator && (next as OrderedSetIterator).Index() == old((mid as OrderedSetIterator).Index())
 
       ensures Iterators() >= {next}+old(Iterators())
-
-      //specific invalidation policy
-      //mid is used to erase and no longer valid
+      ensures Iterators() >= {next} + old(Iterators())
       ensures
         var x := old(mid.Peek?());
         forall it: OrderedSetIterator <- old(Iterators()) | 
@@ -176,20 +174,19 @@ module TreeSetSpec {
           && it.Parent() == old(it.Parent())
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-          && var it' := Cast(it);
           && (
-            if (it.HasPeek?() ==> it.Peek?() < x) && old(it'.Index()) != old(|Model()|) then
-              it'.Index() == old(it'.Index())
+            if (it.HasPeek?() ==> it.Peek?() < x) && old(it.Index()) != old(|Model()|) then
+              it.Index() == old(it.Index())
             else
-              it'.Index() == old(it'.Index()) - 1
+              it.Index() == old(it.Index()) - 1
           )
           && (
-            if it.HasPeek?() ==> it.Peek?() < x then
-              && it'.Traversed() == old(it'.Traversed())
-              && |it'.Traversed()| == |old(it'.Traversed())|
+            if it.HasPeek?() && it.Peek?() < x then
+              && it.Traversed() == old(it.Traversed())
+              && |it.Traversed()| == |old(it.Traversed())|
             else
-              && it'.Traversed() == old(it'.Traversed()) - {x}
-              && |it'.Traversed()| == |old(it'.Traversed())| - 1
+              && it.Traversed() == old(it.Traversed()) - {x}
+              && |it.Traversed()| == |old(it.Traversed())| - 1
           )
   }
 

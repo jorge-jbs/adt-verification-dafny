@@ -96,10 +96,10 @@ module TreeMapSpec {
               else |Model()| == old(|Model()|)
 
       ensures Iterators() >= old(Iterators())
-      
+
       //specific invalidation policy
       ensures
-          forall it: OrderedMapIterator <- old(Iterators()) | 
+          forall it: OrderedMapIterator <- old(Iterators()) |
             && old(it.Valid())
             && (old(it.HasPeek?()) ==> old(it.Peek?().0) != k)
           :: it.Valid()
@@ -107,7 +107,7 @@ module TreeMapSpec {
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
           && var it' := Cast(it);
-          && (           
+          && (
             if k !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?().0 < k) then
               it'.Index() == old(it'.Index())
             else
@@ -200,32 +200,29 @@ module TreeMapSpec {
 
       ensures mid is OrderedMapIterator && (next as OrderedMapIterator).Index() == old((mid as OrderedMapIterator).Index())
 
-      ensures Iterators() >= {next}+old(Iterators())
-      
-      //specific invalidation policy
+      ensures Iterators() >= {next} + old(Iterators())
       ensures
         var k := old(mid.Peek?().0);
-       forall it: OrderedMapIterator <- old(Iterators()) | 
+        forall it: OrderedMapIterator <- old(Iterators()) |
             && old(it.Valid())
             && (old(it.HasPeek?()) ==> old(it.Peek?().0) != k)
           :: it.Valid()
           && it.Parent() == old(it.Parent())
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-          && var it' := Cast(it);
           && (
-            if k !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?().0 < k) then
-              it'.Index() == old(it'.Index())
+            if (it.HasPeek?() ==> it.Peek?().0 < k) && old(it.Index()) != old(|Model()|) then
+              it.Index() == old(it.Index())
             else
-              it'.Index() == old(it'.Index()) - 1
+              it.Index() == old(it.Index()) - 1
           )
           && (
-            if k !in old(Model()) || (it.HasPeek?() && it.Peek?().0 < k) then
-                && it'.Traversed() == old(it'.Traversed())
-                && |it'.Traversed()| == |old(it'.Traversed())|
+            if it.HasPeek?() && it.Peek?().0 < k then
+              && it.Traversed() == old(it.Traversed())
+              && |it.Traversed()| == |old(it.Traversed())|
             else
-                && it'.Traversed() == old(it'.Traversed()) - {k}
-                && |it'.Traversed()| == |old(it'.Traversed())| - 1
-         )
+              && it.Traversed() == old(it.Traversed()) - {k}
+              && |it.Traversed()| == |old(it.Traversed())| - 1
+          )
   }
 }
