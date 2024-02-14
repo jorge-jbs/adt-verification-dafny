@@ -1,13 +1,13 @@
 include "../Collections/Seq.dfy"
 include "../Collections/KeyValue.dfy"
 include "../UnorderedSet/UnorderedSetSpec.dfy"
-include "../Collections/OrderedSetUtils.dfy"
+include "../Collections/SetInt.dfy"
 
 module OrderedSetSpec {
   import opened Seq
   import opened KeyValue
   import opened UnorderedSetSpec
-  import opened OrderedSetUtils
+  import opened SetInt
 
   trait {:termination false} OrderedSetIterator extends UnorderedSetIterator {
     ghost function Parent(): UnorderedSet
@@ -39,10 +39,12 @@ module OrderedSetSpec {
       ensures Index() >= 0 <==> |Traversed()| == Index()
       ensures 0 <= Index() < |Parent().Model()| ==> Traversed() < Parent().Model() && |Traversed()| < |Parent().Model()|
     { 
-      if (Index() == -1 || Index() == |Parent().Model()|) then Parent().Model()
+      if Index() == -1 || Index() == |Parent().Model()| then
+        Parent().Model()
       else
-        lelemth(Parent().Model(),Index());
-        smaller(Parent().Model(),elemth(Parent().Model(),Index()))
+        ElemAtInSet(Parent().Model(), Index());
+        SmallerElemAt(Parent().Model(), Index());
+        Smaller(Parent().Model(), ElemAt(Parent().Model(), Index()))
     }
 
     ghost function Peek?():K
@@ -56,12 +58,8 @@ module OrderedSetSpec {
       ensures forall x | x in Parent().Model()-Traversed() :: Peek?() <= x*/
     {
       assert |Traversed()| == Index() < |Parent().Model()|;
-      //assert Traversed() < Parent().Model();
-      elemthSet(Parent().Model(),Traversed());
-      //elemthSmallerAll(Parent().Model(),Traversed());
-      //elemthBiggerAll(Parent().Model(),Traversed());
-
-      elemth(Parent().Model(),Index())
+      ElemAtNotInSmallerSubset(Traversed(), Parent().Model());
+      ElemAt(Parent().Model(), Index())
     }
 
     ghost predicate HasPeek?()
@@ -423,7 +421,7 @@ module OrderedSetSpec {
       ensures x in old(Model()) ==> newt.HasPeek?() && newt.Peek?() == x
       ensures x !in old(Model()) ==> newt.Traversed() == Model() && |newt.Traversed()| == |Model()|
 
-      ensures x in old(Model()) ==> (newt as OrderedSetIterator).Index() == |smaller(Model(),x)| //NEW
+      ensures x in old(Model()) ==> (newt as OrderedSetIterator).Index() == |Smaller(Model(), x)| //NEW
       ensures x !in old(Model()) ==> (newt as OrderedSetIterator).Index() == |Model()|
 
       ensures Iterators() >= {newt} + old(Iterators())
@@ -460,7 +458,7 @@ module OrderedSetSpec {
       ensures newt.Valid() && newt.Parent() == this
       ensures newt.HasPeek?() && newt.Peek?() == x
 
-      ensures (newt as OrderedSetIterator).Index() == |smaller(Model(),x)|
+      ensures (newt as OrderedSetIterator).Index() == |Smaller(Model(), x)|
 
       ensures Iterators() >= {newt} + old(Iterators())
 

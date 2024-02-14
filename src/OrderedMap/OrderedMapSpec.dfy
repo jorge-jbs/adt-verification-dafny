@@ -1,11 +1,11 @@
 include "../../src/Collections/KeyValue.dfy"
 include "../../src/UnorderedMap/UnorderedMapSpec.dfy"
-include "../../src/Collections/OrderedSetUtils.dfy"
+include "../../src/Collections/SetInt.dfy"
 
 module OrderedMapSpec {
   import opened KeyValue
   import opened UnorderedMapSpec
-  import opened OrderedSetUtils
+  import opened SetInt
 
   trait {:termination false} OrderedMapIterator extends UnorderedMapIterator {
     ghost function Parent(): UnorderedMap
@@ -34,10 +34,12 @@ module OrderedMapSpec {
       ensures Index() >= 0 <==> |Traversed()| == Index()
       ensures 0 <= Index() < |Parent().Model()| ==> Traversed() < Parent().Model().Keys && |Traversed()| < |Parent().Model().Keys|
     {
-      if (Index() == -1 || Index() == |Parent().Model()|) then Parent().Model().Keys
+      if Index() == -1 || Index() == |Parent().Model()| then
+        Parent().Model().Keys
       else
-        lelemth(Parent().Model().Keys,Index());
-        smaller(Parent().Model().Keys,elemth(Parent().Model().Keys,Index()))
+        ElemAtInSet(Parent().Model().Keys, Index());
+        SmallerElemAt(Parent().Model().Keys, Index());
+        Smaller(Parent().Model().Keys, ElemAt(Parent().Model().Keys, Index()))
     }
     //ensures forall x,y | x in Traversed() && y in Parent().Model().Keys-Traversed() :: x < y
 
@@ -50,11 +52,8 @@ module OrderedMapSpec {
       ensures key(Peek?()) in Parent().Model() - Traversed()
     {
       assert |Traversed()| == Index() < |Parent().Model()|;
-      //assert Traversed() < Parent().Model();
-      elemthSet(Parent().Model().Keys,Traversed());
-      //elemthSmallerAll(Parent().Model(),Traversed());
-      //elemthBiggerAll(Parent().Model(),Traversed());
-      var k := elemth(Parent().Model().Keys,Index());
+      ElemAtNotInSmallerSubset(Traversed(), Parent().Model().Keys);
+      var k := ElemAt(Parent().Model().Keys, Index());
       (k, Parent().Model()[k])
     }
 
@@ -442,7 +441,7 @@ module OrderedMapSpec {
       ensures k in old(Model()) ==> newt.HasPeek?() && key(newt.Peek?()) == k
       ensures k !in old(Model()) ==> newt.Traversed() == Model().Keys && |newt.Traversed()| == |Model().Keys|
 
-      ensures k in old(Model()) ==> (newt as OrderedMapIterator).Index() == |smaller(Model().Keys,k)| //NEW
+      ensures k in old(Model()) ==> (newt as OrderedMapIterator).Index() == |Smaller(Model().Keys,k)| //NEW
       ensures k !in old(Model()) ==> (newt as OrderedMapIterator).Index() == |Model().Keys|
 
       ensures Iterators() >= {newt}+old(Iterators())
@@ -478,7 +477,7 @@ module OrderedMapSpec {
       ensures newt.Valid() && newt.Parent() == this
       ensures newt.HasPeek?() && newt.Peek?() == (k,v)
 
-      ensures (newt as OrderedMapIterator).Index() ==  |smaller(Model().Keys,k)|//NEW
+      ensures (newt as OrderedMapIterator).Index() ==  |Smaller(Model().Keys,k)|//NEW
 
       ensures Iterators() >= {newt}+old(Iterators())
 

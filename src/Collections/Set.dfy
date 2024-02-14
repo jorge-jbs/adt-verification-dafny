@@ -1,4 +1,4 @@
-module  Set {
+module Set {
   ghost function BigUnion<A>(S: set<set<A>>): set<A>
   {
     set X, x | X in S && x in X :: x
@@ -16,25 +16,23 @@ module  Set {
     }
   }
 
-  lemma Allocated(s: set<object>)
-    ensures allocated(s)
-  {}
-
-  lemma freshness1(x: set<object>, z: set<object>)
-  ensures (forall y {:trigger y in x, y in z} | y in x - z :: fresh(y)) <==>
-          (forall y | y in x && y !in z :: fresh(y))
-  {}
-
-  lemma freshness2(x: set<object>, z: set<object>)
-  ensures (forall y | y in x - z :: fresh(y)) <==> (forall y | y in x && y !in z :: fresh(y))
+  lemma SubsetCard<A>(s: set<A>, S: set<A>)
+    requires s <= S
+    ensures |s| <= |S|
   {
-   assume forall y | y in x - z :: fresh(y);
-   forall y: object | y in x && y !in z
-    ensures fresh(y)
-   {
-    assert y in x - z;
-   }
-   assert forall y | y in x && y !in z :: fresh(y);
+    if s == S {
+    } else {
+      var x :| x in S-s;
+      SubsetCard(s, S - {x});
+    }
+  }
+
+  lemma StrictSubsetCard<A>(s: set<A>, S: set<A>)
+    requires s < S
+    ensures |s| < |S|
+  {
+    var x :| x in S-s;
+    SubsetCard(s, S - {x});
   }
 
   lemma AddCard<A>(r: set<A>, s: set<A>)
