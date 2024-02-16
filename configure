@@ -44,6 +44,8 @@ files=(
     src/Collections/Map.dfy
     src/Collections/Option.dfy
     src/Collections/Set.dfy
+    src/Collections/SetInt.dfy
+    src/Collections/SetObject.dfy
     src/Collections/Utils.dfy
     src/Collections/Int.dfy
     src/Collections/KeyValue.dfy
