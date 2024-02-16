@@ -58,7 +58,6 @@ module ThreadedLinkedTree.Model.RemoveElemAt {
   {
     assert toMap(t).Keys == keys(t);
     SRemoveMinSpec(t);
-    //lMinrev(keys(t), SRemoveMin(t).1);
   }
 
   lemma SRemoveMinCard(t: trbtree)
@@ -102,7 +101,6 @@ module ThreadedLinkedTree.Model.RemoveElemAt {
     assert orderKeysToSet(s) == toMap(t).Keys;
     if Min(toMap(t).Keys) != s[0].0 {
       assert s[0].0 in toMap(t).Keys;
-      //lmin(toMap(t).Keys, s[0].0);
       assert Min(toMap(t).Keys) <= s[0].0;
 
       assert Min(toMap(t).Keys) in orderKeysToSet(s);
