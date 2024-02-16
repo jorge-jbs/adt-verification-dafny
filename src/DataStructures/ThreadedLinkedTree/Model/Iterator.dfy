@@ -1,17 +1,17 @@
 include "../../../../src/Collections/Set.dfy"
 include "../../../../src/Collections/KeyValue.dfy"
-include "../../../../src/Collections/OrderedSetUtils.dfy"
+include "../../../../src/Collections/SetInt.dfy"
 include "../../../../src/DataStructures/ThreadedLinkedTree/Model/Color.dfy"
 include "../../../../src/DataStructures/ThreadedLinkedTree/Model/Base.dfy"
-include "../../../../src/DataStructures/ThreadedLinkedTree/Model/RemoveElemth.dfy"
+include "../../../../src/DataStructures/ThreadedLinkedTree/Model/RemoveElemAt.dfy"
 
-module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Iterator {
+module ThreadedLinkedTree.Model.Iterator {
   import opened Set
+  import opened SetInt
   import opened KeyValue
   import opened Color
   import opened Base
-  import opened RemoveElemth
-  import opened OrderedSetUtils
+  import opened RemoveElemAt
 
   datatype iter
     = PastTheBeginning
@@ -87,7 +87,8 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Iterator {
     requires SearchTree(root)
     requires HasPeek'(it, root)
   {
-    var k := elemth(toMapRec(root).Keys, Index(it, root));
+    ElemAtInSet(toMapRec(root).Keys, Index(it, root));
+    var k := ElemAt(toMapRec(root).Keys, Index(it, root));
     (k, toMapRec(root)[k])
   }
 
@@ -114,13 +115,13 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Iterator {
   {
     ToMapRec(root);
     calc == {
-      elemth(toMapRec(root).Keys, Index(it, root));
-      elemth(toMapRec(root).Keys, sizeSmaller(root, it.link));
+      ElemAt(toMapRec(root).Keys, Index(it, root));
+      ElemAt(toMapRec(root).Keys, sizeSmaller(root, it.link));
       {
         if root.Node? {
           SizeSmaller(root, it.link);
           SizeLemmas(root);
-          ElemthInorder(root, sizeSmaller(root, it.link));
+          ElemAtInorder(root, sizeSmaller(root, it.link));
         }
       }
       inorder(root)[sizeSmaller(root, it.link)].0;
@@ -129,7 +130,7 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Iterator {
       { InorderOfSmallerInorderSize(root, it.link); }
       it.link;
     }
-    var k := elemth(toMapRec(root).Keys, Index(it, root));
+    var k := ElemAt(toMapRec(root).Keys, Index(it, root));
     calc == {
       Get'(root, it.link);
       { GetEqGet'(root, it.link); }
@@ -155,8 +156,9 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Iterator {
       toMapRec(root).Keys
     else
       SizeIndex(it, root);
-      lelemth(toMapRec(root).Keys, Index(it, root));
-      smaller(toMapRec(root).Keys, elemth(toMapRec(root).Keys, Index(it, root)))
+      ElemAtInSet(toMapRec(root).Keys, Index(it, root));
+      SmallerElemAt(toMapRec(root).Keys, Index(it, root));
+      Smaller(toMapRec(root).Keys, ElemAt(toMapRec(root).Keys, Index(it, root)))
   }
 
   lemma TraversedEq(it: iter, root: trbtree)
@@ -178,13 +180,13 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Iterator {
       assert toMapRec(root).Keys == keys(root);
     } else {
       SizeIndex(it, root);
-      lelemth(toMapRec(root).Keys, Index(it, root));
+      SmallerElemAt(toMapRec(root).Keys, Index(it, root));
       HasPeekEq(it, root);
       calc == {
-        smaller(toMapRec(root).Keys, elemth(toMapRec(root).Keys, Index(it, root)));
+        Smaller(toMapRec(root).Keys, ElemAt(toMapRec(root).Keys, Index(it, root)));
         { PeekEq(it, root); }
-        smaller(toMapRec(root).Keys, it.link);
-        smaller(keys(root), it.link);
+        Smaller(toMapRec(root).Keys, it.link);
+        Smaller(keys(root), it.link);
         { SmallerKeys(root, it.link); }
         smallerKeys(root, it.link);
       }

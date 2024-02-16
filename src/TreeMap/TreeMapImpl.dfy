@@ -3,7 +3,7 @@ include "../../src/UnorderedMap/UnorderedMapSpec.dfy"
 include "../../src/OrderedMap/OrderedMapSpec.dfy"
 include "../../src/TreeMap/TreeMapSpec.dfy"
 include "../../src/TreeMap/TreeMapImpl/EraseImpl.dfy"
-include "../../src/Collections/OrderedSetUtils.dfy"
+include "../../src/Collections/SetInt.dfy"
 include "../../src/DataStructures/ThreadedLinkedTree.dfy"
 include "../../src/DataStructures/ThreadedLinkedTree/Model/Base.dfy"
 include "../../src/DataStructures/ThreadedLinkedTree/Model/Insert.dfy"
@@ -13,7 +13,7 @@ module TreeMapImpl {
   import opened UnorderedMapSpec
   import opened OrderedMapSpec
   import opened TreeMapSpec
-  import opened OrderedSetUtils
+  import opened SetInt
   import opened ThreadedLinkedTree
   import opened ModelB = ThreadedLinkedTree.Model.Base
   import opened ModelI = ThreadedLinkedTree.Model.Insert
@@ -108,11 +108,11 @@ module TreeMapImpl {
       calc == {
         Peek?();
         (
-          var k := elemth(Parent().Model().Keys, Index());
+          var k := ElemAt(Parent().Model().Keys, Index());
           (k, Parent().Model()[k])
         );
         (
-          var k := elemth(toMapRec(iter.parent.Model()).Keys, ModelIt.Index(iter.Model(), iter.parent.Model()));
+          var k := ElemAt(toMapRec(iter.parent.Model()).Keys, ModelIt.Index(iter.Model(), iter.parent.Model()));
           (k, toMapRec(iter.parent.Model())[k])
         );
         ModelIt.Peek'(iter.Model(), iter.parent.Model());
@@ -702,7 +702,7 @@ module TreeMapImpl {
       ensures k in old(Model()) ==> newt.HasPeek?() && key(newt.Peek?()) == k
       ensures k !in old(Model()) ==> newt.Traversed() == Model().Keys && |newt.Traversed()| == |Model().Keys|
 
-      ensures k in old(Model()) ==> (newt as OrderedMapIterator).Index() == |smaller(Model().Keys,k)|
+      ensures k in old(Model()) ==> (newt as OrderedMapIterator).Index() == |Smaller(Model().Keys,k)|
       ensures k !in old(Model()) ==> (newt as OrderedMapIterator).Index() == |Model().Keys|
 
       ensures Iterators() >= {newt}+old(Iterators())
@@ -999,7 +999,7 @@ module TreeMapImpl {
       ensures newt.HasPeek?()
       ensures newt.Peek?() == (k, v)
 
-      ensures (newt as OrderedMapIterator).Index() == |smaller(Model().Keys,k)|
+      ensures (newt as OrderedMapIterator).Index() == |Smaller(Model().Keys,k)|
 
       ensures Iterators() >= {newt} + old(Iterators())
       ensures forall it <- old(Iterators()) | old(it.Valid())

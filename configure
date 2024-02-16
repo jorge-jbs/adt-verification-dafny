@@ -92,7 +92,7 @@ files=(
     src/DataStructures/ThreadedLinkedTree/Model/Iterator.dfy
     src/DataStructures/ThreadedLinkedTree/Model/MoveRed.dfy
     src/DataStructures/ThreadedLinkedTree/Model/Remove.dfy
-    src/DataStructures/ThreadedLinkedTree/Model/RemoveElemth.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/RemoveElemAt.dfy
     src/DataStructures/ThreadedLinkedTree/Model/RemoveMinMaintainingPrev.dfy
     src/DataStructures/ThreadedLinkedTree/Model/RemoveRoot.dfy
     src/DataStructures/ThreadedLinkedTree/Model/Restore.dfy
