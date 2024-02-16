@@ -88,16 +88,6 @@ module TreeSetImpl {
       && iter.Valid()
     }
 
-    //Index -1 means past the beginning. Traversed is empty. No Peek
-    //Index |Parent().Model()| means past the end- Traversed is Parent().Model(). No Peek
-    // 0<=Index <|Parent().Model()| Peek is the Index()-th elem which is also the size of Traversed()
-    //i.e. the set of elements smaller than the Peek
-
-    //When HasPeek is true the iterator
-    // is uniquely determined either by
-    // Index(), Traversed() or Peek?()
-    //When HasPeek is not true we need Index
-
     ghost function Index(): int
       reads this, Parent(), Parent().Repr()
       requires Valid()
@@ -140,6 +130,11 @@ module TreeSetImpl {
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
                 && it is OrderedSetIterator
                 && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
+    {
+      b := iter.HasPeek();
+      assert parent.Model() == parent.treemap.Model().Keys;
+      assert Parent().Valid() == parent.Valid();
+    }
 
     method Next()
       modifies this, Parent(), Parent().Repr()

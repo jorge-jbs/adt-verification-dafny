@@ -134,7 +134,6 @@ module OrderedMultisetSpec {
                 (it is OrderedMultisetIterator &&
                  (it as OrderedMultisetIterator).Index() == old((it as OrderedMultisetIterator).Index()) )
 
-
     method Next()
       modifies this, Parent(), Parent().Repr()
       requires allocated(Parent())
@@ -300,7 +299,7 @@ module OrderedMultisetSpec {
       requires Valid()
       ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
       ensures forall it | it in Iterators() :: it is OrderedMultisetIterator
-    
+
     function Cast(it: UnorderedMultisetIterator): OrderedMultisetIterator
       reads this, Repr()
       requires Valid()
@@ -337,7 +336,6 @@ module OrderedMultisetSpec {
       ensures forall it | it in old(Iterators()) && old(it.Valid()) :://NEW
                 (it is OrderedMultisetIterator &&
                  (it as OrderedMultisetIterator).Index() == old((it as OrderedMultisetIterator).Index()))
-
 
     method Last() returns (it: OrderedMultisetIterator)//iterator to the last element
       modifies this, Repr()
@@ -553,12 +551,12 @@ module OrderedMultisetSpec {
     assert it2.Peek()!=5;
     assert (it2 as OrderedSetIterator).Traversed()=={0,1};//OO(
     assert it2.Index()==2;
-   it2:=s.find(7); 
+   it2:=s.find(7);
     assert it2.Traversed()=={0,1,2};
-    assert it2.Index()==3;  
+    assert it2.Index()==3;
     var aux:=it2.Next();
     assert aux==7;assert it2.Index()==4;
-  
+
     var it3:OrderedSetIterator:=s.find(7);
     it3:=s.insert(it3,5);//efficient
     assert it3.Traversed()=={0,1,2};

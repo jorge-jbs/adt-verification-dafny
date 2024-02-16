@@ -28,16 +28,15 @@ module TreeSetSpec {
 
       //specific invalidation policy
       ensures forall it: OrderedSetIterator <- old(Iterators()) | old(it.Valid()) ::
-        && var it' := Cast(it);
         && it.Valid()
         && it.Parent() == old(it.Parent())
         && (it.HasPeek?() <==> old(it.HasPeek?()))
         && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
         && (
-          if x in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
-            it'.Index() == old(it'.Index())
+          if x in old(Model()) || it.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
+            it.Index() == old(it.Index())
           else
-            it'.Index() == old(it'.Index()) + 1
+            it.Index() == old(it.Index()) + 1
         )
         && (
           if x in old(Model()) || (it.HasPeek?() && it.Peek?() < x) then
@@ -117,16 +116,15 @@ module TreeSetSpec {
       //specific invalidation policy
       //mid is like the rest of iterators
       ensures forall it: OrderedSetIterator <- old(Iterators()) | old(it.Valid()) ::
-        && var it' := Cast(it);
         && it.Valid()
         && it.Parent() == old(it.Parent())
         && (it.HasPeek?() <==> old(it.HasPeek?()))
         && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
         && (
-          if x in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
-            it'.Index() == old(it'.Index())
+          if x in old(Model()) || it.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
+            it.Index() == old(it.Index())
           else
-            it'.Index() == old(it'.Index()) + 1
+            it.Index() == old(it.Index()) + 1
         )
         && (
           if x in old(Model()) || (it.HasPeek?() && it.Peek?() < x) then

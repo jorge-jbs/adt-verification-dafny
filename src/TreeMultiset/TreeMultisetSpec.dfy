@@ -28,16 +28,15 @@ module TreeMultisetSpec {
       //specific invalidation policy
       //x is added as the last occurrence of equal elements
       ensures forall it: OrderedMultisetIterator <- old(Iterators()) | old(it.Valid()) ::
-        && var it' := Cast(it);
         && it.Valid()
         && it.Parent() == old(it.Parent())
         && (it.HasPeek?() <==> old(it.HasPeek?()))
         && (it.HasPeek?()  ==> it.Peek?() == old(it.Peek?()))
         && (
-          if it'.Index() == -1 || (it.HasPeek?() && it.Peek?() <= x) then
-            it'.Index() == old(it'.Index())
+          if it.Index() == -1 || (it.HasPeek?() && it.Peek?() <= x) then
+            it.Index() == old(it.Index())
           else
-            it'.Index() == old(it'.Index()) + 1
+            it.Index() == old(it.Index()) + 1
         )
         && (
           if it.HasPeek?() && it.Peek?() <= x then
@@ -72,20 +71,19 @@ module TreeMultisetSpec {
           && it.Parent() == old(it.Parent())
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-          && var it' := Cast(it);
           && (
-            if x !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
-              it'.Index() == old(it'.Index())
+            if x !in old(Model()) || it.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
+              it.Index() == old(it.Index())
             else
-              it'.Index() == old(it'.Index()) - 1
+              it.Index() == old(it.Index()) - 1
           )
           && (
             if x !in old(Model()) || (it.HasPeek?() && it.Peek?() < x) then
-                && it'.Traversed() == old(it'.Traversed())
-                && |it'.Traversed()| == |old(it'.Traversed())|
+                && it.Traversed() == old(it.Traversed())
+                && |it.Traversed()| == |old(it.Traversed())|
             else
-                && it'.Traversed() == old(it'.Traversed()) - multiset{x}
-                && |it'.Traversed()| == |old(it'.Traversed())| - 1
+                && it.Traversed() == old(it.Traversed()) - multiset{x}
+                && |it.Traversed()| == |old(it.Traversed())| - 1
           )
 
       //last occurrence is removed
@@ -137,20 +135,19 @@ module TreeMultisetSpec {
           && it.Parent() == old(it.Parent())
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-          && var it' := Cast(it);
           && (
-            if x !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
-              it'.Index() == old(it'.Index())
+            if x !in old(Model()) || it.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
+              it.Index() == old(it.Index())
             else
-              it'.Index() == old(it'.Index()) - old(Model()[x])
+              it.Index() == old(it.Index()) - old(Model()[x])
           )
           && (
             if x !in old(Model()) || (it.HasPeek?() && it.Peek?() < x) then
-                && it'.Traversed() == old(it'.Traversed())
-                && |it'.Traversed()| == |old(it'.Traversed())|
+                && it.Traversed() == old(it.Traversed())
+                && |it.Traversed()| == |old(it.Traversed())|
             else
-                && it'.Traversed() == old(it'.Traversed()) - multiset{}[x:=old(Model()[x])]
-                && |it'.Traversed()| == |old(it'.Traversed())| - old(Model()[x])
+                && it.Traversed() == old(it.Traversed()) - multiset{}[x:=old(Model()[x])]
+                && |it.Traversed()| == |old(it.Traversed())| - old(Model()[x])
           )
 
 
@@ -184,16 +181,15 @@ module TreeMultisetSpec {
       //specific invalidation policy
       //mid is like the rest of iterators
       ensures forall it: OrderedMultisetIterator <- old(Iterators()) | old(it.Valid()) ::
-        && var it' := Cast(it);
         && it.Valid()
         && it.Parent() == old(it.Parent())
         && (it.HasPeek?() <==> old(it.HasPeek?()))
         && (it.HasPeek?()  ==> it.Peek?() == old(it.Peek?()))
         && (
-          if it'.Index() == -1 || (it.HasPeek?() && it.Peek?() <= x) then
-            it'.Index() == old(it'.Index())
+          if it.Index() == -1 || (it.HasPeek?() && it.Peek?() <= x) then
+            it.Index() == old(it.Index())
           else
-            it'.Index() == old(it'.Index()) + 1
+            it.Index() == old(it.Index()) + 1
         )
         && (
           if it.HasPeek?() && it.Peek?() <= x then
@@ -245,20 +241,19 @@ module TreeMultisetSpec {
           && it.Parent() == old(it.Parent())
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-          && var it' := Cast(it);
           && (
-            if x !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
-              it'.Index() == old(it'.Index())
+            if x !in old(Model()) || it.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
+              it.Index() == old(it.Index())
             else
-              it'.Index() == old(it'.Index()) - 1
+              it.Index() == old(it.Index()) - 1
           )
           && (
             if x !in old(Model()) || (it.HasPeek?() && it.Peek?() < x) then
-                && it'.Traversed() == old(it'.Traversed())
-                && |it'.Traversed()| == |old(it'.Traversed())|
+                && it.Traversed() == old(it.Traversed())
+                && |it.Traversed()| == |old(it.Traversed())|
             else
-                && it'.Traversed() == old(it'.Traversed()) - multiset{x}
-                && |it'.Traversed()| == |old(it'.Traversed())| - 1
+                && it.Traversed() == old(it.Traversed()) - multiset{x}
+                && |it.Traversed()| == |old(it.Traversed())| - 1
           )
 
       //last occurrence is removed
@@ -304,20 +299,20 @@ module TreeMultisetSpec {
           && it.Parent() == old(it.Parent())
           && (it.HasPeek?() <==> old(it.HasPeek?()))
           && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-          && var it' := it as OrderedMultisetIterator;
+          && var it := it as OrderedMultisetIterator;
           && (
-            if old(it'.Index()) < mid' then
-              it'.Index() == old(it'.Index())
+            if old(it.Index()) < mid' then
+              it.Index() == old(it.Index())
             else
-              it'.Index() == old(it'.Index()) - 1
+              it.Index() == old(it.Index()) - 1
           )
           && (
-            if old(it'.Index()) < mid' && old(it'.Index()) != -1 then
-              && it'.Traversed() == old(it'.Traversed())
-              && |it'.Traversed()| == |old(it'.Traversed())|
+            if old(it.Index()) < mid' && old(it.Index()) != -1 then
+              && it.Traversed() == old(it.Traversed())
+              && |it.Traversed()| == |old(it.Traversed())|
             else
-              && it'.Traversed() == old(it'.Traversed()) - multiset{x}
-              && |it'.Traversed()| == |old(it'.Traversed())| - 1
+              && it.Traversed() == old(it.Traversed()) - multiset{x}
+              && |it.Traversed()| == |old(it.Traversed())| - 1
           )*/
   }
 

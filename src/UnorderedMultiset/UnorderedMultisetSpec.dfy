@@ -273,8 +273,7 @@ module UnorderedMultisetSpec {
                 && |it.Traversed()| == old(|it.Traversed()|)
                 && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-
-    method Add(x:K)
+    method Add(x: K)
       modifies this, Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
