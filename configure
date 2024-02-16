@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 files=(
-    #examples/Sets/OrdSetContained.dfy  # time out
+    examples/Sets/OrdSetContained.dfy
     #examples/Sets/OrdSetForwardContained.dfy  # time out
     #examples/Sets/OrdSetIntersection.dfy  # takes to long (and fails?)
     examples/Sets/UnordSetContained.dfy
