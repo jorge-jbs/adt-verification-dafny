@@ -1,5 +1,5 @@
-include "../ADT.dfy"
-include "../Collections/KeyValue.dfy"
+include "../../src/ADT.dfy"
+include "../../src/Collections/KeyValue.dfy"
 
 module UnorderedSetSpec {
   import opened ADT

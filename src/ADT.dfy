@@ -1,7 +1,9 @@
 include "Collections/Set.dfy"
+include "Collections/SetObject.dfy"
 
 module ADT {
   import opened Set
+  import opened SetObject
 
   type pos = n: int | n > 0 witness 1
 
@@ -20,12 +22,59 @@ module ADT {
       ReprFamily(ReprDepth)
     }
 
+    lemma ReprLemma()
+      ensures Repr() == ReprFamily(ReprDepth)
+    {}
+
     ghost predicate Valid()
       reads this, Repr()
 
     ghost function Model(): M
       reads this, Repr()
       requires Valid()
+  }
+
+  ghost predicate Valid2<A, B>(a: ADT<A>, b: ADT<B>)
+    reads a, a.Repr(), b, b.Repr()
+    ensures Valid2(a, b) ==> a.Valid()
+    ensures Valid2(a, b) ==> b.Valid()
+  {
+    && a.Valid()
+    && b.Valid()
+    //&& {a} + a.Repr() !! {b} + b.Repr()
+    && a.Repr() !! b.Repr()
+    && a !in b.Repr()
+    && b !in a.Repr()
+    && a != b
+  }
+
+  twostate predicate MaintainsValid2<A, B>(a: ADT<A>, b: ADT<B>)
+    reads a, a.Repr(), b, b.Repr()
+    requires old(Valid2(a, b))
+  {
+    && Valid2(a, b)
+    && fresh(a.Repr() - old(a.Repr()))
+    && fresh(b.Repr() - old(b.Repr()))
+  }
+
+  twostate lemma MaintainsValid2Helper<A, B>(a: ADT<A>, b: ADT<B>)
+    requires a.Valid()
+    requires fresh(a.Repr() - old(a.Repr()))
+
+    requires old(allocated(a.Repr()))
+    requires old(allocated(b.Repr()))
+    requires allocated(b.Repr())
+    requires b.Repr() == old(b.Repr())
+    requires unchanged({b} + b.Repr())
+
+    //requires old(a.Repr()) !! b.Repr()
+    requires old(Valid2(a, b))
+
+    ensures MaintainsValid2(a, b)
+    ensures allocated(a.Repr())
+    ensures allocated(b.Repr())
+  {
+    //reveal Valid2();
   }
 
   ghost predicate ValidDistinctADTs(adts: seq<ADT>)
@@ -55,4 +104,31 @@ module ADT {
     && (forall r, s | r in adts && s in objs ::
           {r} + r.Repr() !! {s})
   }
+
+  twostate lemma Disjoint(new r: set<object>, rr: set<object>, s: set<object>)
+    requires fresh(r - rr)
+    //requires unchanged(s)
+    requires rr !! s
+    ensures r !! s
+  {}
+
+/*
+  twostate lemma DisjointFromFresh(x: ADT, y: ADT)
+    requires old(allocated({x} + x.Repr()))
+    requires old(allocated({y} + y.Repr()))
+    requires allocated({x} + x.Repr())
+    requires allocated({y} + y.Repr())
+    requires fresh(x.Repr() - old(x.Repr()))
+    requires fresh(y.Repr() - old(y.Repr()))
+    requires old({x} + x.Repr() !! {y} + y.Repr())
+    ensures {x} + x.Repr() !! {y} + y.Repr()
+  {
+    assert allocated(old(y.Repr()));
+    assert old(allocated(y.Repr()));
+    assert allocated(y.Repr());
+    assume unchanged(y);
+    assume unchanged(y.Repr());
+    assume unchanged({y} + y.Repr());
+  }
+  */
 }

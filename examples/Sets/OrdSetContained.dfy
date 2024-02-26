@@ -1,7 +1,9 @@
+include "../../src/ADT.dfy"
 include "../../src/OrderedSet/OrderedSetSpec.dfy"
 
 module OrdSetContained {
   import opened OrderedSetSpec
+  import opened ADT
 
   export provides OrderedSetSpec, OrdSetContained
 
@@ -25,7 +27,7 @@ module OrdSetContained {
     && s2.Model() == old(s2.Model())
   }
 
-  ghost predicate LoopInvariant(
+  ghost predicate LoopStaticInvariant(
       s1: OrderedSet,
       it1: OrderedSetIterator,
       it1HasPeek: bool,
@@ -38,11 +40,16 @@ module OrdSetContained {
   {
     && StaticInvariant(s1, s2)
 
-    && it1.Parent() == s1 && it2.Parent() == s2
-    && it1.Valid() && it2.Valid()
-    && it1 in s1.Iterators() && it2 in s2.Iterators()
-    && it1.Traversed() <= s1.Model() && it2.Traversed() <= s2.Model()
-    && 0 <= it1.Index() <= |s1.Model()| && 0 <= it2.Index() <= |s2.Model()|
+    && it1.Parent() == s1
+    && it2.Parent() == s2
+    && it1.Valid()
+    && it2.Valid()
+    && it1 in s1.Iterators()
+    && it2 in s2.Iterators()
+    //&& it1.Traversed() <= s1.Model()
+    //&& it2.Traversed() <= s2.Model()
+    //&& 0 <= it1.Index() <= |s1.Model()|
+    //&& 0 <= it2.Index() <= |s2.Model()|
     //&& !it2.HasNext()==> b
     && (b ==> it1.Traversed() <= it2.Traversed())
     && (!b ==> !(it1.Traversed() <= s2.Model()))
@@ -63,12 +70,69 @@ module OrdSetContained {
       b: bool
     ): int
     reads s1, s1.Repr(), s2, s2.Repr(), it1, it2
-    requires LoopInvariant(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
+    requires LoopStaticInvariant(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
   {
     |s2.Model()| - it2.Index() + (if b then 1 else 0)
   }
 
-  method Loop1(
+  twostate predicate Loop1Invariant(
+      s1: OrderedSet,
+      it1: OrderedSetIterator,
+      s2: OrderedSet,
+      it2: OrderedSetIterator
+    )
+    reads s1, s1.Repr(), s2, s2.Repr(), it1, it2
+  {
+    && StaticInvariant(s1, s2)
+
+    && it1.Parent() == s1
+    && it2.Parent() == s2
+    && it1.Valid()
+    && it2.Valid()
+    && it1 in s1.Iterators()
+    && it2 in s2.Iterators()
+    //&& it1.Traversed() <= it2.Traversed()
+    //&& (it1.HasPeek?() ==> it1.Peek?() !in it2.Traversed())
+    //&& (forall u | u in it2.Traversed() && it1.Traversed() < s1.Model() :: u < it1.Peek?())
+  }
+
+  method Loop1(  // 15.3M RU
+      s1: OrderedSet,
+      it1: OrderedSetIterator,
+      it1HasPeek: bool,
+      s2: OrderedSet,
+      it2: OrderedSetIterator,
+      it2HasPeek: bool,
+      b: bool
+    )
+    returns (
+      newIt1HasPeek: bool,
+      newIt2HasPeek: bool,
+      newB: bool
+    )
+    modifies s1, s1.Repr(), s2, s2.Repr()
+    requires allocated(s1.Repr())
+    requires allocated(s2.Repr())
+    ensures allocated(s1.Repr())
+    ensures allocated(s2.Repr())
+    requires it1HasPeek && it2HasPeek && b
+    requires LoopStaticInvariant(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
+    ensures LoopStaticInvariant(s1, it1, newIt1HasPeek, s2, it2, newIt2HasPeek, newB)
+    ensures DynamicInvariant(s1, s2)
+    ensures LoopTermination(s1, it1, newIt1HasPeek, s2, it2, newIt2HasPeek, newB)
+      < old(LoopTermination(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b))
+
+    requires it1.Peek?() == it2.Peek?()
+  {
+    it1.Next();
+    newIt1HasPeek := it1.HasPeek();
+    it2.Next();
+    newIt2HasPeek := it2.HasPeek();
+    newB := b;
+  }
+
+/*
+  method {:vcs_split_on_every_assert} Loop1(  // 14.2M ==> 13.7M
       s1: OrderedSet,
       it1: OrderedSetIterator,
       it1HasPeek: bool,
@@ -85,13 +149,23 @@ module OrdSetContained {
     modifies s1, s1.Repr(), s2, s2.Repr()
     ensures fresh(s1.Repr() - old(s1.Repr()))
     ensures fresh(s2.Repr() - old(s2.Repr()))
+    //requires allocated({s1} + s1.Repr())
+    //requires allocated({s2} + s2.Repr())
+    //ensures allocated({s1} + s1.Repr())
+    //ensures allocated({s1} + s2.Repr())
+    requires allocated(s1)
     requires allocated(s1.Repr())
+    requires allocated(s2)
     requires allocated(s2.Repr())
+    ensures allocated(s1)
     ensures allocated(s1.Repr())
+    ensures allocated(s2)
     ensures allocated(s2.Repr())
     requires it1HasPeek && it2HasPeek && b
-    requires LoopInvariant(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
-    ensures LoopInvariant(s1, it1, newIt1HasPeek, s2, it2, newIt2HasPeek, newB)
+    requires LoopStaticInvariant(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
+    //ensures StaticInvariant(s1, s2)
+    requires LoopStaticInvariant(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
+    ensures LoopStaticInvariant(s1, it1, newIt1HasPeek, s2, it2, newIt2HasPeek, newB)
     ensures DynamicInvariant(s1, s2)
     ensures LoopTermination(s1, it1, newIt1HasPeek, s2, it2, newIt2HasPeek, newB)
       < old(LoopTermination(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b))
@@ -99,11 +173,56 @@ module OrdSetContained {
     requires it1.Peek?() == it2.Peek?()
   {
     it1.Next();
+    assert Loop1Invariant(s1, it1, s2, it2);
     newIt1HasPeek := it1.HasPeek();
+    assert Loop1Invariant(s1, it1, s2, it2);
     it2.Next();
+    assert Loop1Invariant(s1, it1, s2, it2);
     newIt2HasPeek := it2.HasPeek();
+    assert Loop1Invariant(s1, it1, s2, it2);
     newB := b;
   }
+  */
+    /*
+  {
+    ghost var repr1 := {s1} + s1.Repr();
+    ghost var repr2 := {s2} + s2.Repr();
+    ////assert allocated(repr2);
+    it1.Next();
+    ghost var repr1' := {s1} + s1.Repr();
+    //assert s1 in repr1;
+    //assert s1 in repr1';
+    //assert fresh(repr1' - repr1);
+    ghost var repr2' := {s2} + s2.Repr();
+    //assert repr2 == repr2';
+    Disjoint(repr1', repr1, repr2');
+    //assert StaticInvariant(s1, s2);
+    assert {:split_here} Loop1Invariant(s1, it1, s2, it2);
+    //assert {:split_here} StaticInvariant(s1, s2);
+  label L2:
+    newIt1HasPeek := it1.HasPeek();
+    ghost var repr1'' := {s1} + s1.Repr();
+    ghost var repr2'' := {s2} + s2.Repr();
+    Disjoint@L2(repr1'', repr1', repr2'');
+    assert {:split_here} Loop1Invariant(s1, it1, s2, it2);
+    //assert {:split_here} StaticInvariant(s1, s2);
+  label L3:
+    it2.Next();
+    ghost var repr1''' := {s1} + s1.Repr();
+    ghost var repr2''' := {s2} + s2.Repr();
+    Disjoint@L3(repr2''', repr2'', repr1''');
+    assert {:split_here} Loop1Invariant(s1, it1, s2, it2);
+    //assert {:split_here} StaticInvariant(s1, s2);
+  label L4:
+    newIt2HasPeek := it2.HasPeek();
+    ghost var repr1'''' := {s1} + s1.Repr();
+    ghost var repr2'''' := {s2} + s2.Repr();
+    Disjoint@L4(repr2'''', repr2''', repr1'''');
+    assert {:split_here} Loop1Invariant(s1, it1, s2, it2);
+    //assert {:split_here} StaticInvariant(s1, s2);
+    newB := b;
+  }
+  */
 
   method Loop2(
       s1: OrderedSet,
@@ -125,8 +244,8 @@ module OrdSetContained {
     ensures allocated(s1.Repr())
     ensures allocated(s2.Repr())
     requires it1HasPeek && it2HasPeek && b
-    requires LoopInvariant(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
-    ensures LoopInvariant(s1, it1, newIt1HasPeek, s2, it2, newIt2HasPeek, newB)
+    requires LoopStaticInvariant(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
+    ensures LoopStaticInvariant(s1, it1, newIt1HasPeek, s2, it2, newIt2HasPeek, newB)
     ensures DynamicInvariant(s1, s2)
     ensures LoopTermination(s1, it1, newIt1HasPeek, s2, it2, newIt2HasPeek, newB)
       < old(LoopTermination(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b))
@@ -139,7 +258,7 @@ module OrdSetContained {
     newIt2HasPeek := it2.HasPeek();
   }
 
-  method Loop3(
+  method Loop3(  // 5.28M RU
       s1: OrderedSet,
       it1: OrderedSetIterator,
       it1HasPeek: bool,
@@ -159,8 +278,8 @@ module OrdSetContained {
     ensures allocated(s1.Repr())
     ensures allocated(s2.Repr())
     requires it1HasPeek && it2HasPeek && b
-    requires LoopInvariant(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
-    ensures LoopInvariant(s1, it1, newIt1HasPeek, s2, it2, newIt2HasPeek, newB)
+    requires LoopStaticInvariant(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
+    ensures LoopStaticInvariant(s1, it1, newIt1HasPeek, s2, it2, newIt2HasPeek, newB)
     ensures DynamicInvariant(s1, s2)
     ensures LoopTermination(s1, it1, newIt1HasPeek, s2, it2, newIt2HasPeek, newB)
       < old(LoopTermination(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b))
@@ -173,6 +292,7 @@ module OrdSetContained {
     newIt2HasPeek := it2.HasPeek();
   }
 
+  // 7.72M RU
   method Loop(
       s1: OrderedSet,
       it1: OrderedSetIterator,
@@ -193,8 +313,8 @@ module OrdSetContained {
     ensures allocated(s1.Repr())
     ensures allocated(s2.Repr())
     requires it1HasPeek && it2HasPeek && b
-    requires LoopInvariant(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
-    ensures LoopInvariant(s1, it1, newIt1HasPeek, s2, it2, newIt2HasPeek, newB)
+    requires LoopStaticInvariant(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
+    ensures LoopStaticInvariant(s1, it1, newIt1HasPeek, s2, it2, newIt2HasPeek, newB)
     ensures DynamicInvariant(s1, s2)
     ensures LoopTermination(s1, it1, newIt1HasPeek, s2, it2, newIt2HasPeek, newB)
       < old(LoopTermination(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b))
@@ -211,7 +331,7 @@ module OrdSetContained {
     }
   }
 
-  method OrdSetContained(s1: OrderedSet, s2: OrderedSet) returns (b: bool)
+  method OrdSetContained(s1: OrderedSet, s2: OrderedSet) returns (b: bool)  // 6.85M RU
     modifies s1, s1.Repr(), s2, s2.Repr()
     requires allocated(s1.Repr())
     requires allocated(s2.Repr())
@@ -246,7 +366,7 @@ module OrdSetContained {
       decreases LoopTermination(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
       invariant allocated(s1.Repr())
       invariant allocated(s2.Repr())
-      invariant LoopInvariant(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
+      invariant LoopStaticInvariant(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b)
       invariant DynamicInvariant(s1, s2)
     {
       it1HasPeek, it2HasPeek, b := Loop(s1, it1, it1HasPeek, s2, it2, it2HasPeek, b);

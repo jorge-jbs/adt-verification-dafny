@@ -4,6 +4,7 @@ include "../UnorderedSet/UnorderedSetSpec.dfy"
 include "../Collections/SetInt.dfy"
 
 module OrderedSetSpec {
+  import opened ADT
   import opened Seq
   import opened KeyValue
   import opened UnorderedSetSpec
@@ -250,7 +251,7 @@ module OrderedSetSpec {
                 && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
   }
 
-  trait {:termination false} OrderedSet extends UnorderedSet{
+  trait {:termination false} OrderedSet extends UnorderedSet {
     //Novelties respect UnorderedSet
     // Last iterator method
     // Find knows the traversed elements
@@ -490,6 +491,29 @@ module OrderedSetSpec {
       ensures (next as OrderedSetIterator).Index() == old((mid as OrderedSetIterator).Index())
 
       ensures Iterators() >= {next} + old(Iterators())
+      ensures
+        var x := old(mid.Peek?());
+        forall it: OrderedSetIterator <- old(Iterators()) | 
+            && old(it.Valid())
+            && (old(it.HasPeek?()) ==> old(it.Peek?()) != x) ::
+          && it.Valid()
+          && it.Parent() == old(it.Parent())
+          && (it.HasPeek?() <==> old(it.HasPeek?()))
+          && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
+          && (
+            if (it.HasPeek?() ==> it.Peek?() < x) && old(it.Index()) != old(|Model()|) then
+              it.Index() == old(it.Index())
+            else
+              it.Index() == old(it.Index()) - 1
+          )
+          && (
+            if it.HasPeek?() && it.Peek?() < x then
+              && it.Traversed() == old(it.Traversed())
+              && |it.Traversed()| == |old(it.Traversed())|
+            else
+              && it.Traversed() == old(it.Traversed()) - {x}
+              && |it.Traversed()| == |old(it.Traversed())| - 1
+          )
   }
 
   method {:verify false} {:timeLimitMultiplier 100} try(s:OrderedSet)
@@ -498,7 +522,7 @@ module OrderedSetSpec {
     requires allocated(s.Repr())
     ensures s.Valid()
     ensures fresh(s.Repr()-old(s.Repr()))
-    ensures  allocated(s.Repr())
+    ensures allocated(s.Repr())
   {
     s.Add(2); s.Add(7); s.Add(0); s.Add(1);s.Add(10);
     assert s.Model()=={0,1,2,7,10};
@@ -559,5 +583,40 @@ module OrderedSetSpec {
     var it5:OrderedSetIterator:=s.First();
     it5.Prev();
     assert !it5.HasPeek?();*/
+  }
+
+  ghost predicate ValidIt(s: OrderedSet, it: OrderedSetIterator)
+    reads s, s.Repr()
+    requires s.Valid()
+  {
+    && it in s.Iterators()
+    && it.Parent() == s
+    && it.Valid()
+  }
+
+  ghost predicate Valid2It11(
+      a: OrderedSet,
+      itA: OrderedSetIterator,
+      b: OrderedSet,
+      itB: OrderedSetIterator
+    )
+    reads a, a.Repr(), b, b.Repr()
+  {
+    && Valid2(a, b)
+    && itA != itB
+    && ValidIt(a, itA)
+    && ValidIt(b, itB)
+  }
+
+  ghost predicate ValidIt2(
+      a: OrderedSet,
+      itA: OrderedSetIterator,
+      itB: OrderedSetIterator
+    )
+    reads a, a.Repr()
+  {
+    && a.Valid()
+    && ValidIt(a, itA)
+    && ValidIt(a, itB)
   }
 }
