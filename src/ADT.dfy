@@ -77,6 +77,35 @@ module ADT {
     //reveal Valid2();
   }
 
+  ghost predicate Valid3<A, B, C>(a: ADT<A>, b: ADT<B>, c: ADT<C>)
+    reads a, a.Repr(), b, b.Repr(), c, c.Repr()
+    ensures Valid3(a, b, c) ==> a.Valid()
+    ensures Valid3(a, b, c) ==> b.Valid()
+    ensures Valid3(a, b, c) ==> c.Valid()
+  {
+    && a.Valid()
+    && b.Valid()
+    && c.Valid()
+
+    //&& {a} + a.Repr() !! {b} + b.Repr()
+    && a.Repr() !! b.Repr()
+    && a !in b.Repr()
+    && b !in a.Repr()
+    && a != b
+
+    //&& {a} + a.Repr() !! {c} + c.Repr()
+    && a.Repr() !! c.Repr()
+    && a !in c.Repr()
+    && c !in a.Repr()
+    && a != c
+
+    //&& {b} + b.Repr() !! {c} + c.Repr()
+    && b.Repr() !! c.Repr()
+    && b !in c.Repr()
+    && c !in b.Repr()
+    && b != c
+  }
+
   ghost predicate ValidDistinctADTs(adts: seq<ADT>)
     reads set r | r in adts :: r
     reads BigUnion(set r | r in adts :: r.Repr())

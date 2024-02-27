@@ -29,7 +29,7 @@ module OrderedSetSpec2 {
       reads this, Parent(), Parent().Repr()
       requires Valid()
       requires Parent().Valid()
-      requires !HasPeek?()
+      ensures PastTheBeginning?() ==> !HasPeek?()
     {
       !HasPeek?() && !PastTheEnd?()
     }
@@ -147,6 +147,7 @@ module OrderedSetSpec2 {
       //ensures Parent() == old(Parent())
       ensures b == HasPeek?() == old(HasPeek?())
       ensures Parent().Iterators() >= old(Parent().Iterators())
+      ensures PastTheEnd?() == old(PastTheEnd?())
 
       ensures HasPeekModel()
       /*
@@ -227,6 +228,7 @@ module OrderedSetSpec2 {
       ensures Parent().Valid()
       //ensures Parent() == old(Parent())
       ensures Parent().Iterators() >= old(Parent().Iterators())
+      ensures !PastTheBeginning?()
       ensures NextModel()
       /*
       ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
@@ -413,6 +415,7 @@ module OrderedSetSpec2 {
       ensures fresh(it)
       ensures it.Valid()
       ensures it.Parent() == this
+      ensures !it.PastTheBeginning?()
       ensures Iterators() >= {it} + old(Iterators())
 
       ensures FirstModel(it)
@@ -751,6 +754,20 @@ module OrderedSetSpec2 {
     ensures allocated(a.Repr())
     ensures allocated(b.Repr())
   {}
+
+  ghost predicate Valid3It110(
+      a: OrderedSet,
+      itA: OrderedSetIterator,
+      b: OrderedSet,
+      itB: OrderedSetIterator,
+      c: OrderedSet
+    )
+    reads a, a.Repr(), b, b.Repr(), c, c.Repr()
+  {
+    && Valid3(a, b, c)
+    && ValidIt(a, itA)
+    && ValidIt(b, itB)
+  }
 
   ghost predicate ValidIt2(
       a: OrderedSet,
