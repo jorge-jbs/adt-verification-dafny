@@ -1,4 +1,4 @@
-include "../../src/ADT.dfy"
+include "../../src/AdtWithoutThis.dfy"
 include "../../src/Collections/KeyValue.dfy"
 include "../../src/Collections/SetObject.dfy"
 
@@ -11,22 +11,22 @@ module OrderedSetSpec2 {
     ghost function Parent(): OrderedSet
 
     ghost predicate Valid()
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
 
     ghost predicate HasPeek?()
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
 
     ghost predicate PastTheEnd?()
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
       ensures PastTheEnd?() ==> !HasPeek?()
 
     ghost predicate PastTheBeginning?()
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
       ensures PastTheBeginning?() ==> !HasPeek?()
@@ -35,7 +35,7 @@ module OrderedSetSpec2 {
     }
 
     opaque ghost predicate BeforeSpec(before: set<K>)
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
       requires HasPeek?()
@@ -45,14 +45,14 @@ module OrderedSetSpec2 {
     }
 
     ghost function Before(): set<K>
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
       requires HasPeek?()
       ensures BeforeSpec(Before())
 
     opaque ghost predicate Before'Spec(before': set<K>)
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
     {
@@ -61,7 +61,7 @@ module OrderedSetSpec2 {
     }
 
     ghost function Before'(): set<K>
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
       ensures Before'Spec(Before'())
@@ -78,7 +78,7 @@ module OrderedSetSpec2 {
     }
 
     opaque ghost function After(): set<K>
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
       requires HasPeek?()
@@ -87,7 +87,7 @@ module OrderedSetSpec2 {
     }
 
     ghost function After'(): set<K>
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
     {
@@ -100,7 +100,7 @@ module OrderedSetSpec2 {
     }
 
     opaque ghost predicate PeekSpec(p: K)
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
       requires HasPeek?()
@@ -112,14 +112,14 @@ module OrderedSetSpec2 {
     }
 
     ghost function Peek?(): K
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
       requires HasPeek?()
       ensures PeekSpec(Peek?())
 
     opaque twostate predicate HasPeekModel()
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires old(Valid())
       requires old(Parent().Valid())
       requires Valid()
@@ -134,7 +134,7 @@ module OrderedSetSpec2 {
     }
 
     method HasPeek() returns (b: bool)
-      modifies this, Parent(), Parent().Repr()
+      modifies Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
       ensures fresh(Parent().Repr() - old(Parent().Repr()))
@@ -160,7 +160,7 @@ module OrderedSetSpec2 {
       */
 
     opaque twostate predicate PeekModel(p: K)
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires old(Valid())
       requires old(Parent().Valid())
       requires Valid()
@@ -176,7 +176,7 @@ module OrderedSetSpec2 {
     }
 
     method Peek() returns (p: K)
-      modifies this, Parent(), Parent().Repr()
+      modifies Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
       ensures fresh(Parent().Repr() - old(Parent().Repr()))
@@ -201,7 +201,7 @@ module OrderedSetSpec2 {
                 */
 
     opaque twostate predicate NextModel()
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires old(Valid())
       requires old(Parent().Valid())
       requires Valid()
@@ -215,7 +215,7 @@ module OrderedSetSpec2 {
     }
 
     method Next()
-      modifies this, Parent(), Parent().Repr()
+      modifies Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
       ensures fresh(Parent().Repr() - old(Parent().Repr()))
@@ -240,7 +240,7 @@ module OrderedSetSpec2 {
       */
 
     opaque twostate predicate PrevModel()
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires old(Valid())
       requires old(Parent().Valid())
       requires Valid()
@@ -254,7 +254,7 @@ module OrderedSetSpec2 {
     }
 
     method Prev()
-      modifies this, Parent(), Parent().Repr()
+      modifies Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
       ensures fresh(Parent().Repr() - old(Parent().Repr()))
@@ -270,7 +270,7 @@ module OrderedSetSpec2 {
       ensures PrevModel()
 
     opaque twostate predicate CopyModel()
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       requires old(Valid())
       requires old(Parent().Valid())
       requires Valid()
@@ -282,8 +282,9 @@ module OrderedSetSpec2 {
       && |Before'()| == old(|Before'()|)
     }
 
+/*
     method Copy()
-      modifies this, Parent(), Parent().Repr()
+      modifies Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
       ensures fresh(Parent().Repr() - old(Parent().Repr()))
@@ -296,16 +297,17 @@ module OrderedSetSpec2 {
       //ensures Parent() == old(Parent())
       ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures CopyModel()
+      */
   }
 
   trait OrderedSet extends ADT<set<K>> {
     ghost function Iterators(): set<OrderedSetIterator>
-      reads this, Repr()
+      reads Repr()
       requires Valid()
       ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
 
     opaque twostate predicate EmptyModel(b: bool)
-      reads this, Repr()
+      reads Repr()
       requires old(Valid())
       requires Valid()
     {
@@ -315,7 +317,7 @@ module OrderedSetSpec2 {
     }
 
     opaque twostate predicate SameIteratorModel(it: OrderedSetIterator)
-      reads this, Repr()
+      reads Repr()
       requires old(Valid())
       requires Valid()
       requires Iterators() >= old(Iterators())
@@ -330,7 +332,7 @@ module OrderedSetSpec2 {
     }
 
     opaque twostate predicate SameIterators()
-      reads this, Repr()
+      reads Repr()
       requires old(Valid())
       requires Valid()
       requires Iterators() >= old(Iterators())
@@ -358,7 +360,7 @@ module OrderedSetSpec2 {
     }
 
     method Empty() returns (b: bool)
-      modifies this, Repr()
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
@@ -370,7 +372,7 @@ module OrderedSetSpec2 {
       ensures SameIterators()
 
     opaque twostate predicate SizeModel(s: nat)
-      reads this, Repr()
+      reads Repr()
       requires old(Valid())
       requires Valid()
     {
@@ -380,7 +382,7 @@ module OrderedSetSpec2 {
     }
 
     method Size() returns (s: nat)
-      modifies this, Repr()
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
@@ -392,7 +394,7 @@ module OrderedSetSpec2 {
       ensures SameIterators()
 
     opaque twostate predicate FirstModel(new it: OrderedSetIterator)
-      reads this, Repr()
+      reads Repr()
       requires old(Valid())
       requires Valid()
       requires it.Valid()
@@ -404,7 +406,7 @@ module OrderedSetSpec2 {
     }
 
     method First() returns (it: OrderedSetIterator)
-      modifies this, Repr()
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
@@ -422,7 +424,7 @@ module OrderedSetSpec2 {
       ensures SameIterators()
 
     opaque twostate predicate LastModel(new it: OrderedSetIterator)
-      reads this, Repr()
+      reads Repr()
       requires old(Valid())
       requires Valid()
       requires it.Valid()
@@ -434,7 +436,7 @@ module OrderedSetSpec2 {
     }
 
     method Last() returns (it: OrderedSetIterator)
-      modifies this, Repr()
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
@@ -450,7 +452,7 @@ module OrderedSetSpec2 {
       ensures LastModel(it)
 
     opaque twostate predicate ContainsModel(k: K, b: bool)
-      reads this, Repr()
+      reads Repr()
       requires old(Valid())
       requires Valid()
     {
@@ -460,7 +462,7 @@ module OrderedSetSpec2 {
     }
 
     method Contains(k: K) returns (b: bool)
-      modifies this, Repr()
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
@@ -471,7 +473,7 @@ module OrderedSetSpec2 {
       ensures ContainsModel(k, b)
 
     opaque twostate predicate AddModel(k: K)
-      reads this, Repr()
+      reads Repr()
       requires old(Valid())
       requires Valid()
     {
@@ -483,7 +485,7 @@ module OrderedSetSpec2 {
     }
 
     method Add(k: K)
-      modifies this, Repr()
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
@@ -494,7 +496,7 @@ module OrderedSetSpec2 {
       ensures AddModel(k)
 
     opaque twostate predicate RemoveModel(k: K)
-      reads this, Repr()
+      reads Repr()
       requires old(Valid())
       requires Valid()
     {
@@ -506,7 +508,7 @@ module OrderedSetSpec2 {
     }
 
     method Remove(k: K)
-      modifies this, Repr()
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
@@ -517,7 +519,7 @@ module OrderedSetSpec2 {
       ensures RemoveModel(k)
 
     opaque twostate predicate FindModel(k: K, new it: OrderedSetIterator)
-      reads this, Repr()
+      reads Repr()
       requires old(Valid())
       requires Valid()
       requires it.Valid()
@@ -533,7 +535,7 @@ module OrderedSetSpec2 {
     }
 
     method Find(k: K) returns (it: OrderedSetIterator)
-      modifies this, Repr()
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
@@ -549,7 +551,7 @@ module OrderedSetSpec2 {
       ensures FindModel(k, it)
 
     opaque twostate predicate InsertModel(k: K, new it: OrderedSetIterator)
-      reads this, Repr()
+      reads Repr()
       requires old(Valid())
       requires Valid()
       requires it.Valid()
@@ -567,7 +569,7 @@ module OrderedSetSpec2 {
     }
 
     method Insert(hint: OrderedSetIterator, k: K) returns (it: OrderedSetIterator)
-      modifies this, Repr()
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
@@ -585,7 +587,7 @@ module OrderedSetSpec2 {
       ensures InsertModel(k, it)
 
     opaque twostate predicate EraseModel(pos: OrderedSetIterator, new it: OrderedSetIterator)
-      reads this, Repr()
+      reads Repr()
       requires old(Valid())
       requires Valid()
       requires old(pos.Valid())
@@ -602,7 +604,7 @@ module OrderedSetSpec2 {
     }
 
     opaque twostate predicate EraseIteratorModel(it: OrderedSetIterator)
-      reads this, Repr()
+      reads Repr()
       requires old(Valid())
       requires Valid()
       requires Iterators() >= old(Iterators())
@@ -620,7 +622,7 @@ module OrderedSetSpec2 {
     }
 
     opaque twostate predicate EraseIterators(pos: OrderedSetIterator)
-      reads this, Repr()
+      reads Repr()
       requires old(Valid())
       requires Valid()
       requires Iterators() >= old(Iterators())
@@ -674,7 +676,7 @@ module OrderedSetSpec2 {
     }
 
     method Erase(pos: OrderedSetIterator) returns (it: OrderedSetIterator)
-      modifies this, Repr()
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
@@ -694,59 +696,8 @@ module OrderedSetSpec2 {
       ensures EraseIterators(pos)
   }
 
-  datatype OrdSetIt = OrdSetIt(s: OrderedSet, it: OrderedSetIterator)
-  {
-    ghost predicate Valid()
-      reads s, s.Repr()
-      requires s.Valid()
-    {
-      && it.Parent() == s
-      && it in s.Iterators()
-      && it.Valid()
-    }
-  }
-
-  datatype OrdSet2It11 = OrdSet2It11(
-    a: OrderedSet,
-    itA: OrderedSetIterator,
-    b: OrderedSet,
-    itB: OrderedSetIterator
-  ) {
-    ghost predicate Valid()
-      reads a, a.Repr(), b, b.Repr()
-    {
-      && ADT2(a, b).Valid()
-      && OrdSetIt(a, itA).Valid()
-      && OrdSetIt(b, itB).Valid()
-    }
-  }
-
-  datatype OrdSet3It110 = OrdSet3It110(
-    a: OrderedSet,
-    itA: OrderedSetIterator,
-    b: OrderedSet,
-    itB: OrderedSetIterator,
-    c: OrderedSet
-  ) {
-    ghost function Repr(): set<object>
-      reads a, a.ReprFamily(a.ReprDepth-1)
-      reads b, b.ReprFamily(b.ReprDepth-1)
-      reads c, c.ReprFamily(c.ReprDepth-1)
-    {
-      ADT3(a, b, c).Repr()
-    }
-
-    ghost predicate {:inline} Valid()
-      reads a, a.Repr(), b, b.Repr(), c, c.Repr()
-    {
-      && ADT3(a, b, c).Valid()
-      && OrdSetIt(a, itA).Valid()
-      && OrdSetIt(b, itB).Valid()
-    }
-  }
-
   ghost predicate ValidIt(s: OrderedSet, it: OrderedSetIterator)
-    reads s, s.Repr()
+    reads s.Repr()
     requires s.Valid()
   {
     && it.Parent() == s
@@ -760,7 +711,7 @@ module OrderedSetSpec2 {
       b: OrderedSet,
       itB: OrderedSetIterator
     )
-    reads a, a.Repr(), b, b.Repr()
+    reads a.Repr(), b.Repr()
   {
     && Valid2(a, b)
     && ValidIt(a, itA)
@@ -773,7 +724,7 @@ module OrderedSetSpec2 {
       b: OrderedSet,
       itB: OrderedSetIterator
     )
-    reads a, a.Repr(), b, b.Repr()
+    reads a.Repr(), b.Repr()
     requires old(Valid2It11(a, itA, b, itB))
   {
     && Valid2It11(a, itA, b, itB)
@@ -799,7 +750,7 @@ module OrderedSetSpec2 {
     requires old(allocated(b.Repr()))
     requires allocated(b.Repr())
     requires b.Repr() == old(b.Repr())
-    requires unchanged({b} + b.Repr())
+    requires unchanged(b.Repr())
 
     ensures MaintainsValid2It11(a, itA, b, itB)
     ensures allocated(a.Repr())
@@ -813,7 +764,7 @@ module OrderedSetSpec2 {
       itB: OrderedSetIterator,
       c: OrderedSet
     )
-    reads a, a.Repr(), b, b.Repr(), c, c.Repr()
+    reads a.Repr(), b.Repr(), c.Repr()
   {
     && Valid3(a, b, c)
     && ValidIt(a, itA)
@@ -841,8 +792,8 @@ module OrderedSetSpec2 {
     requires allocated(c.Repr())
     requires b.Repr() == old(b.Repr())
     requires c.Repr() == old(c.Repr())
-    requires unchanged({b} + b.Repr())
-    requires unchanged({c} + c.Repr())
+    requires unchanged(b.Repr())
+    requires unchanged(c.Repr())
 
     ensures Valid3It110(a, itA, b, itB, c)
     ensures fresh(a.Repr() - old(a.Repr()))

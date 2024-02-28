@@ -1,5 +1,5 @@
 include "../../src/OrderedSet/OrderedSetSpec2.dfy"
-include "../../src/ADT.dfy"
+include "../../src/AdtWithoutThis.dfy"
 include "../../src/Collections/KeyValue.dfy"
 include "../../src/Collections/SetObject.dfy"
 
@@ -20,48 +20,23 @@ module OrdSetIntersection2Datatype {
   )
   {
     ghost function Repr(): set<object>
-      reads s1, s1.ReprFamily(s1.ReprDepth-1)
-      reads s2, s2.ReprFamily(s2.ReprDepth-1)
-      reads su, su.ReprFamily(su.ReprDepth-1)
+      reads s1.ReprFamily(s1.ReprDepth-1)
+      reads s2.ReprFamily(s2.ReprDepth-1)
+      reads su.ReprFamily(su.ReprDepth-1)
     {
-      ADT3(s1, s2, su).Repr()
+      Repr3(s1, s2, su)
     }
 
     twostate predicate Fresh()
       reads Repr()
     {
-      ADT3(s1, s2, su).Fresh()
+      Fresh3(s1, s2, su)
     }
 
-    ghost predicate {:inline} Valid()
+    ghost predicate Valid()
       reads Repr()
     {
-      OrdSet3It110(s1, it1, s2, it2, su).Valid()
-    }
-
-    ghost predicate InlinedValid()
-    {
-      && s1.Valid()
-      && s2.Valid()
-      && su.Valid()
-
-      //&& {s1} + s1.Repr() !! {s2} + s2.Repr()
-      && s1.Repr() !! s2.Repr()
-      && s1 !in s2.Repr()
-      && s2 !in s1.Repr()
-      && s1 != s2
-
-      //&& {s1} + s1.Repr() !! {su} + su.Repr()
-      && s1.Repr() !! su.Repr()
-      && s1 !in su.Repr()
-      && su !in s1.Repr()
-      && s1 != su
-
-      //&& {s2} + s2.Repr() !! {su} + su.Repr()
-      && s2.Repr() !! su.Repr()
-      && s2 !in su.Repr()
-      && su !in s2.Repr()
-      && s2 != su
+      Valid3It110(s1, it1, s2, it2, su)
     }
 
     opaque twostate predicate LoopBody'Model()
@@ -91,108 +66,10 @@ module OrdSetIntersection2Datatype {
       )
     }
 
-    // 19.6M
-    method {:verify false} LoopBodyOptimized()
-      returns (
-        it1HasPeek: bool,
-        it2HasPeek: bool
-      )
-      //modifies Repr()
-      //requires allocated(Repr())
-      //ensures allocated(Repr())
-      //ensures Fresh()
-      modifies s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
-      requires allocated(s1.Repr())
-      requires allocated(s2.Repr())
-      requires allocated(su.Repr())
-      ensures allocated(s1.Repr())
-      ensures allocated(s2.Repr())
-      ensures allocated(su.Repr())
-      ensures fresh(s1.Repr() - old(s1.Repr()))
-      ensures fresh(s2.Repr() - old(s2.Repr()))
-      ensures fresh(su.Repr() - old(su.Repr()))
-
-      requires Valid()
-      requires it1.HasPeek?()
-      requires it2.HasPeek?()
-
-      ensures Valid()
-      ensures it1HasPeek == it1.HasPeek?()
-      ensures it2HasPeek == it2.HasPeek?()
-      ensures !it1.PastTheBeginning?()
-      ensures !it2.PastTheBeginning?()
-      ensures LoopBody'Model()
-
-      ensures s1.Iterators() >= old(s1.Iterators())
-      ensures s2.Iterators() >= old(s2.Iterators())
-      ensures su.Iterators() >= old(su.Iterators())
-    {
-      var it1Peek := it1.Peek();
-      Allocated(s1.Repr());
-      Allocated(s2.Repr());
-      Allocated(su.Repr());
-      assert InlinedValid();
-      var it2Peek := it2.Peek();
-      Allocated(s1.Repr());
-      Allocated(s2.Repr());
-      Allocated(su.Repr());
-      assert InlinedValid();
-      if it1Peek == it2Peek {
-        su.Add(it1Peek);
-        Allocated(s1.Repr());
-        Allocated(s2.Repr());
-        Allocated(su.Repr());
-        assert InlinedValid();
-        it1.Next();
-        Allocated(s1.Repr());
-        Allocated(s2.Repr());
-        Allocated(su.Repr());
-        assert InlinedValid();
-        it2.Next();
-        Allocated(s1.Repr());
-        Allocated(s2.Repr());
-        Allocated(su.Repr());
-        assert InlinedValid();
-      } else if it1Peek < it2Peek {
-        it1.Next();
-        Allocated(s1.Repr());
-        Allocated(s2.Repr());
-        Allocated(su.Repr());
-        assert InlinedValid();
-      } else {
-        it2.Next();
-        Allocated(s1.Repr());
-        Allocated(s2.Repr());
-        Allocated(su.Repr());
-        assert InlinedValid();
-      }
-      Allocated(s1.Repr());
-      Allocated(s2.Repr());
-      Allocated(su.Repr());
-      assert InlinedValid();
-      it1HasPeek := it1.HasPeek();
-      Allocated(s1.Repr());
-      Allocated(s2.Repr());
-      Allocated(su.Repr());
-      assert InlinedValid();
-      it2HasPeek := it2.HasPeek();
-      Allocated(s1.Repr());
-      Allocated(s2.Repr());
-      Allocated(su.Repr());
-      assert InlinedValid();
-      assert LoopBody'Model() by {
-        assume false;
-        reveal LoopBody'Model();
-        reveal it1.PeekModel(), it2.PeekModel(), su.AddModel(), it1.NextModel(), it2.NextModel();
-        reveal it1.HasPeekModel();
-        reveal it2.HasPeekModel();
-      }
-    }
-
-    //// 12.3M RU - correctness verification
-    // 33.1M RU - correctness verification
-    // 58.7M RU - functional verification  // OUTDATED
-    // 130M RU (~136s) - correctness and functional verification  // OUTDATED
+    // 28.1M RU - correctness verification
+    // 17.4M RU - correctness verification (with MaintainsValid...)
+    // 60.7M RU - functional verification
+    // 22.9M RU - correctness and functional verification (with MaintainsValid...)
     method LoopBody'()
       returns (
         it1HasPeek: bool,
@@ -219,64 +96,52 @@ module OrdSetIntersection2Datatype {
       ensures su.Iterators() >= old(su.Iterators())
     {
       var it1Peek := it1.Peek();
-      Allocated(s1.Repr());
-      Allocated(s2.Repr());
-      Allocated(su.Repr());
+      MaintainsValid3It110Helper(s1, it1, s2, it2, su);
       assert Valid();
+      label L1:
       var it2Peek := it2.Peek();
-      Allocated(s1.Repr());
-      Allocated(s2.Repr());
-      Allocated(su.Repr());
+      MaintainsValid3It110Helper@L1(s2, it2, s1, it1, su);
       assert Valid();
       if it1Peek == it2Peek {
+        label L2:
         su.Add(it1Peek);
-        Allocated(s1.Repr());
-        Allocated(s2.Repr());
-        Allocated(su.Repr());
+        MaintainsValid3Helper@L2(su, s1, s2);
         assert Valid();
+        label L3:
         it1.Next();
-        Allocated(s1.Repr());
-        Allocated(s2.Repr());
-        Allocated(su.Repr());
+        MaintainsValid3It110Helper@L3(s1, it1, s2, it2, su);
         assert Valid();
+        label L4:
         it2.Next();
-        Allocated(s1.Repr());
-        Allocated(s2.Repr());
-        Allocated(su.Repr());
+        MaintainsValid3It110Helper@L4(s2, it2, s1, it1, su);
         assert Valid();
       } else if it1Peek < it2Peek {
+        label L5:
         it1.Next();
-        Allocated(s1.Repr());
-        Allocated(s2.Repr());
-        Allocated(su.Repr());
+        MaintainsValid3It110Helper@L5(s1, it1, s2, it2, su);
         assert Valid();
       } else {
+        label L6:
         it2.Next();
-        Allocated(s1.Repr());
-        Allocated(s2.Repr());
-        Allocated(su.Repr());
+        MaintainsValid3It110Helper@L6(s2, it2, s1, it1, su);
         assert Valid();
       }
-      Allocated(s1.Repr());
-      Allocated(s2.Repr());
-      Allocated(su.Repr());
       assert Valid();
+      label L7:
       it1HasPeek := it1.HasPeek();
-      Allocated(s1.Repr());
-      Allocated(s2.Repr());
-      Allocated(su.Repr());
+      MaintainsValid3It110Helper@L7(s1, it1, s2, it2, su);
       assert Valid();
+      label L8:
       it2HasPeek := it2.HasPeek();
-      Allocated(s1.Repr());
-      Allocated(s2.Repr());
-      Allocated(su.Repr());
+      MaintainsValid3It110Helper@L8(s2, it2, s1, it1, su);
       assert Valid();
       assert LoopBody'Model() by {
         assume false;
         reveal LoopBody'Model();
-        reveal it1.PeekModel(), it2.PeekModel(), su.AddModel(), it1.NextModel(), it2.NextModel();
-        reveal it1.HasPeekModel();
-        reveal it2.HasPeekModel();
+        reveal OrderedSetIterator.PeekModel();
+        reveal OrderedSet.AddModel();
+        reveal OrderedSetIterator.NextModel();
+        reveal OrderedSetIterator.HasPeekModel();
       }
     }
 
@@ -332,7 +197,7 @@ module OrdSetIntersection2Datatype {
         it1HasPeek: bool,
         it2HasPeek: bool
       )
-      modifies s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
+      modifies Repr()
       requires allocated(Repr())
       ensures allocated(Repr())
       ensures Fresh()
@@ -431,6 +296,7 @@ module OrdSetIntersection2Datatype {
       }
     }
 
+    // 4.50M RU
     method Loop()
       modifies Repr()
       requires allocated(Repr())
@@ -490,8 +356,8 @@ module OrdSetIntersection2Datatype {
       s2: OrderedSet,
       su: OrderedSet
     )
-    reads ADT3(s1, s2, su).Repr()
-    requires ADT3(s1, s2, su).Valid()
+    reads Repr3(s1, s2, su)
+    requires Valid3(s1, s2, su)
   {
     su.Model() == {}
   }
@@ -501,16 +367,16 @@ module OrdSetIntersection2Datatype {
       s2: OrderedSet,
       su: OrderedSet
     )
-    reads ADT3(s1, s2, su).Repr()
-    requires old(ADT3(s1, s2, su).Valid())
-    requires ADT3(s1, s2, su).Valid()
+    reads Repr3(s1, s2, su)
+    requires old(Valid3(s1, s2, su))
+    requires Valid3(s1, s2, su)
   {
     && s1.Model() == old(s1.Model())
     && s2.Model() == old(s2.Model())
     && su.Model() == s1.Model() * s2.Model()
   }
 
-  // 6.97M RU
+  // 2.25M RU
   method OrdSetIntersection(s1: OrderedSet, s2: OrderedSet, su: OrderedSet)
     modifies s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
     requires allocated(s1.Repr())
@@ -523,10 +389,10 @@ module OrdSetIntersection2Datatype {
     ensures fresh(s2.Repr()-old(s2.Repr()))
     ensures fresh(su.Repr()-old(su.Repr()))
 
-    requires ADT3(s1, s2, su).Valid()
+    requires Valid3(s1, s2, su)
     requires OrdSetIntersectionModelPre(s1, s2, su)
 
-    ensures ADT3(s1, s2, su).Valid()
+    ensures Valid3(s1, s2, su)
     ensures OrdSetIntersectionModel(s1, s2, su)
 
     ensures s1.Iterators() >= old(s1.Iterators())

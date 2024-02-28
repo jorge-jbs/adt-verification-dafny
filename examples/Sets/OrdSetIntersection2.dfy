@@ -14,7 +14,7 @@ module OrdSetIntersection2 {
       it2: OrderedSetIterator, 
       su: OrderedSet
     )
-    reads s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
+    reads s1.Repr(), s2.Repr(), su.Repr()
     requires old(Valid3It110(s1, it1, s2, it2, su))
     requires old(it1.HasPeek?())
     requires old(it2.HasPeek?())
@@ -40,15 +40,10 @@ module OrdSetIntersection2 {
     )
   }
 
-  /*
-  // 9.31M RU - correctness verification
-  // 73.5M RU - functional verification
-  // 88.4M RU - correctness and functional verification
-  */
-  // 10.9M RU - correctness verification
-  // ==> 7.63M RU - correctness verification (with MaintainsValid...)
-  // ==> 3.35M RU (~6s) - correctness verification (with MaintainsValid..., without it*HasPeek)
-  // 57.8M RU - correctness and functional verification
+  // 10.6M RU - correctness verification
+  // 6.16M RU - correctness verification (with MaintainsValid...)
+  // 2.33M RU - correctness verification (with MaintainsValid..., without it*HasPeek)
+  // 19.1M RU - correctness and functional verification (with MaintainsValid...)
   method Loop'(
       s1: OrderedSet, 
       it1: OrderedSetIterator, 
@@ -56,13 +51,11 @@ module OrdSetIntersection2 {
       it2: OrderedSetIterator, 
       su: OrderedSet
     )
-    /*
     returns (
       it1HasPeek: bool,
       it2HasPeek: bool
     )
-    */
-    modifies s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
+    modifies s1.Repr(), s2.Repr(), su.Repr()
     requires allocated(s1.Repr())
     requires allocated(s2.Repr())
     requires allocated(su.Repr())
@@ -79,8 +72,8 @@ module OrdSetIntersection2 {
     requires !it1.PastTheBeginning?()
     requires !it2.PastTheBeginning?()
     ensures Valid3It110(s1, it1, s2, it2, su)
-    //ensures it1HasPeek == it1.HasPeek?()
-    //ensures it2HasPeek == it2.HasPeek?()
+    ensures it1HasPeek == it1.HasPeek?()
+    ensures it2HasPeek == it2.HasPeek?()
     ensures !it1.PastTheBeginning?()
     ensures !it2.PastTheBeginning?()
     ensures Loop'Model(s1, it1, s2, it2, su)
@@ -91,51 +84,50 @@ module OrdSetIntersection2 {
   {
     var it1Peek := it1.Peek();
     MaintainsValid3It110Helper(s1, it1, s2, it2, su);
-    //assert Valid3It110(s1, it1, s2, it2, su);
-  label L1:
+    assert Valid3It110(s1, it1, s2, it2, su);
+    label L1:
     var it2Peek := it2.Peek();
     MaintainsValid3It110Helper@L1(s2, it2, s1, it1, su);
-    //assert Valid3It110(s1, it1, s2, it2, su);
+    assert Valid3It110(s1, it1, s2, it2, su);
     if it1Peek == it2Peek {
-    label L2:
+      label L2:
       su.Add(it1Peek); 
       MaintainsValid3Helper@L2(su, s2, s1);
-      //assert Valid3It110(s1, it1, s2, it2, su);
-    label L3:
+      assert Valid3It110(s1, it1, s2, it2, su);
+      label L3:
       it1.Next();
       MaintainsValid3It110Helper@L3(s1, it1, s2, it2, su);
-      //assert Valid3It110(s1, it1, s2, it2, su);
-    label L4:
+      assert Valid3It110(s1, it1, s2, it2, su);
+      label L4:
       it2.Next();
       MaintainsValid3It110Helper@L4(s2, it2, s1, it1, su);
-      //assert Valid3It110(s1, it1, s2, it2, su);
+      assert Valid3It110(s1, it1, s2, it2, su);
     } else if it1Peek < it2Peek {
-    label L5:
+      label L5:
       it1.Next();
       MaintainsValid3It110Helper@L5(s1, it1, s2, it2, su);
-      //assert Valid3It110(s1, it1, s2, it2, su);
+      assert Valid3It110(s1, it1, s2, it2, su);
     } else {
-    label L6:
+      label L6:
       it2.Next();
       MaintainsValid3It110Helper@L6(s2, it2, s1, it1, su);
-      //assert Valid3It110(s1, it1, s2, it2, su);
+      assert Valid3It110(s1, it1, s2, it2, su);
     }
-    /*
-  label L7:
+    assert Valid3It110(s1, it1, s2, it2, su);
+    label L7:
     it1HasPeek := it1.HasPeek();
     MaintainsValid3It110Helper@L7(s1, it1, s2, it2, su);
-    //assert Valid3It110(s1, it1, s2, it2, su);
-  label L8:
+    assert Valid3It110(s1, it1, s2, it2, su);
+    label L8:
     it2HasPeek := it2.HasPeek();
     MaintainsValid3It110Helper@L8(s2, it2, s1, it1, su);
-    //assert Valid3It110(s1, it1, s2, it2, su);
-    */
+    assert Valid3It110(s1, it1, s2, it2, su);
     assert Loop'Model(s1, it1, s2, it2, su) by {
-      assume false;
       reveal Loop'Model();
-      reveal it1.PeekModel(), it2.PeekModel(), su.AddModel(), it1.NextModel(), it2.NextModel();
-      reveal it1.HasPeekModel();
-      reveal it2.HasPeekModel();
+      reveal OrderedSetIterator.PeekModel();
+      reveal OrderedSet.AddModel();
+      reveal OrderedSetIterator.NextModel();
+      reveal OrderedSetIterator.HasPeekModel();
     }
   }
 
@@ -146,7 +138,7 @@ module OrdSetIntersection2 {
       it2: OrderedSetIterator, 
       su: OrderedSet
     ): nat
-    reads s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
+    reads s1.Repr(), s2.Repr(), su.Repr()
     requires Valid3It110(s1, it1, s2, it2, su)
   {
     reveal OrderedSetIterator.Before'Spec();
@@ -181,7 +173,7 @@ module OrdSetIntersection2 {
       it2: OrderedSetIterator, 
       su: OrderedSet
     )
-    reads s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
+    reads s1.Repr(), s2.Repr(), su.Repr()
     requires Valid3It110(s1, it1, s2, it2, su)
   {
     && s1.Model() == s1Model
@@ -227,7 +219,7 @@ module OrdSetIntersection2 {
       it1HasPeek: bool,
       it2HasPeek: bool
     )
-    modifies s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
+    modifies s1.Repr(), s2.Repr(), su.Repr()
     requires allocated(s1.Repr())
     requires allocated(s2.Repr())
     requires allocated(su.Repr())
@@ -269,7 +261,7 @@ module OrdSetIntersection2 {
       s2: OrderedSet, 
       su: OrderedSet
     )
-    reads s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
+    reads s1.Repr(), s2.Repr(), su.Repr()
     requires Valid3(s1, s2, su)
   {
     su.Model() == {}
@@ -280,7 +272,7 @@ module OrdSetIntersection2 {
       s2: OrderedSet, 
       su: OrderedSet
     )
-    reads s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
+    reads s1.Repr(), s2.Repr(), su.Repr()
     requires old(Valid3(s1, s2, su))
     requires Valid3(s1, s2, su)
   {
@@ -350,7 +342,7 @@ module OrdSetIntersection2 {
 
   // 6.97M RU
   method OrdSetIntersection(s1: OrderedSet, s2: OrderedSet, su: OrderedSet)
-    modifies s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
+    modifies s1.Repr(), s2.Repr(), su.Repr()
     requires allocated(s1.Repr())
     requires allocated(s2.Repr())
     requires allocated(su.Repr())
@@ -373,11 +365,11 @@ module OrdSetIntersection2 {
   {
     var it1: OrderedSetIterator := s1.First(); 
     var it2: OrderedSetIterator := s2.First(); 
-  assert Valid3It110(s1, it1, s2, it2, su);
+    assert Valid3It110(s1, it1, s2, it2, su);
     var it1HasPeek := it1.HasPeek();
-  assert Valid3It110(s1, it1, s2, it2, su);
+    assert Valid3It110(s1, it1, s2, it2, su);
     var it2HasPeek := it2.HasPeek();
-  assert Valid3It110(s1, it1, s2, it2, su);
+    assert Valid3It110(s1, it1, s2, it2, su);
     assert LoopInvariant(s1, old(s1.Model()), it1, s2, old(s2.Model()), it2, su) by {
       reveal LoopInvariant();
       reveal OrderedSet.FirstModel();
@@ -404,7 +396,7 @@ module OrdSetIntersection2 {
       invariant su.Iterators() >= old(su.Iterators())
     {
       it1HasPeek, it2HasPeek := Loop(s1, old(s1.Model()), it1, s2, old(s2.Model()), it2, su);
-    assert Valid3It110(s1, it1, s2, it2, su);
+      assert Valid3It110(s1, it1, s2, it2, su);
     }
     LoopInvariantImpliesOrdSetIntersectionModel(s1, it1, s2, it2, su);
   }

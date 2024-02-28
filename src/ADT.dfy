@@ -203,8 +203,7 @@ module ADT {
     ensures allocated(a.Repr())
     ensures allocated(b.Repr())
     ensures allocated(c.Repr())
-  {
-  }
+  {}
 
   ghost predicate ValidDistinctADTs(adts: seq<ADT>)
     reads set r | r in adts :: r
