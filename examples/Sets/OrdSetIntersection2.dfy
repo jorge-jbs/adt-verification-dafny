@@ -1,6 +1,6 @@
 include "../../src/OrderedSet/OrderedSetSpec2.dfy"
 
-module OrdSetIntersection {
+module OrdSetIntersection2 {
   import opened KeyValue
   import opened ADT
   import opened OrderedSetSpec2
@@ -46,6 +46,8 @@ module OrdSetIntersection {
   // 88.4M RU - correctness and functional verification
   */
   // 10.9M RU - correctness verification
+  // ==> 7.63M RU - correctness verification (with MaintainsValid...)
+  // ==> 3.35M RU (~6s) - correctness verification (with MaintainsValid..., without it*HasPeek)
   // 57.8M RU - correctness and functional verification
   method Loop'(
       s1: OrderedSet, 
@@ -54,10 +56,12 @@ module OrdSetIntersection {
       it2: OrderedSetIterator, 
       su: OrderedSet
     )
+    /*
     returns (
       it1HasPeek: bool,
       it2HasPeek: bool
     )
+    */
     modifies s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
     requires allocated(s1.Repr())
     requires allocated(s2.Repr())
@@ -72,13 +76,13 @@ module OrdSetIntersection {
     requires Valid3It110(s1, it1, s2, it2, su)
     requires it1.HasPeek?()
     requires it2.HasPeek?()
-    requires !it1.PastTheBeginning?()  // OUTDATED
-    requires !it2.PastTheBeginning?()  // OUTDATED
+    requires !it1.PastTheBeginning?()
+    requires !it2.PastTheBeginning?()
     ensures Valid3It110(s1, it1, s2, it2, su)
-    ensures it1HasPeek == it1.HasPeek?()
-    ensures it2HasPeek == it2.HasPeek?()
-    ensures !it1.PastTheBeginning?()  // OUTDATED
-    ensures !it2.PastTheBeginning?()  // OUTDATED
+    //ensures it1HasPeek == it1.HasPeek?()
+    //ensures it2HasPeek == it2.HasPeek?()
+    ensures !it1.PastTheBeginning?()
+    ensures !it2.PastTheBeginning?()
     ensures Loop'Model(s1, it1, s2, it2, su)
 
     ensures s1.Iterators() >= old(s1.Iterators())
@@ -86,28 +90,48 @@ module OrdSetIntersection {
     ensures su.Iterators() >= old(su.Iterators())
   {
     var it1Peek := it1.Peek();
-  assert Valid3It110(s1, it1, s2, it2, su);
+    MaintainsValid3It110Helper(s1, it1, s2, it2, su);
+    //assert Valid3It110(s1, it1, s2, it2, su);
+  label L1:
     var it2Peek := it2.Peek();
-  assert Valid3It110(s1, it1, s2, it2, su);
+    MaintainsValid3It110Helper@L1(s2, it2, s1, it1, su);
+    //assert Valid3It110(s1, it1, s2, it2, su);
     if it1Peek == it2Peek {
+    label L2:
       su.Add(it1Peek); 
-    assert Valid3It110(s1, it1, s2, it2, su);
+      MaintainsValid3Helper@L2(su, s2, s1);
+      //assert Valid3It110(s1, it1, s2, it2, su);
+    label L3:
       it1.Next();
-    assert Valid3It110(s1, it1, s2, it2, su);
+      MaintainsValid3It110Helper@L3(s1, it1, s2, it2, su);
+      //assert Valid3It110(s1, it1, s2, it2, su);
+    label L4:
       it2.Next();
-    assert Valid3It110(s1, it1, s2, it2, su);
+      MaintainsValid3It110Helper@L4(s2, it2, s1, it1, su);
+      //assert Valid3It110(s1, it1, s2, it2, su);
     } else if it1Peek < it2Peek {
+    label L5:
       it1.Next();
-    assert Valid3It110(s1, it1, s2, it2, su);
+      MaintainsValid3It110Helper@L5(s1, it1, s2, it2, su);
+      //assert Valid3It110(s1, it1, s2, it2, su);
     } else {
+    label L6:
       it2.Next();
-    assert Valid3It110(s1, it1, s2, it2, su);
+      MaintainsValid3It110Helper@L6(s2, it2, s1, it1, su);
+      //assert Valid3It110(s1, it1, s2, it2, su);
     }
+    /*
+  label L7:
     it1HasPeek := it1.HasPeek();
-  assert Valid3It110(s1, it1, s2, it2, su);
+    MaintainsValid3It110Helper@L7(s1, it1, s2, it2, su);
+    //assert Valid3It110(s1, it1, s2, it2, su);
+  label L8:
     it2HasPeek := it2.HasPeek();
-  assert Valid3It110(s1, it1, s2, it2, su);
+    MaintainsValid3It110Helper@L8(s2, it2, s1, it1, su);
+    //assert Valid3It110(s1, it1, s2, it2, su);
+    */
     assert Loop'Model(s1, it1, s2, it2, su) by {
+      assume false;
       reveal Loop'Model();
       reveal it1.PeekModel(), it2.PeekModel(), su.AddModel(), it1.NextModel(), it2.NextModel();
       reveal it1.HasPeekModel();
@@ -232,11 +256,13 @@ module OrdSetIntersection {
     ensures s1.Iterators() >= old(s1.Iterators())
     ensures s2.Iterators() >= old(s2.Iterators())
     ensures su.Iterators() >= old(su.Iterators())
+    /*
   {
     it1HasPeek, it2HasPeek := Loop'(s1, it1, s2, it2, su);
     LoopBoundDecreases(s1, it1, s2, it2, su);
     LoopMaintainsInvariant(s1, s1Model, it1, s2, s2Model, it2, su);
   }
+  */
 
   opaque ghost predicate OrdSetIntersectionModelPre(
       s1: OrderedSet, 

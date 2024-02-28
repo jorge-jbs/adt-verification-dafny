@@ -694,6 +694,57 @@ module OrderedSetSpec2 {
       ensures EraseIterators(pos)
   }
 
+  datatype OrdSetIt = OrdSetIt(s: OrderedSet, it: OrderedSetIterator)
+  {
+    ghost predicate Valid()
+      reads s, s.Repr()
+      requires s.Valid()
+    {
+      && it.Parent() == s
+      && it in s.Iterators()
+      && it.Valid()
+    }
+  }
+
+  datatype OrdSet2It11 = OrdSet2It11(
+    a: OrderedSet,
+    itA: OrderedSetIterator,
+    b: OrderedSet,
+    itB: OrderedSetIterator
+  ) {
+    ghost predicate Valid()
+      reads a, a.Repr(), b, b.Repr()
+    {
+      && ADT2(a, b).Valid()
+      && OrdSetIt(a, itA).Valid()
+      && OrdSetIt(b, itB).Valid()
+    }
+  }
+
+  datatype OrdSet3It110 = OrdSet3It110(
+    a: OrderedSet,
+    itA: OrderedSetIterator,
+    b: OrderedSet,
+    itB: OrderedSetIterator,
+    c: OrderedSet
+  ) {
+    ghost function Repr(): set<object>
+      reads a, a.ReprFamily(a.ReprDepth-1)
+      reads b, b.ReprFamily(b.ReprDepth-1)
+      reads c, c.ReprFamily(c.ReprDepth-1)
+    {
+      ADT3(a, b, c).Repr()
+    }
+
+    ghost predicate {:inline} Valid()
+      reads a, a.Repr(), b, b.Repr(), c, c.Repr()
+    {
+      && ADT3(a, b, c).Valid()
+      && OrdSetIt(a, itA).Valid()
+      && OrdSetIt(b, itB).Valid()
+    }
+  }
+
   ghost predicate ValidIt(s: OrderedSet, it: OrderedSetIterator)
     reads s, s.Repr()
     requires s.Valid()
@@ -768,6 +819,42 @@ module OrderedSetSpec2 {
     && ValidIt(a, itA)
     && ValidIt(b, itB)
   }
+
+  twostate lemma MaintainsValid3It110Helper(
+      a: OrderedSet,
+      itA: OrderedSetIterator,
+      b: OrderedSet,
+      itB: OrderedSetIterator,
+      c: OrderedSet
+    )
+    requires old(Valid3It110(a, itA, b, itB, c))
+
+    requires a.Valid()
+    requires ValidIt(a, itA)
+    requires fresh(a.Repr() - old(a.Repr()))
+    requires a.Iterators() >= old(a.Iterators())
+
+    requires old(allocated(a.Repr()))
+    requires old(allocated(b.Repr()))
+    requires old(allocated(c.Repr()))
+    requires allocated(b.Repr())
+    requires allocated(c.Repr())
+    requires b.Repr() == old(b.Repr())
+    requires c.Repr() == old(c.Repr())
+    requires unchanged({b} + b.Repr())
+    requires unchanged({c} + c.Repr())
+
+    ensures Valid3It110(a, itA, b, itB, c)
+    ensures fresh(a.Repr() - old(a.Repr()))
+    ensures fresh(b.Repr() - old(b.Repr()))
+    ensures fresh(c.Repr() - old(c.Repr()))
+    ensures a.Iterators() >= old(a.Iterators())
+    ensures b.Iterators() >= old(b.Iterators())
+    ensures c.Iterators() >= old(c.Iterators())
+    ensures allocated(a.Repr())
+    ensures allocated(b.Repr())
+    ensures allocated(c.Repr())
+  {}
 
   ghost predicate ValidIt2(
       a: OrderedSet,
