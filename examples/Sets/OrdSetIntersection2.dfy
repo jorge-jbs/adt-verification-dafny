@@ -24,6 +24,8 @@ module OrdSetIntersection2 {
     var y := old(it2.Peek?());
     && s1.Model() == old(s1.Model())
     && s2.Model() == old(s2.Model())
+    && !it1.PastTheBeginning?()
+    && !it2.PastTheBeginning?()
     && (
       if x == y then
         && su.Model() == old(su.Model()) + {x}
@@ -40,10 +42,10 @@ module OrdSetIntersection2 {
     )
   }
 
-  // 10.6M RU - correctness verification
-  // 6.16M RU - correctness verification (with MaintainsValid...)
-  // 2.33M RU - correctness verification (with MaintainsValid..., without it*HasPeek)
-  // 19.1M RU - correctness and functional verification (with MaintainsValid...)
+  // 6.91M RU - correctness verification
+  // 5.60M RU - correctness verification (with MaintainsValid...)
+  // 2.50M RU - correctness verification (with MaintainsValid..., without it*HasPeek)
+  // 23.7M RU - correctness and functional verification (with MaintainsValid...)
   method Loop'(
       s1: OrderedSet, 
       it1: OrderedSetIterator, 
@@ -69,13 +71,9 @@ module OrdSetIntersection2 {
     requires Valid3It110(s1, it1, s2, it2, su)
     requires it1.HasPeek?()
     requires it2.HasPeek?()
-    requires !it1.PastTheBeginning?()
-    requires !it2.PastTheBeginning?()
     ensures Valid3It110(s1, it1, s2, it2, su)
     ensures it1HasPeek == it1.HasPeek?()
     ensures it2HasPeek == it2.HasPeek?()
-    ensures !it1.PastTheBeginning?()
-    ensures !it2.PastTheBeginning?()
     ensures Loop'Model(s1, it1, s2, it2, su)
 
     ensures s1.Iterators() >= old(s1.Iterators())
@@ -179,6 +177,8 @@ module OrdSetIntersection2 {
     && s1.Model() == s1Model
     && s2.Model() == s2Model
     && su.Model() == it1.Before'() * it2.Before'()
+    && !it1.PastTheBeginning?()
+    && !it2.PastTheBeginning?()
     && (forall a <- it1.Before'(), b <- s2.Model() | b !in it2.Before'() :: a < b)
     && (forall a <- it2.Before'(), b <- s1.Model() | b !in it1.Before'() :: a < b)
   }
@@ -202,6 +202,7 @@ module OrdSetIntersection2 {
   {
     reveal Loop'Model(), LoopInvariant();
     reveal OrderedSetIterator.PeekSpec();
+    reveal OrderedSetIterator.PeekSpec'();
     reveal OrderedSetIterator.BeforeSpec();
     reveal OrderedSetIterator.Before'Spec();
   }
@@ -234,27 +235,21 @@ module OrdSetIntersection2 {
     requires Valid3It110(s1, it1, s2, it2, su)
     requires it1.HasPeek?()
     requires it2.HasPeek?()
-    requires !it1.PastTheBeginning?()
-    requires !it2.PastTheBeginning?()
     requires LoopInvariant(s1, s1Model, it1, s2, s2Model, it2, su)
     ensures Valid3It110(s1, it1, s2, it2, su)
     ensures it1HasPeek == it1.HasPeek?()
     ensures it2HasPeek == it2.HasPeek?()
-    ensures !it1.PastTheBeginning?()
-    ensures !it2.PastTheBeginning?()
     ensures LoopInvariant(s1, s1Model, it1, s2, s2Model, it2, su)
     ensures LoopBound(s1, it1, s2, it2, su) < old(LoopBound(s1, it1, s2, it2, su))
 
     ensures s1.Iterators() >= old(s1.Iterators())
     ensures s2.Iterators() >= old(s2.Iterators())
     ensures su.Iterators() >= old(su.Iterators())
-    /*
   {
     it1HasPeek, it2HasPeek := Loop'(s1, it1, s2, it2, su);
     LoopBoundDecreases(s1, it1, s2, it2, su);
     LoopMaintainsInvariant(s1, s1Model, it1, s2, s2Model, it2, su);
   }
-  */
 
   opaque ghost predicate OrdSetIntersectionModelPre(
       s1: OrderedSet, 
@@ -291,8 +286,6 @@ module OrdSetIntersection2 {
     requires old(Valid3(s1, s2, su))
     requires Valid3It110(s1, it1, s2, it2, su)
     requires !it1.HasPeek?() || !it2.HasPeek?()
-    requires !it1.PastTheBeginning?()
-    requires !it2.PastTheBeginning?()
     requires LoopInvariant(s1, old(s1.Model()), it1, s2, old(s2.Model()), it2, su)
     ensures OrdSetIntersectionModel(s1, s2, su)
   {
@@ -381,8 +374,6 @@ module OrdSetIntersection2 {
       invariant Valid3It110(s1, it1, s2, it2, su)
       invariant it1HasPeek == it1.HasPeek?()
       invariant it2HasPeek == it2.HasPeek?()
-      invariant !it1.PastTheBeginning?()
-      invariant !it2.PastTheBeginning?()
       invariant LoopInvariant(s1, old(s1.Model()), it1, s2, old(s2.Model()), it2, su)
 
       invariant allocated(s1.Repr())

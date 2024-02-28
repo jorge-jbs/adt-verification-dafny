@@ -50,6 +50,8 @@ module OrdSetIntersection2Datatype {
       var y := old(it2.Peek?());
       && s1.Model() == old(s1.Model())
       && s2.Model() == old(s2.Model())
+      && !it1.PastTheBeginning?()
+      && !it2.PastTheBeginning?()
       && (
         if x == y then
           && su.Model() == old(su.Model()) + {x}
@@ -87,8 +89,6 @@ module OrdSetIntersection2Datatype {
       ensures Valid()
       ensures it1HasPeek == it1.HasPeek?()
       ensures it2HasPeek == it2.HasPeek?()
-      ensures !it1.PastTheBeginning?()
-      ensures !it2.PastTheBeginning?()
       ensures LoopBody'Model()
 
       ensures s1.Iterators() >= old(s1.Iterators())
@@ -173,6 +173,8 @@ module OrdSetIntersection2Datatype {
       && s1.Model() == s1Model
       && s2.Model() == s2Model
       && su.Model() == it1.Before'() * it2.Before'()
+      && !it1.PastTheBeginning?()
+      && !it2.PastTheBeginning?()
       && (forall a <- it1.Before'(), b <- s2.Model() | b !in it2.Before'() :: a < b)
       && (forall a <- it2.Before'(), b <- s1.Model() | b !in it1.Before'() :: a < b)
     }
@@ -188,6 +190,7 @@ module OrdSetIntersection2Datatype {
     {
       reveal LoopBody'Model(), LoopInvariant();
       reveal OrderedSetIterator.PeekSpec();
+      reveal OrderedSetIterator.PeekSpec'();
       reveal OrderedSetIterator.BeforeSpec();
       reveal OrderedSetIterator.Before'Spec();
     }
@@ -210,8 +213,6 @@ module OrdSetIntersection2Datatype {
       ensures Valid()
       ensures it1HasPeek == it1.HasPeek?()
       ensures it2HasPeek == it2.HasPeek?()
-      ensures !it1.PastTheBeginning?()
-      ensures !it2.PastTheBeginning?()
       ensures LoopInvariant(old(s1.Model()), old(s2.Model()))
       ensures LoopBound() < old(LoopBound())
 
@@ -231,6 +232,8 @@ module OrdSetIntersection2Datatype {
       && su.Model() == {}
       && it1.Before'() == {}
       && it2.Before'() == {}
+      && !it1.PastTheBeginning?()
+      && !it2.PastTheBeginning?()
     }
 
     opaque twostate predicate LoopModel()
@@ -247,8 +250,6 @@ module OrdSetIntersection2Datatype {
       requires old(Valid())
       requires Valid()
       requires !it1.HasPeek?() || !it2.HasPeek?()
-      requires !it1.PastTheBeginning?()
-      requires !it2.PastTheBeginning?()
       requires LoopInvariant(old(s1.Model()), old(s2.Model()))
       ensures LoopModel()
     {
@@ -296,7 +297,7 @@ module OrdSetIntersection2Datatype {
       }
     }
 
-    // 4.50M RU
+    // 6.27M RU
     method Loop()
       modifies Repr()
       requires allocated(Repr())
@@ -305,8 +306,6 @@ module OrdSetIntersection2Datatype {
 
       requires Valid()
       requires LoopPre()
-      requires !it1.PastTheBeginning?()
-      requires !it2.PastTheBeginning?()
 
       ensures Valid()
       ensures LoopModel()
@@ -329,8 +328,6 @@ module OrdSetIntersection2Datatype {
         invariant Valid()
         invariant it1HasPeek == it1.HasPeek?()
         invariant it2HasPeek == it2.HasPeek?()
-        invariant !it1.PastTheBeginning?()
-        invariant !it2.PastTheBeginning?()
         invariant LoopInvariant(old(s1.Model()), old(s2.Model()))
 
         invariant allocated(Repr())
@@ -376,9 +373,9 @@ module OrdSetIntersection2Datatype {
     && su.Model() == s1.Model() * s2.Model()
   }
 
-  // 2.25M RU
+  // 3.54M RU
   method OrdSetIntersection(s1: OrderedSet, s2: OrderedSet, su: OrderedSet)
-    modifies s1, s1.Repr(), s2, s2.Repr(), su, su.Repr()
+    modifies s1.Repr(), s2.Repr(), su.Repr()
     requires allocated(s1.Repr())
     requires allocated(s2.Repr())
     requires allocated(su.Repr())
