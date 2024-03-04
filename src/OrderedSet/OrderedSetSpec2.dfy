@@ -17,13 +17,14 @@ module OrderedSetSpec2 {
       reads Parent().Repr()
       ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
 
-    ghost predicate PastTheBeginning?()
+    opaque ghost predicate AfterSpec(after: set<K>)
       reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
-      ensures PastTheBeginning?() ==> !HasPeek?()
+      requires HasPeek?()
     {
-      !HasPeek?() && !PastTheEnd?()
+      && after < Parent().Model()
+      && |after| < |Parent().Model()|
     }
 
     opaque ghost function After(): set<K>
@@ -31,24 +32,43 @@ module OrderedSetSpec2 {
       requires Valid()
       requires Parent().Valid()
       requires HasPeek?()
+      ensures AfterSpec(After())
     {
-      (Parent().Model() - Before'()) - {Peek?()}
+      var after := (Parent().Model() - {Peek?()})  - Before();
+      assert AfterSpec(after) by { reveal AfterSpec(), PeekSpec(), BeforeSpec(); }
+      after
     }
 
-    ghost function After'(): set<K>
+    opaque ghost predicate RTraversedSpec(rtraversed: set<K>)
       reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
     {
+      && rtraversed <= Parent().Model()
+      && |rtraversed| <= |Parent().Model()|
+    }
+
+    /*
+    Helper function that specifies what elements have been traversed while
+    iterating the set from front to back, by repeatedly calling `Prev` (backwards).
+
+    It is, essentially, a total version of `After`.
+    */
+    ghost function RTraversed(): set<K>
+      reads Parent().Repr()
+      requires Valid()
+      requires Parent().Valid()
+      ensures RTraversedSpec(RTraversed())
+    {
       if HasPeek?() then
+        assert RTraversedSpec(After()) by { reveal RTraversedSpec(), AfterSpec(); }
         After()
-      else if PastTheBeginning?() then
-        {}
       else
+        assert RTraversedSpec(Parent().Model()) by { reveal RTraversedSpec(); }
         Parent().Model()
     }
 
-    opaque ghost predicate PeekSpec'(p: K)
+    opaque ghost predicate PeekOrderSpec(p: K)
       reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
@@ -64,7 +84,7 @@ module OrderedSetSpec2 {
       requires Parent().Valid()
       requires HasPeek?()
       ensures PeekSpec(Peek?())
-      ensures PeekSpec'(Peek?())
+      ensures PeekOrderSpec(Peek?())
 
     opaque twostate predicate PrevModel()
       reads Parent().Repr()
@@ -76,8 +96,8 @@ module OrderedSetSpec2 {
     {
       && Parent().Model() == old(Parent().Model())
       && |Parent().Model()| == old(|Parent().Model()|)
-      && After'() == {old(Peek?())} + old(After())
-      && |After'()| == 1 + old(|After()|)
+      && RTraversed() == {old(Peek?())} + old(After())
+      && |RTraversed()| == 1 + old(|After()|)
     }
 
     method Prev()
@@ -95,36 +115,6 @@ module OrderedSetSpec2 {
       //ensures Parent() == old(Parent())
       ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures PrevModel()
-
-/*
-    opaque twostate predicate CopyModel()
-      reads Parent().Repr()
-      requires old(Valid())
-      requires old(Parent().Valid())
-      requires Valid()
-      requires Parent().Valid()
-    {
-      && Parent().Model() == old(Parent().Model())
-      && |Parent().Model()| == old(|Parent().Model()|)
-      && Before'() == old(Before'())
-      && |Before'()| == old(|Before'()|)
-    }
-
-    method Copy()
-      modifies Parent().Repr()
-      requires allocated(Parent())
-      requires allocated(Parent().Repr())
-      ensures fresh(Parent().Repr() - old(Parent().Repr()))
-      ensures allocated(Parent().Repr())
-
-      requires Valid()
-      requires Parent().Valid()
-      ensures Valid()
-      ensures Parent().Valid()
-      //ensures Parent() == old(Parent())
-      ensures Parent().Iterators() >= old(Parent().Iterators())
-      ensures CopyModel()
-      */
   }
 
   trait {:termination false} OrderedSet extends UnorderedSet {
@@ -145,7 +135,7 @@ module OrderedSetSpec2 {
     {
       && Model() == old(Model())
       && |Model()| == old(|Model()|)
-      && it.After'() == {}
+      && it.RTraversed() == {}
     }
 
     method Last() returns (it: OrderedSetIterator)

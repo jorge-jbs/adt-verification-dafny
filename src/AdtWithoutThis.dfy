@@ -63,7 +63,7 @@ module ADT {
     requires old(allocated(b.Repr()))
     requires allocated(b.Repr())
     requires b.Repr() == old(b.Repr())
-    requires unchanged({b} + b.Repr())
+    requires unchanged(b.Repr())
 
     requires old(Valid2(a, b))
 

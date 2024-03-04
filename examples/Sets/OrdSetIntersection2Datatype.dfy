@@ -50,28 +50,26 @@ module OrdSetIntersection2Datatype {
       var y := old(it2.Peek?());
       && s1.Model() == old(s1.Model())
       && s2.Model() == old(s2.Model())
-      && !it1.PastTheBeginning?()
-      && !it2.PastTheBeginning?()
       && (
         if x == y then
           && su.Model() == old(su.Model()) + {x}
-          && it1.Before'() == old(it1.Before()) + {x}
-          && it2.Before'() == old(it2.Before()) + {y}
+          && it1.Traversed() == old(it1.Before()) + {x}
+          && it2.Traversed() == old(it2.Before()) + {y}
         else if x < y then
           && su.Model() == old(su.Model())
-          && it1.Before'() == old(it1.Before()) + {x}
-          && it2.Before'() == old(it2.Before())
+          && it1.Traversed() == old(it1.Before()) + {x}
+          && it2.Traversed() == old(it2.Before())
         else
           && su.Model() == old(su.Model())
-          && it1.Before'() == old(it1.Before())
-          && it2.Before'() == old(it2.Before()) + {y}
+          && it1.Traversed() == old(it1.Before())
+          && it2.Traversed() == old(it2.Before()) + {y}
       )
     }
 
-    // 28.1M RU - correctness verification
-    // 17.4M RU - correctness verification (with MaintainsValid...)
-    // 60.7M RU - functional verification
-    // 22.9M RU - correctness and functional verification (with MaintainsValid...)
+    // 28.1M RU - correctness verification  // OUTDATED
+    // 19.8M RU - correctness verification (with MaintainsValid...)
+    // 60.7M RU - functional verification  // OUTDATED
+    // 37.6M RU - correctness and functional verification (with MaintainsValid...)
     method LoopBody'()
       returns (
         it1HasPeek: bool,
@@ -136,7 +134,6 @@ module OrdSetIntersection2Datatype {
       MaintainsValid3It110Helper@L8(s2, it2, s1, it1, su);
       assert Valid();
       assert LoopBody'Model() by {
-        assume false;
         reveal LoopBody'Model();
         reveal OrderedSetIterator.PeekModel();
         reveal OrderedSet.AddModel();
@@ -149,8 +146,8 @@ module OrdSetIntersection2Datatype {
       reads Repr()
       requires Valid()
     {
-      reveal OrderedSetIterator.Before'Spec();
-      (|s1.Model()| - |it1.Before'()|) + (|s2.Model()| - |it2.Before'()|)
+      reveal OrderedSetIterator.TraversedSpec();
+      (|s1.Model()| - |it1.Traversed()|) + (|s2.Model()| - |it2.Traversed()|)
     }
 
     twostate lemma LoopBoundDecreases()
@@ -163,7 +160,7 @@ module OrdSetIntersection2Datatype {
     {
       reveal LoopBody'Model(), LoopBound();
       reveal OrderedSetIterator.PeekSpec();
-      reveal OrderedSetIterator.Before'Spec();
+      reveal OrderedSetIterator.TraversedSpec();
     }
 
     opaque ghost predicate LoopInvariant(s1Model: set<K>, s2Model: set<K>)
@@ -172,11 +169,9 @@ module OrdSetIntersection2Datatype {
     {
       && s1.Model() == s1Model
       && s2.Model() == s2Model
-      && su.Model() == it1.Before'() * it2.Before'()
-      && !it1.PastTheBeginning?()
-      && !it2.PastTheBeginning?()
-      && (forall a <- it1.Before'(), b <- s2.Model() | b !in it2.Before'() :: a < b)
-      && (forall a <- it2.Before'(), b <- s1.Model() | b !in it1.Before'() :: a < b)
+      && su.Model() == it1.Traversed() * it2.Traversed()
+      && (forall a <- it1.Traversed(), b <- s2.Model() | b !in it2.Traversed() :: a < b)
+      && (forall a <- it2.Traversed(), b <- s1.Model() | b !in it1.Traversed() :: a < b)
     }
 
     twostate lemma LoopBodyMaintainsInvariant(s1Model: set<K>, s2Model: set<K>)
@@ -190,9 +185,9 @@ module OrdSetIntersection2Datatype {
     {
       reveal LoopBody'Model(), LoopInvariant();
       reveal OrderedSetIterator.PeekSpec();
-      reveal OrderedSetIterator.PeekSpec'();
+      reveal OrderedSetIterator.PeekOrderSpec();
       reveal OrderedSetIterator.BeforeSpec();
-      reveal OrderedSetIterator.Before'Spec();
+      reveal OrderedSetIterator.TraversedSpec();
     }
 
     method LoopBody()
@@ -230,10 +225,8 @@ module OrdSetIntersection2Datatype {
       requires Valid()
     {
       && su.Model() == {}
-      && it1.Before'() == {}
-      && it2.Before'() == {}
-      && !it1.PastTheBeginning?()
-      && !it2.PastTheBeginning?()
+      && it1.Traversed() == {}
+      && it2.Traversed() == {}
     }
 
     opaque twostate predicate LoopModel()
@@ -256,41 +249,39 @@ module OrdSetIntersection2Datatype {
       reveal LoopInvariant(), LoopModel();
       reveal OrderedSetIterator.PeekSpec();
       reveal OrderedSetIterator.BeforeSpec();
-      reveal OrderedSetIterator.Before'Spec();
+      reveal OrderedSetIterator.TraversedSpec();
       assert s1.Model() == old(s1.Model());
       assert s2.Model() == old(s2.Model());
       if !it1.HasPeek?() {
-        assert it1.PastTheEnd?();
-        assert it1.Before'() == s1.Model();
+        assert it1.Traversed() == s1.Model();
       }
       if !it2.HasPeek?() {
-        assert it2.PastTheEnd?();
-        assert it2.Before'() == s2.Model();
+        assert it2.Traversed() == s2.Model();
       }
 
       if !it1.HasPeek?() && !it2.HasPeek?() {
         assert su.Model() == s1.Model() * s2.Model();
       } else if it1.HasPeek?() {
-        assert su.Model() == it1.Before'() * s2.Model();
-        assert s1.Model() - it1.Before'() !! s2.Model() by {
-          assert (forall a <- it2.Before'(), b <- s1.Model() | b !in it1.Before'() :: a < b);
-          forall x <- s1.Model() - it1.Before'()
+        assert su.Model() == it1.Traversed() * s2.Model();
+        assert s1.Model() - it1.Traversed() !! s2.Model() by {
+          assert (forall a <- it2.Traversed(), b <- s1.Model() | b !in it1.Traversed() :: a < b);
+          forall x <- s1.Model() - it1.Traversed()
             ensures x !in s2.Model()
           {
             assert x in s1.Model();
-            assert x !in it1.Before'();
+            assert x !in it1.Traversed();
           }
         }
         assert su.Model() == s1.Model() * s2.Model();
       } else {
-        assert su.Model() == s1.Model() * it2.Before'();
-        assert s1.Model() !! s2.Model() - it2.Before'() by {
-          assert (forall a <- it1.Before'(), b <- s2.Model() | b !in it2.Before'() :: a < b);
-          forall x <- s2.Model() - it2.Before'()
+        assert su.Model() == s1.Model() * it2.Traversed();
+        assert s1.Model() !! s2.Model() - it2.Traversed() by {
+          assert (forall a <- it1.Traversed(), b <- s2.Model() | b !in it2.Traversed() :: a < b);
+          forall x <- s2.Model() - it2.Traversed()
             ensures x !in s1.Model()
           {
             assert x in s2.Model();
-            assert x !in it2.Before'();
+            assert x !in it2.Traversed();
           }
         }
         assert su.Model() == s1.Model() * s2.Model();

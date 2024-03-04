@@ -19,12 +19,6 @@ module UnorderedSetSpec2 {
       requires Valid()
       requires Parent().Valid()
 
-    ghost predicate PastTheEnd?()
-      reads Parent().Repr()
-      requires Valid()
-      requires Parent().Valid()
-      ensures PastTheEnd?() ==> !HasPeek?()
-
     opaque ghost predicate BeforeSpec(before: set<K>)
       reads Parent().Repr()
       requires Valid()
@@ -42,30 +36,33 @@ module UnorderedSetSpec2 {
       requires HasPeek?()
       ensures BeforeSpec(Before())
 
-    opaque ghost predicate Before'Spec(before': set<K>)
+    opaque ghost predicate TraversedSpec(traversed: set<K>)
       reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
     {
-      && before' <= Parent().Model()
-      && 0 <= |before'| <= |Parent().Model()|
+      && traversed <= Parent().Model()
+      && |traversed| <= |Parent().Model()|
     }
 
-    ghost function Before'(): set<K>
+    /*
+    Helper function that specifies what elements have been traversed while
+    iterating the set from back to front, by repeatedly calling `Next`.
+
+    It is, essentially, a total version of `Before`.
+    */
+    ghost function Traversed(): set<K>
       reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
-      ensures Before'Spec(Before'())
+      ensures TraversedSpec(Traversed())
     {
       if HasPeek?() then
-        assert Before'Spec(Before()) by { reveal BeforeSpec(), Before'Spec(); }
+        assert TraversedSpec(Before()) by { reveal BeforeSpec(), TraversedSpec(); }
         Before()
-      else if PastTheEnd?() then
-        assert Before'Spec(Parent().Model()) by { reveal BeforeSpec(), Before'Spec(); }
-        Parent().Model()
       else
-        assert Before'Spec({}) by { reveal BeforeSpec(), Before'Spec(); }
-        {}
+        assert TraversedSpec(Parent().Model()) by { reveal BeforeSpec(), TraversedSpec(); }
+        Parent().Model()
     }
 
     opaque ghost predicate PeekSpec(p: K)
@@ -95,10 +92,11 @@ module UnorderedSetSpec2 {
       && Parent().Model() == old(Parent().Model())
       && |Parent().Model()| == old(|Parent().Model()|)
       && HasPeek?() == old(HasPeek?())
-      && PastTheEnd?() == old(PastTheEnd?())
-      && Before'() == old(Before'())
-      && |Before'()| == old(|Before'()|)
-      && (old(HasPeek?()) ==> Peek?() == old(Peek?()))
+      && (old(HasPeek?()) ==>
+        && Peek?() == old(Peek?())
+        && Before() == old(Before())
+        && |Before()| == old(|Before()|)
+      )
     }
 
     method HasPeek() returns (b: bool)
@@ -117,14 +115,7 @@ module UnorderedSetSpec2 {
       ensures Parent().Iterators() >= old(Parent().Iterators())
 
       ensures HasPeekModel()
-      /*
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && it.Traversed() == old(it.Traversed())
-                && |it.Traversed()| == old(|it.Traversed()|)
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
-      */
+      ensures Parent().SameIterators()
 
     opaque twostate predicate PeekModel(p: K)
       reads Parent().Repr()
@@ -137,8 +128,8 @@ module UnorderedSetSpec2 {
     {
       && Parent().Model() == old(Parent().Model())
       && |Parent().Model()| == old(|Parent().Model()|)
-      && Before'() == old(Before'())
-      && |Before'()| == old(|Before'()|)
+      && Before() == old(Before())
+      && |Before()| == old(|Before()|)
       && p == Peek?() == old(Peek?())
     }
 
@@ -158,14 +149,7 @@ module UnorderedSetSpec2 {
       ensures HasPeek?()
       ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures PeekModel(p)
-      /*
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && it.Traversed() == old(it.Traversed())
-                && |it.Traversed()| == old(|it.Traversed()|)
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
-                */
+      ensures Parent().SameIterators()
 
     opaque twostate predicate NextModel()
       reads Parent().Repr()
@@ -177,9 +161,38 @@ module UnorderedSetSpec2 {
     {
       && Parent().Model() == old(Parent().Model())
       && |Parent().Model()| == old(|Parent().Model()|)
-      && Before'() == {old(Peek?())} + old(Before())
-      && |Before'()| == 1 + old(|Before()|)
-      && (HasPeek?() || PastTheEnd?())
+      && Traversed() == {old(Peek?())} + old(Before())
+      && |Traversed()| == 1 + old(|Before()|)
+    }
+
+    opaque twostate predicate NextIterators()
+      reads Parent().Repr()
+      requires old(Parent().Valid())
+      requires Parent().Valid()
+      requires fresh(Parent().Repr() - old(Parent().Repr()))
+      requires Parent().Iterators() >= old(Parent().Iterators())
+    {
+      assert old(Allocated(Parent().Repr()); true);  // am I breaking something?
+      forall it <- old(Parent().Iterators()) | old(it.Valid()) ::
+        && it.Valid()
+        //&& it.Parent() == old(it.Parent())
+        && (it != this ==> Parent().SameIteratorModel(it))
+    }
+
+    twostate lemma NextIterator(it: UnorderedSetIterator)
+      requires old(Parent().Valid())
+      requires Parent().Valid()
+      requires fresh(Parent().Repr() - old(Parent().Repr()))
+      requires Parent().Iterators() >= old(Parent().Iterators())
+      requires it in old(Parent().Iterators())
+      requires old(it.Valid())
+      requires NextIterators()
+      requires it != this
+      ensures it.Valid()
+      //ensures it.Parent() == old(it.Parent())
+      ensures Parent().SameIteratorModel(it)
+    {
+      reveal NextIterators();
     }
 
     method Next()
@@ -197,30 +210,30 @@ module UnorderedSetSpec2 {
       //ensures Parent() == old(Parent())
       ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures NextModel()
-      /*
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && (it != this ==> it.Traversed() == old(it.Traversed())
-                                   && |it.Traversed()| == old(|it.Traversed()|)
-                                   && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
-      */
+      ensures NextIterators()
 
-/*
-    opaque twostate predicate CopyModel()
+    opaque twostate predicate CopyModel(new it: UnorderedSetIterator)
       reads Parent().Repr()
       requires old(Valid())
       requires old(Parent().Valid())
-      requires Valid()
       requires Parent().Valid()
+      requires Valid()
+      requires it.Parent() == Parent()
+      requires it.Valid()
+      requires it.HasPeek?() == HasPeek?()
     {
       && Parent().Model() == old(Parent().Model())
       && |Parent().Model()| == old(|Parent().Model()|)
-      && Before'() == old(Before'())
-      && |Before'()| == old(|Before'()|)
+      && HasPeek?() == old(HasPeek?())
+      && (HasPeek?() ==>
+        && Peek?() == old(Peek?())
+        && Before() == old(Before())
+        && |Before()| == old(|Before()|)
+        && it.Before() == Before()
+      )
     }
 
-    method Copy()
+    method Copy() returns (it: UnorderedSetIterator)
       modifies Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
@@ -233,8 +246,12 @@ module UnorderedSetSpec2 {
       ensures Parent().Valid()
       //ensures Parent() == old(Parent())
       ensures Parent().Iterators() >= old(Parent().Iterators())
-      ensures CopyModel()
-      */
+      ensures it != this
+      ensures it.Valid()
+      ensures it.Parent() == Parent()
+      ensures it.HasPeek?() == HasPeek?()
+      ensures CopyModel(it)
+      ensures Parent().SameIterators()
   }
 
   trait {:termination false} UnorderedSet extends ADT<set<K>> {
@@ -242,6 +259,32 @@ module UnorderedSetSpec2 {
       reads Repr()
       requires Valid()
       ensures forall it <- Iterators() :: it in Repr() && it.Parent() == this
+
+    opaque twostate predicate SameIterators()
+      reads Repr()
+      requires old(Valid())
+      requires Valid()
+      requires Iterators() >= old(Iterators())
+    {
+      assert old(Allocated(Repr()); true);  // am I breaking something?
+      forall it <- old(Iterators()) | old(it.Valid()) ::
+        && it.Valid()
+        && SameIteratorModel(it)
+        //&& it.Parent() == old(it.Parent())
+    }
+
+    twostate lemma SameIterator(it: UnorderedSetIterator)
+      requires old(Valid())
+      requires Valid()
+      requires Iterators() >= old(Iterators())
+      requires it in old(Iterators())
+      requires old(it.Valid())
+      requires SameIterators()
+      ensures it.Valid()
+      ensures SameIteratorModel(it)
+    {
+      reveal SameIterators();
+    }
 
     opaque twostate predicate EmptyModel(b: bool)
       reads Repr()
@@ -261,39 +304,13 @@ module UnorderedSetSpec2 {
       requires it in old(Iterators())
       requires old(it.Valid())
       requires it.Valid()
-      requires it.HasPeek?() == old(it.HasPeek?())
     {
-      && it.Before'() == old(it.Before'())
-      && |it.Before'()| == old(|it.Before'()|)
-      && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-    }
-
-    opaque twostate predicate SameIterators()
-      reads Repr()
-      requires old(Valid())
-      requires Valid()
-      requires Iterators() >= old(Iterators())
-    {
-      assert old(Allocated(Repr()); true);  // am I breaking something?
-      forall it <- old(Iterators()) | old(it.Valid()) ::
-        && it.Valid()
-        && it.HasPeek?() == old(it.HasPeek?())
-        && SameIteratorModel(it)
-        //&& it.Parent() == old(it.Parent())
-    }
-
-    twostate lemma SameIterator(it: UnorderedSetIterator)
-      requires old(Valid())
-      requires Valid()
-      requires Iterators() >= old(Iterators())
-      requires it in old(Iterators())
-      requires old(it.Valid())
-      requires SameIterators()
-      ensures it.Valid()
-      ensures it.HasPeek?() == old(it.HasPeek?())
-      ensures SameIteratorModel(it)
-    {
-      reveal SameIterators();
+      && it.HasPeek?() == old(it.HasPeek?())
+      && (it.HasPeek?() ==>
+        && it.Peek?() == old(it.Peek?())
+        && it.Before() == old(it.Before())
+        && |it.Before()| == old(|it.Before()|)
+      )
     }
 
     method Empty() returns (b: bool)
@@ -339,8 +356,7 @@ module UnorderedSetSpec2 {
     {
       && Model() == old(Model())
       && |Model()| == old(|Model()|)
-      && it.Before'() == {}
-      && (it.HasPeek?() || it.PastTheEnd?())
+      && it.Traversed() == {}
     }
 
     method First() returns (it: UnorderedSetIterator)
@@ -380,6 +396,7 @@ module UnorderedSetSpec2 {
       ensures Valid()
       ensures Iterators() >= old(Iterators())
       ensures ContainsModel(k, b)
+      ensures SameIterators()
 
     opaque twostate predicate AddModel(k: K)
       reads Repr()
@@ -437,10 +454,7 @@ module UnorderedSetSpec2 {
       && Model() == old(Model())
       && |Model()| == old(|Model()|)
       && it.HasPeek?() == (k in old(Model()))
-      && if k in old(Model()) then
-        it.Peek?() == k
-      else
-        it.PastTheEnd?()
+      && (it.HasPeek?() ==> it.Peek?() == k)
     }
 
     method Find(k: K) returns (it: UnorderedSetIterator)
@@ -468,13 +482,11 @@ module UnorderedSetSpec2 {
       requires it.HasPeek?()
     {
       && Model() == old(Model()) + {k}
-      && (
-        if k in old(Model()) then
-          |Model()| == old(|Model()|)
-        else
-          |Model()| == old(|Model()|) + 1
-      )
       && it.Peek?() == k
+      && if k in old(Model()) then
+        |Model()| == old(|Model()|)
+      else
+        |Model()| == old(|Model()|) + 1
     }
 
     method Insert(hint: UnorderedSetIterator, k: K) returns (it: UnorderedSetIterator)
@@ -508,9 +520,8 @@ module UnorderedSetSpec2 {
       && Model() == old(Model()) - {old(pos.Peek?())}
       && |Model()| == old(|Model()|) - 1
       //&& old(pos.Peek?()) in old(Model())
-      && (it.HasPeek?() || it.PastTheEnd?())
-      && it.Before'() == old(pos.Before())
-      && |it.Before'()| == old(|pos.Before()|)
+      && it.Traversed() == old(pos.Before())
+      && |it.Traversed()| == old(|pos.Before()|)
     }
 
     method Erase(pos: UnorderedSetIterator) returns (it: UnorderedSetIterator)
