@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [ "master", "threaded-trees", "disjoint-set-forest" ]
+    branches: [ "master", "threaded-trees", "disjoint-set-forest", "examples-verification-optimization" ]
   pull_request:
     branches: [ "master" ]
 
