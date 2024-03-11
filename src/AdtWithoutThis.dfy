@@ -73,9 +73,9 @@ module ADT {
   {}
 
   ghost function Repr3<A, B, C>(a: ADT<A>, b: ADT<B>, c: ADT<C>): set<object>
-      reads a.ReprFamily(a.ReprDepth-1)
-      reads b.ReprFamily(b.ReprDepth-1)
-      reads c.ReprFamily(c.ReprDepth-1)
+    reads a.ReprFamily(a.ReprDepth-1)
+    reads b.ReprFamily(b.ReprDepth-1)
+    reads c.ReprFamily(c.ReprDepth-1)
   {
     a.Repr() + b.Repr() + c.Repr()
   }

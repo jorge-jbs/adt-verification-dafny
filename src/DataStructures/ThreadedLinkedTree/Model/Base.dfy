@@ -1,4 +1,5 @@
 include "../../../../src/Collections/Int.dfy"
+include "../../../../src/Collections/Map.dfy"
 include "../../../../src/Collections/Utils.dfy"
 include "../../../../src/Collections/KeyValue.dfy"
 include "../../../../src/Collections/OrderedSetUtils.dfy"
@@ -6,6 +7,7 @@ include "../../../../src/DataStructures/ThreadedLinkedTree/Model/Color.dfy"
 
 module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
   import Int
+  import opened Map
   import opened Printer
   import opened KeyValue
   import opened Color
@@ -194,6 +196,21 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
     }
   }
 
+  function biggerKeys(t: trbtreeOrThread, k': K): set<K>
+  {
+    match t {
+      case Empty => {}
+      case Thread(_) => {}
+      case Node(l, k, v, r, c) =>
+        if k < k' then
+          biggerKeys(r, k')
+        else if k' < k then
+          biggerKeys(l, k') + {k} + keys(r)
+        else
+          keys(r)
+    }
+  }
+
   function sizeSmaller(t: trbtreeOrThread, k': K): nat
   {
     match t {
@@ -219,6 +236,11 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
       t.key
   }
 
+  lemma {:induction t} MinimumKey(t: netrbtree)
+    requires SearchTree(t)
+    ensures forall k <- keys(t) :: minimumKey(t) <= k
+  {}
+
   function maximumKey(t: netrbtree): K
     ensures maximumKey(t) in keys(t)
     ensures inorder(t)[|inorder(t)|-1].0 == maximumKey(t)
@@ -229,6 +251,11 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
       t.key
   }
 
+  lemma {:induction t} MaximumKey(t: netrbtree)
+    requires SearchTree(t)
+    ensures forall k <- keys(t) :: k <= maximumKey(t)
+  {}
+
   function orderKeysToSet(s: seq<(K, V)>): set<K>
   {
     set p | p in s :: p.0
@@ -236,7 +263,7 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
 
   function orderToSet(s: seq<(K, V)>): set<(K, V)>
   {
-    set p | p in s :: p
+    set p <- s
   }
 
   function orderKeysToSeq(s: seq<(K, V)>): seq<K>
@@ -863,7 +890,6 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
     ensures s == {x}
   {}
 
-/*
   lemma SingletonMapItems(k: K, v: V)
     ensures map[k := v].Items == {(k, v)}
   {
@@ -871,26 +897,34 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
     SingletonSet(map[k := v].Items, (k, v));
   }
 
-  lemma OrderSetIsMapItems(t: trbtree)
+  lemma OrderSetIsMapRecItems(t: trbtreeOrThread)
     requires SearchTree(t)
-    ensures orderToSet(inorder(t)) == toMap(t).Items
+    ensures orderToSet(inorder(t)) == toMapRec(t).Items
   {
     match t {
       case Empty => {}
+      case Thread(_) => {}
       case Node(l, k, v, r, c) => {
-        OrderSetIsMapItems(l);
-        OrderSetIsMapItems(r);
-        assert orderToSet(inorder(l)) == toMap(l).Items;
-        assert orderToSet(inorder(r)) == toMap(r).Items;
-        toMapLemmas(t);
+        OrderSetIsMapRecItems(l);
+        OrderSetIsMapRecItems(r);
+        assert orderToSet(inorder(l)) == toMapRec(l).Items;
+        assert orderToSet(inorder(r)) == toMapRec(r).Items;
         calc == {
-          toMap(t).Items;
-          toMap(l).Items + map[k := v].Items + toMap(r).Items;
+          toMapRec(t).Items;
+          (toMapRec(l) + map[k := v] + toMapRec(r)).Items;
+          {
+            DisjointBranches(t);
+            ToMapRecKeys(t);
+            ToMapRecKeys(l);
+            ToMapRecKeys(r);
+            AddItems3(toMapRec(l), map[k := v], toMapRec(r));
+          }
+          toMapRec(l).Items + map[k := v].Items + toMapRec(r).Items;
           {
             SingletonMapItems(k, v);
             assert map[k := v].Items == {(k, v)};
           }
-          toMap(l).Items + {(k, v)} + toMap(r).Items;
+          toMapRec(l).Items + {(k, v)} + toMapRec(r).Items;
           orderToSet(inorder(l)) + {(k, v)} + orderToSet(inorder(r));
           orderToSet(inorder(t));
         }
@@ -898,6 +932,7 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
     }
   }
 
+/*
   lemma HasPeekCondition(t: trbtree, traversed: seq<(K, V)>, st: seq<(K, V)>)
     requires SearchTree(t)
     requires inorder(t) == traversed + st
@@ -1364,7 +1399,7 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
 
   lemma SmallerKeys(t: trbtreeOrThread, k': K)
     requires SearchTree(t)
-    ensures smallerKeys(t, k') == set k | k in keys(t) && k < k'
+    ensures smallerKeys(t, k') == set k <- keys(t) | k < k'
   {
     match t {
       case Empty => {
@@ -1379,6 +1414,34 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
         } else {
         }
     }
+  }
+
+  lemma BiggerKeys(t: trbtreeOrThread, k': K)
+    requires SearchTree(t)
+    ensures biggerKeys(t, k') == set k <- keys(t) | k' < k
+  {
+    match t {
+      case Empty => {
+      }
+      case Thread(_) => {
+      }
+      case Node(l, k, v, r, c) =>
+        if k < k' {
+          BiggerKeys(l, k');
+        } else if k' < k {
+          BiggerKeys(r, k');
+        } else {
+        }
+    }
+  }
+
+  lemma SmallerBiggerKeys(t: trbtreeOrThread, k: K)
+    requires SearchTree(t)
+    requires k in keys(t)
+    ensures smallerKeys(t, k) + {k} + biggerKeys(t, k) == keys(t)
+  {
+    SmallerKeys(t, k);
+    BiggerKeys(t, k);
   }
 
 /*
@@ -1897,6 +1960,55 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
       orderKeysToSet(inorder(root)[..0]);
       ({});
     }
+  }
+
+  lemma BiggerKeysLeftEmpty(node: trbtree, root: trbtree)
+    requires SearchTree(root)
+    requires Subtree(node, root)
+    requires ThreadedTreeRoot(root)
+    requires node.Node?
+    requires node.left.Empty?
+    ensures keys(root) == biggerKeys(root, node.key) + {node.key}
+  {
+    SmallerKeysLeftEmpty(node, root);
+    SmallerKeys(root, node.key);
+    BiggerKeys(root, node.key);
+  }
+
+  lemma BiggerKeysLeftThread(node: trbtree, root: trbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    requires Subtree(node, root)
+    requires node.Node?
+    requires node.left.Thread?
+    ensures biggerKeys(root, node.left.thread)
+      == biggerKeys(root, node.key) + {node.key}
+  {
+    SmallerKeysLeftThread(node, root);
+    SmallerKeys(root, node.key);
+    SmallerKeys(root, node.left.thread);
+    BiggerKeys(root, node.key);
+    BiggerKeys(root, node.left.thread);
+    SmallerBiggerKeys(root, node.key);
+    SmallerBiggerKeys(root, node.left.thread);
+  }
+
+  lemma BiggerKeysMax(node: trbtree, root: trbtree)
+    requires SearchTree(root)
+    requires Subtree(node, root)
+    requires node.Node?
+    requires node.left.Node?
+    ensures biggerKeys(root, maximumKey(node.left))
+      == biggerKeys(root, node.key) + {node.key}
+  {
+    SmallerKeysMax(node, root);
+    MaximumKey(node.left);
+    SmallerKeys(root, node.key);
+    SmallerKeys(root, maximumKey(node.left));
+    BiggerKeys(root, node.key);
+    BiggerKeys(root, maximumKey(node.left));
+    SmallerBiggerKeys(root, node.key);
+    SmallerBiggerKeys(root, maximumKey(node.left));
   }
 
   function ThreadedTreeExample1(): trbtree {
