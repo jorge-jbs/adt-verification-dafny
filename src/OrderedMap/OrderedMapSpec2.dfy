@@ -153,6 +153,7 @@ module OrderedMapSpec2 {
       ensures Iterators() >= {it} + old(Iterators())
 
       ensures LastModel(it)
+      ensures SameIterators()
   }
 
   ghost predicate ValidIt(s: OrderedMap, it: OrderedMapIterator)

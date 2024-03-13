@@ -82,10 +82,11 @@ files=(
     src/OrderedSet/OrderedSetForwardSpec.dfy
     #src/OrderedSet/OrderedSetL.dfy  # fails
     src/OrderedSet/OrderedSetSpec2.dfy
-    #src/TreeSet/TreeSetImpl2.dfy
+    src/TreeSet/TreeSetImpl2.dfy
+    src/TreeSet/TreeSetSpec2.dfy
     src/UnorderedMap/UnorderedMapSpec.dfy
     src/UnorderedMultiset/UnorderedMultisetSpec.dfy
-    src/UnorderedSet/UnorderedSetSpec.dfy
+    src/UnorderedSet/UnorderedSetSpec2.dfy
 
     src/DataStructures/ThreadedLinkedTree2.dfy
     src/DataStructures/ThreadedLinkedTree/Model/Base.dfy

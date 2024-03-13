@@ -22,10 +22,6 @@ module ADT {
       ReprFamily(ReprDepth)
     }
 
-    lemma ReprLemma()
-      ensures Repr() == ReprFamily(ReprDepth)
-    {}
-
     ghost predicate Valid()
       reads Repr()
 

@@ -481,6 +481,7 @@ module TreeMapImpl {
       ensures Iterators() >= {it} + old(Iterators())
 
       ensures LastModel(it)
+      ensures SameIterators()
     {
       ThreadedRootImp(tree.skeleton);
       var iter := tree.Last();
@@ -873,6 +874,7 @@ module TreeMapImpl {
       ensures it.Parent() == this
       ensures Iterators() >= {it} + old(Iterators())
       ensures EraseModel(pos, it)
+      ensures RemoveIterators(old(pos.Peek?().0))
     {
       it := pos.Copy();
       assert it.HasPeek?() by {
@@ -909,6 +911,36 @@ module TreeMapImpl {
         reveal OrderedMapIterator.PeekOrderSpec();
         reveal RemoveModel();
         reveal RemoveIteratorTraversedShrinksModel();
+      }
+      assert RemoveIterators(old(pos.Peek?().0)) by {
+        reveal EraseModel();
+        reveal SameIterators();
+        reveal SameIteratorModel();
+        reveal OrderedMapIterator.CopyModel();
+        reveal OrderedMapIterator.NextModel();
+        reveal OrderedMapIterator.NextIterators();
+        reveal OrderedMapIterator.PeekModel();
+        reveal OrderedMapIterator.PeekSpec();
+        reveal OrderedMapIterator.PeekOrderSpec();
+        reveal RemoveModel();
+        reveal RemoveIterators();
+        reveal RemoveIteratorModel();
+        var k := old(pos.Peek?().0);
+        assert p.0 == k;
+        forall it <- old(Iterators()) | old(it.Valid()) && (old(it.HasPeek?()) ==> old(it.Peek?().0) != k)
+          ensures it.Valid()
+          ensures RemoveIteratorModel(it, k)
+        {
+          assert it.HasPeek?() == old(it.HasPeek?());
+          assert (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()));
+          if k in old(Model()) && (it.HasPeek?() ==> k < it.Peek?().0) {
+            assert it.Traversed() == old(it.Traversed()) - {k};
+            assert |it.Traversed()| == old(|it.Traversed()|) - 1;
+          } else {
+            assert it.Traversed() == old(it.Traversed());
+            assert |it.Traversed()| == old(|it.Traversed()|);
+          }
+        }
       }
     }
   }

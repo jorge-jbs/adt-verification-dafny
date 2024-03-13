@@ -246,6 +246,7 @@ module UnorderedSetSpec2 {
       ensures Parent().Valid()
       //ensures Parent() == old(Parent())
       ensures Parent().Iterators() >= old(Parent().Iterators())
+      ensures fresh(it)
       ensures it != this
       ensures it.Valid()
       ensures it.Parent() == Parent()

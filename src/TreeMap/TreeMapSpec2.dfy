@@ -475,6 +475,26 @@ module TreeMapSpec {
       ensures InsertModel(k, v, it)
       ensures AddIterators(k, v)
 
+    method Erase(pos: UnorderedMapIterator) returns (it: UnorderedMapIterator)
+      modifies Repr()
+      requires allocated(Repr())
+      ensures fresh(Repr() - old(Repr()))
+      ensures allocated(Repr())
+
+      requires Valid()
+      requires pos.Valid()
+      requires pos.Parent() == this
+      requires pos.HasPeek?()
+      requires pos in Iterators()
+
+      ensures Valid()
+      ensures fresh(it)
+      ensures it.Valid()
+      ensures it.Parent() == this
+      ensures Iterators() >= {it} + old(Iterators())
+      ensures EraseModel(pos, it)
+      ensures RemoveIterators(old(pos.Peek?().0))
+
 /*
     method Remove(x:K)
       modifies this, Repr()
