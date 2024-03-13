@@ -36,11 +36,10 @@ module TreeSetSpec {
       requires Valid()
       requires Iterators() >= old(Iterators())
     {
-      assert old(Allocated(Repr()); true);  // am I breaking something?
+      assert old(allocated(Repr()));
       forall it <- old(Iterators()) | old(it.Valid()) ::
         && it.Valid()
         && AddIteratorModel(it, x)
-        //&& it.Parent() == old(it.Parent())
     }
 
     twostate lemma AddIterator(it: UnorderedSetIterator, x: K)
@@ -208,7 +207,6 @@ module TreeSetSpec {
       requires Valid()
       requires it in Iterators()
       requires it.Valid()
-      //requires old(it.HasPeek?()) ==> old(it.Peek?().0) != k
     {
       it.HasPeek?() ==> it.Peek?() != k
     }
@@ -221,7 +219,6 @@ module TreeSetSpec {
       requires it in old(Iterators())
       requires old(it.Valid())
       requires it.Valid()
-      //requires old(it.HasPeek?()) ==> old(it.Peek?().0) != k
     {
       && it.HasPeek?() == old(it.HasPeek?())
       && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
@@ -241,11 +238,10 @@ module TreeSetSpec {
       requires Valid()
       requires Iterators() >= old(Iterators())
     {
-      assert old(Allocated(Repr()); true);  // am I breaking something?
+      assert old(allocated(Repr()));
       forall it <- old(Iterators()) | old(it.Valid()) && (old(it.HasPeek?()) ==> old(it.Peek?()) != k) ::
         && it.Valid()
         && RemoveIteratorModel(it, k)
-        //&& it.Parent() == old(it.Parent())
     }
 
     twostate lemma RemoveIterator(it: UnorderedSetIterator, k: K)
@@ -287,7 +283,8 @@ module TreeSetSpec {
 
       ensures Valid()
       ensures fresh(it)
-      ensures it.Valid() && it.Parent() == this
+      ensures it.Valid()
+      ensures it.Parent() == this
       ensures it.HasPeek?()
       ensures Iterators() >= {it} + old(Iterators())
       ensures InsertModel(k, it)

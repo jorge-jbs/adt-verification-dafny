@@ -110,7 +110,6 @@ module UnorderedMapSpec2 {
       requires Parent().Valid()
       ensures Valid()
       ensures Parent().Valid()
-      //ensures Parent() == old(Parent())
       ensures b == HasPeek?()
       ensures Parent().Iterators() >= old(Parent().Iterators())
 
@@ -145,7 +144,6 @@ module UnorderedMapSpec2 {
       requires HasPeek?()
       ensures Valid()
       ensures Parent().Valid()
-      //ensures Parent() == old(Parent())
       ensures HasPeek?()
       ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures PeekModel(p)
@@ -172,10 +170,9 @@ module UnorderedMapSpec2 {
       requires fresh(Parent().Repr() - old(Parent().Repr()))
       requires Parent().Iterators() >= old(Parent().Iterators())
     {
-      assert old(Allocated(Parent().Repr()); true);  // am I breaking something?
+      assert old(allocated(Parent().Repr()));
       forall it <- old(Parent().Iterators()) | old(it.Valid()) ::
         && it.Valid()
-        //&& it.Parent() == old(it.Parent())
         && (it != this ==> Parent().SameIteratorModel(it))
     }
 
@@ -189,7 +186,6 @@ module UnorderedMapSpec2 {
       requires NextIterators()
       requires it != this
       ensures it.Valid()
-      //ensures it.Parent() == old(it.Parent())
       ensures Parent().SameIteratorModel(it)
     {
       reveal NextIterators();
@@ -207,7 +203,6 @@ module UnorderedMapSpec2 {
       requires HasPeek?()
       ensures Valid()
       ensures Parent().Valid()
-      //ensures Parent() == old(Parent())
       ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures NextModel()
       ensures NextIterators()
@@ -244,7 +239,6 @@ module UnorderedMapSpec2 {
       requires Parent().Valid()
       ensures Valid()
       ensures Parent().Valid()
-      //ensures Parent() == old(Parent())
       ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures fresh(it)
       ensures it != this
@@ -284,11 +278,10 @@ module UnorderedMapSpec2 {
       requires Valid()
       requires Iterators() >= old(Iterators())
     {
-      assert old(Allocated(Repr()); true);  // am I breaking something?
+      assert old(allocated(Repr()));
       forall it <- old(Iterators()) | old(it.Valid()) ::
         && it.Valid()
         && SameIteratorModel(it)
-        //&& it.Parent() == old(it.Parent())
     }
 
     twostate lemma SameIterator(it: UnorderedMapIterator)
@@ -536,7 +529,8 @@ module UnorderedMapSpec2 {
 
       ensures Valid()
       ensures fresh(it)
-      ensures it.Valid() && it.Parent() == this
+      ensures it.Valid()
+      ensures it.Parent() == this
       ensures it.HasPeek?()
       ensures Iterators() >= {it} + old(Iterators())
       ensures InsertModel(k, v, it)
@@ -553,7 +547,6 @@ module UnorderedMapSpec2 {
     {
       && Model() == old(Model()) - {old(pos.Peek?().0)}
       && |Model()| == old(|Model()|) - 1
-      //&& old(pos.Peek?()) in old(Model())
       && it.Traversed() == old(pos.Before())
       && |it.Traversed()| == old(|pos.Before()|)
     }

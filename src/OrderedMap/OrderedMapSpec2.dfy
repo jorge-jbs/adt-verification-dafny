@@ -112,7 +112,6 @@ module OrderedMapSpec2 {
       requires HasPeek?()
       ensures Valid()
       ensures Parent().Valid()
-      //ensures Parent() == old(Parent())
       ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures PrevModel()
   }
