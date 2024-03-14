@@ -30,7 +30,6 @@ module ThreadedLinkedTree {
 
   class ThreadedLinkedTreeIterator {
     var node: TTNode?
-    ghost var isPastTheEnd: bool
     ghost const parent: ThreadedLinkedTree
 
     ghost function Parent(): ThreadedLinkedTree
@@ -61,10 +60,7 @@ module ThreadedLinkedTree {
       reads this
     {
       if node == null then
-        if isPastTheEnd then
-          ModelIt.PastTheEnd
-        else
-          ModelIt.PastTheBeginning
+        ModelIt.Null
       else
         // we do not need `reads node` because `key` is a constant
         ModelIt.Link(node.key)
@@ -85,11 +81,10 @@ module ThreadedLinkedTree {
     constructor Root(parent: ThreadedLinkedTree)
     {
       this.node := parent.root;
-      this.isPastTheEnd := false;
       this.parent := parent;
     }
 
-    constructor(node: TTNode?, ghost isPastTheEnd: bool, ghost parent: ThreadedLinkedTree)
+    constructor(node: TTNode?, ghost parent: ThreadedLinkedTree)
       modifies parent`iterators
       requires parent.Valid()
       requires parent.Threaded()
@@ -99,10 +94,7 @@ module ThreadedLinkedTree {
       ensures Valid()
       ensures
         if node == null then
-          if isPastTheEnd then
-            Model() == ModelIt.PastTheEnd
-          else
-            Model() == ModelIt.PastTheBeginning
+          Model() == ModelIt.Null
         else
           Model() == ModelIt.Link(node.key)
       ensures Parent() == parent
@@ -118,7 +110,6 @@ module ThreadedLinkedTree {
       ensures allocated(parent.Repr())
     {
       this.node := node;
-      this.isPastTheEnd := isPastTheEnd;
       this.parent := parent;
       new;
       parent.iterators := parent.iterators + {this};
@@ -146,7 +137,6 @@ module ThreadedLinkedTree {
       ensures allocated(parent.Repr())
     {
       this.node := parent.root;
-      this.isPastTheEnd := true;
       this.parent := parent;
       new;
       parent.iterators := parent.iterators + {this};
@@ -180,7 +170,6 @@ module ThreadedLinkedTree {
       ensures allocated(parent.Repr())
     {
       this.node := parent.root;
-      this.isPastTheEnd := false;
       this.parent := parent;
       new;
       parent.iterators := parent.iterators + {this};
@@ -215,20 +204,10 @@ module ThreadedLinkedTree {
       ensures allocated(parent.Repr())
     {
       this.node := node;
-      this.isPastTheEnd := true;
       this.parent := parent;
       new;
       parent.iterators := parent.iterators + {this};
       KeysAndElems(parent.skeleton);
-    }
-
-    ghost function Index(): int
-      reads this, node, parent, parent.Repr()
-      requires Valid()
-      requires parent.Valid()
-      requires parent.SearchTree()
-    {
-      ModelIt.Index(Model(), parent.Model())
     }
 
     predicate HasPeek()
@@ -272,6 +251,10 @@ module ThreadedLinkedTree {
       ensures Peek() == Peek'()
     {
       GetValue(node, parent.root, parent.skeleton);
+      ModelB.ToMapRecKeys(parent.Model());
+      KeysAndElems(parent.skeleton);
+      ModelB.Get'ToMapRec(parent.Model(), node.key);
+      ModelB.GetEqGet'(parent.Model(), node.key);
     }
 
     method Next()  // 8"
@@ -301,7 +284,6 @@ module ThreadedLinkedTree {
         assert Skeleton().right.Empty?;
         assert TreeModelRec(Skeleton()).right.Empty?;
         node := null;
-        isPastTheEnd := true;
       } else if node.isThreadRight {
         assert ValidChild(node.right, Skeleton().right, true);
         assert Skeleton().right.Thread?;
@@ -371,7 +353,6 @@ module ThreadedLinkedTree {
         assert Skeleton().left.Empty?;
         assert TreeModelRec(Skeleton()).left.Empty?;
         node := null;
-        isPastTheEnd := false;
       } else if node.isThreadLeft {
         assert ValidChild(node.left, Skeleton().left, true);
         assert Skeleton().left.Thread?;
@@ -567,7 +548,7 @@ module ThreadedLinkedTree {
       ThreadedImp();
       ModelF.FindSpec(Model(), k);
       var foundNode, foundSk := FindRec(root, false, skeleton, k);
-      it := new ThreadedLinkedTreeIterator(foundNode, true, this);
+      it := new ThreadedLinkedTreeIterator(foundNode, this);
     }
 
     lemma ElemsOfThread()
@@ -664,7 +645,7 @@ module ThreadedLinkedTree {
       ModelR.RemoveRootSpec(TreeModelRec(skeleton), k);
       ghost var removedNode;
       root, skeleton, removedNode, isRemoved := R.RemoveRoot(root, skeleton, k);
-      forall it | it in old(Iterators()) && old(it.Valid()) && old(it.HasPeek())
+      forall it <- old(Iterators()) | old(it.Valid()) && old(it.HasPeek())
         ensures old(it.Peek().0) == k <==> it.node == removedNode
       {
         KeysAndElems(skeleton);

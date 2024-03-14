@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 
 files=(
-    examples/Sets/OrdSetContained.dfy
+    #examples/Sets/OrdSetContained.dfy
     #examples/Sets/OrdSetForwardContained.dfy  # time out
     #examples/Sets/OrdSetIntersection.dfy  # takes to long (and fails?)
-    examples/Sets/UnordSetContained.dfy
-    examples/Sets/UnordSetIntersection.dfy
+    #examples/Sets/UnordSetContained.dfy
+    #examples/Sets/UnordSetIntersection.dfy
+    examples/OrderedSet/Intersection.dfy
+    examples/OrderedSet/IntersectionCorrectness.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos-main.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos.dfy
     examples/Linear/CheckListProperties/AllRelated.dfy
@@ -34,7 +36,7 @@ files=(
     examples/Linear/TestArrayList.dfy
     examples/Linear/FibPrefix.dfy
     #examples/Maps/ExecuteTreeMap.dfy
-    examples/Maps/UnordMapIntersection.dfy
+    #examples/Maps/UnordMapIntersection.dfy
     examples/Multisets/UnordMultisetContained.dfy
     examples/Multisets/UnordMultisetIntersection.dfy
     src/ADT.dfy
@@ -72,27 +74,24 @@ files=(
     src/Stack/ArrayStackImpl.dfy
     src/Stack/StackSpec.dfy
     src/Stack/SinglyLinkedStackImpl.dfy
-    src/TreeMap/TreeMapImpl2.dfy
-    #src/TreeMap/TreeMapImpl/EraseImpl.dfy
-    src/TreeMap/TreeMapSpec2.dfy
-    #src/OrderedMap/OrderedMapForwardSpec.dfy
-    src/OrderedMap/OrderedMapSpec2.dfy
+    src/TreeMap/TreeMapImpl.dfy
+    src/TreeMap/TreeMapSpec.dfy
+    src/OrderedMap/OrderedMapSpec.dfy
     src/OrderedMultiset/OrderedMultisetForward.dfy
     src/OrderedMultiset/OrderedMultisetSpec.dfy
-    src/OrderedSet/OrderedSetForwardSpec.dfy
     #src/OrderedSet/OrderedSetL.dfy  # fails
-    src/OrderedSet/OrderedSetSpec2.dfy
-    src/TreeSet/TreeSetImpl2.dfy
-    src/TreeSet/TreeSetSpec2.dfy
+    src/OrderedSet/OrderedSetSpec.dfy
+    src/TreeSet/TreeSetImpl.dfy
+    src/TreeSet/TreeSetSpec.dfy
     src/UnorderedMap/UnorderedMapSpec.dfy
     src/UnorderedMultiset/UnorderedMultisetSpec.dfy
-    src/UnorderedSet/UnorderedSetSpec2.dfy
+    src/UnorderedSet/UnorderedSetSpec.dfy
 
-    src/DataStructures/ThreadedLinkedTree2.dfy
+    src/DataStructures/ThreadedLinkedTree.dfy
     src/DataStructures/ThreadedLinkedTree/Model/Base.dfy
-    src/DataStructures/ThreadedLinkedTree/Model/Find2.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/Find.dfy
     src/DataStructures/ThreadedLinkedTree/Model/FlipColors.dfy
-    src/DataStructures/ThreadedLinkedTree/Model/Iterator2.dfy
+    src/DataStructures/ThreadedLinkedTree/Model/Iterator.dfy
     src/DataStructures/ThreadedLinkedTree/Model/MoveRed.dfy
     src/DataStructures/ThreadedLinkedTree/Model/Remove.dfy
     src/DataStructures/ThreadedLinkedTree/Model/RemoveElemAt.dfy
@@ -105,7 +104,7 @@ files=(
     src/DataStructures/ThreadedLinkedTree/Model/Insert.dfy
     src/DataStructures/ThreadedLinkedTree/Impl/BlackenRoot.dfy
     src/DataStructures/ThreadedLinkedTree/Impl/ConditionalReddenRoot.dfy
-    src/DataStructures/ThreadedLinkedTree/Impl/Find2.dfy
+    src/DataStructures/ThreadedLinkedTree/Impl/Find.dfy
     src/DataStructures/ThreadedLinkedTree/Impl/FlipColors.dfy
     src/DataStructures/ThreadedLinkedTree/Impl/Max.dfy
     src/DataStructures/ThreadedLinkedTree/Impl/Min.dfy

@@ -1,11 +1,11 @@
-include "../../src/ADT.dfy"
-include "../../src/OrderedSet/OrderedSetSpec2.dfy"
+include "../../src/AdtWithoutThis.dfy"
+include "../../src/OrderedSet/OrderedSetSpec.dfy"
 
 module OrdSetContained {
-  import opened OrderedSetSpec2
+  import opened OrderedSetSpec
   import opened ADT
 
-  export provides ADT, OrderedSetSpec2, OrdSetContained
+  export provides ADT, OrderedSetSpec, OrdSetContained
 
   ghost predicate LoopInvariant(
       s1: OrderedSet,

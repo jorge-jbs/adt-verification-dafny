@@ -14,7 +14,7 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Find {
   function Find(t: trbtreeOrThread, k: K): iter
   {
     match t
-    case Empty|Thread(_) => PastTheEnd
+    case Empty|Thread(_) => Null
     case Node(l, k', v', r, c) =>
       if k == k' then
         Link(k)
@@ -28,6 +28,5 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Find {
     requires SearchTree(t)
     ensures Valid(Find(t, k), ForgetThread(t))
     ensures k in keys(t) <==> HasPeek(Find(t, k))
-    ensures k !in keys(t) ==> Find(t, k).PastTheEnd?
   {}
 }

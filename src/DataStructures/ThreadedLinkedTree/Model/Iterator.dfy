@@ -14,8 +14,7 @@ module ThreadedLinkedTree.Model.Iterator {
   import opened RemoveElemAt
 
   datatype iter
-    = PastTheBeginning
-    | PastTheEnd
+    = Null
     | Link(link: K)
 
   predicate Valid(it: iter, root: trbtree)
@@ -23,182 +22,87 @@ module ThreadedLinkedTree.Model.Iterator {
     it.Link? ==> it.link in keys(root)
   }
 
-  function Index(it: iter, root: trbtree): int
-  {
-    match it {
-      case PastTheBeginning => -1
-      case PastTheEnd => size(root)
-      case Link(k) => sizeSmaller(root, k)
-    }
-  }
-
-  lemma SizeIndex(it: iter, root: trbtree)
-    requires SearchTree(root)
-    ensures Index(it, root) <= |toMapRec(root)|
-  {
-    SizeLemmas(root);
-  }
-
   predicate HasPeek(it: iter)
   {
     it.Link?
-  }
-
-  predicate HasPeek'(it: iter, root: trbtree)
-    requires SearchTree(root)
-  {
-    0 <= Index(it, root) < |toMapRec(root)|
-  }
-
-  lemma HasPeekEq(it: iter, root: trbtree)
-    requires Valid(it, root)
-    requires SearchTree(root)
-    ensures HasPeek(it) == HasPeek'(it, root)
-  {
-    if HasPeek(it) {
-      assert it.Link?;
-      assert Index(it, root) < size(root) by {
-        if it.Link? {
-          SizeSmaller(root, it.link);
-        }
-      }
-      assert size(root) == |toMapRec(root)| by {
-        SizeLemmas(root);
-      }
-      assert Index(it, root) < |toMapRec(root)|;
-    }
-    if HasPeek'(it, root) {
-      assert 0 <= Index(it, root) < |toMapRec(root)|;
-      assert size(root) == |toMapRec(root)| by {
-        SizeLemmas(root);
-      }
-      assert it.Link?;
-    }
   }
 
   function Peek(it: iter, root: trbtree): (K, V)
     requires HasPeek(it)
     requires Valid(it, root)
   {
-    (it.link, Get'(root, it.link))
+    ToMapRecKeys(root);
+    (it.link, toMapRec(root)[it.link])
   }
 
-  ghost function Peek'(it: iter, root: trbtree): (K, V)
-    requires SearchTree(root)
-    requires HasPeek'(it, root)
-  {
-    ElemAtInSet(toMapRec(root).Keys, Index(it, root));
-    var k := ElemAt(toMapRec(root).Keys, Index(it, root));
-    (k, toMapRec(root)[k])
-  }
-
-/*
-  ghost function Peek''(it: iter, root: trbtree): (K, V)
-    requires Valid(it, root)
-    requires SearchTree(root)
+  function Before(it: iter, root: trbtree): set<K>
     requires HasPeek(it)
   {
-    var s := inorder(root);
-    var i := Index(it, root);
-    HasPeekEq(it, root);
+    smallerKeys(root, it.link)
+  }
+
+  lemma BeforeSpec(it: iter, root: trbtree)
+    requires HasPeek(it)
+    requires Valid(it, root)
+    requires SearchTree(root)
+    ensures Before(it, root) < toMapRec(root).Keys
+    ensures |Before(it, root)| < |toMapRec(root)|
+  {
+    SmallerKeys(root, it.link);
+    ToMapRecKeys(root);
     SizeLemmas(root);
-    s[i]
   }
-*/
 
-  lemma PeekEq(it: iter, root: trbtree)
+  lemma PeekSpec(it: iter, root: trbtree)
+    requires HasPeek(it)
     requires Valid(it, root)
     requires SearchTree(root)
-    requires HasPeek(it)
-    requires HasPeek'(it, root)
-    ensures Peek(it, root) == Peek'(it, root)
+    ensures Peek(it, root) in toMapRec(root).Items
+    ensures Peek(it, root).0 !in Before(it, root)
+    ensures forall x <- Before(it, root) :: x < Peek(it, root).0
+    ensures forall x <- toMapRec(root) | x !in Before(it, root) :: Peek(it, root).0 <= x
   {
-    ToMapRec(root);
-    calc == {
-      ElemAt(toMapRec(root).Keys, Index(it, root));
-      ElemAt(toMapRec(root).Keys, sizeSmaller(root, it.link));
-      {
-        if root.Node? {
-          SizeSmaller(root, it.link);
-          SizeLemmas(root);
-          ElemAtInorder(root, sizeSmaller(root, it.link));
-        }
-      }
-      inorder(root)[sizeSmaller(root, it.link)].0;
-      { SmallerInorderSize(root, it.link); }
-      inorder(root)[|smallerInorder(root, it.link)|].0;
-      { InorderOfSmallerInorderSize(root, it.link); }
-      it.link;
-    }
-    var k := ElemAt(toMapRec(root).Keys, Index(it, root));
-    calc == {
-      Get'(root, it.link);
-      { GetEqGet'(root, it.link); }
-      Get(root, it.link);
-      toMapRec(root)[it.link];
-      toMapRec(root)[k];
-    }
+    SmallerKeys(root, it.link);
+    ToMapRecKeys(root);
   }
 
   function Traversed(it: iter, root: trbtree): set<K>
   {
     match it {
-      case PastTheBeginning => keys(root)
-      case PastTheEnd => keys(root)
-      case Link(k) => smallerKeys(root, k)
+      case Null => keys(root)
+      case Link(k) => Before(it, root)
     }
   }
 
-  ghost function Traversed'(it: iter, root: trbtree): set<K>
-    requires SearchTree(root)
+  function After(it: iter, root: trbtree): set<K>
+    requires HasPeek(it)
   {
-    if Index(it, root) == -1 || Index(it, root) == |toMapRec(root)| then
-      toMapRec(root).Keys
-    else
-      SizeIndex(it, root);
-      ElemAtInSet(toMapRec(root).Keys, Index(it, root));
-      SmallerElemAt(toMapRec(root).Keys, Index(it, root));
-      Smaller(toMapRec(root).Keys, ElemAt(toMapRec(root).Keys, Index(it, root)))
+    biggerKeys(root, it.link)
   }
 
-  lemma TraversedEq(it: iter, root: trbtree)
+  lemma AfterSpec(it: iter, root: trbtree)
     requires SearchTree(root)
-    requires ThreadedTreeRoot(root)
+    requires HasPeek(it)
     requires Valid(it, root)
-    ensures Traversed(it, root) == Traversed'(it, root)
+    ensures After(it, root) == (toMapRec(root).Keys - {it.link}) - Before(it, root)
   {
-    ToMapRec(root);
-    if Index(it, root) == -1 || Index(it, root) == |toMapRec(root)| {
-      assert |toMapRec(root)| == size(root) by {
-        SizeLemmas(root);
-      }
-      if it.Link? {
-        SizeSmaller(root, it.link);
-        assert false;
-      }
-      assert it.PastTheBeginning? || it.PastTheEnd?;
-      assert toMapRec(root).Keys == keys(root);
-    } else {
-      SizeIndex(it, root);
-      SmallerElemAt(toMapRec(root).Keys, Index(it, root));
-      HasPeekEq(it, root);
-      calc == {
-        Smaller(toMapRec(root).Keys, ElemAt(toMapRec(root).Keys, Index(it, root)));
-        { PeekEq(it, root); }
-        Smaller(toMapRec(root).Keys, it.link);
-        Smaller(keys(root), it.link);
-        { SmallerKeys(root, it.link); }
-        smallerKeys(root, it.link);
-      }
+    BiggerKeys(root, it.link);
+    SmallerKeys(root, it.link);
+    ToMapRecKeys(root);
+  }
+
+  function RTraversed(it: iter, root: trbtree): set<K>
+  {
+    match it {
+      case Null => keys(root)
+      case Link(k) => After(it, root)
     }
   }
 
-  lemma TraversedIndex(it: iter, root: trbtree)
-    requires it.Link? || it.PastTheEnd?
-    requires SearchTree(root)
-    ensures |Traversed(it, root)| == Index(it, root)
+  lemma RTraversedSpec(it: iter, root: trbtree)
+    ensures RTraversed(it, root) == if HasPeek(it) then After(it, root) else toMapRec(root).Keys
   {
-    SizeLemmas(root);
+    ToMapRecKeys(root);
   }
 
   function First(root: trbtree): iter
@@ -206,7 +110,7 @@ module ThreadedLinkedTree.Model.Iterator {
     if root.Node? then
       Link(minimumKey(root))
     else
-      PastTheEnd
+      Null
   }
 
   lemma FirstSpec(root: trbtree)
@@ -231,21 +135,12 @@ module ThreadedLinkedTree.Model.Iterator {
     }
   }
 
-  lemma FirstIndex(root: trbtree)
-    requires SearchTree(root)
-    requires ThreadedTreeRoot(root)
-    ensures Index(First(root), root) == 0
-  {
-    FirstTraversed(root);
-    TraversedIndex(First(root), root);
-  }
-
   function Last(root: trbtree): iter
   {
     if root.Node? then
       Link(maximumKey(root))
     else
-      PastTheBeginning
+      Null
   }
 
   lemma LastSpec(root: trbtree)
@@ -254,30 +149,19 @@ module ThreadedLinkedTree.Model.Iterator {
     ensures Valid(Last(root), root)
   {}
 
-  lemma LastTraversed(root: trbtree)
+  lemma LastRTraversed(root: trbtree)
     requires SearchTree(root)
     requires ThreadedTreeRoot(root)
-    requires root.Node?
-    ensures Traversed(Last(root), root) == keys(root) - {maximumKey(root)}
+    ensures RTraversed(Last(root), root) == {}
   {
-    SearchImpliesOrdered(root);
-    SmallerKeys(root, Last(root).link);
-    forall k | k in keys(root)
-      ensures !(maximumKey(root) < k)
-    {
-      KeyInOrder(root, k);
-    }
-  }
-
-  lemma LastIndex(root: trbtree)
-    requires SearchTree(root)
-    requires ThreadedTreeRoot(root)
-    ensures Index(Last(root), root) == |toMapRec(root)| - 1
-  {
-    ToMapRecKeys(root);
     if root.Node? {
-      LastTraversed(root);
-      TraversedIndex(Last(root), root);
+      SearchImpliesOrdered(root);
+      BiggerKeys(root, Last(root).link);
+      forall k | k in keys(root)
+        ensures !(maximumKey(root) < k)
+      {
+        KeyInOrder(root, k);
+      }
     }
   }
 
@@ -286,13 +170,16 @@ module ThreadedLinkedTree.Model.Iterator {
     if k in keys(root) then
       Link(k)
     else
-      PastTheEnd
+      Null
   }
 
   lemma FindPeek(k: K, root: trbtree)
     requires k in keys(root)
+    requires SearchTree(root)
     ensures Peek(Find(k, root), root) == (k, Get'(root, k))
-  {}
+  {
+    Get'ToMapRec(root, k);
+  }
 
   lemma FindAfterInsert(k: K, v: V, root: trbtree)
     requires SearchTree(root)
@@ -315,7 +202,7 @@ module ThreadedLinkedTree.Model.Iterator {
   {
     var t := GetSubtree(root, it.link);
     match t.right
-    case Empty => PastTheEnd
+    case Empty => Null
     case Thread(k) =>
       assert k in keys(root) by {
         assert k in keysAndThreads(t);
@@ -350,7 +237,7 @@ module ThreadedLinkedTree.Model.Iterator {
     requires HasPeek(it)
     requires Valid(it, root)
     ensures Traversed(Next(it, root), root)
-      == Traversed(it, root) + {Peek(it, root).0}
+      == Before(it, root) + {Peek(it, root).0}
   {
     var t := GetSubtree(root, it.link);
     match t.right
@@ -370,7 +257,7 @@ module ThreadedLinkedTree.Model.Iterator {
   {
     var t := GetSubtree(root, it.link);
     match t.left
-    case Empty => PastTheBeginning
+    case Empty => Null
     case Thread(k) =>
       assert k in keys(root) by {
         assert k in keysAndThreads(t);
@@ -381,6 +268,25 @@ module ThreadedLinkedTree.Model.Iterator {
     case Node(_, _, _, _, _) =>
       Link(maximumKey(t.left))
   }
+
+  lemma PrevRTraversed(it: iter, root: trbtree)
+    requires SearchTree(root)
+    requires ThreadedTreeRoot(root)
+    requires HasPeek(it)
+    requires Valid(it, root)
+    ensures RTraversed(Prev(it, root), root)
+      == After(it, root) + {Peek(it, root).0}
+  {
+    var t := GetSubtree(root, it.link);
+    match t.left
+    case Empty =>
+      BiggerKeysLeftEmpty(t, root);
+    case Thread(k) =>
+      BiggerKeysLeftThread(t, root);
+    case Node(_, _, _, _, _) =>
+      BiggerKeysMax(t, root);
+  }
+
 
   lemma PrevSpec(it: iter, root: trbtree)
     requires SearchTree(root)
@@ -399,59 +305,6 @@ module ThreadedLinkedTree.Model.Iterator {
     case Node(_, _, _, _, _) =>
   }
 
-  lemma PrevIndex(it: iter, root: trbtree)
-    requires SearchTree(root)
-    requires ThreadedTreeRoot(root)
-    requires HasPeek(it)
-    requires Valid(it, root)
-    ensures Index(Prev(it, root), root) == Index(it, root) - 1
-  {
-    var t := GetSubtree(root, it.link);
-    match t.left
-    case Empty =>
-      SmallerKeysLeftEmpty(t, root);
-      SizeLemmas(t);
-      calc == {
-        Index(Prev(it, root), root) + 1;
-        -1 + 1;
-        0;
-        |smallerKeys(root, it.link)|;
-        { SizeSmaller(root, it.link); }
-        sizeSmaller(root, it.link);
-        Index(it, root);
-      }
-    case Thread(k) =>
-      SmallerKeysLeftThread(t, root);
-      SizeLemmas(t);
-      calc == {
-        Index(Prev(it, root), root) + 1;
-        sizeSmaller(root, Prev(it, root).link) + 1;
-        { SizeSmaller(root, Prev(it, root).link); }
-        |smallerKeys(root, Prev(it, root).link)| + |{Prev(it, root).link}|;
-        { SmallerKeys(root, Prev(it, root).link); }
-        |smallerKeys(root, Prev(it, root).link) + {Prev(it, root).link}|;
-        |smallerKeys(root, it.link)|;
-        { SizeSmaller(root, it.link); }
-        sizeSmaller(root, it.link);
-        Index(it, root);
-      }
-    case Node(_, _, _, _, _) =>
-      SmallerKeysMax(t, root);
-      SizeLemmas(t);
-      calc == {
-        Index(Prev(it, root), root) + 1;
-        sizeSmaller(root, Prev(it, root).link) + 1;
-        { SizeSmaller(root, Prev(it, root).link); }
-        |smallerKeys(root, Prev(it, root).link)| + |{Prev(it, root).link}|;
-        { SmallerKeys(root, Prev(it, root).link); }
-        |smallerKeys(root, Prev(it, root).link) + {Prev(it, root).link}|;
-        |smallerKeys(root, it.link)|;
-        { SizeSmaller(root, it.link); }
-        sizeSmaller(root, it.link);
-        Index(it, root);
-      }
-  }
-
   lemma ModelAfterInsert(it: iter, k: K, v: V, root: trbtree, root': trbtree)
     requires SearchTree(root)
     requires SearchTree(root')
@@ -459,13 +312,12 @@ module ThreadedLinkedTree.Model.Iterator {
     requires toMapRec(root') == toMapRec(root)[k := v]
 
     ensures Valid(it, root')
-    ensures HasPeek(it) && (k !in keys(root) || k != it.link) ==>
-      Peek(it, root') == Peek(it, root)
-    ensures
-      if k in keys(root) || it.PastTheBeginning? || (it.Link? && it.link < k) then
-        Index(it, root') == Index(it, root)
+    ensures HasPeek(it) ==>
+      && Peek(it, root').0 == Peek(it, root).0
+      && if k in keys(root) && k == it.link then
+        Peek(it, root').1 == v
       else
-        Index(it, root') == Index(it, root) + 1
+        Peek(it, root').1 == Peek(it, root).1
     ensures
       if k in keys(root) || (it.Link? && it.link < k) then
         && Traversed(it, root') == Traversed(it, root)
@@ -477,16 +329,17 @@ module ThreadedLinkedTree.Model.Iterator {
     ToMapRecKeys(root);
     ToMapRecKeys(root');
     assert Valid(it, root');
-    if HasPeek(it) && (k !in keys(root) || k != it.link) {
-      calc == {
-        Peek(it, root');
-        (it.link, Get'(root', it.link));
-        { Get'ToMapRec(root', it.link); }
-        (it.link, toMapRec(root')[it.link]);
-        (it.link, toMapRec(root)[it.link]);
-        { Get'ToMapRec(root, it.link); }
-        (it.link, Get'(root, it.link));
-        Peek(it, root);
+    if HasPeek(it) {
+      assert Peek(it, root').0 == Peek(it, root).0;
+      if k in keys(root) && k == it.link {
+        assert Peek(it, root').1 == v;
+      } else {
+        calc == {
+          Peek(it, root').1;
+          toMapRec(root')[it.link];
+          toMapRec(root)[it.link];
+          Peek(it, root).1;
+        }
       }
     }
     if it.Link? {
@@ -503,17 +356,6 @@ module ThreadedLinkedTree.Model.Iterator {
       assert Traversed(it, root') == Traversed(it, root) by {
       }
     }
-    if it.Link? || it.PastTheEnd? {
-      TraversedIndex(it, root);
-      TraversedIndex(it, root');
-    }
-    if k in keys(root) || it.PastTheBeginning? || (it.Link? && it.link < k) {
-      assert Index(it, root') == Index(it, root) by {
-      }
-    } else {
-      assert Index(it, root') == Index(it, root) + 1 by {
-      }
-    }
   }
 
   lemma ModelAfterRemove(it: iter, k: K, root: trbtree, root': trbtree)
@@ -525,11 +367,6 @@ module ThreadedLinkedTree.Model.Iterator {
     ensures Valid(it, root') <==> (it.Link? ==> it.link != k)
     ensures HasPeek(it) && k != it.link ==>
       Peek(it, root') == Peek(it, root)
-    ensures
-      if k in keys(root) && ((it.Link? && k < it.link) || it.PastTheEnd?) then
-        Index(it, root') == Index(it, root) - 1
-      else
-        Index(it, root') == Index(it, root)
     ensures
       if k in keys(root) && (it.Link? ==> k < it.link) then
         && Traversed(it, root') == Traversed(it, root) - {k}
@@ -545,12 +382,8 @@ module ThreadedLinkedTree.Model.Iterator {
     if HasPeek(it) && k != it.link {
       calc == {
         Peek(it, root');
-        (it.link, Get'(root', it.link));
-        { Get'ToMapRec(root', it.link); }
         (it.link, toMapRec(root')[it.link]);
         (it.link, toMapRec(root)[it.link]);
-        { Get'ToMapRec(root, it.link); }
-        (it.link, Get'(root, it.link));
         Peek(it, root);
       }
     }
@@ -565,16 +398,6 @@ module ThreadedLinkedTree.Model.Iterator {
     } else {
       assert Traversed(it, root') == Traversed(it, root);
       assert |Traversed(it, root')| == |Traversed(it, root)|;
-    }
-
-    if it.Link? || it.PastTheEnd? {
-      TraversedIndex(it, root);
-      TraversedIndex(it, root');
-    }
-    if k in keys(root) && ((it.Link? && k < it.link) || it.PastTheEnd?) {
-      assert Index(it, root') == Index(it, root) - 1;
-    } else {
-      assert Index(it, root') == Index(it, root);
     }
   }
 }

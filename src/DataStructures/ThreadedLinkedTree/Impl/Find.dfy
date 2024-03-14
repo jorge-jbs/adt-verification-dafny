@@ -26,8 +26,7 @@ module ThreadedLinkedTree.Impl.Find {
     ensures ValidChild(foundNode, foundSk, false)
     ensures foundNode != null ==> foundNode in elems(sk)
 
-    ensures foundNode != null <==> Model.Find(TreeModelRec(sk), k).Link?
-    ensures foundNode == null <==> Model.Find(TreeModelRec(sk), k).PastTheEnd?
+    ensures foundNode == null <==> Model.Find(TreeModelRec(sk), k).Null?
     ensures foundNode != null ==> Model.Find(TreeModelRec(sk), k).link == foundNode.key == k
   {
     if node == null || isThread {

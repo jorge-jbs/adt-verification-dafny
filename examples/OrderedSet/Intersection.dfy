@@ -1,11 +1,11 @@
-include "../../src/OrderedSet/OrderedSetSpec2.dfy"
+include "../../src/OrderedSet/OrderedSetSpec.dfy"
 
-module OrdSetIntersection2 {
+module Intersection {
   import opened KeyValue
   import opened ADT
-  import opened OrderedSetSpec2
+  import opened OrderedSetSpec
 
-  export provides OrderedSetSpec2, ADT, OrdSetIntersection, OrdSetIntersectionModel, OrdSetIntersectionModelPre
+  export provides OrderedSetSpec, ADT, OrdSetIntersection, OrdSetIntersectionModel, OrdSetIntersectionModelPre
 
   opaque ghost predicate LoopInvariant(
       s1: OrderedSet,
