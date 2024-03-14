@@ -30,6 +30,12 @@ module ADT {
       requires Valid()
   }
 
+  twostate predicate Fresh<A>(a: ADT<A>)
+    reads a.Repr()
+  {
+    && fresh(a.Repr() - old(a.Repr()))
+  }
+
   ghost predicate Valid2<A, B>(a: ADT<A>, b: ADT<B>)
     reads a.Repr(), b.Repr()
     ensures Valid2(a, b) ==> a.Valid()

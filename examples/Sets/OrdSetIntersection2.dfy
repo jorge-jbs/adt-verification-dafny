@@ -44,6 +44,7 @@ module OrdSetIntersection2 {
   // 6.73M RU - correctness verification (with MaintainsValid...)
   // 2.50M RU - correctness verification (with MaintainsValid..., without it*HasPeek)  // OUTDATED
   // 37.1M RU - correctness and functional verification (with MaintainsValid...)
+  // 97.1M RU - correctness and functional verification (without MaintainsValid...)
   method Loop'(
       s1: OrderedSet, 
       it1: OrderedSetIterator, 

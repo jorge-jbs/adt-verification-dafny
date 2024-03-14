@@ -163,6 +163,12 @@ module OrderedSetSpec2 {
     && it.Valid()
   }
 
+  ghost predicate Valid1It1(s: OrderedSet, it: OrderedSetIterator)
+    reads s.Repr()
+  {
+    s.Valid() && ValidIt(s, it)
+  }
+
   ghost predicate Valid2It11(
       a: OrderedSet,
       itA: OrderedSetIterator,
@@ -214,6 +220,18 @@ module OrderedSetSpec2 {
     ensures allocated(a.Repr())
     ensures allocated(b.Repr())
   {}
+
+  ghost predicate Valid3It100(
+      a: OrderedSet,
+      itA: OrderedSetIterator,
+      b: OrderedSet,
+      c: OrderedSet
+    )
+    reads a.Repr(), b.Repr(), c.Repr()
+  {
+    && Valid3(a, b, c)
+    && ValidIt(a, itA)
+  }
 
   ghost predicate Valid3It110(
       a: OrderedSet,
