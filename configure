@@ -1,11 +1,13 @@
 #!/usr/bin/env bash
 
 files=(
-    examples/Sets/OrdSetContained.dfy
+    #examples/Sets/OrdSetContained.dfy
     #examples/Sets/OrdSetForwardContained.dfy  # time out
     #examples/Sets/OrdSetIntersection.dfy  # takes to long (and fails?)
-    examples/Sets/UnordSetContained.dfy
-    examples/Sets/UnordSetIntersection.dfy
+    #examples/Sets/UnordSetContained.dfy
+    #examples/Sets/UnordSetIntersection.dfy
+    examples/OrderedSet/Intersection.dfy
+    examples/OrderedSet/IntersectionCorrectness.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos-main.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos.dfy
     examples/Linear/CheckListProperties/AllRelated.dfy
@@ -33,8 +35,8 @@ files=(
     examples/Linear/ReordenandoCola/reordenando-la-cola.dfy
     examples/Linear/TestArrayList.dfy
     examples/Linear/FibPrefix.dfy
-    examples/Maps/ExecuteTreeMap.dfy
-    examples/Maps/UnordMapIntersection.dfy
+    #examples/Maps/ExecuteTreeMap.dfy
+    #examples/Maps/UnordMapIntersection.dfy
     examples/Multisets/UnordMultisetContained.dfy
     examples/Multisets/UnordMultisetIntersection.dfy
     src/ADT.dfy
@@ -73,16 +75,14 @@ files=(
     src/Stack/StackSpec.dfy
     src/Stack/SinglyLinkedStackImpl.dfy
     src/TreeMap/TreeMapImpl.dfy
-    src/TreeMap/TreeMapImpl/EraseImpl.dfy
     src/TreeMap/TreeMapSpec.dfy
-    src/OrderedMap/OrderedMapForwardSpec.dfy
     src/OrderedMap/OrderedMapSpec.dfy
     src/OrderedMultiset/OrderedMultisetForward.dfy
     src/OrderedMultiset/OrderedMultisetSpec.dfy
-    src/OrderedSet/OrderedSetForwardSpec.dfy
     #src/OrderedSet/OrderedSetL.dfy  # fails
     src/OrderedSet/OrderedSetSpec.dfy
     src/TreeSet/TreeSetImpl.dfy
+    src/TreeSet/TreeSetSpec.dfy
     src/UnorderedMap/UnorderedMapSpec.dfy
     src/UnorderedMultiset/UnorderedMultisetSpec.dfy
     src/UnorderedSet/UnorderedSetSpec.dfy

@@ -1,85 +1,50 @@
-include "../../src/ADT.dfy"
 include "../../src/Collections/KeyValue.dfy"
-include "../../src/TreeMap/TreeMapImpl.dfy"
-include "../../src/TreeMap/TreeMapSpec.dfy"
-include "../../src/TreeSet/TreeSetSpec.dfy"
+include "../../src/Collections/Set.dfy"
 include "../../src/UnorderedSet/UnorderedSetSpec.dfy"
-include "../../src/UnorderedMap/UnorderedMapSpec.dfy"
 include "../../src/OrderedSet/OrderedSetSpec.dfy"
 include "../../src/OrderedMap/OrderedMapSpec.dfy"
+include "../../src/TreeMap/TreeMapSpec.dfy"
+include "../../src/TreeMap/TreeMapImpl.dfy"
+include "../../src/TreeSet/TreeSetSpec.dfy"
+include "../../src/Collections/SetInt.dfy"
+include "../../src/DataStructures/ThreadedLinkedTree.dfy"
+include "../../src/DataStructures/ThreadedLinkedTree/Model/Base.dfy"
+include "../../src/DataStructures/ThreadedLinkedTree/Model/Insert.dfy"
 
 module TreeSetImpl {
-  import opened TreeMapImpl
-  import opened TreeMapSpec
-  import opened TreeSetSpec
+  import opened KeyValue
   import opened UnorderedSetSpec
-  import opened UnorderedMapSpec
   import opened OrderedSetSpec
   import opened OrderedMapSpec
-  import opened ADT
-  import opened KeyValue
+  import opened TreeSetSpec
+  import opened TreeMapSpec
+  import opened TreeMapImpl
+  import opened SetInt
+  import opened Set
+  import opened ThreadedLinkedTree
+  import opened ModelB = ThreadedLinkedTree.Model.Base
+  import opened ModelI = ThreadedLinkedTree.Model.Insert
+  import opened ModelR = ThreadedLinkedTree.Model.RemoveRoot
+  import opened ModelIt = ThreadedLinkedTree.Model.Iterator
+  import opened ThreadedLinkedTree.Impl.TTNode
+  import opened ThreadedLinkedTree.Impl.TTree
 
   class TreeSetIteratorImpl extends OrderedSetIterator {
     const iter: OrderedMapIterator
     ghost const parent: TreeSetImpl
 
-    constructor(ghost parent: TreeSetImpl, iter: OrderedMapIterator)
-      modifies parent`iterators
-      requires allocated(parent.Repr())
-      ensures fresh(parent.Repr() - old(parent.Repr()))
-      ensures allocated(parent.Repr())
-
-      requires parent.Valid()
-      requires iter.Valid()
-      requires iter.Parent() == parent.treemap
-      requires forall it <- parent.iterators :: it.iter != iter
-
-      ensures parent.Valid()
-      ensures parent.Model() == old(parent.Model())
-      ensures |parent.Model()| == |old(parent.Model())|
-
-      ensures Valid()
-      ensures this.parent == parent
-      ensures this.iter == iter
-
-      ensures HasPeek?() == iter.HasPeek?()
-      ensures HasPeek?() ==> Peek?() == iter.Peek?().0
-      ensures Index() == iter.Index()
-      ensures parent.iterators == {this} + old(parent.iterators)
-      ensures forall it <- old(parent.Iterators()) | old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && it.Traversed() == old(it.Traversed())
-                && |it.Traversed()| == old(|it.Traversed()|)
-                && (it.HasPeek?() <==> old(it.HasPeek?()))
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
-      ensures forall it <- old(parent.Iterators()) | old(it.Valid()) ::
-                (it is OrderedSetIterator &&
-                 (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index()))
-    {
-      this.iter := iter;
-      this.parent := parent;
-      new;
-      parent.iterators := parent.iterators + {this};
-      assert parent.Valid();
-      assert Parent().Valid();
-      assert parent.Model() == Parent().Model();
-      assert |parent.treemap.Model().Keys| == |parent.treemap.Model()|;
-    }
-
     ghost function Parent(): UnorderedSet
-      reads this
       ensures Parent() is OrderedSet
     {
       parent
     }
 
     ghost predicate Valid()
-      reads this, Parent(), Parent().Repr()
+      reads Parent().Repr()
       ensures Valid() ==> Parent().Valid() && this in Parent().Iterators()
     {
-      && this in parent.iterators
       && parent.Valid()
+      && this in parent.iterators
       && assert parent == Parent();
       && assert Parent().Valid();
       && assert parent.iterators == parent.Iterators();
@@ -88,18 +53,120 @@ module TreeSetImpl {
       && iter.Valid()
     }
 
-    ghost function Index(): int
-      reads this, Parent(), Parent().Repr()
+    ghost predicate HasPeek?()
+      reads Parent().Repr()
       requires Valid()
       requires Parent().Valid()
-      ensures -1 <= Index() <= |Parent().Model()|
     {
-      assert parent.Model() == parent.treemap.Model().Keys;
-      iter.Index()
+      iter.HasPeek?()
+    }
+
+    ghost function Peek?(): K
+      reads Parent().Repr()
+      requires Valid()
+      requires Parent().Valid()
+      requires HasPeek?()
+      ensures PeekSpec(Peek?())
+      ensures PeekOrderSpec(Peek?())
+    {
+      assert
+        && PeekSpec(iter.Peek?().0)
+        && PeekOrderSpec(iter.Peek?().0)
+      by {
+        reveal PeekSpec(), PeekOrderSpec();
+        reveal iter.PeekSpec(), iter.PeekOrderSpec();
+        assert iter.Peek?().0 in iter.Parent().Model();
+        assert iter.Peek?().0 in iter.Parent().Model().Keys;
+        assert iter.Peek?().0 in parent.Model();
+        assert iter.Peek?().0 in Parent().Model();
+        assert iter.Peek?().0 !in Before();
+      }
+      iter.Peek?().0
+    }
+
+    ghost function Before(): set<K>
+      reads Parent().Repr()
+      requires Valid()
+      requires Parent().Valid()
+      requires HasPeek?()
+      ensures BeforeSpec(Before())
+    {
+      assert
+        && BeforeSpec(iter.Before())
+      by {
+        reveal BeforeSpec();
+        reveal iter.BeforeSpec();
+        assert iter.Before() < iter.Parent().Model().Keys;
+        assert iter.Before() < parent.Model();
+        assert iter.Before() < Parent().Model();
+        assert |iter.Before()| < |Parent().Model()|;
+      }
+      iter.Before()
+    }
+
+    opaque static twostate predicate TreeSetIteratorImplCtrModel(
+      new self: TreeSetIteratorImpl,
+      parent: TreeSetImpl,
+      iter: OrderedMapIterator
+    )
+      reads parent.Repr()
+      requires iter.Parent() == parent.treemap
+      requires old(parent.Valid())
+      requires old(iter.Valid())
+      requires self.Valid()
+      requires iter.Valid()
+      requires parent.Valid()
+      requires self.parent == parent
+    {
+      && parent.Model() == old(parent.Model())
+      && |parent.Model()| == |old(parent.Model())|
+      && self.HasPeek?() == iter.HasPeek?() == old(iter.HasPeek?())
+      && (iter.HasPeek?() ==>
+        && iter.Peek?() == old(iter.Peek?())
+        && iter.Before() == old(iter.Before())
+        && |iter.Before()| == |old(iter.Before())|
+      )
+      && (self.HasPeek?() ==>
+        && self.Peek?() == old(iter.Peek?().0)
+        && self.Before() == old(iter.Before())
+        && |self.Before()| == |old(iter.Before())|
+      )
+    }
+
+    constructor (ghost parent: TreeSetImpl, iter: OrderedMapIterator)
+      modifies parent`iterators
+
+      requires allocated(parent.Repr())
+      ensures allocated(parent.Repr())
+      ensures fresh(parent.Repr() - old(parent.Repr()))
+
+      requires parent.Valid()
+      requires iter.Valid()
+      requires iter.Parent() == parent.treemap
+      requires forall it <- parent.iterators :: it.iter != iter
+      ensures parent.Valid()
+      ensures Valid()
+      ensures this.parent == parent
+      ensures TreeSetIteratorImplCtrModel(this, parent, iter)
+      ensures parent.iterators == {this} + old(parent.iterators)
+      ensures parent.SameIterators()
+    {
+      this.iter := iter;
+      this.parent := parent;
+      new;
+      parent.iterators := parent.iterators + {this};
+      assert Valid();
+      assert parent.Valid();
+      assert TreeSetIteratorImplCtrModel(this, parent, iter) by{
+        reveal TreeSetIteratorImpl.TreeSetIteratorImplCtrModel();
+      }
+      assert parent.SameIterators() by {
+        reveal parent.SameIterators(), parent.SameIteratorModel();
+      }
     }
 
     method HasPeek() returns (b: bool)
-      modifies this, Parent(), Parent().Repr()
+      modifies Parent().Repr()
       requires allocated(Parent())
       requires allocated(Parent().Repr())
       ensures fresh(Parent().Repr() - old(Parent().Repr()))
@@ -109,199 +176,195 @@ module TreeSetImpl {
       requires Parent().Valid()
       ensures Valid()
       ensures Parent().Valid()
-      ensures Parent() == old(Parent())
-      ensures Parent().Model() == old(Parent().Model())
-      ensures |Parent().Model()| == old(|Parent().Model()|)
-
-      ensures Traversed() == old(Traversed())
-      ensures |Traversed()| == old(|Traversed()|)
-      ensures Index() == old(Index())
-      ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
+      //ensures Parent() == old(Parent())
       ensures b == HasPeek?()
-
       ensures Parent().Iterators() >= old(Parent().Iterators())
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && it.Traversed() == old(it.Traversed())
-                && |it.Traversed()| == old(|it.Traversed()|)
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-                && it is OrderedSetIterator
-                && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
+      ensures HasPeekModel()
+      ensures Parent().SameIterators()
     {
       b := iter.HasPeek();
-      assert parent.Model() == parent.treemap.Model().Keys;
-      assert Parent().Valid() == parent.Valid();
-    }
-
-    method Next()
-      modifies this, Parent(), Parent().Repr()
-      requires allocated(Parent())
-      requires allocated(Parent().Repr())
-      ensures fresh(Parent().Repr() - old(Parent().Repr()))
-      ensures allocated(Parent().Repr())
-
-      requires Valid()
-      requires Parent().Valid()
-      requires HasPeek?()
-      ensures Valid()
-      ensures Parent().Valid()
-      ensures Parent() == old(Parent())
-      ensures Parent().Model() == old(Parent().Model())
-      ensures |Parent().Model()| == old(|Parent().Model()|)
-
-      ensures Traversed() == {old(Peek?())} + old(Traversed())
-      ensures |Traversed()| == 1 + |old(Traversed())|
-      ensures Index() == old(Index()) + 1
-
-      ensures Parent().Iterators() >= old(Parent().Iterators())
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && (it != this ==> it.Traversed() == old(it.Traversed())
-                                   && |it.Traversed()| == old(|it.Traversed()|)
-                                   && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
-
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this ::
-                && it is OrderedSetIterator
-                && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
-    {
-      assert parent !in iter.Parent().Repr();
-      assert parent.Model() == parent.treemap.Model().Keys;
-      iter.Next();
-      assert parent.Model() == parent.treemap.Model().Keys;
-      assert parent.Valid() == Parent().Valid();
+      assert Valid();
+      assert Parent().Valid();
+      assert b == HasPeek?();
+      assert Parent().Iterators() >= old(Parent().Iterators());
+      assert HasPeekModel() by {
+        reveal HasPeekModel();
+        reveal iter.HasPeekModel();
+        assert parent.Model() == old(parent.Model());
+        assert Parent().Model() == old(Parent().Model());
+        assert |Parent().Model()| == old(|Parent().Model()|);
+        assert HasPeek?() == old(HasPeek?());
+        if old(HasPeek?()) {
+          assert Peek?() == old(Peek?());
+          assert Before() == old(Before());
+          assert |Before()| == old(|Before()|);
+        }
+      }
+      assert Parent().SameIterators() by {
+        reveal parent.SameIterators(), parent.SameIteratorModel();
+        reveal iter.Parent().SameIterators(), iter.Parent().SameIteratorModel();
+      }
     }
 
     method Peek() returns (k: K)
-      modifies this, Parent(), Parent().Repr()
-      requires allocated(Parent())
-      requires allocated(Parent().Repr())
-      ensures fresh(Parent().Repr() - old(Parent().Repr()))
-      ensures allocated(Parent().Repr())
+      modifies parent.Repr()
+      requires allocated(parent)
+      requires allocated(parent.Repr())
+      ensures fresh(parent.Repr() - old(parent.Repr()))
+      ensures allocated(parent.Repr())
 
       requires Valid()
-      requires Parent().Valid()
+      requires parent.Valid()
       requires HasPeek?()
       ensures Valid()
-      ensures Parent().Valid()
-      ensures Parent() == old(Parent())
-      ensures Parent().Model() == old(Parent().Model())
-      ensures |Parent().Model()| == old(|Parent().Model()|)
-
-      ensures Index() == old(Index())
-
-      ensures Traversed() == old(Traversed())
-      ensures |Traversed()| == old(|Traversed()|)
-
-      ensures HasPeek?() && Peek?() == old(Peek?())
-      ensures k == Peek?()
-
-      ensures Parent().Iterators() >= old(Parent().Iterators())
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && it.Traversed() == old(it.Traversed())
-                && |it.Traversed()| == old(|it.Traversed()|)
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
-
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-                && it is OrderedSetIterator
-                && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
+      ensures parent.Valid()
+      //ensures parent == old(parent)
+      ensures HasPeek?()
+      ensures parent.Iterators() >= old(parent.Iterators())
+      ensures PeekModel(k)
+      ensures parent.SameIterators()
     {
-      assert parent !in iter.Parent().Repr();
-      assert parent.Model() == parent.treemap.Model().Keys;
       var p := iter.Peek();
-      assert parent.Model() == parent.treemap.Model().Keys;
-      assert Parent().Valid() == parent.Valid();
-      return p.0;
+      k := p.0;
+      assert Valid();
+      assert Parent().Valid();
+      assert Parent().Iterators() >= old(Parent().Iterators());
+      assert PeekModel(k) by {
+        reveal PeekModel();
+        reveal iter.PeekModel();
+        assert parent.Model() == old(parent.Model());
+        assert Parent().Model() == old(Parent().Model());
+        assert |Parent().Model()| == old(|Parent().Model()|);
+        assert Before() == old(Before());
+        assert |Before()| == old(|Before()|);
+        assert k == Peek?() == old(Peek?());
+      }
+      assert parent.SameIterators() by {
+        reveal parent.SameIterators(), parent.SameIteratorModel();
+        reveal iter.Parent().SameIterators(), iter.Parent().SameIteratorModel();
+      }
+    }
+
+    method Next()
+      modifies parent.Repr()
+      requires allocated(parent)
+      requires allocated(parent.Repr())
+      ensures fresh(parent.Repr() - old(parent.Repr()))
+      ensures allocated(parent.Repr())
+
+      requires Valid()
+      requires parent.Valid()
+      requires HasPeek?()
+      ensures Valid()
+      ensures parent.Valid()
+      ensures parent.Iterators() >= old(parent.Iterators())
+      ensures NextModel()
+      ensures NextIterators()
+    {
+      iter.Next();
+      assert Valid();
+      assert Parent().Valid();
+      assert Parent().Iterators() >= old(Parent().Iterators());
+      assert NextModel() by {
+        reveal NextModel();
+        reveal iter.NextModel();
+        assert parent.Model() == old(parent.Model());
+        assert |parent.Model()| == old(|parent.Model()|);
+        assert Traversed() == {old(Peek?())} + old(Before());
+        assert |Traversed()| == 1 + old(|Before()|);
+      }
+      assert NextIterators() by {
+        reveal NextIterators(), parent.SameIteratorModel();
+        reveal iter.NextIterators(), iter.Parent().SameIteratorModel();
+      }
     }
 
     method Prev()
-      modifies this, Parent(), Parent().Repr()
-      requires allocated(Parent())
-      requires allocated(Parent().Repr())
-      ensures fresh(Parent().Repr() - old(Parent().Repr()))
-      ensures allocated(Parent().Repr())
+      modifies parent.Repr()
+      requires allocated(parent)
+      requires allocated(parent.Repr())
+      ensures fresh(parent.Repr() - old(parent.Repr()))
+      ensures allocated(parent.Repr())
 
       requires Valid()
-      requires Parent().Valid()
+      requires parent.Valid()
       requires HasPeek?()
       ensures Valid()
-      ensures Parent().Valid()
-      ensures Parent() == old(Parent())
-      ensures Parent().Model() == old(Parent().Model())
-      ensures |Parent().Model()| == old(|Parent().Model()|)
-
-      ensures Index() == old(Index()) - 1
-
-      ensures Parent().Iterators() >= old(Parent().Iterators())
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && (it != this ==> it.Traversed() == old(it.Traversed())
-                                   && |it.Traversed()| == old(|it.Traversed()|)
-                                   && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?())))
-
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) && it != this ::
-                && it is OrderedSetIterator
-                && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
+      ensures parent.Valid()
+      ensures parent.Iterators() >= old(parent.Iterators())
+      ensures PrevModel()
     {
-      assert parent !in iter.Parent().Repr();
-      assert parent.Model() == parent.treemap.Model().Keys;
       iter.Prev();
-      assert parent.Model() == parent.treemap.Model().Keys;
-      assert parent.Valid() == Parent().Valid();
+      assert Valid();
+      assert Parent().Valid();
+      assert Parent().Iterators() >= old(Parent().Iterators());
+      assert PrevModel() by {
+        reveal PrevModel();
+        reveal iter.PrevModel();
+        assert parent.Model() == old(parent.Model());
+        assert |parent.Model()| == old(|parent.Model()|);
+        reveal After(), iter.After();
+        assert RTraversed() == iter.RTraversed();
+        assert RTraversed() == {old(Peek?())} + old(After());
+        assert |RTraversed()| == 1 + old(|After()|);
+      }
     }
 
     method Copy() returns (it: UnorderedSetIterator)
-      modifies this, Parent(), Parent().Repr()
-      requires allocated(Parent())
-      requires allocated(Parent().Repr())
-      ensures fresh(Parent().Repr() - old(Parent().Repr()))
-      ensures allocated(Parent().Repr())
+      modifies parent.Repr()
+      requires allocated(parent)
+      requires allocated(parent.Repr())
+      ensures fresh(parent.Repr() - old(parent.Repr()))
+      ensures allocated(parent.Repr())
 
       requires Valid()
-      requires Parent().Valid()
-      ensures fresh(it)
+      requires parent.Valid()
       ensures Valid()
-      ensures Parent().Valid()
-      ensures Parent() == old(Parent())
-      ensures Parent().Model() == old(Parent().Model())
-      ensures |Parent().Model()| == old(|Parent().Model()|)
-
-      ensures Index() == old(Index())
-
-      ensures Traversed() == old(Traversed())
-      ensures |Traversed()| == old(|Traversed()|)
-
-      ensures old(HasPeek?()) ==> HasPeek?() && Peek?()==old(Peek?())
-
+      ensures parent.Valid()
+      ensures parent.Iterators() >= old(parent.Iterators())
+      ensures fresh(it)
+      ensures it != this
       ensures it.Valid()
-      ensures Parent() == it.Parent()
-      ensures it is OrderedSetIterator
-      ensures  (it as OrderedSetIterator).Index() == Index()
-      ensures Traversed() == it.Traversed()
-      ensures |Traversed()| == |it.Traversed()|
-      ensures HasPeek?() ==> it.HasPeek?() && Peek?()==it.Peek?()
-
-      ensures Parent().Iterators() >= {it} + old(Parent().Iterators())
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && it.Traversed() == old(it.Traversed())
-                && |it.Traversed()| == old(|it.Traversed()|)
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
-
-      ensures forall it | it in old(Parent().Iterators()) && old(it.Valid()) ::
-                && it is OrderedSetIterator
-                && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
+      ensures it.Parent() == parent
+      ensures it.HasPeek?() == HasPeek?()
+      ensures CopyModel(it)
+      ensures parent.SameIterators()
     {
-      assert parent !in iter.Parent().Repr();
-      var iter: UnorderedMapIterator := iter.Copy();
-      it := new TreeSetIteratorImpl(parent, iter);
+      var iter': OrderedMapIterator := iter.Copy();
+      it := new TreeSetIteratorImpl(parent, iter');
+      assert Valid();
+      assert Parent().Valid();
+      assert Parent().Iterators() >= old(Parent().Iterators());
+      assert fresh(it);
+      assert it != this;
+      assert it.Valid();
+      assert it.Parent() == parent;
+      calc == {
+        HasPeek?();
+        iter.HasPeek?();
+        iter'.HasPeek?();
+        { reveal TreeSetIteratorImplCtrModel(); }
+        it.HasPeek?();
+      }
+      assert CopyModel(it) by {
+        reveal CopyModel();
+        reveal iter.CopyModel();
+        reveal TreeSetIteratorImplCtrModel();
+        assert parent.Model() == old(parent.Model());
+        assert |parent.Model()| == old(|parent.Model()|);
+        assert HasPeek?() == old(HasPeek?());
+        if HasPeek?() {
+          assert Peek?() == old(Peek?());
+          assert Before() == old(Before());
+          assert |Before()| == old(|Before()|);
+          assert it.Before() == Before();
+        }
+      }
+      assert parent.SameIterators() by {
+        reveal parent.SameIterators(), parent.SameIteratorModel();
+        reveal iter.Parent().SameIterators(), iter.Parent().SameIteratorModel();
+      }
     }
   }
 
@@ -312,25 +375,31 @@ module TreeSetImpl {
     ghost function ReprFamily(n: nat): set<object>
       decreases n
       ensures n > 0 ==> ReprFamily(n) >= ReprFamily(n-1)
-      reads this, if n == 0 then {} else ReprFamily(n-1)
+      reads if n == 0 then {} else ReprFamily(n-1)
     {
       if n == 0 then
-        {treemap} + iterators
+        {this}
       else if n == 1 then
-        {treemap} + iterators + (set it <- iterators :: it.iter)
+        {this as object} + {treemap} + iterators
+      else if n == 2 then
+        {this as object} + {treemap} + iterators
+        + (set it <- iterators :: it.iter)
       else
-        {treemap} + iterators + (set it <- iterators :: it.iter) + treemap.ReprFamily(n-2)
+        {this as object} + {treemap} + iterators
+        + (set it <- iterators :: it.iter)
+        + treemap.ReprFamily(n-3)
     }
 
     ghost predicate Valid()
-      reads this, Repr()
+      reads Repr()
     {
-      && ReprDepth == treemap.ReprDepth + 2
-      && assert ReprFamily(0) <= ReprFamily(ReprDepth); true
+      && ReprDepth == treemap.ReprDepth + 3
+      && (assert treemap.Repr() <= Repr(); true)
       && treemap.Valid()
-      && {this} + iterators !! {treemap} + treemap.Repr()
-      && (forall it | it in iterators :: it.parent == this)
-      && (forall it | it in iterators :: it.iter in treemap.Iterators())
+      && this !in treemap.Repr()
+      && iterators !! treemap.Repr()
+      && (forall it <- iterators :: it.parent == this)
+      && (forall it <- iterators :: it.iter in treemap.Iterators())
       && (
         forall it1 <- iterators, it2 <- iterators | && it1 != it2 ::
           it1.iter != it2.iter
@@ -338,415 +407,498 @@ module TreeSetImpl {
     }
 
     ghost function Model(): set<K>
-      reads this, Repr()
+      reads Repr()
       requires Valid()
     {
       treemap.Model().Keys
     }
 
-    constructor ()
+    ghost function Iterators(): set<UnorderedSetIterator>
+      reads Repr()
+      requires Valid()
+      ensures forall it <- Iterators() ::
+        && it in Repr()
+        && it.Parent() == this
+        && it is OrderedSetIterator
+    {
+      iterators
+    }
+
+    constructor()
       ensures Valid()
       ensures Model() == {}
       ensures fresh(Repr())
     {
       var treemap := new TreeMapImpl();
-      ReprDepth := treemap.ReprDepth + 2;
+      ReprDepth := treemap.ReprDepth + 3;
       this.treemap := treemap;
-      this.iterators := {};
-      new;
-      assert Repr() == {treemap} + iterators + (set it <- iterators :: it.iter) + treemap.Repr();
-    }
-
-    ghost function Iterators(): set<UnorderedSetIterator>
-      reads this, Repr()
-      requires Valid()
-      ensures forall it | it in Iterators() :: it in Repr() && it.Parent() == this
-    {
-      iterators
-    }
-
-    function Cast(it: UnorderedSetIterator): OrderedSetIterator
-      reads this, Repr()
-      requires Valid()
-      requires it in Iterators()
-      ensures it is OrderedSetIterator
-      ensures it == Cast(it)
-    {
-      it
-    }
-
-    method Size() returns (s: nat)
-      modifies this, Repr()
-      requires allocated(Repr())
-      ensures fresh(Repr() - old(Repr()))
-      ensures allocated(Repr())
-
-      requires Valid()
-      ensures Valid()
-      ensures Model() == old(Model())
-      ensures |Model()| == old(|Model()|)
-      ensures s == |Model()|
-
-      ensures Iterators() >= old(Iterators())
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && it.Traversed() == old(it.Traversed())
-                && |it.Traversed()| == old(|it.Traversed()|)
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
-
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-                && it is OrderedSetIterator
-                && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
-    {
-      s := treemap.Size();
-      assert Valid();
-      assert Model() == old(Model());
-      assert |Model()| == old(|Model()|);
-      assert s == |Model()|;
-      assert Iterators() >= old(Iterators());
-      assert forall it | it in old(Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && it.Traversed() == old(it.Traversed())
-                && |it.Traversed()| == old(|it.Traversed()|)
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()));
-
-      assert forall it | it in old(Iterators()) && old(it.Valid()) ::
-                && it is OrderedSetIterator
-                && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index());
+      iterators := {};
     }
 
     method Empty() returns (b: bool)
-      modifies this, Repr()
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
 
       requires Valid()
       ensures Valid()
-      ensures Model() == old(Model())
-      ensures |Model()| == old(|Model()|)
-      ensures b == Empty?()
-
       ensures Iterators() >= old(Iterators())
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && it.Traversed() == old(it.Traversed())
-                && |it.Traversed()| == old(|it.Traversed()|)
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
-
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-                && it is OrderedSetIterator
-                && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
+      ensures EmptyModel(b)
+      ensures SameIterators()
     {
       b := treemap.Empty();
-      calc <==> {
-        b;
-        treemap.Empty?();
-        treemap.Model() == map[];
-        treemap.Model().Keys == {};
-        Model() == {};
-        Empty?();
+      assert Valid();
+      assert Iterators() >= old(Iterators());
+      assert EmptyModel(b) by {
+        reveal EmptyModel();
+        reveal treemap.EmptyModel();
+        assert Model() == old(Model());
+        assert |Model()| == old(|Model()|);
+        assert b == (Model() == {});
+      }
+      assert SameIterators() by {
+        reveal SameIterators(), SameIteratorModel();
+        reveal treemap.SameIterators(), treemap.SameIteratorModel();
+        forall it <- old(Iterators()) | old(it.Valid())
+          ensures it.Valid()
+          ensures SameIteratorModel(it)
+        {
+          assert it.HasPeek?() == old(it.HasPeek?());
+          if it.HasPeek?() {
+            assert it.Peek?() == old(it.Peek?());
+            assert it.Before() == old(it.Before());
+            assert |it.Before()| == old(|it.Before()|);
+          }
+        }
+      }
+    }
+
+    method Size() returns (s: nat)
+      modifies Repr()
+      requires allocated(Repr())
+      ensures fresh(Repr() - old(Repr()))
+      ensures allocated(Repr())
+
+      requires Valid()
+      ensures Valid()
+      ensures Iterators() >= old(Iterators())
+      ensures SizeModel(s)
+      ensures SameIterators()
+    {
+      s := treemap.Size();
+      assert Valid();
+      assert Iterators() >= old(Iterators());
+      assert SizeModel(s) by {
+        reveal SizeModel();
+        reveal treemap.SizeModel();
+        assert Model() == old(Model());
+        assert |Model()| == old(|Model()|);
+        assert s == |Model()|;
+      }
+      assert SameIterators() by {
+        reveal SameIterators(), SameIteratorModel();
+        reveal treemap.SameIterators(), treemap.SameIteratorModel();
+        forall it <- old(Iterators()) | old(it.Valid())
+          ensures it.Valid()
+          ensures SameIteratorModel(it)
+        {
+          assert it.HasPeek?() == old(it.HasPeek?());
+          if it.HasPeek?() {
+            assert it.Peek?() == old(it.Peek?());
+            assert it.Before() == old(it.Before());
+            assert |it.Before()| == old(|it.Before()|);
+          }
+        }
       }
     }
 
     method First() returns (it: UnorderedSetIterator)
-      modifies this, Repr()
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
 
       requires Valid()
       ensures Valid()
-      ensures Model() == old(Model())
-      ensures |Model()| == old(|Model()|)
 
-      ensures it is OrderedSetIterator
       ensures fresh(it)
       ensures it.Valid()
       ensures it.Parent() == this
-      ensures it.Traversed() == {}
-      ensures (it as OrderedSetIterator).Index() == 0
-
       ensures Iterators() >= {it} + old(Iterators())
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && it.Traversed() == old(it.Traversed())
-                && |it.Traversed()| == old(|it.Traversed()|)
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-                && it is OrderedSetIterator
-                && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
+      ensures FirstModel(it)
+      ensures SameIterators()
     {
-      var iter: UnorderedMapIterator := treemap.First();
-      var it' := new TreeSetIteratorImpl(this, iter);
-      return it' as UnorderedSetIterator;
+      var iter: OrderedMapIterator := treemap.First();
+      it := new TreeSetIteratorImpl(this, iter);
+      assert Valid();
+      assert Iterators() >= old(Iterators());
+      assert FirstModel(it) by {
+        reveal FirstModel();
+        reveal treemap.FirstModel();
+        reveal TreeSetIteratorImpl.TreeSetIteratorImplCtrModel();
+        assert Model() == old(Model());
+        assert |Model()| == old(|Model()|);
+        assert it.Traversed() == {};
+      }
+      assert SameIterators() by {
+        reveal SameIterators(), SameIteratorModel();
+        reveal treemap.SameIterators(), treemap.SameIteratorModel();
+        forall it <- old(Iterators()) | old(it.Valid())
+          ensures it.Valid()
+          ensures SameIteratorModel(it)
+        {
+          assert it.HasPeek?() == old(it.HasPeek?());
+          if it.HasPeek?() {
+            assert it.Peek?() == old(it.Peek?());
+            assert it.Before() == old(it.Before());
+            assert |it.Before()| == old(|it.Before()|);
+          }
+        }
+      }
     }
 
     method Last() returns (it: OrderedSetIterator)
-      modifies this, Repr()
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
 
       requires Valid()
       ensures Valid()
-      ensures Model() == old(Model())
-      ensures |Model()| == old(|Model()|)
 
-      ensures it is OrderedSetIterator
       ensures fresh(it)
       ensures it.Valid()
       ensures it.Parent() == this
-      ensures it.Index() ==  |Model()|-1
-
       ensures Iterators() >= {it} + old(Iterators())
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && it.Traversed() == old(it.Traversed())
-                && |it.Traversed()| == old(|it.Traversed()|)
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
 
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-                && it is OrderedSetIterator
-                && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
+      ensures LastModel(it)
+      ensures SameIterators()
     {
-      var iter: UnorderedMapIterator := treemap.Last();
-      var it' := new TreeSetIteratorImpl(this, iter);
-      return it' as UnorderedSetIterator;
+      var iter: OrderedMapIterator := treemap.Last();
+      it := new TreeSetIteratorImpl(this, iter);
+      assert Valid();
+      assert Iterators() >= old(Iterators());
+      assert LastModel(it) by {
+        reveal LastModel();
+        reveal treemap.LastModel();
+        reveal TreeSetIteratorImpl.TreeSetIteratorImplCtrModel();
+        assert Model() == old(Model());
+        assert |Model()| == old(|Model()|);
+        reveal it.After(), iter.After();
+        assert it.RTraversed() == iter.RTraversed();
+        assert it.RTraversed() == {};
+      }
+      assert SameIterators() by {
+        reveal SameIterators(), SameIteratorModel();
+        reveal treemap.SameIterators(), treemap.SameIteratorModel();
+        forall it <- old(Iterators()) | old(it.Valid())
+          ensures it.Valid()
+          ensures SameIteratorModel(it)
+        {
+          assert it.HasPeek?() == old(it.HasPeek?());
+          if it.HasPeek?() {
+            assert it.Peek?() == old(it.Peek?());
+            assert it.Before() == old(it.Before());
+            assert |it.Before()| == old(|it.Before()|);
+          }
+        }
+      }
     }
 
-    method Contains(x: K) returns (b: bool)
-      modifies this, Repr()
+    method Contains(k: K) returns (b: bool)
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
 
       requires Valid()
       ensures Valid()
-      ensures Model() == old(Model())
-      ensures |Model()| == old(|Model()|)
-      ensures b == (x in Model())
-
       ensures Iterators() >= old(Iterators())
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && it.Traversed() == old(it.Traversed())
-                && |it.Traversed()| == old(|it.Traversed()|)
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
-
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-                && it is OrderedSetIterator
-                && (it as OrderedSetIterator).Index() == old((it as OrderedSetIterator).Index())
+      ensures ContainsModel(k, b)
+      ensures SameIterators()
     {
-      b := treemap.Contains(x);
+      var it: TreeSetIteratorImpl := Find(k);
+      b := it.HasPeek();
+      assert ContainsModel(k, b) by {
+        reveal ContainsModel(), FindModel(), it.HasPeekModel();
+      }
+      assert SameIterators() by {
+        reveal SameIterators(), SameIteratorModel();
+      }
     }
 
-    method Add(x: K)
-      modifies this, Repr()
+    method Find(k: K) returns (it: UnorderedSetIterator)
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
 
       requires Valid()
       ensures Valid()
-      ensures Model() == old(Model()) + {x}
-      ensures if (x in old(Model())) then |Model()| == old(|Model()|)
-              else |Model()| == 1 + old(|Model()|)
 
+      ensures fresh(it)
+      ensures it.Valid()
+      ensures it.Parent() == this
+      ensures Iterators() >= {it}+old(Iterators())
+
+      ensures FindModel(k, it)
+      ensures SameIterators()
+    {
+      var it': OrderedMapIterator := treemap.Find(k);
+      it := new TreeSetIteratorImpl(this, it');
+      assert FindModel(k, it) by {
+        reveal FindModel();
+        reveal treemap.FindModel();
+        reveal TreeSetIteratorImpl.TreeSetIteratorImplCtrModel();
+      }
+      assert SameIterators() by {
+        reveal SameIterators(), SameIteratorModel();
+        reveal treemap.SameIterators(), treemap.SameIteratorModel();
+      }
+    }
+
+    method Add(k: K)
+      modifies Repr()
+      requires allocated(Repr())
+      ensures fresh(Repr() - old(Repr()))
+      ensures allocated(Repr())
+
+      requires Valid()
+      ensures Valid()
       ensures Iterators() >= old(Iterators())
-      ensures forall it: OrderedSetIterator <- old(Iterators()) | old(it.Valid()) ::
-        && var it' := Cast(it);
-        && it.Valid()
-        && it.Parent() == old(it.Parent())
-        && (it.HasPeek?() <==> old(it.HasPeek?()))
-        && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-        && (
-          if x in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
-            it'.Index() == old(it'.Index())
-          else
-            it'.Index() == old(it'.Index()) + 1
-        )
-        && (
-          if x in old(Model()) || (it.HasPeek?() && it.Peek?() < x) then
-            && it.Traversed() == old(it.Traversed())
-            && |it.Traversed()| == |old(it.Traversed())|
-          else
-            && it.Traversed() == old(it.Traversed()) + {x}
-            && |it.Traversed()| == |old(it.Traversed())| + 1
-        )
+      ensures AddModel(k)
+      ensures AddIterators(k)
     {
-      treemap.Add(x, 0);
+      treemap.Add(k, 0);
+      assert Valid();
+      assert Iterators() >= old(Iterators());
+      assert AddModel(k) by {
+        reveal AddModel();
+        reveal treemap.AddModel();
+        assert Model() == old(Model()) + {k};
+        if k in old(Model()) {
+          assert |Model()| == old(|Model()|);
+        } else {
+          assert |Model()| == old(|Model()|) + 1;
+        }
+      }
+      assert AddIterators(k) by {
+        reveal AddIterators(), AddIteratorModel();
+        reveal treemap.AddIterators(), treemap.AddIteratorModel();
+        forall it <- old(iterators) | old(it.Valid())
+          ensures it.Valid()
+          ensures AddIteratorModel(it, k)
+        {
+          assert it.HasPeek?() == old(it.HasPeek?());
+          if it.HasPeek?() {
+            assert it.Peek?() == it.iter.Peek?().0;
+            assert it.Peek?() == old(it.Peek?());
+          }
+          assert (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()));
+          assert it.Traversed() == it.iter.Traversed() by {
+            if it.HasPeek?() {
+              assert it.Before() == it.iter.Before();
+            } else {
+              assert Model() == treemap.Model().Keys;
+            }
+          } 
+          if k in old(Model()) || (it.HasPeek?() && it.Peek?() < k) {
+            assert it.Traversed() == old(it.Traversed());
+            assert |it.Traversed()| == old(|it.Traversed()|);
+          } else {
+            assert it.Traversed() == old(it.Traversed()) + {k};
+            assert |it.Traversed()| == old(|it.Traversed()|) + 1;
+          }
+        }
+      }
     }
 
-    method Remove(x: K)
-      modifies this, Repr()
+    method Remove(k: K)
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
 
       requires Valid()
       ensures Valid()
-      ensures Model() == old(Model()) - {x}
-      ensures if (x in old(Model())) then |Model()| == old(|Model()|) - 1
-              else |Model()| == old(|Model()|)
-
       ensures Iterators() >= old(Iterators())
-      ensures forall it: OrderedSetIterator <- old(Iterators()) | 
-            && old(it.Valid())
-            && (old(it.HasPeek?()) ==> old(it.Peek?()) != x) ::
-          && it.Valid()
-          && it.Parent() == old(it.Parent())
-          && (it.HasPeek?() <==> old(it.HasPeek?()))
-          && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-          && var it' := Cast(it);
-          && (
-            if x !in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
-              it'.Index() == old(it'.Index())
-            else
-              it'.Index() == old(it'.Index()) - 1
-          )
-          && (
-            if x !in old(Model()) || (it.HasPeek?() && it.Peek?() < x) then
-                && it'.Traversed() == old(it'.Traversed())
-                && |it'.Traversed()| == |old(it'.Traversed())|
-            else
-                && it'.Traversed() == old(it'.Traversed()) - {x}
-                && |it'.Traversed()| == |old(it'.Traversed())| - 1
-          )
+      ensures RemoveModel(k)
+      ensures RemoveIterators(k)
     {
-      treemap.Remove(x);
+      treemap.Remove(k);
+      assert Valid();
+      assert Iterators() >= old(Iterators());
+      assert RemoveModel(k) by {
+        reveal RemoveModel();
+        reveal treemap.RemoveModel();
+        assert Model() == old(Model()) - {k};
+        if k in old(Model()) {
+          assert |Model()| == old(|Model()|) - 1;
+        } else {
+          assert |Model()| == old(|Model()|);
+        }
+      }
+      assert RemoveIterators(k) by {
+        reveal RemoveIterators(), RemoveIteratorModel();
+        reveal treemap.RemoveIterators(), treemap.RemoveIteratorModel();
+        forall it <- old(iterators) | old(it.Valid()) && (old(it.HasPeek?()) ==> old(it.Peek?()) != k)
+          ensures it.Valid()
+          ensures RemoveIteratorModel(it, k)
+        {
+          assert it.HasPeek?() == old(it.HasPeek?());
+          assert it.HasPeek?() ==> it.Peek?() == old(it.Peek?());
+          if it.HasPeek?() {
+            assert it.Before() == it.iter.Before();
+            assert it.Traversed() == it.iter.Traversed();
+          } else {
+            assert Model() == treemap.Model().Keys;
+            assert it.Traversed() == it.iter.Traversed();
+          }
+          assert it.Traversed() == it.iter.Traversed();
+          if k in old(Model()) && (it.HasPeek?() ==> k < it.Peek?()) {
+            assert it.Traversed() == old(it.Traversed()) - {k};
+            assert |it.Traversed()| == old(|it.Traversed()|) - 1;
+          } else {
+            assert it.Traversed() == old(it.Traversed());
+            assert |it.Traversed()| == old(|it.Traversed()|);
+          }
+        }
+      }
     }
 
-    method Find(x: K) returns (newt: UnorderedSetIterator)
-      modifies this, Repr()
+    method Insert(hint: UnorderedSetIterator, k: K) returns (it: UnorderedSetIterator)
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
 
       requires Valid()
+      requires hint.Valid()
+      requires hint.Parent() == this
+      requires hint in Iterators()
+
       ensures Valid()
-      ensures Model() == old(Model())
-      ensures |Model()| == old(|Model()|)
-
-      ensures fresh(newt)
-      ensures newt.Valid() && newt.Parent() == this
-      ensures x in old(Model()) ==> newt.HasPeek?() && newt.Peek?() == x
-      ensures x !in old(Model()) ==> newt.Traversed() == Model() && |newt.Traversed()| == |Model()|
-
-      ensures Iterators() >= {newt}+old(Iterators())
-      ensures forall it | it in old(Iterators()) && old(it.Valid()) ::
-                && it.Valid()
-                && it.Parent() == old(it.Parent())
-                && it.Traversed() == old(it.Traversed())
-                && |it.Traversed()| == old(|it.Traversed()|)
-                && (old(it.HasPeek?()) ==> it.HasPeek?() && it.Peek?()==old(it.Peek?()))
+      ensures fresh(it)
+      ensures it.Valid() && it.Parent() == this
+      ensures it.HasPeek?()
+      ensures Iterators() >= {it} + old(Iterators())
+      ensures InsertModel(k, it)
+      ensures AddIterators(k)
     {
-      var iter: UnorderedMapIterator := treemap.Find(x);
-      newt := new TreeSetIteratorImpl(this, iter);
+      var hint': TreeSetIteratorImpl := hint;
+      var iter: OrderedMapIterator := treemap.Insert(hint'.iter, k, 0);
+      it := new TreeSetIteratorImpl(this, iter);
+      assert Valid();
+      assert Iterators() >= old(Iterators());
+      assert
+        && it.HasPeek?()
+        && InsertModel(k, it)
+      by {
+        reveal InsertModel();
+        reveal treemap.InsertModel();
+        reveal TreeSetIteratorImpl.TreeSetIteratorImplCtrModel();
+        assert Model() == old(Model()) + {k};
+        assert it.Peek?() == k;
+        if k in old(Model()) {
+          assert |Model()| == old(|Model()|);
+        } else {
+          assert |Model()| == old(|Model()|) + 1;
+        }
+      }
+      assert AddIterators(k) by {
+        reveal AddIterators(), AddIteratorModel();
+        reveal treemap.AddIterators(), treemap.AddIteratorModel();
+        forall it <- old(iterators) | old(it.Valid())
+          ensures it.Valid()
+          ensures AddIteratorModel(it, k)
+        {
+          assert it.HasPeek?() == old(it.HasPeek?());
+          if it.HasPeek?() {
+            assert it.Peek?() == it.iter.Peek?().0;
+            assert it.Peek?() == old(it.Peek?());
+          }
+          assert (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()));
+          assert it.Traversed() == it.iter.Traversed() by {
+            if it.HasPeek?() {
+              assert it.Before() == it.iter.Before();
+            } else {
+              assert Model() == treemap.Model().Keys;
+            }
+          } 
+          if k in old(Model()) || (it.HasPeek?() && it.Peek?() < k) {
+            assert it.Traversed() == old(it.Traversed());
+            assert |it.Traversed()| == old(|it.Traversed()|);
+          } else {
+            assert it.Traversed() == old(it.Traversed()) + {k};
+            assert |it.Traversed()| == old(|it.Traversed()|) + 1;
+          }
+        }
+      }
     }
 
-    method Insert(mid: UnorderedSetIterator, x: K) returns (newt: UnorderedSetIterator)
-      modifies this, Repr()
+    method Erase(pos: UnorderedSetIterator) returns (it: UnorderedSetIterator)
+      modifies Repr()
       requires allocated(Repr())
       ensures fresh(Repr() - old(Repr()))
       ensures allocated(Repr())
 
       requires Valid()
+      requires pos.Valid()
+      requires pos.Parent() == this
+      requires pos.HasPeek?()
+      requires pos in Iterators()
+
       ensures Valid()
-      ensures Model() == old(Model()) + {x}
-      ensures if (x in old(Model())) then |Model()| == old(|Model()|)
-              else |Model()| == 1 + old(|Model()|)
-
-      requires mid.Valid()
-      requires mid.Parent() == this
-      requires mid in Iterators()
-
-      ensures fresh(newt)
-      ensures newt.Valid() && newt.Parent() == this
-      ensures newt.HasPeek?() && newt.Peek?() == x
-
-      ensures Iterators() >= {newt}+old(Iterators())
-      ensures forall it: OrderedSetIterator <- old(Iterators()) | old(it.Valid()) ::
-        && var it' := Cast(it);
-        && it.Valid()
-        && it.Parent() == old(it.Parent())
-        && (it.HasPeek?() <==> old(it.HasPeek?()))
-        && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-        && (
-          if x in old(Model()) || it'.Index() == -1 || (it.HasPeek?() && it.Peek?() < x) then
-            it'.Index() == old(it'.Index())
-          else
-            it'.Index() == old(it'.Index()) + 1
-        )
-        && (
-          if x in old(Model()) || (it.HasPeek?() && it.Peek?() < x) then
-            && it.Traversed() == old(it.Traversed())
-            && |it.Traversed()| == |old(it.Traversed())|
-          else
-            && it.Traversed() == old(it.Traversed()) + {x}
-            && |it.Traversed()| == |old(it.Traversed())| + 1
-        )
+      ensures fresh(it)
+      ensures it.Valid()
+      ensures it.Parent() == this
+      ensures Iterators() >= {it} + old(Iterators())
+      ensures EraseModel(pos, it)
+      ensures RemoveIterators(old(pos.Peek?()))
     {
-      var iter: UnorderedMapIterator := treemap.Insert((mid as TreeSetIteratorImpl).iter, x, 0);
-      newt := new TreeSetIteratorImpl(this, iter);
-    }
-
-    method Erase(mid: UnorderedSetIterator) returns (next: UnorderedSetIterator)
-      modifies this, Repr()
-      requires allocated(Repr())
-      ensures fresh(Repr() - old(Repr()))
-      ensures allocated(Repr())
-
-      requires Valid()
-      requires mid.Valid()
-      requires mid.Parent() == this
-      requires mid.HasPeek?()
-      requires mid in Iterators()
-      ensures Valid()
-      ensures Model() == old(Model())-{old(mid.Peek?())}
-      ensures |Model()| == old(|Model()|) - 1 // old(mid.Peek?()) in old(Model())
-
-      ensures fresh(next)
-      ensures next.Valid() && next.Parent() == this
-      ensures next.Traversed() == old(mid.Traversed())
-      ensures |next.Traversed()| == old(|mid.Traversed()|)
-
-      ensures Iterators() >= {next} + old(Iterators())
-      ensures
-        var x := old(mid.Peek?());
-        forall it: OrderedSetIterator <- old(Iterators()) | 
-            && old(it.Valid())
-            && (old(it.HasPeek?()) ==> old(it.Peek?()) != x) ::
-          && it.Valid()
-          && it.Parent() == old(it.Parent())
-          && (it.HasPeek?() <==> old(it.HasPeek?()))
-          && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
-          && (
-            if (it.HasPeek?() ==> it.Peek?() < x) && old(it.Index()) != old(|Model()|) then
-              it.Index() == old(it.Index())
-            else
-              it.Index() == old(it.Index()) - 1
-          )
-          && (
-            if it.HasPeek?() && it.Peek?() < x then
-              && it.Traversed() == old(it.Traversed())
-              && |it.Traversed()| == |old(it.Traversed())|
-            else
-              && it.Traversed() == old(it.Traversed()) - {x}
-              && |it.Traversed()| == |old(it.Traversed())| - 1
-          )
-    {
-      var mid' := mid as TreeSetIteratorImpl;
-      assert Model() == treemap.Model().Keys;
-      var iter: UnorderedMapIterator := treemap.Erase(mid'.iter);
-      next := new TreeSetIteratorImpl(this, iter);
+      var k := pos.Peek?();
+      var pos': TreeSetIteratorImpl := pos;
+      var iter: OrderedMapIterator := treemap.Erase(pos'.iter);
+      it := new TreeSetIteratorImpl(this, iter);
+      assert Valid();
+      assert Iterators() >= old(Iterators());
+      assert EraseModel(pos, it) by {
+        reveal EraseModel();
+        reveal treemap.EraseModel();
+        reveal TreeSetIteratorImpl.TreeSetIteratorImplCtrModel();
+        assert Model() == old(Model()) - {old(pos.Peek?())};
+        assert |Model()| == old(|Model()|) - 1;
+        assert it.Traversed() == old(pos.Before());
+        assert |it.Traversed()| == old(|pos.Before()|);
+      }
+      assert RemoveIterators(k) by {
+        reveal RemoveIterators(), RemoveIteratorModel();
+        reveal treemap.RemoveIterators(), treemap.RemoveIteratorModel();
+        forall it <- old(iterators) | old(it.Valid()) && (old(it.HasPeek?()) ==> old(it.Peek?()) != k)
+          ensures it.Valid()
+          ensures RemoveIteratorModel(it, k)
+        {
+          assert it.HasPeek?() == old(it.HasPeek?());
+          assert it.HasPeek?() ==> it.Peek?() == old(it.Peek?());
+          if it.HasPeek?() {
+            assert it.Before() == it.iter.Before();
+            assert it.Traversed() == it.iter.Traversed();
+          } else {
+            assert Model() == treemap.Model().Keys;
+            assert it.Traversed() == it.iter.Traversed();
+          }
+          assert it.Traversed() == it.iter.Traversed();
+          if k in old(Model()) && (it.HasPeek?() ==> k < it.Peek?()) {
+            assert it.Traversed() == old(it.Traversed()) - {k};
+            assert |it.Traversed()| == old(|it.Traversed()|) - 1;
+          } else {
+            assert it.Traversed() == old(it.Traversed());
+            assert |it.Traversed()| == old(|it.Traversed()|);
+          }
+        }
+      }
     }
   }
 }
