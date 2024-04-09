@@ -2,7 +2,7 @@ include "../../src/Collections/SetInt.dfy"
 include "../../src/TreeSet/TreeSetSpec.dfy"
 include "../../src/OrderedSet/OrderedSetSpec.dfy"
 
-module RemoveDoubles {
+module RemoveHalves {
   import opened KeyValue
   import opened SetInt
   import opened ADT
@@ -25,17 +25,6 @@ module RemoveDoubles {
     && s.Model() <= oldModel
     && (it.HasPeek?() ==> forall x | it.Peek?() < x :: x in oldModel <==> x in s.Model())
     && s.Model() == oldModel - (set x <- oldModel | (it.HasPeek?() ==> x < it.Peek?()) && x % 2 == 0 :: x/2)
-    /*
-    && var oldTraversed := (
-      if it.HasPeek?() then
-        Smaller(oldModel, it.Peek?())
-      else
-        oldModel
-    );
-    && it.Traversed() == oldTraversed - (set x <- oldTraversed | x % 2 == 0 :: x/2)
-    */
-    //&& (forall x <- it.Traversed() :: x*2 !in it.Traversed())
-    //&& it.Traversed() == set x <- Smaller(oldModel, it.Peek?()) | (it.HasPeek?() ==> x < it.Peek?()) && x*2 !in oldModel
   }
 
   method LoopBody(s: TreeSet, it: OrderedSetIterator, ghost oldModel: set<int>)
@@ -92,16 +81,6 @@ module RemoveDoubles {
         reveal it.NextModel();
         reveal s.RemoveModel();
         reveal s.RemoveIteratorModel();
-        /*
-        calc == {
-          s.Model();
-          old(s.Model()) - {0};
-          old(oldModel - (set x <- it.Traversed() | x % 2 == 0 :: x/2)) - {0};
-          oldModel - (set x <- old(it.Traversed()) | x % 2 == 0 :: x/2) - {0};
-          oldModel - (set x <- it.Traversed() | x % 2 == 0 :: x/2) - {0};
-          //oldModel - (set x <- it.Traversed() | x % 2 == 0 :: x/2);
-        }
-        */
       }
     } else {
       label PreRemove:
@@ -136,73 +115,6 @@ module RemoveDoubles {
         reveal it.NextModel();
         reveal s.RemoveModel();
         reveal s.RemoveIteratorModel();
-        //assert RemoveHalvesModelPre(s);
-        /*
-        var oldOldTraversed := old(
-          if it.HasPeek?() then
-            Smaller(oldModel, it.Peek?())
-          else
-            oldModel
-        );
-        var oldTraversed := (
-          if it.HasPeek?() then
-            Smaller(oldModel, it.Peek?())
-          else
-            oldModel
-        );
-        if it.HasPeek?() {
-          assert forall n <- old(s.Model()) :: n <= old@PreNext(it.Peek?()) || it.Peek?() <= n;
-          assert forall n <- oldModel :: n <= old@PreNext(it.Peek?()) || it.Peek?() <= n;
-        }
-        assert oldTraversed == oldOldTraversed + {x};
-        if x % 2 == 0 && x/2 in old(s.Model()) {
-          calc {
-            it.Traversed();
-            old@PreNext(it.Traversed()) + {x};
-            old@PreRemove(it.Traversed()) - {x/2} + {x};
-            old(it.Traversed()) - {x/2} + {x};
-            old(it.Traversed()) + {x} - {x/2};
-            {
-              assert old(it.Traversed()) == oldOldTraversed - (set x <- oldOldTraversed | x % 2 == 0 :: x/2);
-            }
-            (oldOldTraversed - (set x <- oldOldTraversed | x % 2 == 0 :: x/2)) + {x} - {x/2};
-            oldTraversed - (set x <- oldTraversed | x % 2 == 0 :: x/2);
-          }
-        } else {
-          calc {
-            it.Traversed();
-            { assume false; }
-            oldTraversed - (set x <- oldTraversed | x % 2 == 0 :: x/2);
-          }
-        }
-        */
-        /*
-        if x % 2 == 0 {
-          calc == {
-            s.Model();
-            old(s.Model()) - {x/2};
-            old(oldModel - (set n <- oldModel | (it.HasPeek?() ==> n < it.Peek?()) && n % 2 == 0 :: n/2)) - {x/2};
-            oldModel - (set n <- oldModel | old(it.HasPeek?() ==> n < it.Peek?()) && n % 2 == 0 :: n/2) - {x/2};
-            oldModel - ((set n <- oldModel | old(it.HasPeek?() ==> n < it.Peek?()) && n % 2 == 0 :: n/2) + {x/2});
-            {
-              forall n <- oldModel
-                ensures
-                  (it.HasPeek?() ==> n < it.Peek?())
-                    <==> old(it.HasPeek?() ==> n < it.Peek?()) || n == x
-              {
-                reveal it.TraversedSpec();
-              }
-            }
-            oldModel - (set n <- oldModel | (it.HasPeek?() ==> n < it.Peek?()) && n % 2 == 0 :: n/2);
-          }
-        } else {
-          calc == {
-            s.Model();
-            { assume false; }
-            oldModel - (set x <- oldModel | (it.HasPeek?() ==> x < it.Peek?()) && x % 2 == 0 :: x/2);
-          }
-        }
-        */
       }
     }
     hasPeek := it.HasPeek();

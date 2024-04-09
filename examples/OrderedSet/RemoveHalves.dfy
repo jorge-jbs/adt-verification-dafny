@@ -1,7 +1,7 @@
 include "../../src/TreeSet/TreeSetSpec.dfy"
 include "../../src/OrderedSet/OrderedSetSpec.dfy"
 
-module RemoveDoubles {
+module RemoveHalves {
   import opened KeyValue
   import opened ADT
   import opened TreeSetSpec
@@ -30,15 +30,17 @@ module RemoveDoubles {
     ensures s.Iterators() >= old(s.Iterators())
   {
     var x := it.Peek();
+    assert forall n: int | n == n / 2 :: n == -1 || n == 0;
     if x == 0 {
       it.Next();
       label PreRemove:
-      assert s.RemoveIteratorModelPre(it, 0) by {
+      assert s.RemoveIteratorModelPre(it, x/2) by {
         reveal s.RemoveIteratorModelPre();
         reveal it.NextModel(), it.PeekModel(), it.PeekSpec(), it.PeekOrderSpec();
       }
-      s.Remove(0);
-      s.RemoveIterator@PreRemove(it, 0);
+      assert x == x/2;
+      s.Remove(x);
+      s.RemoveIterator@PreRemove(it, x/2);
       assert LoopBound(s, it) < old(LoopBound(s, it)) by {
         reveal LoopBound();
         reveal it.PeekModel();
@@ -46,7 +48,7 @@ module RemoveDoubles {
         reveal it.NextModel();
         reveal s.RemoveModel();
         reveal s.RemoveIteratorModel();
-        assert old@PreRemove(it.HasPeek?() ==> 0 < it.Peek?()) by {
+        assert old@PreRemove(it.HasPeek?() ==> x/2 < it.Peek?()) by {
           reveal it.PeekOrderSpec();
         }
         calc {
@@ -58,13 +60,15 @@ module RemoveDoubles {
         }
       }
     } else {
-      label PreRemove:
-      assert s.RemoveIteratorModelPre(it, x*2) by {
-        reveal s.RemoveIteratorModelPre();
-        reveal it.NextModel(), it.PeekModel(), it.PeekSpec();
+      if x % 2 == 0 {
+        label PreRemove:
+        assert s.RemoveIteratorModelPre(it, x/2) by {
+          reveal s.RemoveIteratorModelPre();
+          reveal it.NextModel(), it.PeekModel(), it.PeekSpec();
+        }
+        s.Remove(x/2);
+        s.RemoveIterator@PreRemove(it, x/2);
       }
-      s.Remove(x*2);
-      s.RemoveIterator@PreRemove(it, x*2);
       assert it.HasPeek?() by {
         reveal s.RemoveIteratorModel();
       }
@@ -85,7 +89,7 @@ module RemoveDoubles {
     }
   }
 
-  method RemoveDoubles(s: TreeSet)
+  method RemoveHalves(s: TreeSet)
     modifies s.Repr()
     requires allocated(s.Repr())
     ensures allocated(s.Repr())
