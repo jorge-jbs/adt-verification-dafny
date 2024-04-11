@@ -8,6 +8,10 @@ files=(
     #examples/Sets/UnordSetIntersection.dfy
     examples/OrderedSet/Intersection.dfy
     examples/OrderedSet/IntersectionCorrectness.dfy
+    examples/OrderedSet/RemoveHalves.dfy
+    examples/OrderedSet/RemoveHalvesFunctional.dfy
+    examples/UnorderedSet/Contained.dfy
+    examples/UnorderedSet/ContainedCorrectness.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos-main.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos.dfy
     examples/Linear/CheckListProperties/AllRelated.dfy
