@@ -45,85 +45,37 @@ module RemoveHalves {
   {
     var x := it.Peek();
     assert forall n: int | n == n / 2 :: n == -1 || n == 0;
-    if x == 0 {
-      it.Next();
+    it.Next();
+    if x % 2 == 0 {
       label PreRemove:
       assert s.RemoveIteratorModelPre(it, x/2) by {
         reveal s.RemoveIteratorModelPre();
         reveal it.NextModel(), it.PeekModel(), it.PeekSpec(), it.PeekOrderSpec();
+        reveal LoopInvariant();
       }
-      assert x == x/2;
-      s.Remove(x);
+      s.Remove(x/2);
       s.RemoveIterator@PreRemove(it, x/2);
-      assert LoopBound(s, it) < old(LoopBound(s, it)) by {
-        reveal LoopBound();
-        reveal it.PeekModel();
-        reveal it.PeekSpec();
-        reveal it.NextModel();
-        reveal s.RemoveModel();
-        reveal s.RemoveIteratorModel();
-        assert old@PreRemove(it.HasPeek?() ==> x/2 < it.Peek?()) by {
-          reveal it.PeekOrderSpec();
-        }
-        calc {
-          |s.Model()| - |it.Traversed()|;
-          == (old(|s.Model()| - 1)) - |it.Traversed()|;
-          == (old(|s.Model()| - 1)) - old@PreRemove(|it.Traversed()|-1);
-          == (old(|s.Model()| - 1)) - old(|it.Traversed()|);
-          < old(|s.Model()| - |it.Traversed()|);
-        }
-      }
-      assert LoopInvariant(s, it, oldModel) by {
-        reveal LoopInvariant();
-        reveal it.PeekModel();
-        reveal it.PeekSpec();
-        reveal it.PeekOrderSpec();
-        reveal it.NextModel();
-        reveal s.RemoveModel();
-        reveal s.RemoveIteratorModel();
-      }
-    } else {
-      label PreRemove:
-      if x % 2 == 0 {
-        assert s.RemoveIteratorModelPre(it, x/2) by {
-          reveal s.RemoveIteratorModelPre();
-          reveal it.NextModel(), it.PeekModel(), it.PeekSpec();
-        }
-        s.Remove(x/2);
-        s.RemoveIterator@PreRemove(it, x/2);
-      }
-      assert it.HasPeek?() by {
-        reveal s.RemoveIteratorModel();
-      }
-      label PreNext:
-      it.Next();
-      assert LoopBound(s, it) < old(LoopBound(s, it)) by {
-        reveal LoopBound();
-        reveal it.PeekModel();
-        reveal it.PeekSpec();
-        reveal it.NextModel();
-        reveal s.RemoveModel();
-        reveal s.RemoveIteratorModel();
-      }
-      assert LoopInvariant(s, it, oldModel) by {
-        reveal LoopInvariant();
-        reveal RemoveHalvesModelPre();
-        reveal it.PeekModel();
-        reveal it.PeekSpec();
-        reveal it.PeekOrderSpec();
-        reveal it.TraversedSpec();
-        reveal it.NextModel();
-        reveal s.RemoveModel();
-        reveal s.RemoveIteratorModel();
-      }
     }
     hasPeek := it.HasPeek();
     assert LoopBound(s, it) < old(LoopBound(s, it)) by {
       reveal LoopBound();
+      reveal it.PeekModel();
+      reveal it.PeekSpec();
+      reveal it.NextModel();
+      reveal s.RemoveModel();
+      reveal s.RemoveIteratorModel();
       reveal it.HasPeekModel();
     }
     assert LoopInvariant(s, it, oldModel) by {
       reveal LoopInvariant();
+      reveal RemoveHalvesModelPre();
+      reveal it.PeekModel();
+      reveal it.PeekSpec();
+      reveal it.PeekOrderSpec();
+      reveal it.TraversedSpec();
+      reveal it.NextModel();
+      reveal s.RemoveModel();
+      reveal s.RemoveIteratorModel();
       reveal it.HasPeekModel();
     }
   }
