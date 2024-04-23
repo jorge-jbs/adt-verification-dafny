@@ -1,8 +1,8 @@
-name: CI
+name: Verify
 
 on:
   push:
-    branches: [ "master", "threaded-trees", "disjoint-set-forest", "examples-verification-optimization" ]
+    branches: [ "master" ]
   pull_request:
     branches: [ "master" ]
 
