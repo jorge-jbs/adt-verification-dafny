@@ -1,5 +1,4 @@
 include "../../src/Collections/KeyValue.dfy"
-include "../../src/Collections/OrderedSetUtils.dfy"
 include "../../src/DataStructures/ThreadedLinkedTree/Model/Base.dfy"
 include "../../src/DataStructures/ThreadedLinkedTree/Model/Iterator.dfy"
 include "../../src/DataStructures/ThreadedLinkedTree/Model/Find.dfy"
@@ -14,7 +13,6 @@ include "../../src/DataStructures/ThreadedLinkedTree/Impl/Max.dfy"
 
 module ThreadedLinkedTree {
   import opened KeyValue
-  import opened OrderedSetUtils
   import ModelB = Model.Base
   import ModelF = Model.Find
   import ModelI = Model.Insert

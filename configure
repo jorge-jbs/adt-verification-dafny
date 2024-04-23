@@ -48,7 +48,6 @@ files=(
     src/Collections/Int.dfy
     src/Collections/KeyValue.dfy
     src/Collections/OrderedMultisetUtils.dfy
-    src/Collections/OrderedSetUtils.dfy
     src/Collections/Seq.dfy
     #src/DataStructures/CircularDoublyLinkedList.dfy
     #src/DataStructures/DoublyLinkedList.dfy  # works in VS Code

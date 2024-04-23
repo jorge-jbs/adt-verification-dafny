@@ -2,7 +2,6 @@ include "../../../../src/Collections/Int.dfy"
 include "../../../../src/Collections/Map.dfy"
 include "../../../../src/Collections/Utils.dfy"
 include "../../../../src/Collections/KeyValue.dfy"
-include "../../../../src/Collections/OrderedSetUtils.dfy"
 include "../../../../src/DataStructures/ThreadedLinkedTree/Model/Color.dfy"
 
 module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
@@ -11,7 +10,6 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
   import opened Printer
   import opened KeyValue
   import opened Color
-  import opened OrderedSetUtils
 
   datatype trbtreeOrThread
     = Empty
