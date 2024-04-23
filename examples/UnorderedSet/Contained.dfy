@@ -1,6 +1,6 @@
 include "../../src/UnorderedSet/UnorderedSetSpec.dfy"
 
-module UnordSetContained{
+module Contained {
   import opened UnorderedSetSpec
   import opened ADT
 

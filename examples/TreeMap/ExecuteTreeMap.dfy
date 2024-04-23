@@ -1,14 +1,13 @@
 include "../../src/UnorderedMap/UnorderedMapSpec.dfy"
-include "../../src/OrderedMap/OrderedMapSpec.dfy"
+include "../../src/UnorderedMap/UnorderedMapSpec.dfy"
 include "../../src/TreeMap/TreeMapImpl.dfy"
 
 module ExecuteTreeMap {
   import opened UnorderedMapSpec
-  import opened OrderedMapSpec
   import opened TreeMapImpl
 
-  method Populate(s: OrderedMap)
-    modifies s, s.Repr()
+  method Populate(s: UnorderedMap)
+    modifies s.Repr()
     requires s.Valid()
     ensures s.Valid()
 
@@ -27,23 +26,32 @@ module ExecuteTreeMap {
     s.Add(5, 2);
   }
 
-  method Print(s: OrderedMap)
-    modifies s, s.Repr()
+  opaque ghost function LoopBound(s: UnorderedMap, it: UnorderedMapIterator): nat
+    reads s.Repr()
+    requires Valid1It1(s, it)
+  {
+    reveal it.TraversedSpec();
+    |s.Model()| - |it.Traversed()|
+  }
+
+  method Print(s: UnorderedMap)
+    modifies s.Repr()
     requires s.Valid()
     ensures s.Valid()
 
     ensures fresh(s.Repr()-old(s.Repr()))
   {
-    var it := s.First();
+    var it: UnorderedMapIterator := s.First();
     var hasPeek := it.HasPeek();
     while hasPeek
-      decreases s.Model() - it.Traversed()
+      decreases LoopBound(s, it)
       invariant s.Valid()
       invariant it.Valid()
       invariant it.Parent() == s
       invariant hasPeek == it.HasPeek?()
       invariant fresh(s.Repr()-old(s.Repr()))
     {
+      label loopEntry:
       var p := it.Peek();
       print p.0;
       print " -> ";
@@ -52,11 +60,16 @@ module ExecuteTreeMap {
 
       it.Next();
       hasPeek := it.HasPeek();
+
+      assert LoopBound(s, it) < old@loopEntry(LoopBound(s, it)) by {
+        reveal LoopBound();
+        reveal it.PeekModel(), it.NextModel(), it.HasPeekModel();
+      }
     }
   }
 
   method {:main} Main() {
-    var s: OrderedMap := new TreeMapImpl();
+    var s: UnorderedMap := new TreeMapImpl();
     Populate(s);
     Print(s);
   }

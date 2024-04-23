@@ -570,4 +570,19 @@ module UnorderedMapSpec {
       ensures Iterators() >= {it} + old(Iterators())
       ensures EraseModel(pos, it)
   }
+
+  ghost predicate ValidIt(s: UnorderedMap, it: UnorderedMapIterator)
+    reads s.Repr()
+    requires s.Valid()
+  {
+    && it.Parent() == s
+    && it in s.Iterators()
+    && it.Valid()
+  }
+
+  ghost predicate Valid1It1(s: UnorderedMap, it: UnorderedMapIterator)
+    reads s.Repr()
+  {
+    s.Valid() && ValidIt(s, it)
+  }
 }

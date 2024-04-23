@@ -1,17 +1,13 @@
 #!/usr/bin/env bash
 
 files=(
-    #examples/Sets/OrdSetContained.dfy
-    #examples/Sets/OrdSetForwardContained.dfy  # time out
-    #examples/Sets/OrdSetIntersection.dfy  # takes to long (and fails?)
-    #examples/Sets/UnordSetContained.dfy
-    #examples/Sets/UnordSetIntersection.dfy
     examples/OrderedSet/Intersection.dfy
-    examples/OrderedSet/IntersectionCorrectness.dfy
+    examples/OrderedSet/IntersectionNoModel.dfy
     examples/OrderedSet/RemoveHalves.dfy
-    examples/OrderedSet/RemoveHalvesFunctional.dfy
+    examples/OrderedSet/RemoveHalvesNoModel.dfy
+    examples/TreeMap/ExecuteTreeMap.dfy
     examples/UnorderedSet/Contained.dfy
-    examples/UnorderedSet/ContainedCorrectness.dfy
+    examples/UnorderedSet/ContainedNoModel.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos-main.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos.dfy
     examples/Linear/CheckListProperties/AllRelated.dfy
@@ -34,15 +30,11 @@ files=(
     examples/Linear/ListaPersonas.dfy
     #examples/Linear/Merge.dfy
     examples/Linear/Misc.dfy
-    examples/Linear/Quicksort.dfy  # time out
+    examples/Linear/Quicksort.dfy
     examples/Linear/ReordenandoCola/reordenando-la-cola-main.dfy
     examples/Linear/ReordenandoCola/reordenando-la-cola.dfy
     examples/Linear/TestArrayList.dfy
     examples/Linear/FibPrefix.dfy
-    #examples/Maps/ExecuteTreeMap.dfy
-    #examples/Maps/UnordMapIntersection.dfy
-    examples/Multisets/UnordMultisetContained.dfy
-    examples/Multisets/UnordMultisetIntersection.dfy
     src/ADT.dfy
     src/ArrayList/ArrayListSpec.dfy
     src/ArrayList/ArrayListImpl.dfy
@@ -83,7 +75,6 @@ files=(
     src/OrderedMap/OrderedMapSpec.dfy
     src/OrderedMultiset/OrderedMultisetForward.dfy
     src/OrderedMultiset/OrderedMultisetSpec.dfy
-    #src/OrderedSet/OrderedSetL.dfy  # fails
     src/OrderedSet/OrderedSetSpec.dfy
     src/TreeSet/TreeSetImpl.dfy
     src/TreeSet/TreeSetSpec.dfy

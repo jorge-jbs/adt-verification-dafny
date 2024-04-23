@@ -1,6 +1,6 @@
 include "../../src/OrderedSet/OrderedSetSpec.dfy"
 
-module Intersection {
+module IntersectionNoModel {
   import opened KeyValue
   import opened ADT
   import opened OrderedSetSpec
