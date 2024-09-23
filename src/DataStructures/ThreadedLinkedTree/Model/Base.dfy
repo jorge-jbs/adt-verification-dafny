@@ -22,6 +22,52 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
     | t.Node?
     witness Node(Empty, 0, 0, Empty, Black)
 
+  /*
+  At first I tried a different definition, something like this:
+
+  ```
+  datatype trbtree
+    = Empty
+    | Node(left: trbtreeOrThread, key: K, value: V, right: trbtreeOrThread, color: Color)
+
+  datatype trbtreeOrThread
+    = Thread(thread: K)
+    | Link(link: trbtree)
+  ```
+
+  This seems reasonable, since `trbtree` is a normal datatype that
+  just needs to reference `trbtreeOrThread` for its children. However,
+  when we try to define operations on this datatype we need to write
+  two functions. For example, `keys` would be defined like this:
+
+  ```
+  function keysT(t: trbtreeOrThread): set<K> {
+    match t
+    case Thread(k) => {}
+    case Node(n) => keys(n)
+  }
+  function keys(t: trbtree): set<K> {
+    match t
+    case Empty => {}
+    case Node(l, k, v, r, c) => keysT(l) + {k} + keysT(r)
+  }
+  ```
+
+  This is a very verbose way to write it but the real problem comes
+  when we try to prove lemmas about these operations. Since we have two
+  mutually recursive functions, Dafny will have a hard time unrolling
+  its definitions (I suppose it runs out of fuel quickly).
+
+  When we try the solution in this file, with subtypes, we notice
+  that proving is much quicker and definitions are not as verbose
+  anymore. Subtypes are sometimes frowned upon in the Dafny guidelines,
+  but I think that in this case they are justified because they are simply
+  discriminating some constructors. The verification conditions generated
+  when we use them are minimal, and the benefit of not having mutually
+  recursive functions is far greater than the proof that something is
+  a node, for example.
+  */
+
   function ident(): string
   {
     "|   "
