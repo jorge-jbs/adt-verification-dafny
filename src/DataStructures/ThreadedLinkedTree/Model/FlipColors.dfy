@@ -66,7 +66,21 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.FlipColors {
         && keys(t) == keys(FlipColors(t))
         && SearchTree(FlipColors(t))
         && BlackHeight(t) == BlackHeight(FlipColors(t))
-  {}
+  {
+    forall t: trbtree |
+        && t.Node?
+        && t.left.Node?
+        && t.right.Node?
+        && t.left.color == NegColor(t.color)
+        && t.right.color == NegColor(t.color)
+        && SearchTree(t)
+      ensures keys(t) == keys(FlipColors(t))
+      ensures SearchTree(FlipColors(t))
+      ensures BlackHeight(t) == BlackHeight(FlipColors(t))
+    {
+      FlipColorsSpec(t);
+    }
+  }
 
   lemma FlipColorsSize(t: trbtree)
     requires FlipColors.requires(t)

@@ -22,8 +22,8 @@ module Intersection {
     && s1.Model() == s1Model
     && s2.Model() == s2Model
     && su.Model() == it1.Traversed() * it2.Traversed()
-    && (forall a <- it1.Traversed(), b <- s2.Model() | b !in it2.Traversed() :: a < b)
-    && (forall a <- it2.Traversed(), b <- s1.Model() | b !in it1.Traversed() :: a < b)
+    && (forall a <- it1.Traversed(), b <- s2.Model()-it2.Traversed() :: a < b)
+    && (forall a <- it2.Traversed(), b <- s1.Model()-it1.Traversed() :: a < b)
   }
 
   opaque ghost function LoopBound(
@@ -104,26 +104,81 @@ module Intersection {
         reveal OrderedSetIterator.NextModel();
       }
     } else if it1Peek < it2Peek {
-      it1.Next();
-      assert Valid3It110(s1, it1, s2, it2, su);
-
-      assert LoopInvariant(s1, s1Model, it1, s2, s2Model, it2, su) by {
+      assert pre:
+        && (forall y | y in s2.Model()-it2.Traversed():: it1.Peek?()<it2.Peek?()<=y)
+        && it1.Peek?() < it2.Peek?()
+        && it1Peek in s1.Model()-it1.Traversed()
+        && (forall x | x in it2.Traversed() :: x < it1Peek)
+        && it1Peek !in it2.Traversed()
+      by {
         reveal LoopInvariant();
         reveal OrderedSetIterator.PeekModel();
         reveal OrderedSetIterator.PeekSpec();
         reveal OrderedSetIterator.PeekOrderSpec();
         reveal OrderedSetIterator.NextModel();
       }
-    } else {
-      it2.Next();
+
+      it1.Next();
       assert Valid3It110(s1, it1, s2, it2, su);
 
       assert LoopInvariant(s1, s1Model, it1, s2, s2Model, it2, su) by {
+        reveal LoopInvariant(), pre;
+        reveal OrderedSetIterator.PeekModel();
+        reveal OrderedSetIterator.PeekSpec();
+        reveal OrderedSetIterator.PeekOrderSpec();
+        reveal OrderedSetIterator.NextModel();
+        assert forall x, y |  x in it1.Traversed() && y in s2.Model()-it2.Traversed():: x < y;
+        assert forall x, y |  x in it2.Traversed() && y in s1.Model()-it1.Traversed():: x < y;
+
+        calc == {
+          it1.Traversed() * it2.Traversed();
+          {assert it1.Traversed() == old(it1.Traversed())+{it1Peek};
+           assert  it2.Traversed() == old(it2.Traversed());}
+          (old(it1.Traversed())+{it1Peek}) * it2.Traversed();
+          (old(it1.Traversed())*old(it2.Traversed()))+({it1Peek}*old(it2.Traversed()));
+          {assert it1Peek !in old(it2.Traversed());}
+          old(it1.Traversed()) * old(it2.Traversed());
+          su.Model();
+        }
+      }
+    } else {
+      assert pre:
+        && (forall y | y in s1.Model()-it1.Traversed():: it2.Peek?()<it1.Peek?()<=y)
+        && it1.Peek?() > it2.Peek?()
+        && it2Peek in s2.Model()-it2.Traversed()
+        && (forall x | x in it1.Traversed() :: x < it2Peek)
+        && it2Peek !in it1.Traversed()
+      by {
         reveal LoopInvariant();
         reveal OrderedSetIterator.PeekModel();
         reveal OrderedSetIterator.PeekSpec();
         reveal OrderedSetIterator.PeekOrderSpec();
         reveal OrderedSetIterator.NextModel();
+      }
+
+      it2.Next();
+      assert Valid3It110(s1, it1, s2, it2, su);
+
+      assert LoopInvariant(s1, s1Model, it1, s2, s2Model, it2, su) by {
+        reveal LoopInvariant(), pre;
+        reveal OrderedSetIterator.PeekModel();
+        reveal OrderedSetIterator.PeekSpec();
+        reveal OrderedSetIterator.PeekOrderSpec();
+        reveal OrderedSetIterator.NextModel();
+
+        assert forall x, y |  x in it1.Traversed() && y in s2.Model()-it2.Traversed():: x < y;
+        assert forall x, y |  x in it2.Traversed() && y in s1.Model()-it1.Traversed():: x < y;
+
+        calc == {
+          it1.Traversed() * it2.Traversed();
+          {assert it2.Traversed() == old(it2.Traversed())+{it2Peek};
+           assert  it1.Traversed() == old(it1.Traversed());}
+          (old(it1.Traversed())) * (old(it2.Traversed())+{it2Peek});
+          (old(it1.Traversed())*old(it2.Traversed()))+(old(it1.Traversed())*{it2Peek});
+          {assert it2Peek !in old(it1.Traversed());}
+          old(it1.Traversed()) * old(it2.Traversed());
+          su.Model();
+        }
       }
     }
     assert LoopInvariant(s1, s1Model, it1, s2, s2Model, it2, su);
@@ -191,41 +246,34 @@ module Intersection {
     reveal OrderedSetIterator.PeekSpec();
     reveal OrderedSetIterator.BeforeSpec();
     reveal OrderedSetIterator.TraversedSpec();
-    assert s1.Model() == old(s1.Model());
-    assert s2.Model() == old(s2.Model());
-    if !it1.HasPeek?() {
-      assert it1.Traversed() == s1.Model();
-    }
-    if !it2.HasPeek?() {
-      assert it2.Traversed() == s2.Model();
-    }
 
-    if !it1.HasPeek?() && !it2.HasPeek?() {
-      assert su.Model() == s1.Model() * s2.Model();
-    } else if it1.HasPeek?() {
-      assert su.Model() == it1.Traversed() * s2.Model();
-      assert s1.Model() - it1.Traversed() !! s2.Model() by {
-        assert (forall a <- it2.Traversed(), b <- s1.Model() | b !in it1.Traversed() :: a < b);
-        forall x <- s1.Model() - it1.Traversed()
-          ensures x !in s2.Model()
+    assert it1.Traversed() == s1.Model() || it2.Traversed() == s2.Model();
+    if it1.Traversed() == s1.Model() {
+      calc == {
+        su.Model();
+        it1.Traversed() * it2.Traversed();
+        s1.Model() * it2.Traversed();
         {
-          assert x in s1.Model();
-          assert x !in it1.Traversed();
+          assert (forall a <- it1.Traversed(), b <- s2.Model()-it2.Traversed() :: a < b);
+          assert (forall a <- it1.Traversed(), b <- s2.Model()-it2.Traversed() :: a != b);
+          assert s2.Model()-it2.Traversed() !! it1.Traversed();
+          assert s2.Model()-it2.Traversed() !! s1.Model();
         }
+        s1.Model() * s2.Model();
       }
-      assert su.Model() == s1.Model() * s2.Model();
     } else {
-      assert su.Model() == s1.Model() * it2.Traversed();
-      assert s1.Model() !! s2.Model() - it2.Traversed() by {
-        assert (forall a <- it1.Traversed(), b <- s2.Model() | b !in it2.Traversed() :: a < b);
-        forall x <- s2.Model() - it2.Traversed()
-          ensures x !in s1.Model()
+      calc == {
+        su.Model();
+        it1.Traversed() * it2.Traversed();
+        it1.Traversed() * s2.Model();
         {
-          assert x in s2.Model();
-          assert x !in it2.Traversed();
+          assert (forall a <- it2.Traversed(), b <- s1.Model()-it1.Traversed() :: a < b);
+          assert (forall a <- it2.Traversed(), b <- s1.Model()-it1.Traversed() :: a != b);
+          assert s1.Model()-it1.Traversed() !! it2.Traversed();
+          assert s1.Model()-it1.Traversed() !! s2.Model();
         }
+        s1.Model() * s2.Model();
       }
-      assert su.Model() == s1.Model() * s2.Model();
     }
   }
 

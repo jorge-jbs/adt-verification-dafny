@@ -83,6 +83,7 @@ class ArrayQueueImpl<A> extends Queue<A> {
          ModelAux(a, c, nelems);
          a[c..a.Length] + a[0..(c + nelems) % a.Length]; 
          [a[c]] + a[c+1..a.Length] + a[0..(c + nelems) % a.Length];//(c+1)+(nelems-1)>a.Length
+         [a[c]] + (a[c+1..a.Length] + a[0..(c + nelems) % a.Length]);
          {assert c+nelems==(c+1)+(nelems-1);}
          [a[c]] + ModelAux(a, (c + 1) % a.Length, nelems - 1);
       }

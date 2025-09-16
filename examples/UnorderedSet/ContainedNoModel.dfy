@@ -37,9 +37,8 @@ module ContainedNoModel {
     |s1.Model()| - |it1.Traversed()| + (if b then 1 else 0)
   }
 
-  // 66M RU ==> 22M RU
   method Contained(s1: UnorderedSet, s2: UnorderedSet) returns (b: bool)
-    modifies s1, s1.Repr(), s2, s2.Repr()
+    modifies s1.Repr(), s2.Repr()
     requires allocated(s1.Repr())
     requires allocated(s2.Repr())
     ensures allocated(s1.Repr())
@@ -49,12 +48,6 @@ module ContainedNoModel {
 
     requires Valid2(s1, s2)
     ensures Valid2(s1, s2)
-
-/*
-    ensures s1.Model() == old(s1.Model())
-    ensures s2.Model() == old(s2.Model())
-    ensures b == (s1.Model() <= s2.Model())
-    */
 
     ensures s1.Iterators() >= old(s1.Iterators())
     ensures s2.Iterators() >= old(s2.Iterators())
@@ -73,10 +66,6 @@ module ContainedNoModel {
       invariant fresh(s2.Repr()-old(s2.Repr()))
 
       invariant Valid2It10(s1, it1, s2)
-      //invariant s1.Model() == old(s1.Model())
-      //invariant s2.Model() == old(s2.Model())
-      //invariant it1.Traversed() <= s1.Model()
-      //invariant b == (it1.Traversed() <= s2.Model())
       invariant it1HasPeek == it1.HasPeek?()
 
       invariant s1.Iterators() >= old(s1.Iterators())
@@ -84,8 +73,6 @@ module ContainedNoModel {
     {
       ghost var  initialLoopBound := LoopBound(s1, it1, s2, b);
       var p := it1.Peek();
-      //var it2: UnorderedSetIterator := s2.Find(p);
-      //b := it2.HasPeek();
       b := s2.Contains(p);
       it1.Next();
       it1HasPeek := it1.HasPeek();

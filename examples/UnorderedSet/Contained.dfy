@@ -25,8 +25,8 @@ module Contained {
   }
 
   opaque ghost function LoopBound(
-      s1: UnorderedSet, 
-      it1: UnorderedSetIterator, 
+      s1: UnorderedSet,
+      it1: UnorderedSetIterator,
       s2: UnorderedSet,
       b: bool
     ): nat
@@ -46,10 +46,10 @@ module Contained {
     && s2.Model() == old(s2.Model())
     && b == (s1.Model() <= s2.Model())
   }
-  
+
   opaque twostate predicate ContainedInvariant(
-      s1: UnorderedSet, 
-      new it1: UnorderedSetIterator, 
+      s1: UnorderedSet,
+      new it1: UnorderedSetIterator,
       s2: UnorderedSet,
       b: bool
     )
@@ -63,7 +63,6 @@ module Contained {
     && b == (it1.Traversed() <= s2.Model())
   }
 
-  // 66M RU ==> 26M RU (~28s)
   method Contained(s1: UnorderedSet, s2: UnorderedSet) returns (b: bool)
     modifies s1.Repr(), s2.Repr()
     requires allocated(s1.Repr())
@@ -100,10 +99,6 @@ module Contained {
 
       invariant Valid2It10(s1, it1, s2)
       invariant ContainedInvariant(s1, it1, s2, b)
-      //invariant s1.Model() == old(s1.Model())
-      //invariant s2.Model() == old(s2.Model())
-      //invariant it1.Traversed() <= s1.Model()
-      //invariant b == (it1.Traversed() <= s2.Model())
       invariant it1HasPeek == it1.HasPeek?()
 
       invariant s1.Iterators() >= old(s1.Iterators())
@@ -111,8 +106,6 @@ module Contained {
     {
       ghost var  initialLoopBound := LoopBound(s1, it1, s2, b);
       var p := it1.Peek();
-      //var it2: UnorderedSetIterator := s2.Find(p);
-      //b := it2.HasPeek();
       b := s2.Contains(p);
       it1.Next();
       it1HasPeek := it1.HasPeek();
@@ -126,7 +119,7 @@ module Contained {
       }
     }
     assert ContainedModel(s1, s2, b) by {
-      reveal ContainedModel(), ContainedInvariant(); 
+      reveal ContainedModel(), ContainedInvariant();
     }
   }
-}
+} 

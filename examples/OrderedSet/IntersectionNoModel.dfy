@@ -4,14 +4,14 @@ module IntersectionNoModel {
   import opened KeyValue
   import opened ADT
   import opened OrderedSetSpec
-  
+
   export provides OrderedSetSpec, ADT, OrdSetIntersection
 
   opaque ghost function LoopBound(
-      s1: OrderedSet, 
-      it1: OrderedSetIterator, 
-      s2: OrderedSet, 
-      it2: OrderedSetIterator, 
+      s1: OrderedSet,
+      it1: OrderedSetIterator,
+      s2: OrderedSet,
+      it2: OrderedSetIterator,
       su: OrderedSet
     ): nat
     reads s1.Repr(), s2.Repr(), su.Repr()
@@ -24,10 +24,10 @@ module IntersectionNoModel {
   // 11.7M RU - correctness verification and termination (with helper)
   // 15.0M RU - correctness verification and termination (without helper)
   method Loop(
-      s1: OrderedSet, 
-      it1: OrderedSetIterator, 
-      s2: OrderedSet, 
-      it2: OrderedSetIterator, 
+      s1: OrderedSet,
+      it1: OrderedSetIterator,
+      s2: OrderedSet,
+      it2: OrderedSetIterator,
       su: OrderedSet
     )
     returns (
@@ -66,7 +66,7 @@ module IntersectionNoModel {
     assert Valid3It110(s1, it1, s2, it2, su);
     if it1Peek == it2Peek {
       //label L2:
-      su.Add(it1Peek); 
+      su.Add(it1Peek);
       //MaintainsValid3Helper@L2(su, s2, s1);
       assert Valid3It110(s1, it1, s2, it2, su);
       //label L3:
@@ -127,8 +127,8 @@ module IntersectionNoModel {
     ensures s2.Iterators() >= old(s2.Iterators())
     ensures su.Iterators() >= old(su.Iterators())
   {
-    var it1: OrderedSetIterator := s1.First(); 
-    var it2: OrderedSetIterator := s2.First(); 
+    var it1: OrderedSetIterator := s1.First();
+    var it2: OrderedSetIterator := s2.First();
     assert Valid3It110(s1, it1, s2, it2, su);
     var it1HasPeek := it1.HasPeek();
     assert Valid3It110(s1, it1, s2, it2, su);

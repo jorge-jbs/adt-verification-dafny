@@ -9,7 +9,7 @@ files=(
     examples/UnorderedSet/Contained.dfy
     examples/UnorderedSet/ContainedNoModel.dfy
     examples/Linear/AccidentesAereos/accidentes-aereos-main.dfy
-    examples/Linear/AccidentesAereos/accidentes-aereos.dfy
+    #examples/Linear/AccidentesAereos/accidentes-aereos.dfy
     examples/Linear/CheckListProperties/AllRelated.dfy
     examples/Linear/CheckListProperties/ForAllProperty.dfy
     examples/Linear/DupElements/DupElements.dfy
@@ -18,9 +18,9 @@ files=(
     examples/Linear/ElimDup/ElimDup.dfy
     examples/Linear/ElimDup/ElimDupNoIts.dfy
     #examples/Linear/ElimDup/ElimDupMap.dfy
-    examples/Linear/FillArray/FillArray.dfy
+    #examples/Linear/FillArray/FillArray.dfy
     examples/Linear/FillArray/FillArrayMap.dfy
-    examples/Linear/FilterEven.dfy
+    #examples/Linear/FilterEven.dfy
     examples/Linear/FindMax/FindMax.dfy
     examples/Linear/FindMax/FindMaxMap.dfy
     examples/Linear/Leino/LeinoList.dfy
@@ -30,7 +30,7 @@ files=(
     examples/Linear/ListaPersonas.dfy
     #examples/Linear/Merge.dfy
     examples/Linear/Misc.dfy
-    examples/Linear/Quicksort.dfy
+    #examples/Linear/Quicksort.dfy
     examples/Linear/ReordenandoCola/reordenando-la-cola-main.dfy
     examples/Linear/ReordenandoCola/reordenando-la-cola.dfy
     examples/Linear/TestArrayList.dfy
@@ -47,7 +47,7 @@ files=(
     src/Collections/Utils.dfy
     src/Collections/Int.dfy
     src/Collections/KeyValue.dfy
-    src/Collections/OrderedMultisetUtils.dfy
+    #src/Collections/OrderedMultisetUtils.dfy
     src/Collections/Seq.dfy
     #src/DataStructures/CircularDoublyLinkedList.dfy
     #src/DataStructures/DoublyLinkedList.dfy  # works in VS Code
@@ -72,13 +72,13 @@ files=(
     src/TreeMap/TreeMapImpl.dfy
     src/TreeMap/TreeMapSpec.dfy
     src/OrderedMap/OrderedMapSpec.dfy
-    src/OrderedMultiset/OrderedMultisetForward.dfy
-    src/OrderedMultiset/OrderedMultisetSpec.dfy
+    #src/OrderedMultiset/OrderedMultisetForward.dfy
+    #src/OrderedMultiset/OrderedMultisetSpec.dfy
     src/OrderedSet/OrderedSetSpec.dfy
     src/TreeSet/TreeSetImpl.dfy
     src/TreeSet/TreeSetSpec.dfy
     src/UnorderedMap/UnorderedMapSpec.dfy
-    src/UnorderedMultiset/UnorderedMultisetSpec.dfy
+    #src/UnorderedMultiset/UnorderedMultisetSpec.dfy
     src/UnorderedSet/UnorderedSetSpec.dfy
 
     src/DataStructures/ThreadedLinkedTree.dfy

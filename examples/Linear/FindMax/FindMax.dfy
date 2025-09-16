@@ -12,7 +12,7 @@ module FindMax{
   export provides ListSpec, LinkedListSpec, ArrayListSpec, Order
          provides FindMax, FindMaxAL
 
-method FindMax<A>(l: LinkedList<A>, le:(A,A) -> bool) returns (max: ListIterator<A>)
+method FindMax<A(!new)>(l: LinkedList<A>, le:(A,A) -> bool) returns (max: ListIterator<A>)
   modifies l, l.Repr()
   requires allocated(l.Repr())
   ensures fresh(l.Repr()-old(l.Repr()))
@@ -77,7 +77,7 @@ method FindMax<A>(l: LinkedList<A>, le:(A,A) -> bool) returns (max: ListIterator
 }
 
 
-method FindMaxAL<A>(l: ArrayList<A>,le:(A,A)->bool) returns (max: ListIterator<A>)
+method FindMaxAL<A(!new)>(l: ArrayList<A>,le:(A,A)->bool) returns (max: ListIterator<A>)
   modifies l, l.Repr()
   requires allocated(l.Repr())
   ensures fresh(l.Repr()-old(l.Repr()))

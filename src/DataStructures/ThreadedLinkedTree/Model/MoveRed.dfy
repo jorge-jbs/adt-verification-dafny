@@ -354,7 +354,6 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.MoveRed {
         }
       }
       assert RedBlackTree(MoveRedRight(t).right) by {
-        assert RedBlackTree(MoveRedRight(t).right.left);
         assert RedBlackTree(MoveRedRight(t).right.right);
       }
     }

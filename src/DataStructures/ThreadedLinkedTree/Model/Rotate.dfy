@@ -67,6 +67,12 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Rotate {
       assert keys(t.right.left) == keys(RotateLeft(t).left.right) == {};
       assert SearchTree(RotateLeft(t).left.right);
       assert BlackHeight(RotateLeft(t).left.right) == BlackHeight(t.right.left);
+    } else {
+      assert SearchTree(RotateLeft(t)) by {
+        assert t.Node?;
+        assert (forall m | m in keys(t.right) :: t.key < m);
+        assert SearchTree(t.right);
+      }
     }
   }
 

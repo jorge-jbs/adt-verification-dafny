@@ -62,6 +62,7 @@ module ThreadedLinkedTree.Impl.Rotate {
     newNode.left := node;
     newNode.isThreadLeft := false;
     newSk := T.Node(T.Node(sk.left, node, newSkLeftRight), newNode, sk.right.right);
+    assert ValidRec(newNode.left, newSk.left);
     assert ValidRec(newNode, newSk);
     assert elems(newSk) == elems(sk);
     assert ThreadedNe(prev, newSk, next) by {
@@ -89,7 +90,6 @@ module ThreadedLinkedTree.Impl.Rotate {
       ghost prev: threadOrEmpty<TTNode>,
       ghost sk: ttree<TTNode>,
       ghost next: threadOrEmpty<TTNode>
-      //parents: set<TTNode>
     )
     returns (newNode: TTNode, ghost newSk: ttree<TTNode>)
 
@@ -137,6 +137,7 @@ module ThreadedLinkedTree.Impl.Rotate {
     newNode.color := node.color;
     node.color := Red;
     newSk := T.Node(sk.left.left, newNode, T.Node(newSkRightLeft, node, sk.right));
+    assert ValidRec(newNode.right, newSk.right);
     assert ValidRec(newNode, newSk);
     assert elems(newSk) == elems(sk);
     assert ThreadedNe(prev, newSk, next) by {

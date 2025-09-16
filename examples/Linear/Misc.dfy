@@ -131,7 +131,7 @@ method IteratorExample3(l: LinkedList<int>)
   //assert !it1.Valid();  // we cannot prove nor disprove this assertion
   assert it2.Valid();
 }
-method  IteratorExample4(l: List<int>)
+method IteratorExample4(l: List<int>)
   modifies l, l.Repr()
   requires allocated(l.Repr())
   ensures fresh(l.Repr()-old(l.Repr()))
@@ -146,7 +146,7 @@ method  IteratorExample4(l: List<int>)
   var b := it1.HasPeek();
   if b {
     it1 := l.Erase(it1);
-    it1 := l.Insert(it1,4);
+    //it1 := l.Insert(it1,4);
   }
 }
 

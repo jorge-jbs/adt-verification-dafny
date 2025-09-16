@@ -621,11 +621,14 @@ class ArrayListImpl<A> extends ArrayList<A> {
     ensures forall j | 0 <= j < from :: elements[j] == old(elements[j])
     ensures forall j | from < j <= size :: elements[j] == old(elements[j - 1])
     ensures Valid()
+    ensures size == old(size)
+    //ensures Model()[..from] == old(Model()[..from])
+    //ensures from < size ==> Model()[from+1..] == old(Model()[from..|Model()|-1])
   {
     ghost var oldElems := elements[..];
 
     var i := size;
-    while (i > from)
+    while i > from
       invariant from <= i <= size
       invariant forall j | 0 <= j < i :: elements[j] == oldElems[j]
       invariant forall j | i < j <= size :: elements[j] == oldElems[j - 1]

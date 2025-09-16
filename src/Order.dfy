@@ -38,13 +38,13 @@ lemma PartialOrderAndTotalPreorder<A(!new)>(le: (A, A) -> bool)
 {
 }
 
-ghost predicate Ordered<A>(xs: seq<A>, le: (A, A) -> bool)
+ghost predicate Ordered<A(!new)>(xs: seq<A>, le: (A, A) -> bool)
   requires IsTotalOrder(le)
 {
   forall i, j | 0 <= i < j < |xs| :: le(xs[i], xs[j])
 }
 
-ghost predicate StrictOrdered<A>(xs: seq<A>, ls: (A, A) -> bool)
+ghost predicate StrictOrdered<A(!new)>(xs: seq<A>, ls: (A, A) -> bool)
   requires IsStrictPreorder(ls)
 {
   forall i, j | 0 <= i < j < |xs| :: ls(xs[i], xs[j])

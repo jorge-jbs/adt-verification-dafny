@@ -835,7 +835,7 @@ module {:options "-functionSyntax:4"} ThreadedLinkedTree.Model.Base {
           calc {
             sizeSmaller(t, k);
             == 1 + size(t.left) + sizeSmaller(t.right, k);
-            < 1 + size(t.left) + size(t.right);
+            <= 1 + size(t.left) + size(t.right);
             == size(t);
           }
         } else if k < t.key {

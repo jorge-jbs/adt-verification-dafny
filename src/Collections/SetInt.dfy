@@ -101,6 +101,74 @@ module SetInt {
     x
   }
 
+
+  predicate IsMax(s: set<int>, x: int)
+  {
+    && x in s
+    && forall y <- s :: y <= x
+  }
+
+  lemma MaxUnique(s: set<int>, x: int, y: int)
+    requires x in s
+    requires y in s
+    requires IsMax(s, x)
+    requires IsMax(s, y)
+    ensures x == y
+  {}
+
+  lemma MaxConstruct(s: set<int>) returns (max: int)
+    requires s != {}
+    ensures IsMax(s, max)
+    ensures forall x <- s | IsMax(s, x) :: x == max
+  {
+    var x :| x in s;
+    if s - {x} == {} {
+      assert s == {x};
+      return x;
+    } else {
+      var max' := MaxConstruct(s - {x});
+      if max' < x {
+        forall y | y in s
+          ensures y <= x
+        {
+          if x == y {
+          } else {
+            assert y in s - {x};
+            assert y <= max' < x;
+          }
+        }
+        return x;
+      } else {
+        forall y | y in s
+          ensures y <= max'
+        {
+          if y == x {
+          } else {
+            assert y in s - {x};
+          }
+        }
+        return max';
+      }
+    }
+  }
+
+  lemma MaxExists(s: set<int>)
+    requires s != {}
+    ensures exists max ::
+      && IsMax(s, max)
+      && forall x <- s | IsMax(s, x) :: x == max
+  {
+    var max := MaxConstruct(s);
+  }
+
+  function Max(s: set<int>): int
+    requires s != {}
+  {
+    MaxExists(s);
+    var x :| IsMax(s, x);
+    x
+  }
+
   function ElemAt(s: set<int>, i: nat): int
     requires 0 <= i < |s|
   {
@@ -168,6 +236,7 @@ module SetInt {
       calc == {
         ElemAt(S, |s|);
         ElemAt(S, 0);
+        { assert S == S - {}; }
         ElemAt(S-{}, 0);
         ElemAt(S-s, 0);
         Min(S-s);
