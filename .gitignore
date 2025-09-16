@@ -5,3 +5,6 @@
 *.dll.mdb
 *.d
 .DS_Store
+.ninja_lock
+.ninja_log
+build.ninja
