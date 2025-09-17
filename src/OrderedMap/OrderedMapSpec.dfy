@@ -114,6 +114,7 @@ module OrderedMapSpec {
       ensures Parent().Valid()
       ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures PrevModel()
+      ensures NextIterators()
   }
 
   trait {:termination false} OrderedMap extends UnorderedMap {

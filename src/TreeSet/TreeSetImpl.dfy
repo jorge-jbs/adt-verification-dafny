@@ -294,6 +294,7 @@ module TreeSetImpl {
       ensures parent.Valid()
       ensures parent.Iterators() >= old(parent.Iterators())
       ensures PrevModel()
+      ensures NextIterators()
     {
       iter.Prev();
       assert Valid();
@@ -308,6 +309,10 @@ module TreeSetImpl {
         assert RTraversed() == iter.RTraversed();
         assert RTraversed() == {old(Peek?())} + old(After());
         assert |RTraversed()| == 1 + old(|After()|);
+      }
+      assert NextIterators() by {
+        reveal NextIterators(), parent.SameIteratorModel();
+        reveal iter.NextIterators(), iter.Parent().SameIteratorModel();
       }
     }
 

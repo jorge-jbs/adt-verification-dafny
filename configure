@@ -5,6 +5,7 @@ files=(
     examples/OrderedSet/IntersectionNoModel.dfy
     examples/OrderedSet/RemoveHalves.dfy
     examples/OrderedSet/RemoveHalvesNoModel.dfy
+    examples/OrderedSet/Pairs.dfy
     examples/TreeMap/ExecuteTreeMap.dfy
     examples/UnorderedSet/Contained.dfy
     examples/UnorderedSet/ContainedNoModel.dfy

@@ -1,11 +1,8 @@
-include "../Collections/Seq.dfy"
 include "../Collections/KeyValue.dfy"
 include "../UnorderedSet/UnorderedSetSpec.dfy"
 include "../OrderedSet/OrderedSetSpec.dfy"
 
 module TreeSetSpec {
-  import opened Seq
-  import opened SetObject
   import opened KeyValue
   import opened UnorderedSetSpec
   import opened OrderedSetSpec
@@ -23,11 +20,11 @@ module TreeSetSpec {
       && it.HasPeek?() == old(it.HasPeek?())
       && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
       && if k in old(Model()) || (it.HasPeek?() && it.Peek?() < k) then
-        && it.Traversed() == old(it.Traversed())
-        && |it.Traversed()| == old(|it.Traversed()|)
-      else
-        && it.Traversed() == old(it.Traversed()) + {k}
-        && |it.Traversed()| == old(|it.Traversed()|) + 1
+           && it.Traversed() == old(it.Traversed())
+           && |it.Traversed()| == old(|it.Traversed()|)
+         else
+           && it.Traversed() == old(it.Traversed()) + {k}
+           && |it.Traversed()| == old(|it.Traversed()|) + 1
     }
 
     opaque twostate predicate AddIterators(x: K)
@@ -223,13 +220,13 @@ module TreeSetSpec {
       && it.HasPeek?() == old(it.HasPeek?())
       && (it.HasPeek?() ==> it.Peek?() == old(it.Peek?()))
       && (
-        if k in old(Model()) && (it.HasPeek?() ==> k < it.Peek?()) then
-          && it.Traversed() == old(it.Traversed()) - {k}
-          && |it.Traversed()| == old(|it.Traversed()|) - 1
-        else
-          && it.Traversed() == old(it.Traversed())
-          && |it.Traversed()| == old(|it.Traversed()|)
-      )
+           if k in old(Model()) && (it.HasPeek?() ==> k < it.Peek?()) then
+             && it.Traversed() == old(it.Traversed()) - {k}
+             && |it.Traversed()| == old(|it.Traversed()|) - 1
+           else
+             && it.Traversed() == old(it.Traversed())
+             && |it.Traversed()| == old(|it.Traversed()|)
+         )
     }
 
     opaque twostate predicate RemoveIterators(k: K)
@@ -289,6 +286,45 @@ module TreeSetSpec {
       ensures Iterators() >= {it} + old(Iterators())
       ensures InsertModel(k, it)
       ensures AddIterators(k)
+
+    twostate lemma EraseIterator(it: UnorderedSetIterator, pos: UnorderedSetIterator)
+      requires old(Valid())
+      requires Valid()
+      requires Iterators() >= old(Iterators())
+      requires it in old(Iterators())
+      requires old(it.Valid())
+      requires pos in old(Iterators())
+      requires old(pos.Valid())
+      requires old(pos.HasPeek?())
+      requires RemoveIterators(old(pos.Peek?()))
+      requires old(RemoveIteratorModelPre(it, pos.Peek?()))
+      ensures it.Valid()
+      ensures RemoveIteratorModel(it, old(pos.Peek?()))
+    {
+      reveal RemoveIterators(), RemoveIteratorModelPre(), RemoveIteratorModel();
+    }
+
+    twostate lemma EraseIteratorRTraversed(it: OrderedSetIterator, pos: UnorderedSetIterator)
+      requires old(Valid())
+      requires Valid()
+      requires Iterators() >= old(Iterators())
+      requires it in old(Iterators())
+      requires old(it.Valid())
+      requires pos in old(Iterators())
+      requires old(pos.Valid())
+      requires old(pos.HasPeek?())
+      requires RemoveIterators(old(pos.Peek?()))
+      requires old(RemoveIteratorModelPre(it, pos.Peek?()))
+
+      requires old(it.HasPeek?()) ==> old(it.Peek?()) < old(pos.Peek?())
+      requires Model() == old(Model()) - {old(pos.Peek?())}
+      ensures it.Valid()
+      ensures it.RTraversed() == old(it.RTraversed()) - {old(pos.Peek?())}
+    {
+      reveal TreeSet.RemoveIterators();
+      reveal TreeSet.RemoveIteratorModel();
+      reveal OrderedSetIterator.After();
+    }
 
     method Erase(pos: UnorderedSetIterator) returns (it: UnorderedSetIterator)
       modifies Repr()

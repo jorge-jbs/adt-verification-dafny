@@ -1,11 +1,9 @@
 include "../../src/AdtWithoutThis.dfy"
 include "../../src/Collections/KeyValue.dfy"
-include "../../src/Collections/SetObject.dfy"
 
 module UnorderedSetSpec {
   import opened ADT
   import opened KeyValue
-  import opened SetObject
 
   trait {:termination false} UnorderedSetIterator {
     ghost function Parent(): UnorderedSet

@@ -1,12 +1,10 @@
 include "../../src/AdtWithoutThis.dfy"
 include "../../src/Collections/KeyValue.dfy"
-include "../../src/Collections/SetObject.dfy"
 include "../../src/UnorderedSet/UnorderedSetSpec.dfy"
 
 module OrderedSetSpec {
   import opened ADT
   import opened KeyValue
-  import opened SetObject
   import opened UnorderedSetSpec
 
   trait {:termination false} OrderedSetIterator extends UnorderedSetIterator {
@@ -78,6 +76,17 @@ module OrderedSetSpec {
       && (forall x <- Parent().Model() | x !in Before() :: p <= x)
     }
 
+    lemma PeekROrder()
+      requires Valid()
+      requires Parent().Valid()
+      requires HasPeek?()
+      ensures forall x <- After() :: Peek?() < x
+      ensures forall x <- Parent().Model() | x !in After() :: x <= Peek?()
+    {
+      reveal After();
+      reveal PeekOrderSpec();
+    }
+
     ghost function Peek?(): K
       reads Parent().Repr()
       requires Valid()
@@ -114,6 +123,7 @@ module OrderedSetSpec {
       ensures Parent().Valid()
       ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures PrevModel()
+      ensures NextIterators()
   }
 
   trait {:termination false} OrderedSet extends UnorderedSet {
@@ -121,9 +131,9 @@ module OrderedSetSpec {
       reads Repr()
       requires Valid()
       ensures forall it <- Iterators() ::
-         && it in Repr()
-         && it.Parent() == this
-         && it is OrderedSetIterator
+                && it in Repr()
+                && it.Parent() == this
+                && it is OrderedSetIterator
 
     opaque twostate predicate LastModel(new it: OrderedSetIterator)
       reads Repr()
@@ -152,6 +162,7 @@ module OrderedSetSpec {
       ensures Iterators() >= {it} + old(Iterators())
 
       ensures LastModel(it)
+      ensures SameIterators()
   }
 
   ghost predicate ValidIt(s: OrderedSet, it: OrderedSetIterator)
@@ -170,11 +181,11 @@ module OrderedSetSpec {
   }
 
   ghost predicate Valid2It11(
-      a: OrderedSet,
-      itA: OrderedSetIterator,
-      b: OrderedSet,
-      itB: OrderedSetIterator
-    )
+    a: OrderedSet,
+    itA: OrderedSetIterator,
+    b: OrderedSet,
+    itB: OrderedSetIterator
+  )
     reads a.Repr(), b.Repr()
   {
     && Valid2(a, b)
@@ -183,11 +194,11 @@ module OrderedSetSpec {
   }
 
   twostate predicate MaintainsValid2It11(
-      a: OrderedSet,
-      itA: OrderedSetIterator,
-      b: OrderedSet,
-      itB: OrderedSetIterator
-    )
+    a: OrderedSet,
+    itA: OrderedSetIterator,
+    b: OrderedSet,
+    itB: OrderedSetIterator
+  )
     reads a.Repr(), b.Repr()
     requires old(Valid2It11(a, itA, b, itB))
   {
@@ -198,11 +209,11 @@ module OrderedSetSpec {
   }
 
   twostate lemma MaintainsValid2It11Helper(
-      a: OrderedSet,
-      itA: OrderedSetIterator,
-      b: OrderedSet,
-      itB: OrderedSetIterator
-    )
+    a: OrderedSet,
+    itA: OrderedSetIterator,
+    b: OrderedSet,
+    itB: OrderedSetIterator
+  )
     requires old(Valid2It11(a, itA, b, itB))
 
     requires a.Valid()
@@ -222,11 +233,11 @@ module OrderedSetSpec {
   {}
 
   ghost predicate Valid3It100(
-      a: OrderedSet,
-      itA: OrderedSetIterator,
-      b: OrderedSet,
-      c: OrderedSet
-    )
+    a: OrderedSet,
+    itA: OrderedSetIterator,
+    b: OrderedSet,
+    c: OrderedSet
+  )
     reads a.Repr(), b.Repr(), c.Repr()
   {
     && Valid3(a, b, c)
@@ -234,12 +245,12 @@ module OrderedSetSpec {
   }
 
   ghost predicate Valid3It110(
-      a: OrderedSet,
-      itA: OrderedSetIterator,
-      b: OrderedSet,
-      itB: OrderedSetIterator,
-      c: OrderedSet
-    )
+    a: OrderedSet,
+    itA: OrderedSetIterator,
+    b: OrderedSet,
+    itB: OrderedSetIterator,
+    c: OrderedSet
+  )
     reads a.Repr(), b.Repr(), c.Repr()
   {
     && Valid3(a, b, c)
@@ -248,12 +259,12 @@ module OrderedSetSpec {
   }
 
   twostate lemma MaintainsValid3It110Helper(
-      a: OrderedSet,
-      itA: OrderedSetIterator,
-      b: OrderedSet,
-      itB: OrderedSetIterator,
-      c: OrderedSet
-    )
+    a: OrderedSet,
+    itA: OrderedSetIterator,
+    b: OrderedSet,
+    itB: OrderedSetIterator,
+    c: OrderedSet
+  )
     requires old(Valid3It110(a, itA, b, itB, c))
 
     requires a.Valid()
@@ -284,10 +295,10 @@ module OrderedSetSpec {
   {}
 
   ghost predicate ValidIt2(
-      a: OrderedSet,
-      itA: OrderedSetIterator,
-      itB: OrderedSetIterator
-    )
+    a: OrderedSet,
+    itA: OrderedSetIterator,
+    itB: OrderedSetIterator
+  )
     reads a, a.Repr()
   {
     && a.Valid()

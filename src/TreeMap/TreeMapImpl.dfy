@@ -251,6 +251,7 @@ module TreeMapImpl {
       //ensures Parent() == old(Parent())
       ensures Parent().Iterators() >= old(Parent().Iterators())
       ensures PrevModel()
+      ensures NextIterators()
     {
       iter.Prev();
       assert PrevModel() by {
@@ -278,11 +279,9 @@ module TreeMapImpl {
           reveal PeekSpec(), After();
         }
       }
-      /*
-      assert PrevIterators() by {
-        reveal PrevIterators(), parent.SameIteratorModel();
+      assert NextIterators() by {
+        reveal NextIterators(), parent.SameIteratorModel();
       }
-      */
     }
 
     method Copy() returns (it: UnorderedMapIterator)
